@@ -1,9 +1,7 @@
 import * as React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
+import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine } from '@/components/auth-layout'
 import { HCaptchaWidget, hcaptchaEnabled } from '@/components/hcaptcha-widget'
 
 export function Login() {
@@ -46,44 +44,48 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <h1 className="text-3xl mb-6 text-center">Welcome back</h1>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-          <HCaptchaWidget onVerify={setCaptchaToken} />
-          {error && <p className="text-destructive text-sm font-medium">{error}</p>}
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </form>
-        <Button variant="outline" className="w-full mt-3" onClick={handleGoogle} type="button">
-          Continue with Google
-        </Button>
-        <div className="flex justify-between mt-6 text-sm font-medium">
-          <Link to="/forgot-password" className="underline">
-            Forgot password?
-          </Link>
-          <Link to="/signup" className="underline">
-            Create an account
-          </Link>
-        </div>
-      </Card>
-    </div>
+    <AuthLayout title="Welcome back">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <AuthInput
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+        />
+        <AuthInput
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+        />
+        <HCaptchaWidget onVerify={setCaptchaToken} />
+        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="h-14 rounded-lg bg-[#1a1a1a] text-white font-bold text-lg disabled:opacity-50"
+        >
+          {loading ? 'Signing in…' : 'Log in'}
+        </button>
+      </form>
+
+      <button
+        type="button"
+        onClick={handleGoogle}
+        className="h-14 rounded-lg border-[1.5px] border-[#1a1a1a] bg-white font-bold"
+      >
+        Continue with Google
+      </button>
+
+      <AuthLinks>
+        <AuthLinkLine prompt="Forgot your password? –" linkText="Reset it" to="/forgot-password" />
+        <AuthLinkLine prompt="New here? –" linkText="Sign up as a customer" to="/signup" />
+        <AuthLinkLine prompt="Run a shop? –" linkText="Sign up as a Loyalty Loop Retailer" to="/signup/owner" />
+      </AuthLinks>
+    </AuthLayout>
   )
 }

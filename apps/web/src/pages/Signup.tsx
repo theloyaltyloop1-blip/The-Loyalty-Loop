@@ -1,9 +1,7 @@
 import * as React from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
+import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine } from '@/components/auth-layout'
 import { HCaptchaWidget, hcaptchaEnabled } from '@/components/hcaptcha-widget'
 
 export function Signup({ asOwner = false }: { asOwner?: boolean }) {
@@ -12,6 +10,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   const [lastName, setLastName] = React.useState('')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [confirmPassword, setConfirmPassword] = React.useState('')
   const [captchaToken, setCaptchaToken] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -25,6 +24,10 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
       return
     }
     if (hcaptchaEnabled && !captchaToken) {
@@ -57,68 +60,80 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
 
   if (checkEmailSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
-          <h1 className="text-2xl mb-2">Check your email</h1>
-          <p>We've sent a confirmation link to {email}. Follow it to finish setting up your account.</p>
-        </Card>
-      </div>
+      <AuthLayout title="Check your email">
+        <p className="text-[#1a1a1a] font-semibold">
+          We've sent a confirmation link to {email}. Follow it to finish setting up your account.
+        </p>
+      </AuthLayout>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <h1 className="text-3xl mb-6 text-center">
-          {asOwner ? 'Set up your shop' : 'Create your account'}
-        </h1>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex gap-3">
-            <Input
-              placeholder="First name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-            />
-            <Input
-              placeholder="Last name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-            />
-          </div>
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+    <AuthLayout title="Welcome to The Loyalty Loop">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          <AuthInput
+            placeholder="First Name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
             required
-            autoComplete="email"
           />
-          <Input
-            type="password"
-            placeholder="Password (min. 8 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+          <AuthInput
+            placeholder="Surname"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             required
-            minLength={8}
-            autoComplete="new-password"
           />
-          <HCaptchaWidget onVerify={setCaptchaToken} />
-          {error && <p className="text-destructive text-sm font-medium">{error}</p>}
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Creating account…' : asOwner ? 'Create shop account' : 'Sign up'}
-          </Button>
-        </form>
-        <div className="flex justify-between mt-6 text-sm font-medium">
-          <Link to="/login" className="underline">
-            Already have an account?
-          </Link>
-          <Link to={asOwner ? '/signup' : '/signup/owner'} className="underline">
-            {asOwner ? "I'm a customer" : "I'm a shop owner"}
-          </Link>
         </div>
-      </Card>
-    </div>
+        <AuthInput
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+        />
+        <AuthInput
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+        <AuthInput
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+        <HCaptchaWidget onVerify={setCaptchaToken} />
+        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="h-14 rounded-lg bg-[#1a1a1a] text-white font-bold text-lg disabled:opacity-50"
+        >
+          {loading ? 'Creating account…' : asOwner ? 'Create shop account' : 'Sign up'}
+        </button>
+      </form>
+
+      <AuthLinks>
+        <AuthLinkLine prompt="Already registered? –" linkText="Log in" to="/login" />
+        {asOwner ? (
+          <AuthLinkLine prompt="Just here to collect stamps? –" linkText="Sign up as a customer" to="/signup" />
+        ) : (
+          <AuthLinkLine
+            prompt="Signing up as business? –"
+            linkText="Sign up as a Loyalty Loop Retailer"
+            to="/signup/owner"
+          />
+        )}
+      </AuthLinks>
+    </AuthLayout>
   )
 }
