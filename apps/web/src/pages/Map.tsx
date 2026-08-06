@@ -3,13 +3,13 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ShopCard } from '@/components/shop-card'
-import { ALL_SHOPS } from '@/lib/mock-shops'
+import { fetchBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
 
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
 
 // Centered on the Tooting/Balham area used throughout the marketing copy —
 // will become a live pin-per-shop map once businesses have real lat/lng
-// (§2 browse/discover, §3 shop setup with a map pin).
+// (§3 shop setup with a map pin).
 const EMBED_SRC = MAPS_API_KEY
   ? `https://www.google.com/maps/embed/v1/search?key=${MAPS_API_KEY}&q=cafes+near+Tooting+Bec,London`
   : null
@@ -38,9 +38,21 @@ function ViewToggle({ view, onChange }: { view: View; onChange: (v: View) => voi
 export function MapPage() {
   const { session, loading } = useAuth()
   const [view, setView] = React.useState<View>('map')
+  const [businesses, setBusinesses] = React.useState<Business[]>([])
+  const [memberships, setMemberships] = React.useState<Membership[]>([])
+
+  React.useEffect(() => {
+    if (!session?.user) return
+    Promise.all([fetchBusinesses(), fetchMyMemberships(session.user.id)]).then(([b, m]) => {
+      setBusinesses(b)
+      setMemberships(m)
+    })
+  }, [session?.user])
 
   if (loading) return null
   if (!session) return <Navigate to="/login" replace />
+
+  const membershipByBusiness = new Map(memberships.map((m) => [m.business_id, m]))
 
   return (
     <DashboardLayout>
@@ -67,8 +79,8 @@ export function MapPage() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {ALL_SHOPS.map((shop, i) => (
-            <ShopCard key={i} {...shop} />
+          {businesses.map((business) => (
+            <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
           ))}
         </div>
       )}

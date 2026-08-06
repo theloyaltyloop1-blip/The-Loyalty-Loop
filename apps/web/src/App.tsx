@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import { Landing } from '@/pages/Landing'
 import { Home } from '@/pages/Home'
 import { MapPage } from '@/pages/Map'
+import { ShopDetail } from '@/pages/ShopDetail'
 import { ComingSoon } from '@/pages/ComingSoon'
 import { Login } from '@/pages/Login'
 import { Signup } from '@/pages/Signup'
@@ -21,8 +22,12 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={<Home />} />
             <Route path="/dashboard/map" element={<MapPage />} />
+            <Route path="/dashboard/shop/:id" element={<ShopDetail />} />
             <Route path="/dashboard/rewards" element={<ComingSoon title="Rewards" />} />
             <Route path="/dashboard/news" element={<ComingSoon title="News" />} />
+            <Route path="/dashboard/favourites" element={<ComingSoon title="Favourites" />} />
+            <Route path="/dashboard/profile" element={<ComingSoon title="Profile" />} />
+            <Route path="/dashboard/admin" element={<ComingSoon title="Admin" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/signup/owner" element={<Signup asOwner />} />

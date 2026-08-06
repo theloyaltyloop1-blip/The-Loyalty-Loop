@@ -1,16 +1,48 @@
 import * as React from 'react'
-import { Navigate } from 'react-router-dom'
-import { Search, User } from 'lucide-react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { Search, Sparkles, Coffee, Scissors, UtensilsCrossed, Store } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { SectionLabel } from '@/components/section-label'
 import { ShopCard } from '@/components/shop-card'
-import { TRENDING_SHOPS, NEARBY_SHOPS } from '@/lib/mock-shops'
+import { fetchBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
+
+const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  Café: Coffee,
+  Restaurant: UtensilsCrossed,
+  Barber: Scissors,
+}
+
+function TrendingCard({ business }: { business: Business }) {
+  const navigate = useNavigate()
+  const Icon = CATEGORY_ICON[business.category ?? ''] ?? Store
+
+  return (
+    <button
+      onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
+      className="text-left w-64 shrink-0 rounded-2xl bg-[#FBF6EC] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+    >
+      <div
+        className="h-28"
+        style={{ background: `linear-gradient(135deg, ${business.brand_color}, ${business.brand_color}99)` }}
+      />
+      <div className="p-4">
+        <h3 className="font-display font-bold text-lg text-[#1a1a1a]">{business.name}</h3>
+        <p className="flex items-center gap-1.5 text-sm text-[#1a1a1a]/60 mt-1">
+          <Icon className="h-4 w-4" /> {business.category}
+        </p>
+      </div>
+    </button>
+  )
+}
 
 export function Home() {
   const { session, loading } = useAuth()
   const [firstName, setFirstName] = React.useState<string | null>(null)
+  const [category, setCategory] = React.useState<string>('All')
+  const [businesses, setBusinesses] = React.useState<Business[]>([])
+  const [memberships, setMemberships] = React.useState<Membership[]>([])
+  const [fetching, setFetching] = React.useState(true)
 
   React.useEffect(() => {
     if (!session?.user) return
@@ -20,47 +52,86 @@ export function Home() {
       .eq('id', session.user.id)
       .single()
       .then(({ data }) => setFirstName(data?.first_name ?? null))
+
+    Promise.all([fetchBusinesses(), fetchMyMemberships(session.user.id)])
+      .then(([b, m]) => {
+        setBusinesses(b)
+        setMemberships(m)
+      })
+      .finally(() => setFetching(false))
   }, [session?.user])
 
   if (loading) return null
   if (!session) return <Navigate to="/login" replace />
 
+  const membershipByBusiness = new Map(memberships.map((m) => [m.business_id, m]))
+  const counts = businesses.reduce<Record<string, number>>((acc, b) => {
+    const cat = b.category ?? 'Other'
+    acc[cat] = (acc[cat] ?? 0) + 1
+    return acc
+  }, {})
+  const filtered = category === 'All' ? businesses : businesses.filter((b) => b.category === category)
+
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-[#1a1a1a]">
-          Welcome to The Loyalty Loop{firstName ? ` – ${firstName}` : ''}
-        </h1>
-        <span className="h-10 w-10 rounded-full border-2 border-[#1a1a1a] flex items-center justify-center bg-white">
-          <User className="h-5 w-5 text-[#1a1a1a]" />
-        </span>
-      </div>
-
       <div className="relative mb-8">
         <input
-          placeholder="Search shops…"
-          className="h-14 w-full rounded-xl border-2 border-[#1a1a1a] bg-[#FBF6EC] px-5 pr-14 font-semibold text-[#1a1a1a] placeholder:text-[#1a1a1a]/40 outline-none"
+          placeholder="Search shops, cafés, salons…"
+          className="h-14 w-full rounded-full border border-black/10 bg-[#FBF6EC] pl-14 pr-5 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/40 outline-none"
         />
-        <Search className="absolute right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#1a1a1a]" />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#1a1a1a]/60" />
       </div>
 
-      <div className="mb-6">
-        <SectionLabel>Trending</SectionLabel>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
-        {TRENDING_SHOPS.map((shop, i) => (
-          <ShopCard key={i} {...shop} />
+      <p className="text-sm text-[#1a1a1a]/50 mb-1">
+        Hello, {firstName ?? session.user.email?.split('@')[0]}
+      </p>
+      <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-5">Discover local rewards</h1>
+
+      <div className="flex flex-wrap gap-2 mb-8">
+        <button
+          onClick={() => setCategory('All')}
+          className={
+            'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
+            (category === 'All' ? 'bg-[#E8703B] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
+          }
+        >
+          All categories
+        </button>
+        {Object.entries(counts).map(([cat, count]) => (
+          <button
+            key={cat}
+            onClick={() => setCategory(cat)}
+            className={
+              'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
+              (category === cat ? 'bg-[#E8703B] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
+            }
+          >
+            {cat} · {count}
+          </button>
         ))}
       </div>
 
-      <div className="mb-6">
-        <SectionLabel>Nearby</SectionLabel>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {NEARBY_SHOPS.map((shop, i) => (
-          <ShopCard key={i} {...shop} />
-        ))}
-      </div>
+      {!fetching && businesses.length === 0 ? (
+        <p className="text-[#1a1a1a]/50">No shops yet — check back soon.</p>
+      ) : (
+        <>
+          <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/60 mb-4">
+            <Sparkles className="h-4 w-4 text-[#E8703B]" /> Trending nearby
+          </p>
+          <div className="flex gap-4 overflow-x-auto pb-2 mb-10">
+            {businesses.slice(0, 2).map((business) => (
+              <TrendingCard key={business.id} business={business} />
+            ))}
+          </div>
+
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/60 mb-4">Nearby</p>
+          <div className="grid sm:grid-cols-2 gap-5">
+            {filtered.map((business) => (
+              <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
+            ))}
+          </div>
+        </>
+      )}
     </DashboardLayout>
   )
 }

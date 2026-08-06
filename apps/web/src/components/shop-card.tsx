@@ -1,33 +1,49 @@
+import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import type { MockShop } from '@/lib/mock-shops'
+import type { Business, Membership } from '@/lib/businesses'
 
-/** Mock logo tile standing in for a real uploaded shop logo (businesses.logo_url, §3). */
-function MockShopLogo() {
+function ShopLogo({ business, size = 56 }: { business: Business; size?: number }) {
   return (
-    <div className="h-14 w-14 shrink-0 rounded-lg border-2 border-[#1a1a1a] bg-[#FBF6EC] flex flex-col items-center justify-center gap-0.5 py-1">
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="#1a1a1a">
-        <path d="M12 2c3 0 4 2.5 2.2 5.2C13 9 12.4 10.2 12 12c-.4-1.8-1-3-2.2-4.8C8 4.5 9 2 12 2z" />
-        <path d="M12 22c-3 0-4-2.5-2.2-5.2C10.8 15 11.6 13.8 12 12c.4 1.8 1 3 2.2 4.8C16 19.5 15 22 12 22z" />
-      </svg>
-      <span className="text-[7px] font-extrabold tracking-widest text-[#1a1a1a]">JOICE</span>
+    <div
+      className="rounded-xl border border-black/10 flex items-center justify-center font-display font-extrabold text-white shrink-0"
+      style={{ width: size, height: size, backgroundColor: business.brand_color, fontSize: size * 0.4 }}
+    >
+      {business.name.charAt(0).toUpperCase()}
     </div>
   )
 }
 
-export function ShopCard({ name, category }: MockShop) {
+export function ShopCard({ business, membership }: { business: Business; membership?: Membership | null }) {
+  const navigate = useNavigate()
+  const joined = Boolean(membership)
+
   return (
-    <div className="rounded-xl border-2 border-[#1a1a1a] bg-[#FBF6EC] p-4">
-      <MockShopLogo />
-      <h3 className="font-bold text-lg text-[#1a1a1a] mt-3">{name}</h3>
-      <p className="text-xs text-[#1a1a1a]/50 font-semibold mb-4">{category}</p>
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs text-[#1a1a1a]/60 font-semibold">
-          <span className="h-2 w-2 rounded-full bg-[#C9622E]" /> Tap to join
+    <button
+      onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
+      className="text-left rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5 relative hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+    >
+      {joined && (
+        <span className="absolute top-4 right-4 rounded-full bg-[#EFE1C8] text-[#5a4a30] text-[11px] font-bold uppercase tracking-wide px-3 py-1">
+          Joined
+        </span>
+      )}
+
+      <ShopLogo business={business} />
+
+      <h3 className="font-display font-bold text-xl text-[#1a1a1a] mt-4">{business.name}</h3>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#1a1a1a]/50 mt-1 mb-4">
+        {business.category}
+      </p>
+
+      <div className="border-t border-[#1a1a1a]/10 pt-3 flex items-center justify-between">
+        <span className="flex items-center gap-2 text-sm font-semibold text-[#1a1a1a]/70">
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: business.brand_color }} />
+          {joined ? "You're a member" : 'Tap to join'}
         </span>
         <span className="flex items-center gap-1 text-sm font-bold text-[#C9622E]">
           View <ArrowRight className="h-3.5 w-3.5" />
         </span>
       </div>
-    </div>
+    </button>
   )
 }

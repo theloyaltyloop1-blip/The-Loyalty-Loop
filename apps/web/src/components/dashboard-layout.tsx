@@ -1,63 +1,76 @@
 import * as React from 'react'
 import { NavLink } from 'react-router-dom'
+import { Home, Map, Megaphone, Gift, Heart, User, Shield, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 
 const NAV_ITEMS = [
-  { label: 'Home', to: '/dashboard' },
-  { label: 'Map', to: '/dashboard/map' },
-  { label: 'Rewards', to: '/dashboard/rewards' },
-  { label: 'News', to: '/dashboard/news' },
+  { label: 'Home', to: '/dashboard', icon: Home, end: true },
+  { label: 'Map', to: '/dashboard/map', icon: Map },
+  { label: 'News', to: '/dashboard/news', icon: Megaphone },
+  { label: 'Rewards', to: '/dashboard/rewards', icon: Gift },
+  { label: 'Favourites', to: '/dashboard/favourites', icon: Heart },
+  { label: 'Profile', to: '/dashboard/profile', icon: User },
 ]
 
-function SidebarButton({
-  children,
-  active,
-  onClick,
-  to,
-}: {
-  children: React.ReactNode
-  active?: boolean
-  onClick?: () => void
-  to?: string
-}) {
-  const className =
-    'h-14 w-full rounded-xl border-2 border-[#1a1a1a] bg-white font-bold text-lg text-[#1a1a1a] flex items-center justify-center transition-colors hover:bg-[#1a1a1a] hover:text-white' +
-    (active ? ' bg-[#1a1a1a] text-white' : '')
-
-  if (to) {
-    return (
-      <NavLink to={to} end className={className}>
-        {children}
-      </NavLink>
-    )
-  }
-  return (
-    <button onClick={onClick} className={className}>
-      {children}
-    </button>
-  )
-}
-
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { signOut } = useAuth()
+  const { signOut, primaryRole } = useAuth()
 
   return (
-    <div className="min-h-screen flex bg-[#EADFC5]">
-      <aside className="w-60 shrink-0 bg-[#F3E1BC] border-r-2 border-[#1a1a1a]/70 flex flex-col items-center p-6 gap-8">
-        <img src={loyaltyLoopLogo} alt="The Loyalty Loop" className="w-full max-w-[180px] object-contain" />
+    <div className="min-h-screen flex bg-[#F7ECDC]">
+      <aside className="w-64 shrink-0 border-r border-black/5 flex flex-col p-5">
+        <div className="flex items-center gap-2 px-2 mb-8">
+          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
+          <span className="font-display font-extrabold text-lg text-[#1a1a1a]">The Loyalty Loop</span>
+        </div>
 
-        <nav className="w-full flex flex-col gap-4">
-          {NAV_ITEMS.map((item) => (
-            <SidebarButton key={item.to} to={item.to}>
-              {item.label}
-            </SidebarButton>
+        <nav className="flex flex-col gap-1">
+          {NAV_ITEMS.map(({ label, to, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                'flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ' +
+                (isActive ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
+              }
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+            </NavLink>
           ))}
-          <SidebarButton onClick={signOut}>Sign Out</SidebarButton>
+
+          {primaryRole === 'admin' && (
+            <NavLink
+              to="/dashboard/admin"
+              className={({ isActive }) =>
+                'flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ' +
+                (isActive ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
+              }
+            >
+              <Shield className="h-5 w-5" />
+              Admin
+            </NavLink>
+          )}
         </nav>
+
+        <button
+          onClick={signOut}
+          className="mt-auto flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+        >
+          <LogOut className="h-5 w-5" />
+          Sign out
+        </button>
       </aside>
 
-      <main className="flex-1 p-8">{children}</main>
+      <main className="flex-1 p-8 max-w-5xl">{children}</main>
+
+      <button
+        title="Security"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[#3B2A1E] text-[#F6AF23] flex items-center justify-center shadow-lg hover:brightness-110 transition-all"
+      >
+        <Shield className="h-6 w-6" />
+      </button>
     </div>
   )
 }
