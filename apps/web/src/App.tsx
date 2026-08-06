@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/lib/auth-context'
 import { Landing } from '@/pages/Landing'
 import { Home } from '@/pages/Home'
+import { MapPage } from '@/pages/Map'
 import { ComingSoon } from '@/pages/ComingSoon'
 import { Login } from '@/pages/Login'
 import { Signup } from '@/pages/Signup'
@@ -19,7 +20,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={<Home />} />
-            <Route path="/dashboard/map" element={<ComingSoon title="Map" />} />
+            <Route path="/dashboard/map" element={<MapPage />} />
             <Route path="/dashboard/rewards" element={<ComingSoon title="Rewards" />} />
             <Route path="/dashboard/news" element={<ComingSoon title="News" />} />
             <Route path="/login" element={<Login />} />

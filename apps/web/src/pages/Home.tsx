@@ -1,51 +1,12 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
-import { Search, User, Store, ArrowRight } from 'lucide-react'
+import { Search, User } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
-
-// Placeholder shop data — will be replaced by real `businesses` rows once
-// browse/discover (§2) is built.
-const TRENDING_SHOPS = [
-  { name: 'Joice Cafe', category: 'CAFE' },
-  { name: 'Joice Cafe', category: 'CAFE' },
-  { name: 'Joice Cafe', category: 'CAFE' },
-]
-
-const NEARBY_SHOPS = [
-  { name: 'Joice Cafe', category: 'CAFE' },
-  { name: 'Joice Cafe', category: 'CAFE' },
-  { name: 'Joice Cafe', category: 'CAFE' },
-]
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-block rounded-md border-2 border-[#2f6b3a] px-3 py-1 text-sm font-extrabold uppercase tracking-wide text-[#2f6b3a]">
-      {children}
-    </span>
-  )
-}
-
-function ShopCard({ name, category }: { name: string; category: string }) {
-  return (
-    <div className="rounded-xl border-2 border-[#1a1a1a] bg-[#FBF6EC] p-4">
-      <div className="h-14 w-14 rounded-full border-2 border-[#1a1a1a] bg-white flex items-center justify-center mb-3">
-        <Store className="h-6 w-6 text-[#1a1a1a]" />
-      </div>
-      <h3 className="font-bold text-lg text-[#1a1a1a]">{name}</h3>
-      <p className="text-xs text-[#1a1a1a]/50 font-semibold mb-4">{category}</p>
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs text-[#1a1a1a]/60 font-semibold">
-          <span className="h-2 w-2 rounded-full bg-[#C9622E]" /> Tap to join
-        </span>
-        <span className="flex items-center gap-1 text-sm font-bold text-[#C9622E]">
-          View <ArrowRight className="h-3.5 w-3.5" />
-        </span>
-      </div>
-    </div>
-  )
-}
+import { SectionLabel } from '@/components/section-label'
+import { ShopCard } from '@/components/shop-card'
+import { TRENDING_SHOPS, NEARBY_SHOPS } from '@/lib/mock-shops'
 
 export function Home() {
   const { session, loading } = useAuth()
