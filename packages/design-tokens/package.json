@@ -1,0 +1,7 @@
+{
+  "name": "@loyalty-loop/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "main": "tokens.ts",
+  "types": "tokens.ts"
+}

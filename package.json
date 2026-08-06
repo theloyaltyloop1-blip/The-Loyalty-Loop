@@ -1,0 +1,9 @@
+{
+  "name": "the-loyalty-loop",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build"
+  }
+}

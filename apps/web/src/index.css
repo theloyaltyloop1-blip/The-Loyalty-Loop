@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
+
+@theme {
+  --font-display: 'Baloo 2', sans-serif;
+  --font-body: 'Quicksand', sans-serif;
+
+  --color-background: #f9ede2;
+  --color-foreground: #40281c;
+  --color-card: #fdf9f5;
+  --color-primary: #ee5a2c;
+  --color-primary-glow: #f27b52;
+  --color-secondary: #f0dcc0;
+  --color-accent: #f6af23;
+  --color-fun-green: #30a66f;
+  --color-fun-violet: #9069d3;
+  --color-destructive: #dc2626;
+  --color-border: #e0c4a8;
+
+  --radius-default: 1.25rem;
+
+  --shadow-sticker: 3px 3px 0 0 rgb(64 40 28 / 0.12);
+  --shadow-sticker-lifted: 6px 6px 0 0 rgb(64 40 28 / 0.12);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+}
