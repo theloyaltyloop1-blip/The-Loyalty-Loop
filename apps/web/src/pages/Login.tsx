@@ -35,7 +35,7 @@ export function Login() {
       setError(error.message)
       return
     }
-    navigate('/')
+    navigate('/dashboard')
   }
 
   async function handleGoogle() {
