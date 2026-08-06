@@ -9,7 +9,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
       <div className="w-full max-w-4xl rounded-md border border-[#d8d8d0] bg-white shadow-sm grid md:grid-cols-[420px_1fr] overflow-hidden">
         <div className="bg-[#F3E1BC] flex flex-col items-center justify-center gap-4 p-10">
           <AuthLogo className="h-28 w-28" />
-          <p className="text-2xl font-bold text-[#4B6142]">The Loyalty Loop</p>
+          <p className="text-3xl font-body font-normal text-[#4B6142]">The Loyalty Loop</p>
         </div>
 
         <div className="bg-[#E8ECE2] p-8 md:p-12 flex flex-col relative">
@@ -61,5 +61,15 @@ export function AuthLinkLine({
         {linkText}
       </Link>
     </p>
+  )
+}
+
+/** Deliberately smaller and quieter than AuthLinkLine — a secondary,
+ * lower-priority action rather than one of the primary account switches. */
+export function AuthMinorLink({ linkText, to }: { linkText: string; to: string }) {
+  return (
+    <Link to={to} className="text-xs text-[#1a1a1a]/50 hover:text-[#1a1a1a]/80 hover:underline">
+      {linkText}
+    </Link>
   )
 }

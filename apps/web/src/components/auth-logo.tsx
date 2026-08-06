@@ -1,24 +1,22 @@
 export function AuthLogo({ className }: { className?: string }) {
+  const bigPetal =
+    'M60,12 C77,14 90,28 88,45 C87,55 78,60 68,58 C72,48 68,36 60,30 C55,26 56,18 60,12 Z'
+  const smallPetal =
+    'M60,26 C70,27 78,35 76,44 C75,50 69,53 63,51 C66,45 63,38 58,35 C55,33 56,29 60,26 Z'
+
   return (
     <svg viewBox="0 0 120 120" className={className} xmlns="http://www.w3.org/2000/svg">
-      <g stroke="#33421f" strokeWidth="1.5" strokeLinejoin="round">
-        <path
-          d="M60 14c14 0 16 16 8 26-6 7-16 8-22 4 2-16 4-26 14-30z"
-          fill="#6C8B4D"
-        />
-        <path
-          d="M106 60c0 14-16 16-26 8-7-6-8-16-4-22 16 2 26 4 30 14z"
-          fill="#C97C3D"
-        />
-        <path
-          d="M60 106c-14 0-16-16-8-26 6-7 16-8 22-4-2 16-4 26-14 30z"
-          fill="#6C8B4D"
-        />
-        <path
-          d="M14 60c0-14 16-16 26-8 7 6 8 16 4 22-16-2-26-4-30-14z"
-          fill="#C97C3D"
-        />
-      </g>
+      {/* three green blades + one rust blade, 90deg apart */}
+      <path d={bigPetal} fill="#6C8B4D" transform="rotate(0 60 60)" />
+      <path d={bigPetal} fill="#6C8B4D" transform="rotate(90 60 60)" />
+      <path d={bigPetal} fill="#6C8B4D" transform="rotate(270 60 60)" />
+      <path d={bigPetal} fill="#9C4A24" transform="rotate(180 60 60)" />
+
+      {/* four smaller orange petals tucked in the diagonal seams */}
+      <path d={smallPetal} fill="#D08A3E" transform="rotate(45 60 60)" />
+      <path d={smallPetal} fill="#D08A3E" transform="rotate(135 60 60)" />
+      <path d={smallPetal} fill="#D08A3E" transform="rotate(225 60 60)" />
+      <path d={smallPetal} fill="#D08A3E" transform="rotate(315 60 60)" />
     </svg>
   )
 }

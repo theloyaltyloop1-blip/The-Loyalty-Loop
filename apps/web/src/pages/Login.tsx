@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine } from '@/components/auth-layout'
+import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, AuthMinorLink } from '@/components/auth-layout'
 import { HCaptchaWidget, hcaptchaEnabled } from '@/components/hcaptcha-widget'
 
 export function Login() {
@@ -82,9 +82,9 @@ export function Login() {
       </button>
 
       <AuthLinks>
-        <AuthLinkLine prompt="Forgot your password? –" linkText="Reset it" to="/forgot-password" />
         <AuthLinkLine prompt="New here? –" linkText="Sign up as a customer" to="/signup" />
         <AuthLinkLine prompt="Run a shop? –" linkText="Sign up as a Loyalty Loop Retailer" to="/signup/owner" />
+        <AuthMinorLink linkText="Forgot your password?" to="/forgot-password" />
       </AuthLinks>
     </AuthLayout>
   )
