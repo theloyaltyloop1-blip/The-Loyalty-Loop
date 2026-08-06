@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { NavLink } from 'react-router-dom'
-import { Home, Map, Megaphone, Gift, Heart, User, Shield, LogOut } from 'lucide-react'
+import { NavLink, Link } from 'react-router-dom'
+import { Home, Map, Megaphone, Gift, Heart, User, Shield, LogOut, ArrowLeftRight } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 
@@ -14,7 +14,7 @@ const NAV_ITEMS = [
 ]
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole } = useAuth()
+  const { signOut, primaryRole, roles } = useAuth()
 
   return (
     <div className="min-h-screen flex bg-[#F7ECDC]">
@@ -54,13 +54,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
-        <button
-          onClick={signOut}
-          className="mt-auto flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
-        >
-          <LogOut className="h-5 w-5" />
-          Sign out
-        </button>
+        <div className="mt-auto flex flex-col gap-1">
+          {roles.includes('business_owner') && (
+            <Link
+              to="/owner"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+            >
+              <ArrowLeftRight className="h-5 w-5" />
+              Switch to owner view
+            </Link>
+          )}
+          <button
+            onClick={signOut}
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            Sign out
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 p-8 max-w-5xl">{children}</main>

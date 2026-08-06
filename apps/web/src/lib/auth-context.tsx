@@ -65,11 +65,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null
 
-  return (
-    <AuthContext.Provider value={{ session, roles, primaryRole, loading, refreshRoles, signOut }}>
-      {children}
-    </AuthContext.Provider>
+  const value = React.useMemo(
+    () => ({ session, roles, primaryRole, loading, refreshRoles, signOut }),
+    [session, roles, primaryRole, loading, refreshRoles, signOut]
   )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
