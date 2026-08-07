@@ -37,7 +37,7 @@ function TrendingCard({ business }: { business: Business }) {
 }
 
 export function Home() {
-  const { session, loading } = useAuth()
+  const { session, loading, rolesLoading, primaryRole } = useAuth()
   const [firstName, setFirstName] = React.useState<string | null>(null)
   const [category, setCategory] = React.useState<string>('All')
   const [businesses, setBusinesses] = React.useState<Business[]>([])
@@ -61,8 +61,12 @@ export function Home() {
       .finally(() => setFetching(false))
   }, [session?.user])
 
-  if (loading) return null
+  if (loading || rolesLoading) return null
   if (!session) return <Navigate to="/login" replace />
+  if (primaryRole === 'admin') return <Navigate to="/access" replace />
+  if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />
+  if (primaryRole === 'business_owner') return <Navigate to="/owner" replace />
+  if (primaryRole === 'staff') return <Navigate to="/owner/scan" replace />
 
   const membershipByBusiness = new Map(memberships.map((m) => [m.business_id, m]))
   const counts = businesses.reduce<Record<string, number>>((acc, b) => {

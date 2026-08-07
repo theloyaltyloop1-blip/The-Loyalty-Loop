@@ -1,0 +1,10 @@
+import * as React from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { Bell, CheckCheck } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
+import { DashboardLayout } from '@/components/dashboard-layout'
+import { fetchInbox, markAllInboxRead, markInboxRead, type InboxItem } from '@/lib/engagement'
+export function InboxPage() { const {session,loading}=useAuth(); const nav=useNavigate(); const [items,setItems]=React.useState<InboxItem[]>([]); const [ready,setReady]=React.useState(false)
+ React.useEffect(()=>{if(session?.user) fetchInbox(session.user.id).then(setItems).finally(()=>setReady(true))},[session?.user]); if(loading||!ready)return null;if(!session)return <Navigate to="/login" replace/>;
+ const read=(id:string)=>{markInboxRead(id);setItems(a=>a.map(x=>x.id===id?{...x,read_at:new Date().toISOString()}:x))}; const all=()=>{markAllInboxRead(session.user.id);setItems(a=>a.map(x=>({...x,read_at:x.read_at??new Date().toISOString()})))};
+ return <DashboardLayout><div className="flex justify-between gap-3"><div><p className="text-xs font-extrabold uppercase tracking-wide text-black/40">Updates</p><h1 className="text-3xl font-display font-extrabold">Notification inbox</h1></div><button onClick={all} className="self-end flex items-center gap-2 text-sm font-bold text-[#C9622E]"><CheckCheck className="h-4 w-4"/>Mark all read</button></div><div className="mt-7 rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,.08)] divide-y divide-black/5">{items.length?items.map(x=><button key={x.id} onClick={()=>{read(x.id);if(x.link)nav(x.link)}} className={'w-full text-left p-5 flex gap-4 '+(!x.read_at?'bg-[#FFF7E5]':'')}><Bell className="h-5 w-5 text-[#E8703B] shrink-0 mt-1"/><div><p className="font-bold">{x.title}</p><p className="text-sm text-black/55">{x.body}</p><p className="text-xs text-black/35 mt-2">{x.business?.name ? `${x.business.name} · `:''}{new Date(x.created_at).toLocaleString()}</p></div>{!x.read_at&&<span className="h-2.5 w-2.5 rounded-full bg-[#E8703B] shrink-0 mt-2"/>}</button>):<div className="p-10 text-center text-black/50">You’re all caught up.</div>}</div></DashboardLayout> }

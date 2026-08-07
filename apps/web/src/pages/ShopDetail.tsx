@@ -1,25 +1,55 @@
 import * as React from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { ReviewsSection } from '@/components/reviews-section'
 import {
   fetchBusinessBySlug,
   fetchMembership,
   fetchRewardCatalog,
   joinBusiness,
   simulateStamp,
+  fetchFavouriteIds,
+  addFavourite,
+  removeFavourite,
+  fetchBusinessPhotos,
   type Business,
   type Membership,
   type RewardCatalogItem,
+  type BusinessPhoto,
 } from '@/lib/businesses'
 
 const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   Café: Coffee,
   Restaurant: Coffee,
   Barber: Scissors,
+}
+
+const UNIT_LABEL: Record<string, string> = {
+  stamp_card: 'stamp',
+  points: 'point',
+  tiered: 'visit',
+}
+
+const DAY_ORDER: { key: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'; label: string }[] = [
+  { key: 'mon', label: 'Monday' },
+  { key: 'tue', label: 'Tuesday' },
+  { key: 'wed', label: 'Wednesday' },
+  { key: 'thu', label: 'Thursday' },
+  { key: 'fri', label: 'Friday' },
+  { key: 'sat', label: 'Saturday' },
+  { key: 'sun', label: 'Sunday' },
+]
+const TODAY_KEY = DAY_ORDER[(new Date().getDay() + 6) % 7].key
+
+function formatTime(t: string) {
+  const [h, m] = t.split(':').map(Number)
+  const period = h >= 12 ? 'pm' : 'am'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, '0')}${period}`
 }
 
 function darken(hex: string, amount: number) {
@@ -38,41 +68,89 @@ export function ShopDetail() {
   const [business, setBusiness] = React.useState<Business | null>(null)
   const [membership, setMembership] = React.useState<Membership | null>(null)
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
+  const [photos, setPhotos] = React.useState<BusinessPhoto[]>([])
   const [stampCode, setStampCode] = React.useState<string | null>(null)
   const [favourite, setFavourite] = React.useState(false)
   const [optedIn, setOptedIn] = React.useState(true)
   const [ready, setReady] = React.useState(false)
   const [joining, setJoining] = React.useState(false)
+  const [joinError, setJoinError] = React.useState<string | null>(null)
+  const [justJoined, setJustJoined] = React.useState(false)
   const [stamping, setStamping] = React.useState(false)
 
+  // Supabase fires onAuthStateChange multiple times in quick succession after
+  // login/navigation (INITIAL_SESSION, token refresh, etc.), each producing a
+  // *new* session object for the same logged-in user. refetch was keyed off
+  // session?.user (the object), so each of those events re-triggered the
+  // fetch-on-mount effect below, spawning an extra in-flight request. If one
+  // of those older, slower requests (fetched before the user had joined)
+  // resolved *after* the join button's own refetch, it silently overwrote the
+  // freshly-joined membership back to null — the card would flash "joined"
+  // then revert to "Join card". Fixed two ways: key off the stable user id
+  // instead of the object, and ignore any refetch whose result is no longer
+  // the latest one in flight.
+  const userId = session?.user?.id
+  const requestIdRef = React.useRef(0)
+  const loyaltyCardRef = React.useRef<HTMLDivElement>(null)
+
   const refetch = React.useCallback(async () => {
-    if (!slug || !session?.user) return
+    if (!slug || !userId) return
+    const thisRequestId = ++requestIdRef.current
     const biz = await fetchBusinessBySlug(slug)
     if (!biz) {
-      setReady(true)
+      if (thisRequestId === requestIdRef.current) setReady(true)
       return
     }
-    const [m, cat] = await Promise.all([fetchMembership(session.user.id, biz.id), fetchRewardCatalog(biz.id)])
+    const [m, cat, pics] = await Promise.all([
+      fetchMembership(userId, biz.id),
+      fetchRewardCatalog(biz.id),
+      fetchBusinessPhotos(biz.id),
+    ])
+    if (thisRequestId !== requestIdRef.current) return // a newer refetch already landed — drop this stale result
     setBusiness(biz)
     setMembership(m)
     setCatalog(cat)
+    setPhotos(pics)
     setOptedIn(m ? !m.promos_opted_out : true)
     setReady(true)
-  }, [slug, session?.user])
+  }, [slug, userId])
 
   React.useEffect(() => {
     refetch()
   }, [refetch])
 
   React.useEffect(() => {
-    if (!session?.user) return
+    if (!justJoined || !membership) return
+    requestAnimationFrame(() => loyaltyCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+    setJustJoined(false)
+  }, [justJoined, membership])
+
+  React.useEffect(() => {
+    if (!userId) return
     supabase
       .from('profiles')
       .select('stamp_code')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single()
       .then(({ data }) => setStampCode(data?.stamp_code ?? null))
-  }, [session?.user])
+  }, [userId])
+
+  React.useEffect(() => {
+    if (!userId || !business) return
+    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
+  }, [userId, business?.id])
+
+  async function handleToggleFavourite() {
+    if (!session?.user || !business) return
+    const next = !favourite
+    setFavourite(next)
+    try {
+      if (next) await addFavourite(session.user.id, business.id)
+      else await removeFavourite(session.user.id, business.id)
+    } catch {
+      setFavourite(!next)
+    }
+  }
 
   if (loading || !ready) return null
   if (!session) return <Navigate to="/login" replace />
@@ -83,13 +161,19 @@ export function ShopDetail() {
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
   const rewardTitle = catalog[0]?.title ?? 'Free reward'
   const rewardSubtitle = catalog[0]?.description ?? ''
+  const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
+  const progress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
 
   async function handleJoin() {
     if (!session?.user || !business) return
     setJoining(true)
+    setJoinError(null)
     try {
       await joinBusiness(session.user.id, business.id)
+      setJustJoined(true)
       await refetch()
+    } catch (error) {
+      setJoinError(error instanceof Error ? error.message : 'Could not join this loyalty card. Please try again.')
     } finally {
       setJoining(false)
     }
@@ -127,11 +211,15 @@ export function ShopDetail() {
       </button>
 
       <div
-        className="relative rounded-3xl p-8 mb-6 text-white"
-        style={{ background: `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})` }}
+        className="relative rounded-3xl p-8 mb-6 text-white bg-cover bg-center"
+        style={{
+          background: business.cover_url
+            ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
+            : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
+        }}
       >
         <button
-          onClick={() => setFavourite((f) => !f)}
+          onClick={handleToggleFavourite}
           className={
             'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors ' +
             (favourite ? 'bg-[#F6AF23] text-white' : 'bg-white/90 text-[#1a1a1a]')
@@ -141,13 +229,22 @@ export function ShopDetail() {
         </button>
 
         <div
-          className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center font-display font-extrabold text-2xl mb-5"
+          className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center font-display font-extrabold text-2xl mb-5 overflow-hidden"
           style={{ color: business.brand_color }}
         >
-          {business.name.charAt(0).toUpperCase()}
+          {business.logo_url ? (
+            <img src={business.logo_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            business.name.charAt(0).toUpperCase()
+          )}
         </div>
 
-        <h1 className="text-4xl font-display font-extrabold mb-1">{business.name}</h1>
+        <h1 className="text-4xl font-display font-extrabold mb-1 flex items-center gap-2">
+          {business.name}
+          {business.verification_status === 'verified' && (
+            <BadgeCheck className="h-7 w-7 text-white shrink-0" aria-label="Verified" />
+          )}
+        </h1>
         <p className="text-white/80 mb-2">{business.category}</p>
         <p className="text-white/70 max-w-md">{business.description}</p>
       </div>
@@ -162,7 +259,10 @@ export function ShopDetail() {
           </span>
           <p className="text-xl font-display font-bold text-[#1a1a1a]">{rewardTitle}</p>
           <p className="text-sm text-[#1a1a1a]/50 mb-1">{rewardSubtitle}</p>
-          <p className="text-sm text-[#1a1a1a]/50 mb-6">Collect {stampsRequired} stamps to unlock it.</p>
+          <p className="text-sm text-[#1a1a1a]/50 mb-6">
+            Collect {stampsRequired} {unit}
+            {stampsRequired === 1 ? '' : 's'} to unlock it.
+          </p>
           <button
             onClick={handleJoin}
             disabled={joining}
@@ -171,20 +271,44 @@ export function ShopDetail() {
           >
             {joining ? 'Joining…' : 'Join card'}
           </button>
+          {joinError && <p className="mt-4 text-sm font-semibold text-red-600">{joinError}</p>}
         </div>
       ) : (
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-display font-bold text-[#1a1a1a]">Your stamp card</h2>
+            <h2 className="text-xl font-display font-bold text-[#1a1a1a]">
+              {business.loyalty_type === 'points'
+                ? 'Your points'
+                : business.loyalty_type === 'tiered'
+                  ? 'Your visits'
+                  : 'Your stamp card'}
+            </h2>
             <p className="text-sm font-semibold text-[#1a1a1a]/60">
-              {membership.stamp_count} / {stampsRequired} · {rewardTitle}
+              {progress} / {stampsRequired} · {rewardTitle}
             </p>
           </div>
 
+          {business.loyalty_type === 'points' ? (
+            <div className="mb-8">
+              <div className="h-4 rounded-full bg-black/5 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, (progress / stampsRequired) * 100)}%`,
+                    backgroundColor: business.brand_color,
+                  }}
+                />
+              </div>
+              <p className="text-sm text-[#1a1a1a]/50 mt-2">
+                {Math.max(0, stampsRequired - progress)} more point{stampsRequired - progress === 1 ? '' : 's'} to{' '}
+                {rewardTitle.toLowerCase()}.
+              </p>
+            </div>
+          ) : (
           <div className="flex flex-wrap gap-3 mb-8">
             {Array.from({ length: stampsRequired }).map((_, i) => {
               const isLast = i === stampsRequired - 1
-              const filled = i < membership.stamp_count
+              const filled = i < progress
               if (isLast) {
                 return (
                   <div key={i} className="flex flex-col items-center gap-1">
@@ -218,8 +342,9 @@ export function ShopDetail() {
               )
             })}
           </div>
+          )}
 
-          <div className="flex flex-col sm:flex-row items-start gap-6">
+          <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6">
             <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Manual code</p>
@@ -228,8 +353,8 @@ export function ShopDetail() {
               </p>
               <p className="font-semibold text-[#1a1a1a] mb-1">Show this to staff</p>
               <p className="text-sm text-[#1a1a1a]/50 max-w-sm">
-                They scan the code to add a stamp, or type the manual code above. {stampsRequired} stamps
-                to your next reward.
+                They scan the code to add a {unit}, or type the manual code above. {Math.max(0, stampsRequired - progress)} {unit}
+                {Math.max(0, stampsRequired - progress) === 1 ? '' : 's'} to your next reward.
               </p>
             </div>
           </div>
@@ -281,11 +406,66 @@ export function ShopDetail() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="rounded-full bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] px-5 h-12 flex items-center gap-2 font-semibold text-[#1a1a1a]">
-          <MapPin className="h-4 w-4 text-[#E8703B]" /> {business.address}
-          {business.postcode ? `, ${business.postcode}` : ''}
+      {photos.length > 0 && (
+        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
+          <p className="font-display font-bold text-[#1a1a1a] mb-4">Gallery</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {photos.map((p) => (
+              <div key={p.id} className="rounded-xl overflow-hidden aspect-square">
+                <img src={p.url} alt="" className="h-full w-full object-cover" />
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      {business.opening_hours && Object.keys(business.opening_hours).length > 0 && (
+        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
+          <p className="flex items-center gap-2 font-display font-bold text-[#1a1a1a] mb-4">
+            <Clock className="h-5 w-5 text-[#E8703B]" /> Opening hours
+          </p>
+          <div className="flex flex-col divide-y divide-black/5">
+            {DAY_ORDER.map(({ key, label }) => {
+              const day = business.opening_hours?.[key]
+              const isToday = key === TODAY_KEY
+              return (
+                <div
+                  key={key}
+                  className={
+                    'flex items-center justify-between py-2 text-sm ' +
+                    (isToday ? 'font-bold text-[#1a1a1a]' : 'text-[#1a1a1a]/60')
+                  }
+                >
+                  <span>
+                    {label} {isToday && <span className="text-[#E8703B]">· Today</span>}
+                  </span>
+                  <span>{!day || day.closed ? 'Closed' : `${formatTime(day.open)} – ${formatTime(day.close)}`}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      <ReviewsSection businessId={business.id} userId={session.user.id} canReview={Boolean(membership)} />
+
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        {business.address ? (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              [business.address, business.postcode].filter(Boolean).join(', ')
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] px-5 h-12 flex items-center gap-2 font-semibold text-[#1a1a1a] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+          >
+            <MapPin className="h-4 w-4 text-[#E8703B]" /> {business.address}
+            {business.postcode ? `, ${business.postcode}` : ''}
+            <Navigation className="h-3.5 w-3.5 text-[#1a1a1a]/40 ml-1" />
+          </a>
+        ) : (
+          <div />
+        )}
         <button className="rounded-full border border-black/15 px-5 h-10 font-semibold text-[#1a1a1a] flex items-center gap-2">
           <Share2 className="h-4 w-4" /> Share
         </button>

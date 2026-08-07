@@ -1,20 +1,25 @@
 import * as React from 'react'
-import { NavLink, Link } from 'react-router-dom'
-import { Home, Map, Megaphone, Gift, Heart, User, Shield, LogOut, ArrowLeftRight } from 'lucide-react'
+import { NavLink, Navigate } from 'react-router-dom'
+import { Home, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },
-  { label: 'Map', to: '/dashboard/map', icon: Map },
   { label: 'News', to: '/dashboard/news', icon: Megaphone },
   { label: 'Rewards', to: '/dashboard/rewards', icon: Gift },
+  { label: 'Activity', to: '/dashboard/activity', icon: History },
+  { label: 'Inbox', to: '/dashboard/inbox', icon: Bell },
   { label: 'Favourites', to: '/dashboard/favourites', icon: Heart },
   { label: 'Profile', to: '/dashboard/profile', icon: User },
 ]
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole, roles } = useAuth()
+  const { signOut, primaryRole } = useAuth()
+  if (primaryRole === 'admin') return <Navigate to="/access" replace />
+  if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />
+  if (primaryRole === 'business_owner') return <Navigate to="/owner" replace />
+  if (primaryRole === 'staff') return <Navigate to="/owner/scan" replace />
 
   return (
     <div className="min-h-screen flex bg-[#F7ECDC]">
@@ -40,30 +45,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
 
-          {primaryRole === 'admin' && (
-            <NavLink
-              to="/dashboard/admin"
-              className={({ isActive }) =>
-                'flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ' +
-                (isActive ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
-              }
-            >
-              <Shield className="h-5 w-5" />
-              Admin
-            </NavLink>
-          )}
         </nav>
 
         <div className="mt-auto flex flex-col gap-1">
-          {roles.includes('business_owner') && (
-            <Link
-              to="/owner"
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
-            >
-              <ArrowLeftRight className="h-5 w-5" />
-              Switch to owner view
-            </Link>
-          )}
           <button
             onClick={signOut}
             className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"

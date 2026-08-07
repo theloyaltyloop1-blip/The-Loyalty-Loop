@@ -2,7 +2,6 @@ import * as React from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine } from '@/components/auth-layout'
-import { HCaptchaWidget, hcaptchaEnabled } from '@/components/hcaptcha-widget'
 
 export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   const [searchParams] = useSearchParams()
@@ -11,10 +10,10 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [confirmPassword, setConfirmPassword] = React.useState('')
-  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [checkEmailSent, setCheckEmailSent] = React.useState(false)
+  const [agreed, setAgreed] = React.useState(false)
 
   const refCode = searchParams.get('ref')
 
@@ -22,6 +21,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
     e.preventDefault()
     setError(null)
 
+    if (!agreed) { setError('Please accept the Terms and Privacy Notice to continue.'); return }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
@@ -30,22 +30,17 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       setError('Passwords do not match.')
       return
     }
-    if (hcaptchaEnabled && !captchaToken) {
-      setError('Please complete the captcha.')
-      return
-    }
-
     setLoading(true)
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        captchaToken: captchaToken ?? undefined,
         data: {
           first_name: firstName,
           last_name: lastName,
           intent: asOwner ? 'business_owner' : 'consumer',
           ref_code: refCode ?? undefined,
+          legal_accepted: true,
         },
       },
     })
@@ -93,6 +88,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           required
           autoComplete="email"
         />
+        <label className="flex gap-2 text-sm text-[#1a1a1a]/70 items-start"><input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1" />I agree to the <a href="/terms" className="underline font-bold">Terms</a> and <a href="/privacy" className="underline font-bold">Privacy Notice</a>.</label>
         <AuthInput
           type="password"
           placeholder="Password"
@@ -111,7 +107,6 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           minLength={8}
           autoComplete="new-password"
         />
-        <HCaptchaWidget onVerify={setCaptchaToken} />
         {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
         <button
           type="submit"

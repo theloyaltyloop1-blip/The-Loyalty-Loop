@@ -2,15 +2,16 @@ import * as React from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
-export type AppRole = 'admin' | 'business_owner' | 'staff' | 'consumer'
+export type AppRole = 'admin' | 'brand_head' | 'business_owner' | 'staff' | 'consumer'
 
-const ROLE_PRIORITY: AppRole[] = ['admin', 'business_owner', 'staff', 'consumer']
+const ROLE_PRIORITY: AppRole[] = ['admin', 'brand_head', 'business_owner', 'staff', 'consumer']
 
 interface AuthContextValue {
   session: Session | null
   roles: AppRole[]
   primaryRole: AppRole | null
   loading: boolean
+  rolesLoading: boolean
   refreshRoles: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = React.useState<Session | null>(null)
   const [roles, setRoles] = React.useState<AppRole[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [rolesLoading, setRolesLoading] = React.useState(true)
 
   const loadRoles = React.useCallback(async (userId: string) => {
     const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId)
@@ -31,8 +33,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshRoles = React.useCallback(async () => {
     if (!session?.user) return
-    await supabase.rpc('ensure_current_user_bootstrap')
-    await loadRoles(session.user.id)
+    setRolesLoading(true)
+    try {
+      await supabase.rpc('ensure_current_user_bootstrap')
+      await loadRoles(session.user.id)
+    } finally {
+      setRolesLoading(false)
+    }
   }, [session, loadRoles])
 
   React.useEffect(() => {
@@ -53,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshRoles()
     } else {
       setRoles([])
+      setRolesLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
@@ -66,8 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null
 
   const value = React.useMemo(
-    () => ({ session, roles, primaryRole, loading, refreshRoles, signOut }),
-    [session, roles, primaryRole, loading, refreshRoles, signOut]
+    () => ({ session, roles, primaryRole, loading, rolesLoading, refreshRoles, signOut }),
+    [session, roles, primaryRole, loading, rolesLoading, refreshRoles, signOut]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

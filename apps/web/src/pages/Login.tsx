@@ -2,13 +2,11 @@ import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, AuthMinorLink } from '@/components/auth-layout'
-import { HCaptchaWidget, hcaptchaEnabled } from '@/components/hcaptcha-widget'
 
 export function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
-  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
 
@@ -16,16 +14,10 @@ export function Login() {
     e.preventDefault()
     setError(null)
 
-    if (hcaptchaEnabled && !captchaToken) {
-      setError('Please complete the captcha.')
-      return
-    }
-
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
-      options: captchaToken ? { captchaToken } : undefined,
     })
     setLoading(false)
 
@@ -33,14 +25,19 @@ export function Login() {
       setError(error.message)
       return
     }
-    navigate('/dashboard')
-  }
-
-  async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    })
+    await supabase.rpc('ensure_current_user_bootstrap')
+    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id)
+    navigate(
+      roles?.some((role) => role.role === 'admin')
+        ? '/access'
+        : roles?.some((role) => role.role === 'staff')
+          ? '/owner/scan'
+          : roles?.some((role) => role.role === 'brand_head')
+            ? '/brand'
+          : roles?.some((role) => role.role === 'business_owner')
+            ? '/owner'
+            : '/dashboard'
+    )
   }
 
   return (
@@ -62,7 +59,6 @@ export function Login() {
           required
           autoComplete="current-password"
         />
-        <HCaptchaWidget onVerify={setCaptchaToken} />
         {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
         <button
           type="submit"
@@ -72,14 +68,6 @@ export function Login() {
           {loading ? 'Signing in…' : 'Log in'}
         </button>
       </form>
-
-      <button
-        type="button"
-        onClick={handleGoogle}
-        className="h-14 rounded-lg border-[1.5px] border-[#1a1a1a] bg-white font-bold"
-      >
-        Continue with Google
-      </button>
 
       <AuthLinks>
         <AuthLinkLine prompt="New here? –" linkText="Sign up as a customer" to="/signup" />

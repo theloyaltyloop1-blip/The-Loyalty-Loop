@@ -4,11 +4,9 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { HCaptchaWidget, hcaptchaEnabled } from '@/components/hcaptcha-widget'
 
 export function ForgotPassword() {
   const [email, setEmail] = React.useState('')
-  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null)
   const [sent, setSent] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -17,15 +15,9 @@ export function ForgotPassword() {
     e.preventDefault()
     setError(null)
 
-    if (hcaptchaEnabled && !captchaToken) {
-      setError('Please complete the captcha.')
-      return
-    }
-
     setLoading(true)
     await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
-      captchaToken: captchaToken ?? undefined,
     })
     setLoading(false)
     // Always show the same message, whether or not the address exists —
@@ -51,7 +43,6 @@ export function ForgotPassword() {
               required
               autoComplete="email"
             />
-            <HCaptchaWidget onVerify={setCaptchaToken} />
             {error && <p className="text-destructive text-sm font-medium">{error}</p>}
             <Button type="submit" disabled={loading}>
               {loading ? 'Sending…' : 'Send reset link'}

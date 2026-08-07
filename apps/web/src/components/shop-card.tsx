@@ -1,8 +1,18 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, BadgeCheck } from 'lucide-react'
 import type { Business, Membership } from '@/lib/businesses'
 
 function ShopLogo({ business, size = 56 }: { business: Business; size?: number }) {
+  if (business.logo_url) {
+    return (
+      <img
+        src={business.logo_url}
+        alt=""
+        className="rounded-xl border border-black/10 object-cover shrink-0"
+        style={{ width: size, height: size }}
+      />
+    )
+  }
   return (
     <div
       className="rounded-xl border border-black/10 flex items-center justify-center font-display font-extrabold text-white shrink-0"
@@ -30,7 +40,12 @@ export function ShopCard({ business, membership }: { business: Business; members
 
       <ShopLogo business={business} />
 
-      <h3 className="font-display font-bold text-xl text-[#1a1a1a] mt-4">{business.name}</h3>
+      <h3 className="font-display font-bold text-xl text-[#1a1a1a] mt-4 flex items-center gap-1.5">
+        {business.name}
+        {business.verification_status === 'verified' && (
+          <BadgeCheck className="h-4 w-4 text-[#3B82C4] shrink-0" aria-label="Verified" />
+        )}
+      </h3>
       <p className="text-xs font-semibold uppercase tracking-wide text-[#1a1a1a]/50 mt-1 mb-4">
         {business.category}
       </p>
