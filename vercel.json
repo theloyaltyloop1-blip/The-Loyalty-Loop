@@ -3,6 +3,7 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "apps/web/dist",
   "rewrites": [
+    { "source": "/logo-for-emails", "destination": "/logo-for-emails.png" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
