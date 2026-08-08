@@ -3,6 +3,7 @@ import { NavLink, Navigate } from 'react-router-dom'
 import { Home, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import { LegalFooterLinks } from '@/components/legal-footer'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },
@@ -64,9 +65,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <main className="w-full flex-1 p-4 sm:p-6 md:max-w-5xl md:p-8">
         {children}
         <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-[#1a1a1a]/50">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
             <span>© {new Date().getFullYear()} The Loyalty Loop</span>
           </div>
+          <LegalFooterLinks />
         </footer>
       </main>
 

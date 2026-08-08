@@ -4,6 +4,7 @@ import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowL
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import { LegalFooterLinks } from '@/components/legal-footer'
 
 const OWNER_NAV_ITEMS = [
   { label: 'Analytics', to: '/owner', icon: LineChart, end: true },
@@ -138,7 +139,13 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="w-full flex-1 p-4 sm:p-6 md:max-w-5xl md:p-8">{children}</main>
+      <main className="w-full flex-1 p-4 sm:p-6 md:max-w-5xl md:p-8">
+        {children}
+        <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-[#1a1a1a]/50">
+          <div className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</div>
+          <LegalFooterLinks />
+        </footer>
+      </main>
     </div>
   )
 }

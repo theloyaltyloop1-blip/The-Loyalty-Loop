@@ -48,6 +48,19 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       setError(error.message)
       return
     }
+
+    if (asOwner) {
+      // Fire-and-forget: sends the welcome email with the legal documents
+      // attached. There's no session yet (email confirmation is required
+      // before one exists), so this call is unauthenticated by design — the
+      // function itself verifies server-side that this is a genuine, fresh
+      // owner signup before sending anything. A failure here should never
+      // block or dirty the sign-up flow the user is looking at.
+      supabase.functions
+        .invoke('send-owner-legal-documents', { body: { email, site_url: window.location.origin } })
+        .catch(() => undefined)
+    }
+
     setCheckEmailSent(true)
   }
 
