@@ -1,5 +1,8 @@
 {
   "installCommand": "npm --prefix apps/web install",
   "buildCommand": "npm run build:web",
-  "outputDirectory": "apps/web/dist"
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
