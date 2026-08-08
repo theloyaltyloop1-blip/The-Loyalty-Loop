@@ -29,9 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!error && data) {
       const nextRoles = data.map((r) => r.role as AppRole)
       setRoles(nextRoles)
-      if (nextRoles.includes('business_owner')) {
-        void supabase.functions.invoke('send-owner-legal-documents')
-      }
     }
   }, [])
 

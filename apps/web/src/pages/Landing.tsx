@@ -17,7 +17,6 @@ import {
 import { LoopMark } from '@/components/loop-mark'
 import { ShopRowIllustration } from '@/components/shop-row-illustration'
 import { Button } from '@/components/ui/button'
-import { LegalFooter } from '@/pages/Legal'
 
 const NAV_LINKS = [
   { label: 'How it works', href: '#how-it-works' },
@@ -374,7 +373,6 @@ export function Landing() {
 
       <footer className="border-t-[3px] border-foreground/10 px-6 py-8 text-center text-sm text-foreground/60">
         <p>© {new Date().getFullYear()} The Loyalty Loop. Made for the high street.</p>
-        <LegalFooter className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-2 font-semibold" />
       </footer>
     </div>
   )

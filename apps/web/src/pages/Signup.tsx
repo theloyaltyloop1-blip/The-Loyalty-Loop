@@ -13,7 +13,6 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [checkEmailSent, setCheckEmailSent] = React.useState(false)
-  const [agreed, setAgreed] = React.useState(false)
 
   const refCode = searchParams.get('ref')
 
@@ -21,7 +20,6 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
     e.preventDefault()
     setError(null)
 
-    if (!agreed) { setError('Please accept the applicable legal documents to continue.'); return }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
@@ -40,7 +38,6 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           last_name: lastName,
           intent: asOwner ? 'business_owner' : 'consumer',
           ref_code: refCode ?? undefined,
-          legal_accepted: true,
         },
       },
     })
@@ -88,7 +85,6 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           required
           autoComplete="email"
         />
-        <label className="flex gap-2 text-sm text-[#1a1a1a]/70 items-start"><input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1" />{asOwner ? <>I agree to the <a href="/legal/merchant-agreement" className="underline font-bold">Merchant Agreement</a>, <a href="/legal/data-processing" className="underline font-bold">Data Processing Addendum</a>, <a href="/terms" className="underline font-bold">Terms</a> and <a href="/privacy" className="underline font-bold">Privacy Notice</a>.</> : <>I agree to the <a href="/terms" className="underline font-bold">Terms</a> and <a href="/privacy" className="underline font-bold">Privacy Notice</a>.</>}</label>
         <AuthInput
           type="password"
           placeholder="Password"

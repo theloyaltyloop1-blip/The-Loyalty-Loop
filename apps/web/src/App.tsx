@@ -23,7 +23,6 @@ import { ForgotPassword } from '@/pages/ForgotPassword'
 import { ResetPassword } from '@/pages/ResetPassword'
 import { ActivityPage } from '@/pages/Activity'
 import { InboxPage } from '@/pages/Inbox'
-import { LegalHub, LegalPage } from '@/pages/Legal'
 import { CookieConsent } from '@/components/cookie-consent'
 import { OwnerTools } from '@/pages/owner/Tools'
 import { OwnerNotifications } from '@/pages/owner/Notifications'
@@ -47,16 +46,6 @@ function App() {
               <Route path="/dashboard/profile" element={<ProfilePage />} />
               <Route path="/dashboard/activity" element={<ActivityPage />} />
               <Route path="/dashboard/inbox" element={<InboxPage />} />
-              <Route path="/legal" element={<LegalHub />} />
-              <Route path="/legal/:document" element={<Navigate to="/legal" replace />} />
-              <Route path="/terms" element={<Navigate to="/legal/terms" replace />} />
-              <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
-              <Route path="/legal/terms" element={<LegalPage type="terms" />} />
-              <Route path="/legal/privacy" element={<LegalPage type="privacy" />} />
-              <Route path="/legal/cookies" element={<LegalPage type="cookies" />} />
-              <Route path="/legal/merchant-agreement" element={<LegalPage type="merchant-agreement" />} />
-              <Route path="/legal/data-processing" element={<LegalPage type="data-processing" />} />
-              <Route path="/legal/acceptable-use" element={<LegalPage type="acceptable-use" />} />
               <Route path="/dashboard/admin" element={<Navigate to="/access" replace />} />
               <Route path="/access" element={<AccessPanel />} />
               <Route path="/brand" element={<BrandWorkspace />} />
