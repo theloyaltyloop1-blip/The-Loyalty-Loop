@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
@@ -17,6 +17,7 @@ import {
   inviteStaffMember,
   setStaffStatus,
   updateStaffPermissions,
+  deleteOwnedBusiness,
   fetchBusinessPhotos,
   uploadGalleryPhoto,
   deleteBusinessPhoto,
@@ -1151,11 +1152,86 @@ function StaffTab() {
   )
 }
 
-function ComingSoonPanel({ label }: { label: string }) {
+function HelpTab() {
+  const { business } = useOwner()
+
   return (
-    <SectionCard>
-      <p className="text-[#1a1a1a]/50">{label} lands here soon.</p>
-    </SectionCard>
+    <>
+      <SectionCard title="Help & support">
+        <p className="text-sm text-[#1a1a1a]/60">Send a message straight to the Loyalty Loop team. You can choose a priority and follow replies from the same place.</p>
+        <Link to="/owner/support" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#E8703B] px-5 py-3 text-sm font-bold text-white">
+          <MessageSquare className="h-4 w-4" /> Contact support
+        </Link>
+      </SectionCard>
+      <SectionCard title="Quick answers">
+        <div className="grid gap-3 text-sm text-[#1a1a1a]/65">
+          <p><strong className="text-[#1a1a1a]">Award a stamp:</strong> open Scan & award from the owner menu, then scan the customer QR code or enter their code.</p>
+          <p><strong className="text-[#1a1a1a]">Update your card:</strong> use Loyalty & rewards to change your reward threshold and rewards.</p>
+          <p><strong className="text-[#1a1a1a]">Your shop:</strong> {business?.is_active ? 'Your shop is live for customers.' : 'Your shop is currently deactivated and hidden from customers.'}</p>
+        </div>
+      </SectionCard>
+    </>
+  )
+}
+
+function DangerTab() {
+  const { business, updateLocalBusiness, refetch } = useOwner()
+  const navigate = useNavigate()
+  const [busy, setBusy] = React.useState(false)
+  const [deleteName, setDeleteName] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false)
+
+  if (!business) return null
+  const shop = business
+
+  async function setActive(isActive: boolean) {
+    setBusy(true); setError(null)
+    try {
+      const updated = await updateBusiness(shop.id, { is_active: isActive })
+      updateLocalBusiness(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update your shop.')
+    } finally { setBusy(false) }
+  }
+
+  async function deleteShop() {
+    if (deleteName.trim() !== shop.name) return
+    setBusy(true); setError(null)
+    try {
+      await deleteOwnedBusiness(shop.id, deleteName)
+      await refetch()
+      navigate('/owner')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete your shop.')
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="space-y-5">
+      <section className="rounded-2xl border border-amber-300 bg-amber-50 p-6">
+        <h3 className="font-display text-lg font-bold text-amber-950">{business.is_active ? 'Deactivate shop' : 'Reactivate shop'}</h3>
+        <p className="mt-2 text-sm text-amber-950/70">{business.is_active ? 'Deactivation hides your shop and stops new customer joins. Your data stays safely in place, and you can reactivate it at any time.' : 'Reactivating makes your shop available to customers again.'}</p>
+        <button onClick={() => setActive(!business.is_active)} disabled={busy} className="mt-4 rounded-xl border border-amber-500 px-4 py-2 text-sm font-bold text-amber-900 disabled:opacity-50">
+          {busy ? 'Saving…' : business.is_active ? 'Deactivate shop' : 'Reactivate shop'}
+        </button>
+      </section>
+
+      <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
+        <h3 className="font-display text-lg font-bold text-red-800">Delete shop permanently</h3>
+        <p className="mt-2 text-sm text-red-800/75">This permanently removes the shop, its members’ loyalty activity, rewards, reviews and related shop data. This cannot be undone.</p>
+        {!confirmingDelete ? (
+          <button onClick={() => setConfirmingDelete(true)} className="mt-4 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700">Delete shop…</button>
+        ) : (
+          <div className="mt-4 max-w-md">
+            <label className="block text-sm font-semibold text-red-900">Type <span className="font-bold">{business.name}</span> to confirm</label>
+            <input value={deleteName} onChange={(e) => setDeleteName(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-red-300 bg-white px-3 outline-none focus:border-red-600" />
+            <div className="mt-3 flex gap-2"><button onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-xl px-4 py-2 text-sm font-bold text-red-800">Cancel</button></div>
+          </div>
+        )}
+        {error && <p className="mt-3 text-sm font-medium text-red-700">{error}</p>}
+      </section>
+    </div>
   )
 }
 
@@ -1197,8 +1273,8 @@ export function OwnerSettings() {
           {tab === 'winback' && <WinbackTab />}
           {tab === 'verification' && <VerificationTab />}
           {tab === 'staff' && <StaffTab />}
-          {tab === 'help' && <ComingSoonPanel label="Help & support" />}
-          {tab === 'danger' && <ComingSoonPanel label="Danger zone" />}
+          {tab === 'help' && <HelpTab />}
+          {tab === 'danger' && <DangerTab />}
         </>
       )}
     </OwnerLayout>

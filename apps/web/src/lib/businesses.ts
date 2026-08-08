@@ -37,6 +37,7 @@ export interface Business {
   verification_document_label: string | null
   verification_submitted_at: string | null
   verification_rejection_reason: string | null
+  is_active: boolean
 }
 
 export interface RewardCatalogItem {
@@ -83,6 +84,16 @@ export async function updateBusiness(id: string, patch: Partial<Business>): Prom
   const { data, error } = await supabase.from('businesses').update(patch).eq('id', id).select().single()
   if (error) throw error
   return data as Business
+}
+
+/** Permanently removes a shop and its loyalty data. The database RPC verifies
+ * that the current account owns the shop before doing any deletion. */
+export async function deleteOwnedBusiness(businessId: string, confirmationName: string) {
+  const { error } = await supabase.rpc('delete_owned_business', {
+    _business_id: businessId,
+    _confirmation_name: confirmationName.trim(),
+  })
+  if (error) throw error
 }
 
 function slugify(name: string) {
