@@ -33,7 +33,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       email,
       password,
       options: {
-        emailRedirectTo: `${AUTH_REDIRECT_URL}/login`,
+        emailRedirectTo: `${AUTH_REDIRECT_URL}/auth/callback`,
         data: {
           first_name: firstName,
           last_name: lastName,

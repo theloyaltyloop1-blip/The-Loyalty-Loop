@@ -60,7 +60,11 @@ export function OwnerOnboarding() {
   if (businesses.length > 0) return <Navigate to="/owner" replace />
 
   const canContinue =
-    step === 0 ? form.name.trim().length > 0 && form.category : step === 1 ? true : true
+    step === 0
+      ? form.name.trim().length > 0 && Boolean(form.category)
+      : step === 2
+        ? Number.isInteger(form.stamps_required) && form.stamps_required >= 1 && form.stamps_required <= 100
+        : true
 
   async function handleCreate() {
     setCreating(true)
@@ -215,6 +219,7 @@ export function OwnerOnboarding() {
                 <input
                   type="number"
                   min={1}
+                  max={100}
                   className={inputClass}
                   value={form.stamps_required}
                   onChange={(e) => setForm({ ...form, stamps_required: Number(e.target.value) })}

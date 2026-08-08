@@ -27,6 +27,7 @@ import { CookieConsent } from '@/components/cookie-consent'
 import { OwnerTools } from '@/pages/owner/Tools'
 import { OwnerNotifications } from '@/pages/owner/Notifications'
 import { BrandWorkspace } from '@/pages/BrandWorkspace'
+import { AuthCallback } from '@/pages/AuthCallback'
 
 const queryClient = new QueryClient()
 
@@ -59,6 +60,7 @@ function App() {
               <Route path="/owner/reviews" element={<OwnerReviews />} />
               <Route path="/owner/support" element={<OwnerSupport />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/signup/owner" element={<Signup asOwner />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
