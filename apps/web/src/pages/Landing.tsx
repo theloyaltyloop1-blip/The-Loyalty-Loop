@@ -153,7 +153,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export function Landing() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-4 py-4 sticky top-0 z-30">
         <header className="flex items-center justify-between gap-4 rounded-full border-[3px] border-foreground bg-card px-4 py-2 shadow-sticker">
           <Link to="/" className="flex items-center gap-2 font-display font-extrabold text-lg">
@@ -167,9 +167,9 @@ export function Landing() {
               </a>
             ))}
           </nav>
-          <Link to="/login">
+          <Link to="/login" className="shrink-0">
             <Button size="sm" className="bg-foreground text-background border-foreground">
-              Sign up or log in
+              <span className="hidden sm:inline">Sign up or log in</span><span className="sm:hidden">Sign in</span>
             </Button>
           </Link>
         </header>
@@ -182,7 +182,7 @@ export function Landing() {
             <span className="inline-flex items-center gap-2 rounded-full border-[3px] border-foreground bg-accent px-4 py-1.5 font-bold text-sm mb-6">
               <Sparkles className="h-4 w-4" /> SW17 · SW12 · now live
             </span>
-            <h1 className="text-5xl md:text-6xl leading-[1.05] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl leading-[1.05] mb-6">
               Your high street,{' '}
               <em className="text-primary not-italic font-display italic underline decoration-4 decoration-foreground/20 underline-offset-8">
                 in your

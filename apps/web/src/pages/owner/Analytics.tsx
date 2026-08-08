@@ -336,7 +336,7 @@ export function OwnerAnalytics() {
         </div>
       ) : (
         <>
-          <div className="flex gap-1 border-b border-black/10 mb-6">
+          <div className="flex gap-1 overflow-x-auto border-b border-black/10 mb-6">
             {(['simplified', 'detailed'] as const).map((key) => (
               <button
                 key={key}
