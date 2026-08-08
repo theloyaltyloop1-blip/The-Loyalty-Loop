@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { AUTH_REDIRECT_URL, supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -17,7 +17,7 @@ export function ForgotPassword() {
 
     setLoading(true)
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${AUTH_REDIRECT_URL}/reset-password`,
     })
     setLoading(false)
     // Always show the same message, whether or not the address exists —

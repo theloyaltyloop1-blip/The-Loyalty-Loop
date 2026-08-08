@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { AUTH_REDIRECT_URL, supabase } from '@/lib/supabase'
 import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine } from '@/components/auth-layout'
 
 export function Signup({ asOwner = false }: { asOwner?: boolean }) {
@@ -33,6 +33,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       email,
       password,
       options: {
+        emailRedirectTo: `${AUTH_REDIRECT_URL}/login`,
         data: {
           first_name: firstName,
           last_name: lastName,

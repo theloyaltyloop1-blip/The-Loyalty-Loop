@@ -8,3 +8,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Auth emails must always bring people back to the published app, even when
+// the account was created from a local development session.
+export const AUTH_REDIRECT_URL = 'https://www.the-loyalty-loop.com'
