@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { NavLink, Navigate } from 'react-router-dom'
+import { Link, NavLink, Navigate } from 'react-router-dom'
 import { Home, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
@@ -58,7 +58,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 max-w-5xl">{children}</main>
+      <main className="flex-1 max-w-5xl p-8">
+        {children}
+        <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-[#1a1a1a]/50">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span>© {new Date().getFullYear()} The Loyalty Loop</span>
+            <Link to="/privacy" className="font-semibold hover:text-[#1a1a1a] hover:underline">Privacy Notice</Link>
+            <Link to="/terms" className="font-semibold hover:text-[#1a1a1a] hover:underline">Terms of Service</Link>
+          </div>
+        </footer>
+      </main>
 
       <button
         title="Security"

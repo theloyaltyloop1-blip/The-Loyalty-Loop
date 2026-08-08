@@ -371,8 +371,12 @@ export function Landing() {
         </section>
       </main>
 
-      <footer className="border-t-[3px] border-foreground/10 py-8 text-center text-sm text-foreground/60">
-        © {new Date().getFullYear()} The Loyalty Loop. Made for the high street.
+      <footer className="border-t-[3px] border-foreground/10 px-6 py-8 text-center text-sm text-foreground/60">
+        <p>© {new Date().getFullYear()} The Loyalty Loop. Made for the high street.</p>
+        <nav aria-label="Legal" className="mt-3 flex justify-center gap-5 font-semibold">
+          <Link to="/privacy" className="hover:text-foreground hover:underline">Privacy Notice</Link>
+          <Link to="/terms" className="hover:text-foreground hover:underline">Terms of Service</Link>
+        </nav>
       </footer>
     </div>
   )
