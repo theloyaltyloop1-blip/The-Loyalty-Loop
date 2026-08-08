@@ -1,3 +1,5 @@
 {
-  "rootDirectory": "apps/web"
+  "installCommand": "npm --prefix apps/web install",
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "apps/web/dist"
 }
