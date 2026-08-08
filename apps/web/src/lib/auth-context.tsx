@@ -27,7 +27,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadRoles = React.useCallback(async (userId: string) => {
     const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId)
     if (!error && data) {
-      setRoles(data.map((r) => r.role as AppRole))
+      const nextRoles = data.map((r) => r.role as AppRole)
+      setRoles(nextRoles)
+      if (nextRoles.includes('business_owner')) {
+        void supabase.functions.invoke('send-owner-legal-documents')
+      }
     }
   }, [])
 
