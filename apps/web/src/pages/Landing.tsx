@@ -132,7 +132,7 @@ function ShopDots({ filled, total, color }: { filled: number; total: number; col
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = React.useState(false)
   return (
-    <div className="rounded-[1.25rem] border-[3px] border-foreground bg-card p-5">
+    <div className="rounded-xl border border-border bg-card p-5">
       <button
         className="w-full flex items-center justify-between gap-4 text-left font-display font-bold text-lg"
         onClick={() => setOpen((o) => !o)}
@@ -155,7 +155,7 @@ export function Landing() {
   return (
     <div className="min-h-screen overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-4 py-4 sticky top-0 z-30">
-        <header className="flex items-center justify-between gap-4 rounded-full border-[3px] border-foreground bg-card px-4 py-2 shadow-sticker">
+        <header className="flex items-center justify-between gap-4 rounded-2xl border border-border/80 bg-card px-4 py-3 shadow-sticker">
           <Link to="/" className="flex items-center gap-2 font-display font-extrabold text-lg">
             <LoopMark className="h-9 w-9" />
             The Loyalty Loop
@@ -179,7 +179,7 @@ export function Landing() {
         {/* hero */}
         <section className="grid md:grid-cols-2 gap-10 items-center py-10 md:py-16">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border-[3px] border-foreground bg-accent px-4 py-1.5 font-bold text-sm mb-6">
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#eee4d0] px-4 py-1.5 font-semibold text-sm text-foreground mb-6">
               <Sparkles className="h-4 w-4" /> SW17 · SW12 · now live
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl leading-[1.05] mb-6">
@@ -210,16 +210,16 @@ export function Landing() {
           </div>
 
           <div className="relative">
-            <div className="rounded-[1.75rem] border-[3px] border-foreground bg-card p-4 shadow-sticker-lifted">
+            <div className="rounded-3xl border border-border bg-card p-4 shadow-sticker-lifted">
               <ShopRowIllustration className="w-full h-auto" />
             </div>
 
-            <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-accent border-[3px] border-foreground shadow-sticker flex flex-col items-center justify-center text-center rotate-6">
+            <div className="absolute -top-5 -right-4 h-20 w-20 rounded-full bg-accent shadow-sticker flex flex-col items-center justify-center text-center rotate-6">
               <span className="font-display font-extrabold text-sm leading-none">FREE</span>
               <span className="text-[10px] font-bold uppercase leading-none mt-1">to join</span>
             </div>
 
-            <div className="absolute -bottom-8 -left-6 w-56 rounded-[1.25rem] border-[3px] border-foreground bg-card p-4 shadow-sticker -rotate-3">
+            <div className="absolute -bottom-8 -left-4 w-56 rounded-2xl border border-border bg-card p-4 shadow-sticker -rotate-2">
               <div className="flex items-center gap-2 mb-3">
                 <span className="h-8 w-8 rounded-full bg-primary text-white border-2 border-foreground flex items-center justify-center">
                   <Coffee className="h-4 w-4" />
@@ -245,7 +245,7 @@ export function Landing() {
 
         {/* how it works */}
         <section id="how-it-works" className="py-16 text-center">
-          <span className="inline-block rounded-full border-[3px] border-foreground bg-card px-4 py-1 font-bold text-sm mb-4">
+          <span className="inline-block rounded-full bg-secondary px-4 py-1.5 font-semibold text-xs tracking-[0.12em] text-foreground/70 mb-4">
             HOW IT WORKS
           </span>
           <h2 className="text-4xl md:text-5xl mb-3">Three taps to a free flat white</h2>
@@ -255,7 +255,7 @@ export function Landing() {
             {STEPS.map(({ icon: Icon, color, step, title, description, textLight }) => (
               <div
                 key={title}
-                className={`rounded-[1.25rem] border-[3px] border-foreground p-6 shadow-sticker ${color} ${
+                className={`rounded-2xl border border-black/5 p-6 shadow-sticker ${color} ${
                   textLight ? 'text-white' : 'text-foreground'
                 }`}
               >
@@ -274,7 +274,7 @@ export function Landing() {
         <section id="shops" className="py-10">
           <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
             <div>
-              <span className="inline-block rounded-full border-[3px] border-foreground bg-card px-4 py-1 font-bold text-sm mb-4">
+              <span className="inline-block rounded-full bg-secondary px-4 py-1.5 font-semibold text-xs tracking-[0.12em] text-foreground/70 mb-4">
                 ON YOUR STREET
               </span>
               <h2 className="text-4xl">A few loops you'll love</h2>
@@ -286,7 +286,7 @@ export function Landing() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {SHOPS.map(({ icon: Icon, color, name, meta, filled, total, dotColor, reward }) => (
-              <div key={name} className="rounded-[1.25rem] border-[3px] border-foreground bg-card overflow-hidden shadow-sticker">
+              <div key={name} className="rounded-2xl border border-border bg-card overflow-hidden shadow-sticker">
                 <div className={`${color} text-white px-4 py-3 flex items-center justify-between`}>
                   <Icon className="h-5 w-5" />
                   <span className="rounded-full bg-white/90 text-foreground text-xs font-bold px-2.5 py-1 border-[2px] border-foreground">
@@ -312,14 +312,14 @@ export function Landing() {
         {/* FAQ */}
         <section id="faq" className="py-16 grid md:grid-cols-[1fr_1.4fr] gap-10">
           <div>
-            <span className="inline-block rounded-full border-[3px] border-foreground bg-card px-4 py-1 font-bold text-sm mb-4">
+            <span className="inline-block rounded-full bg-secondary px-4 py-1.5 font-semibold text-xs tracking-[0.12em] text-foreground/70 mb-4">
               FAQ
             </span>
             <h2 className="text-4xl mb-3">Questions from the queue</h2>
             <p className="text-foreground/70 mb-8">
               Can't find what you're after? <a href="mailto:hello@theloyaltyloop.app" className="text-primary underline">Drop us a line</a>.
             </p>
-            <span className="inline-flex h-16 w-16 rounded-full bg-primary text-white items-center justify-center border-[3px] border-foreground">
+            <span className="inline-flex h-14 w-14 rounded-full bg-primary text-white items-center justify-center shadow-sm">
               <Sparkles className="h-7 w-7" />
             </span>
           </div>
@@ -332,11 +332,11 @@ export function Landing() {
 
         {/* business CTA */}
         <section id="business" className="py-10">
-          <div className="relative rounded-[1.75rem] border-[3px] border-foreground bg-fun-violet text-white p-8 md:p-10 overflow-hidden">
-            <div className="absolute top-6 right-10 h-20 w-20 rounded-full bg-accent border-[3px] border-foreground text-foreground flex items-center justify-center text-[11px] font-extrabold uppercase rotate-12">
+          <div className="relative rounded-3xl bg-[#30442d] text-white p-8 md:p-10 overflow-hidden shadow-sticker-lifted">
+            <div className="absolute top-6 right-10 h-20 w-20 rounded-full bg-accent text-foreground flex items-center justify-center text-[11px] font-bold uppercase rotate-12">
               Signup
             </div>
-            <span className="inline-block rounded-full border-[3px] border-foreground bg-white text-foreground px-4 py-1 font-bold text-sm mb-4">
+            <span className="inline-block rounded-full bg-white/15 text-white px-4 py-1.5 font-semibold text-xs tracking-[0.12em] mb-4">
               FOR LOCAL BUSINESSES
             </span>
             <h2 className="text-3xl md:text-4xl max-w-lg mb-4">
@@ -348,7 +348,7 @@ export function Landing() {
             </p>
 
             <div className="grid md:grid-cols-[1fr_auto] gap-4 items-start mb-6">
-              <div className="rounded-[1.25rem] border-[3px] border-foreground bg-white text-foreground px-4 py-3 font-semibold text-sm max-w-md">
+              <div className="rounded-xl bg-white/95 text-foreground px-4 py-3 font-semibold text-sm max-w-md">
                 ⚡ Sign up, set up your stamp card, and you're live to neighbours straight away — no waiting.
               </div>
               <Link to="/signup/owner">

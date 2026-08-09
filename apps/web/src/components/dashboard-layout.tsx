@@ -23,11 +23,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (primaryRole === 'staff') return <Navigate to="/owner/scan" replace />
 
   return (
-    <div className="min-h-screen bg-[#F7ECDC] md:flex">
-      <aside className="border-b border-black/5 bg-[#F7ECDC] p-3 md:flex md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r md:p-5">
+    <div className="min-h-screen bg-[#f7f3eb] md:flex">
+      <aside className="border-b border-[#30442d]/10 bg-[#fffdf9] p-3 md:flex md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-8">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
-          <span className="font-display font-extrabold text-lg text-[#1a1a1a]">The Loyalty Loop</span>
+          <span className="font-display text-base text-[#30442d]">The Loyalty Loop</span>
         </div>
 
         <nav aria-label="Customer navigation" className="mt-3 flex gap-1 overflow-x-auto pb-1 md:mt-0 md:flex-col md:overflow-visible md:pb-0">
@@ -38,7 +38,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               end={end}
               className={({ isActive }) =>
                 'flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-base ' +
-                (isActive ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
+                (isActive ? 'bg-[#30442d] text-white shadow-sm' : 'text-[#30442d]/70 hover:bg-[#f1ece2]')
               }
             >
               <Icon className="h-5 w-5" />
@@ -62,7 +62,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="w-full flex-1 p-4 sm:p-6 md:max-w-5xl md:p-8">
+      <main className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
         {children}
         <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-[#1a1a1a]/50">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
@@ -74,7 +74,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       <button
         title="Security"
-        className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-[#3B2A1E] text-[#F6AF23] flex items-center justify-center shadow-lg hover:brightness-110 transition-all md:bottom-6 md:right-6 md:h-14 md:w-14"
+        className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-[#30442d] text-[#f7f3eb] flex items-center justify-center shadow-lg hover:brightness-110 transition-all md:bottom-6 md:right-6 md:h-14 md:w-14"
       >
         <Shield className="h-6 w-6" />
       </button>

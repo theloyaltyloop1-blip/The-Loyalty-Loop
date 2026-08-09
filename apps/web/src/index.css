@@ -1,26 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 @import 'tailwindcss';
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
 
 @theme {
-  --font-display: 'Baloo 2', sans-serif;
-  --font-body: 'Quicksand', sans-serif;
+  --font-display: 'Libre Baskerville', Georgia, serif;
+  --font-body: 'DM Sans', Arial, sans-serif;
 
-  --color-background: #f9ede2;
-  --color-foreground: #40281c;
-  --color-card: #fdf9f5;
-  --color-primary: #ee5a2c;
-  --color-primary-glow: #f27b52;
-  --color-secondary: #f0dcc0;
-  --color-accent: #f6af23;
-  --color-fun-green: #30a66f;
-  --color-fun-violet: #9069d3;
+  --color-background: #f7f3eb;
+  --color-foreground: #30442d;
+  --color-card: #fffdf9;
+  --color-primary: #bb622a;
+  --color-primary-glow: #ce7d47;
+  --color-secondary: #ebe3d4;
+  --color-accent: #d9aa58;
+  --color-fun-green: #5f8067;
+  --color-fun-violet: #73856f;
   --color-destructive: #dc2626;
-  --color-border: #e0c4a8;
+  --color-border: #ded6c9;
 
-  --radius-default: 1.25rem;
+  --radius-default: 0.875rem;
 
-  --shadow-sticker: 3px 3px 0 0 rgb(64 40 28 / 0.12);
-  --shadow-sticker-lifted: 6px 6px 0 0 rgb(64 40 28 / 0.12);
+  --shadow-sticker: 0 1px 2px rgb(48 68 45 / 0.06), 0 8px 24px rgb(48 68 45 / 0.05);
+  --shadow-sticker-lifted: 0 4px 8px rgb(48 68 45 / 0.08), 0 16px 32px rgb(48 68 45 / 0.08);
 }
 
 @layer base {
@@ -38,6 +38,12 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    font-weight: 700;
+    font-weight: 400;
+    letter-spacing: -0.035em;
+  }
+
+  ::selection {
+    background: #d9aa58;
+    color: #30442d;
   }
 }
