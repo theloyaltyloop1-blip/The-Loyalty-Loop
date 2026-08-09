@@ -1,0 +1,8 @@
+{
+  "name": "legal-pdfs",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  }
+}

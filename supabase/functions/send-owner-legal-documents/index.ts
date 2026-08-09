@@ -143,8 +143,9 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!emailRes.ok) {
-      console.error(await emailRes.text());
-      return new Response(JSON.stringify({ sent: false, reason: "Email provider rejected the message" }), { status: 502, headers: jsonHeaders });
+      const errText = await emailRes.text();
+      console.error(errText);
+      return new Response(JSON.stringify({ sent: false, reason: "Email provider rejected the message", debug: errText, fromUsed: RESEND_FROM_EMAIL }), { status: 502, headers: jsonHeaders });
     }
 
     return new Response(JSON.stringify({ sent: true }), { headers: jsonHeaders });
