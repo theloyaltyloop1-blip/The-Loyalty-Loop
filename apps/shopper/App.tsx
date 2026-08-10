@@ -1,37 +1,56 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native'
+import QRCode from 'react-native-qrcode-svg'
+import type { Session } from '@supabase/supabase-js'
+import { hasSupabaseConfig, supabase } from './src/supabase'
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <View style={styles.mark}><Text style={styles.markText}>↻</Text></View>
-      <Text style={styles.eyebrow}>THE LOYALTY LOOP</Text>
-      <Text style={styles.title}>Local rewards,{"\n"}in your pocket.</Text>
-      <Text style={styles.copy}>The shopper app is being prepared. Soon you’ll be able to collect stamps, unlock rewards and keep your high street close.</Text>
-      <StatusBar style="dark" />
-    </View>
-  );
+type Business = { id: string; name: string; category?: string | null; description?: string | null; address?: string | null; brand_color?: string; logo_url?: string | null; cover_url?: string | null; loyalty_type?: string; loyalty_config?: { stamps_required?: number } }
+type Membership = { business_id: string; stamp_count: number; points_balance: number }
+type Reward = { id: string; title: string; short_code: string; qr_token: string; expires_at?: string | null; redeemed_at?: string | null; business?: { name: string; brand_color?: string; logo_url?: string | null } | null }
+
+const green = '#30442d'; const orange = '#bd682c'; const cream = '#f7f3eb'
+const isShopper = (roles: string[]) => roles.includes('consumer') && !roles.some((role) => ['business_owner', 'staff', 'brand_head'].includes(role))
+
+function Button({ title, onPress, secondary, disabled }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean }) {
+  return <Pressable disabled={disabled} onPress={onPress} style={[styles.button, secondary && styles.buttonSecondary, disabled && styles.disabled]}><Text style={[styles.buttonText, secondary && styles.buttonTextSecondary]}>{title}</Text></Pressable>
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f7f3eb',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  mark: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#30442d',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-  },
-  markText: { color: '#d9aa58', fontSize: 36, fontWeight: '700' },
-  eyebrow: { color: '#bb622a', fontSize: 12, fontWeight: '700', letterSpacing: 1.6, marginBottom: 14 },
-  title: { color: '#30442d', fontSize: 38, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
-  copy: { color: '#5f665d', fontSize: 17, lineHeight: 26, marginTop: 20, maxWidth: 340 },
-});
+function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
+  const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn'); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [name, setName] = useState(''); const [busy, setBusy] = useState(false)
+  async function submit() {
+    if (!email.trim() || password.length < 6 || (mode === 'signUp' && !name.trim())) return Alert.alert('Check your details', 'Enter your name, email and a password of at least 6 characters.')
+    setBusy(true)
+    try {
+      if (mode === 'signUp') {
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: { first_name: name.trim(), intent: 'consumer', legal_accepted: true } } })
+        if (error) throw error
+        if (data.session) onSession(data.session); else Alert.alert('Check your email', 'Confirm your email address, then sign in to start collecting rewards.')
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password }); if (error) throw error; onSession(data.session)
+      }
+    } catch (e) { Alert.alert('Could not continue', e instanceof Error ? e.message : 'Please try again.') } finally { setBusy(false) }
+  }
+  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled"><View style={styles.mark}><Text style={styles.markText}>↻</Text></View><Text style={styles.eyebrow}>THE LOYALTY LOOP</Text><Text style={styles.hero}>Local rewards,{"\n"}in your pocket.</Text><Text style={styles.copy}>Collect loyalty rewards from the places you love.</Text><View style={styles.card}>{mode === 'signUp' && <TextInput value={name} onChangeText={setName} placeholder="First name" style={styles.input} autoCapitalize="words" />}<TextInput value={email} onChangeText={setEmail} placeholder="Email address" style={styles.input} keyboardType="email-address" autoCapitalize="none" /><TextInput value={password} onChangeText={setPassword} placeholder="Password" style={styles.input} secureTextEntry /><Button title={busy ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Create shopper account'} onPress={submit} disabled={busy} /><Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}><Text style={styles.link}>{mode === 'signIn' ? 'New here? Create an account' : 'Already have an account? Sign in'}</Text></Pressable></View><Text style={styles.small}>Business or staff account? Use The Loyalty Loop for Business app.</Text></ScrollView></SafeAreaView>
+}
+
+function ShopCard({ business, onPress }: { business: Business; onPress: () => void }) { return <Pressable onPress={onPress} style={styles.shopCard}>{business.cover_url ? <Image source={{ uri: business.cover_url }} style={styles.cover} /> : <View style={[styles.cover, { backgroundColor: business.brand_color || green }]} /> }<View style={styles.shopContent}>{business.logo_url ? <Image source={{ uri: business.logo_url }} style={styles.logo} /> : <View style={[styles.logo, { backgroundColor: business.brand_color || orange }]}><Text style={styles.logoLetter}>{business.name[0]}</Text></View>}<View style={{ flex: 1 }}><Text style={styles.shopName}>{business.name}</Text><Text style={styles.muted}>{business.category || 'Local business'}{business.address ? ` · ${business.address}` : ''}</Text></View></View></Pressable> }
+
+function ShopDetail({ business, userId, membership, onBack, refresh }: { business: Business; userId: string; membership?: Membership; onBack: () => void; refresh: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false); const threshold = business.loyalty_config?.stamps_required || 10; const value = business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0; const label = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
+  async function join() { setBusy(true); try { const { error } = await supabase.from('memberships').upsert({ user_id: userId, business_id: business.id }, { onConflict: 'user_id,business_id' }); if (error) throw error; await refresh(); Alert.alert('You are in!', `${business.name} has been added to your loyalty cards.`) } catch (e) { Alert.alert('Could not join', e instanceof Error ? e.message : 'Please try again.') } finally { setBusy(false) } }
+  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.screen}><Pressable onPress={onBack}><Text style={styles.back}>‹ Back to discover</Text></Pressable><View style={[styles.detailCover, { backgroundColor: business.brand_color || green }]}>{business.cover_url && <Image source={{ uri: business.cover_url }} style={styles.detailCover} />}</View><Text style={styles.title}>{business.name}</Text><Text style={styles.muted}>{business.category || 'Local business'}{business.address ? ` · ${business.address}` : ''}</Text><Text style={styles.description}>{business.description || 'Collect rewards each time you visit.'}</Text>{membership ? <View style={[styles.loyaltyCard, { backgroundColor: business.brand_color || green }]}><Text style={styles.loyaltyLabel}>YOUR LOYALTY CARD</Text><Text style={styles.progress}>{value} <Text style={styles.progressSmall}>/ {threshold} {label}</Text></Text><View style={styles.bar}><View style={[styles.barFill, { width: `${Math.min(100, value / threshold * 100)}%` }]} /></View><View style={styles.qr}><QRCode value={`loyaltyloop:customer:${userId}`} size={150} /><Text style={styles.qrText}>Show this QR code when you pay</Text></View></View> : <Button title={busy ? 'Joining…' : 'Join this loyalty card'} onPress={join} disabled={busy} />}<Text style={styles.sectionTitle}>How it works</Text><Text style={styles.description}>Earn a {label.slice(0, -1)} every time you visit. When you reach the target, your reward will appear in the Rewards tab.</Text></ScrollView></SafeAreaView>
+}
+
+function AppHome({ session }: { session: Session }) {
+  const [tab, setTab] = useState<'discover' | 'rewards' | 'profile'>('discover'); const [businesses, setBusinesses] = useState<Business[]>([]); const [memberships, setMemberships] = useState<Membership[]>([]); const [rewards, setRewards] = useState<Reward[]>([]); const [selected, setSelected] = useState<Business | null>(null); const [loading, setLoading] = useState(true)
+  const userId = session.user.id
+  const load = async () => { setLoading(true); try { const [shops, cards, earned] = await Promise.all([supabase.from('businesses').select('*').eq('is_active', true).order('created_at'), supabase.from('memberships').select('*').eq('user_id', userId), supabase.from('rewards').select('id,user_id,business_id,title,qr_token,short_code,expires_at,redeemed_at,created_at,business:businesses(name,brand_color,logo_url)').eq('user_id', userId).order('created_at', { ascending: false })]); if (shops.error) throw shops.error; if (cards.error) throw cards.error; if (earned.error) throw earned.error; setBusinesses(shops.data || []); setMemberships(cards.data || []); setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business }))) } catch (e) { Alert.alert('Could not refresh', e instanceof Error ? e.message : 'Please try again.') } finally { setLoading(false) } }
+  useEffect(() => { load() }, [])
+  if (selected) return <ShopDetail business={selected} userId={userId} membership={memberships.find((m) => m.business_id === selected.id)} onBack={() => setSelected(null)} refresh={load} />
+  const activeRewards = rewards.filter((r) => !r.redeemed_at)
+  return <SafeAreaView style={styles.safe}><StatusBar barStyle="dark-content" /><ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={green} />}>{tab === 'discover' && <><Text style={styles.eyebrow}>WELCOME BACK</Text><Text style={styles.title}>Find your next{`\n`}local favourite.</Text><Text style={styles.description}>Join a loyalty card, collect progress and unlock rewards.</Text><Text style={styles.sectionTitle}>Nearby businesses</Text>{businesses.map((business) => <ShopCard key={business.id} business={business} onPress={() => setSelected(business)} />)}{!loading && businesses.length === 0 && <Text style={styles.empty}>No businesses are live yet. Pull down to refresh.</Text>}</>}{tab === 'rewards' && <><Text style={styles.eyebrow}>YOUR REWARDS</Text><Text style={styles.title}>Ready to enjoy.</Text>{activeRewards.length ? activeRewards.map((reward) => <View key={reward.id} style={styles.reward}><Text style={styles.rewardShop}>{reward.business?.name || 'The Loyalty Loop shop'}</Text><Text style={styles.rewardTitle}>{reward.title}</Text><Text style={styles.muted}>Code: {reward.short_code}</Text><View style={styles.rewardQr}><QRCode value={`loyaltyloop:reward:${reward.qr_token}`} size={120} /></View></View>) : <Text style={styles.empty}>Your unlocked rewards will appear here. Keep collecting!</Text>}</>}{tab === 'profile' && <><Text style={styles.eyebrow}>YOUR ACCOUNT</Text><Text style={styles.title}>{session.user.user_metadata?.first_name || 'Shopper'}</Text><Text style={styles.description}>{session.user.email}</Text><View style={styles.card}><Text style={styles.sectionTitle}>Your customer card</Text><QRCode value={`loyaltyloop:customer:${userId}`} size={160} /><Text style={[styles.small, { marginTop: 14 }]}>Show this at a participating shop to collect rewards.</Text></View><Button title="Sign out" secondary onPress={() => supabase.auth.signOut()} /></>}</ScrollView><View style={styles.tabs}>{(['discover', 'rewards', 'profile'] as const).map((item) => <Pressable key={item} style={styles.tab} onPress={() => setTab(item)}><Text style={[styles.tabText, tab === item && styles.tabActive]}>{item === 'discover' ? 'Discover' : item === 'rewards' ? 'Rewards' : 'Profile'}</Text></Pressable>)}</View></SafeAreaView>
+}
+
+export default function App() { const [session, setSession] = useState<Session | null>(null); const [checking, setChecking] = useState(true); const [allowed, setAllowed] = useState(false); useEffect(() => { supabase.auth.getSession().then(({ data }) => { setSession(data.session); setChecking(false) }); const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next)); return () => data.subscription.unsubscribe() }, []); useEffect(() => { if (!session) { setAllowed(false); return } ; (async () => { await supabase.rpc('ensure_current_user_bootstrap'); const { data } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id); const ok = isShopper((data || []).map((row: any) => row.role)); setAllowed(ok); if (!ok) { Alert.alert('Use the business app', 'This account is an owner or staff account. Please sign in to The Loyalty Loop for Business instead.'); await supabase.auth.signOut() } })() }, [session?.user.id]); if (!hasSupabaseConfig) return <SafeAreaView style={styles.safe}><View style={styles.auth}><Text style={styles.hero}>App configuration needed</Text><Text style={styles.copy}>This build needs its Expo Supabase environment variables before it can connect.</Text></View></SafeAreaView>; if (checking || (session && !allowed)) return <SafeAreaView style={styles.safe}><View style={styles.loading}><ActivityIndicator size="large" color={green} /></View></SafeAreaView>; return session ? <AppHome session={session} /> : <AuthScreen onSession={setSession} /> }
+
+const styles = StyleSheet.create({ safe:{flex:1,backgroundColor:cream},auth:{flexGrow:1,padding:28,justifyContent:'center'},screen:{padding:22,paddingBottom:96},loading:{flex:1,alignItems:'center',justifyContent:'center'},mark:{width:62,height:62,borderRadius:31,backgroundColor:green,alignItems:'center',justifyContent:'center',marginBottom:28},markText:{color:'#e4b666',fontSize:34,fontWeight:'800'},eyebrow:{color:orange,fontWeight:'800',fontSize:12,letterSpacing:1.5,marginBottom:10},hero:{color:green,fontSize:38,fontWeight:'800',lineHeight:44,letterSpacing:-1},title:{color:green,fontSize:31,fontWeight:'800',lineHeight:37,letterSpacing:-.7},copy:{color:'#657060',fontSize:16,lineHeight:24,marginTop:16},description:{color:'#657060',fontSize:16,lineHeight:24,marginTop:10},card:{backgroundColor:'#fff',borderRadius:18,padding:18,marginTop:26,gap:12,shadowColor:'#30442d',shadowOpacity:.08,shadowRadius:16,elevation:2},input:{backgroundColor:'#f4f1eb',borderRadius:11,paddingHorizontal:14,paddingVertical:14,color:'#243021',fontSize:16},button:{backgroundColor:green,borderRadius:12,alignItems:'center',padding:15,marginTop:2},buttonSecondary:{backgroundColor:'transparent',borderWidth:1,borderColor:green,marginTop:18},buttonText:{color:'#fff',fontWeight:'800',fontSize:16},buttonTextSecondary:{color:green},disabled:{opacity:.55},link:{color:orange,textAlign:'center',fontWeight:'700',marginTop:8},small:{color:'#7a8178',fontSize:13,lineHeight:19,textAlign:'center',marginTop:22},sectionTitle:{fontSize:19,fontWeight:'800',color:green,marginTop:28,marginBottom:12},shopCard:{backgroundColor:'#fff',borderRadius:18,overflow:'hidden',marginBottom:14,elevation:2,shadowColor:'#30442d',shadowOpacity:.07,shadowRadius:12},cover:{height:102,width:'100%'},shopContent:{padding:13,flexDirection:'row',gap:12,alignItems:'center'},logo:{width:42,height:42,borderRadius:21,alignItems:'center',justifyContent:'center'},logoLetter:{color:'#fff',fontWeight:'800',fontSize:18},shopName:{fontSize:17,fontWeight:'800',color:green},muted:{color:'#798078',fontSize:13,lineHeight:19},empty:{color:'#687269',fontSize:16,lineHeight:24,marginTop:22},back:{color:orange,fontWeight:'800',fontSize:15,marginBottom:18},detailCover:{height:170,width:'100%',borderRadius:20,overflow:'hidden',marginBottom:20},loyaltyCard:{borderRadius:22,padding:22,marginTop:24},loyaltyLabel:{color:'#e9e7d8',fontWeight:'800',fontSize:11,letterSpacing:1.4},progress:{color:'#fff',fontWeight:'800',fontSize:39,marginTop:14},progressSmall:{fontSize:17,fontWeight:'600'},bar:{height:9,borderRadius:6,backgroundColor:'rgba(255,255,255,.25)',marginTop:14,overflow:'hidden'},barFill:{height:'100%',backgroundColor:'#e4b666',borderRadius:6},qr:{backgroundColor:'#fff',borderRadius:16,padding:16,alignItems:'center',marginTop:24},qrText:{color:green,fontWeight:'700',fontSize:13,marginTop:13},reward:{backgroundColor:'#fff',borderRadius:20,padding:20,marginTop:18,elevation:2,shadowColor:'#30442d',shadowOpacity:.08,shadowRadius:12},rewardShop:{color:orange,fontWeight:'800',fontSize:12,textTransform:'uppercase',letterSpacing:1},rewardTitle:{color:green,fontSize:23,fontWeight:'800',marginTop:7},rewardQr:{alignItems:'center',marginTop:18},tabs:{position:'absolute',left:0,right:0,bottom:0,flexDirection:'row',backgroundColor:'#fff',borderTopWidth:1,borderTopColor:'#e6e1d8',paddingVertical:12},tab:{flex:1,alignItems:'center'},tabText:{color:'#81877f',fontWeight:'700',fontSize:13},tabActive:{color:green} })
