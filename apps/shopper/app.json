@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "The Loyalty Loop",
-    "slug": "the-loyalty-loop-shopper",
+    "slug": "localoop-rewards",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,6 +22,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "owner": "the-loyalty-loop",
+    "extra": {
+      "eas": {
+        "projectId": "474f40e3-c739-4317-8a94-12a73795ef04"
+      }
     }
   }
 }

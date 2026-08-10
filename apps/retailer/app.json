@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "The Loyalty Loop for Business",
-    "slug": "the-loyalty-loop-retailer",
+    "slug": "localoop-business",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,6 +22,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "owner": "the-loyalty-loop",
+    "extra": {
+      "eas": {
+        "projectId": "de0702d2-219a-435b-8577-81546c5a097f"
+      }
     }
   }
 }
