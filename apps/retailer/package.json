@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@loyalty-loop/design-tokens": "*",
     "@supabase/supabase-js": "^2.112.2",
     "expo": "~57.0.11",
     "expo-camera": "^57.0.3",

@@ -22,12 +22,12 @@ interface SettingsData {
 }
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B]'
+  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-foreground placeholder:text-foreground/35 outline-none focus:border-primary'
 
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-5">
-      {title && <h3 className="font-display font-bold text-[#1a1a1a] mb-4">{title}</h3>}
+    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-5">
+      {title && <h3 className="font-display font-bold text-foreground mb-4">{title}</h3>}
       {children}
     </div>
   )
@@ -36,7 +36,7 @@ function SectionCard({ title, children }: { title?: string; children: React.Reac
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block mb-4">
-      <span className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">{label}</span>
+      <span className="block text-sm font-semibold text-foreground mb-1.5">{label}</span>
       {children}
     </label>
   )
@@ -121,21 +121,21 @@ export function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Profile</p>
-      <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-6">Your account</h1>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Profile</p>
+      <h1 className="text-3xl font-display font-extrabold text-foreground mb-6">Your account</h1>
 
       <SectionCard title="Your stamp card code">
-        <p className="text-sm text-[#1a1a1a]/50 mb-4">
+        <p className="text-sm text-foreground/50 mb-4">
           Show this QR code or manual code to staff at any shop if they can't scan it directly.
         </p>
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Manual code</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/40 mb-1">Manual code</p>
             <div className="flex items-center gap-2">
-              <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a]">{profile?.stamp_code}</p>
-              <button onClick={handleCopyCode} className="text-[#1a1a1a]/40 hover:text-[#1a1a1a]">
-                {copied ? <Check className="h-4 w-4 text-[#3FA34D]" /> : <Copy className="h-4 w-4" />}
+              <p className="font-mono font-bold text-lg tracking-widest text-foreground">{profile?.stamp_code}</p>
+              <button onClick={handleCopyCode} className="text-foreground/40 hover:text-foreground">
+                {copied ? <Check className="h-4 w-4 text-fun-green" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -178,7 +178,7 @@ export function ProfilePage() {
         <button
           onClick={handleSaveProfile}
           disabled={saving}
-          className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
         >
           <User className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
         </button>
@@ -186,7 +186,7 @@ export function ProfilePage() {
 
       {settings && (
         <SectionCard title="Notifications">
-          <div className="flex items-center gap-2 mb-4 text-[#1a1a1a]/50">
+          <div className="flex items-center gap-2 mb-4 text-foreground/50">
             <Bell className="h-4 w-4" />
             <p className="text-sm">Choose what shops can notify you about.</p>
           </div>
@@ -199,14 +199,14 @@ export function ProfilePage() {
           ).map(([key, label, desc]) => (
             <div key={key} className="flex items-center justify-between py-3 border-t border-black/5 first:border-t-0">
               <div>
-                <p className="font-semibold text-[#1a1a1a]">{label}</p>
-                <p className="text-xs text-[#1a1a1a]/50">{desc}</p>
+                <p className="font-semibold text-foreground">{label}</p>
+                <p className="text-xs text-foreground/50">{desc}</p>
               </div>
               <button
                 onClick={() => handleToggleSetting(key)}
                 className={
                   'h-7 w-12 rounded-full transition-colors relative shrink-0 ' +
-                  (settings[key] ? 'bg-[#E8703B]' : 'bg-black/10')
+                  (settings[key] ? 'bg-primary' : 'bg-black/10')
                 }
               >
                 <span
@@ -222,13 +222,13 @@ export function ProfilePage() {
       )}
 
       <SectionCard title="Invite a friend">
-        <p className="text-sm text-[#1a1a1a]/55 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
-        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#E8703B] px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
+        <p className="text-sm text-foreground/55 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
+        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-primary px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
       </SectionCard>
 
       <button
         onClick={signOut}
-        className="flex items-center gap-2 rounded-full border border-black/15 px-6 h-12 font-semibold text-[#1a1a1a]"
+        className="flex items-center gap-2 rounded-full border border-black/15 px-6 h-12 font-semibold text-foreground"
       >
         <LogOut className="h-4 w-4" /> Sign out
       </button>

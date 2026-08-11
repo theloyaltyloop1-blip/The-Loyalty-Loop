@@ -25,21 +25,21 @@ function Delta({ current, prev }: { current: number; prev: number }) {
   const pct = pctChange(current, prev)
   if (pct === null) {
     return (
-      <span className="flex items-center gap-1 text-xs font-bold text-[#3FA34D]">
+      <span className="flex items-center gap-1 text-xs font-bold text-fun-green">
         <TrendingUp className="h-3.5 w-3.5" /> new
       </span>
     )
   }
   if (pct === 0) {
     return (
-      <span className="flex items-center gap-1 text-xs font-bold text-[#1a1a1a]/40">
+      <span className="flex items-center gap-1 text-xs font-bold text-foreground/40">
         <Minus className="h-3.5 w-3.5" /> flat
       </span>
     )
   }
   const up = pct > 0
   return (
-    <span className={'flex items-center gap-1 text-xs font-bold ' + (up ? 'text-[#3FA34D]' : 'text-red-500')}>
+    <span className={'flex items-center gap-1 text-xs font-bold ' + (up ? 'text-fun-green' : 'text-red-500')}>
       {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
       {up ? '+' : ''}
       {pct}%
@@ -61,15 +61,15 @@ function StatTile({
   color: string
 }) {
   return (
-    <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5">
+    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="h-9 w-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + '22' }}>
           <Icon className="h-4.5 w-4.5" style={{ color }} />
         </span>
         <Delta current={value} prev={prev} />
       </div>
-      <p className="text-3xl font-display font-extrabold text-[#1a1a1a]">{value}</p>
-      <p className="text-sm text-[#1a1a1a]/50 mt-0.5">{label}</p>
+      <p className="text-3xl font-display font-extrabold text-foreground">{value}</p>
+      <p className="text-sm text-foreground/50 mt-0.5">{label}</p>
     </div>
   )
 }
@@ -98,19 +98,19 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [generate])
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-[#FFF3E4] to-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 border border-[#F6AF23]/20">
+    <div className="rounded-2xl bg-gradient-to-br from-[#FFF3E4] to-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 border border-accent/20">
       <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="h-4 w-4 text-[#E8703B]" />
-        <p className="font-display font-bold text-[#1a1a1a]">What changed in the last {period} days</p>
+        <Sparkles className="h-4 w-4 text-primary" />
+        <p className="font-display font-bold text-foreground">What changed in the last {period} days</p>
       </div>
       {loading ? (
-        <p className="text-sm text-[#1a1a1a]/40">Thinking…</p>
+        <p className="text-sm text-foreground/40">Thinking…</p>
       ) : error ? (
-        <p className="text-sm text-[#1a1a1a]/50">{error}</p>
+        <p className="text-sm text-foreground/50">{error}</p>
       ) : (
-        <p className="text-sm text-[#1a1a1a]/80 leading-relaxed">{summary}</p>
+        <p className="text-sm text-foreground/80 leading-relaxed">{summary}</p>
       )}
-      <button onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-[#C9622E] disabled:opacity-40">
+      <button onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-primary-hover disabled:opacity-40">
         Regenerate
       </button>
     </div>
@@ -143,21 +143,21 @@ function DeepBusinessReportCard({
   }
 
   return (
-    <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
+    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
         <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-[#E8703B]" />
-          <p className="font-display font-bold text-[#1a1a1a]">Deep business report</p>
+          <Search className="h-4 w-4 text-primary" />
+          <p className="font-display font-bold text-foreground">Deep business report</p>
         </div>
         <button
           onClick={handleResearch}
           disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-[#1a1a1a] text-white text-sm font-bold px-4 h-9 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-foreground text-white text-sm font-bold px-4 h-9 disabled:opacity-50"
         >
           {loading ? 'Researching…' : report ? 'Refresh research' : 'Research my shop online'}
         </button>
       </div>
-      <p className="text-sm text-[#1a1a1a]/50 mb-4">
+      <p className="text-sm text-foreground/50 mb-4">
         Scans Google reviews and your shop's web presence, then writes up what customers are saying and where
         to improve.
       </p>
@@ -166,7 +166,7 @@ function DeepBusinessReportCard({
 
       {report && (
         <>
-          <p className="text-sm text-[#1a1a1a]/80 leading-relaxed whitespace-pre-line mb-4">{report.report}</p>
+          <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line mb-4">{report.report}</p>
           {report.sources.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {report.sources.map((s) => (
@@ -175,7 +175,7 @@ function DeepBusinessReportCard({
                   href={s.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-xs font-semibold text-[#C9622E] bg-white border border-black/10 rounded-full px-3 py-1.5 hover:border-[#E8703B]/50"
+                  className="flex items-center gap-1 text-xs font-semibold text-primary-hover bg-white border border-black/10 rounded-full px-3 py-1.5 hover:border-primary/50"
                 >
                   {s.title.length > 40 ? s.title.slice(0, 40) + '…' : s.title} <ExternalLink className="h-3 w-3" />
                 </a>
@@ -218,15 +218,15 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
   }
 
   return (
-    <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
+    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
       <div className="flex items-center gap-2 mb-4">
-        <MessageCircle className="h-4 w-4 text-[#E8703B]" />
-        <p className="font-display font-bold text-[#1a1a1a]">Business coach</p>
+        <MessageCircle className="h-4 w-4 text-primary" />
+        <p className="font-display font-bold text-foreground">Business coach</p>
       </div>
 
       <div ref={scrollRef} className="flex flex-col gap-3 max-h-80 overflow-y-auto mb-4 pr-1">
         {messages.length === 0 && (
-          <p className="text-sm text-[#1a1a1a]/40">
+          <p className="text-sm text-foreground/40">
             Ask anything — "How do I get more repeat visits?", "Is my reward threshold too high?"...
           </p>
         )}
@@ -236,21 +236,21 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
             className={
               'rounded-xl px-4 py-2.5 text-sm max-w-[90%] ' +
               (m.role === 'user'
-                ? 'bg-[#E8703B] text-white self-end'
-                : 'bg-white text-[#1a1a1a] self-start border border-black/5')
+                ? 'bg-primary text-white self-end'
+                : 'bg-white text-foreground self-start border border-black/5')
             }
           >
             {m.content}
           </div>
         ))}
-        {sending && <div className="rounded-xl px-4 py-2.5 text-sm bg-white text-[#1a1a1a]/40 self-start">Thinking…</div>}
+        {sending && <div className="rounded-xl px-4 py-2.5 text-sm bg-white text-foreground/40 self-start">Thinking…</div>}
       </div>
 
       {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
 
       <div className="flex items-center gap-2">
         <input
-          className="h-11 flex-1 rounded-full border border-black/10 bg-white px-4 text-sm outline-none focus:border-[#E8703B]"
+          className="h-11 flex-1 rounded-full border border-black/10 bg-white px-4 text-sm outline-none focus:border-primary"
           placeholder="Ask the coach…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -259,7 +259,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
         <button
           onClick={handleSend}
           disabled={sending || !input.trim()}
-          className="h-11 w-11 rounded-full bg-[#E8703B] text-white flex items-center justify-center disabled:opacity-40 shrink-0"
+          className="h-11 w-11 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-40 shrink-0"
         >
           <Send className="h-4 w-4" />
         </button>
@@ -305,18 +305,18 @@ export function OwnerAnalytics() {
     <OwnerLayout>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Analytics</p>
-          <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a]">Know your customers</h1>
+          <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Analytics</p>
+          <h1 className="text-3xl font-display font-extrabold text-foreground">Know your customers</h1>
         </div>
         {business && (
-          <div className="flex items-center gap-1 bg-[#FBF6EC] rounded-full p-1 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center gap-1 bg-card rounded-full p-1 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
             {PERIODS.map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={
                   'px-4 h-9 rounded-full text-sm font-bold transition-colors ' +
-                  (period === p ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/50 hover:text-[#1a1a1a]')
+                  (period === p ? 'bg-primary text-white' : 'text-foreground/50 hover:text-foreground')
                 }
               >
                 {p}d
@@ -327,12 +327,12 @@ export function OwnerAnalytics() {
       </div>
 
       {!business ? (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/50">Set up a shop to see analytics.</p>
+        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
+          <p className="text-foreground/50">Set up a shop to see analytics.</p>
         </div>
       ) : statsLoading || !stats || !totals ? (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/40">Loading stats…</p>
+        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
+          <p className="text-foreground/40">Loading stats…</p>
         </div>
       ) : (
         <>
@@ -344,8 +344,8 @@ export function OwnerAnalytics() {
                 className={
                   'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px capitalize transition-colors ' +
                   (view === key
-                    ? 'border-[#1a1a1a] text-[#1a1a1a]'
-                    : 'border-transparent text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70')
+                    ? 'border-foreground text-foreground'
+                    : 'border-transparent text-foreground/40 hover:text-foreground/70')
                 }
               >
                 {key}
@@ -375,8 +375,8 @@ export function OwnerAnalytics() {
                 <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} color="#3FA34D" />
               </div>
 
-              <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
-                <p className="font-display font-bold text-[#1a1a1a] mb-4">All-time totals</p>
+              <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
+                <p className="font-display font-bold text-foreground mb-4">All-time totals</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
                     ['Members', totals.total_members],
@@ -385,15 +385,15 @@ export function OwnerAnalytics() {
                     ['Rewards redeemed', totals.total_rewards_redeemed],
                   ].map(([label, value]) => (
                     <div key={label as string}>
-                      <p className="text-2xl font-display font-extrabold text-[#1a1a1a]">{value}</p>
-                      <p className="text-xs text-[#1a1a1a]/50">{label}</p>
+                      <p className="text-2xl font-display font-extrabold text-foreground">{value}</p>
+                      <p className="text-xs text-foreground/50">{label}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
-                <p className="font-display font-bold text-[#1a1a1a] mb-4">This period vs. the last {period} days</p>
+              <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
+                <p className="font-display font-bold text-foreground mb-4">This period vs. the last {period} days</p>
                 <div className="flex flex-col divide-y divide-black/5">
                   {[
                     ['New members', stats.new_members, stats.new_members_prev],
@@ -403,9 +403,9 @@ export function OwnerAnalytics() {
                     ['Rewards redeemed', stats.rewards_redeemed, stats.rewards_redeemed_prev],
                   ].map(([label, cur, prev]) => (
                     <div key={label as string} className="flex items-center justify-between py-3 text-sm">
-                      <span className="text-[#1a1a1a]/70">{label}</span>
+                      <span className="text-foreground/70">{label}</span>
                       <div className="flex items-center gap-4">
-                        <span className="text-[#1a1a1a]/40">
+                        <span className="text-foreground/40">
                           {prev} → {cur}
                         </span>
                         <Delta current={cur as number} prev={prev as number} />

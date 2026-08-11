@@ -1,53 +1,38 @@
 /**
  * The Loyalty Loop — shared design tokens.
  * Single source of truth for colors/fonts/shape language across
- * apps/web (Tailwind), apps/owner-mobile, apps/consumer-mobile (NativeWind).
+ * apps/web (Tailwind), apps/retailer, apps/shopper.
  * See docs/LOYALTY-LOOP-DESIGN-SYSTEM.md for the source spec.
  */
 
 export const colors = {
-  background: '#F9EDE2',
-  foreground: '#40281C',
-  card: '#FDF9F5',
-  primary: '#EE5A2C',
-  primaryGlow: '#F27B52',
-  secondary: '#F0DCC0',
+  background: '#F7ECDC',
+  foreground: '#1a1a1a',
+  card: '#FBF6EC',
+  primary: '#E8703B',
+  primaryHover: '#C9622E',
   accent: '#F6AF23',
-  funGreen: '#30A66F',
-  funViolet: '#9069D3',
+  funGreen: '#3FA34D',
+  ink: '#40281C',
   destructive: '#DC2626',
-  border: '#E0C4A8',
-} as const;
-
-export const colorsHsl = {
-  background: '30 65% 93%',
-  foreground: '20 40% 18%',
-  card: '30 60% 97%',
-  primary: '16 85% 55%',
-  primaryGlow: '16 90% 65%',
-  secondary: '32 70% 88%',
-  accent: '40 92% 55%',
-  funGreen: '152 55% 42%',
-  funViolet: '262 55% 62%',
-  destructive: '0 72% 51%',
-  border: '25 40% 82%',
+  border: '#ded6c9',
 } as const;
 
 export const fonts = {
-  display: 'Baloo 2',
-  body: 'Quicksand',
+  display: 'Libre Baskerville',
+  body: 'DM Sans',
 } as const;
 
 export const radius = {
-  default: '1.25rem',
+  default: '0.875rem',
 } as const;
 
 export const shadow = {
-  sticker: '3px 3px 0 0 hsl(20 40% 18% / 0.12)',
-  stickerLifted: '6px 6px 0 0 hsl(20 40% 18% / 0.12)',
+  sticker: '0 1px 2px rgb(26 26 26 / 0.06), 0 8px 24px rgb(26 26 26 / 0.05)',
+  stickerLifted: '0 4px 8px rgb(26 26 26 / 0.08), 0 16px 32px rgb(26 26 26 / 0.08)',
 } as const;
 
-export const borderWidth = {
-  default: 3,
-  thick: 4,
+export const easing = {
+  out: 'cubic-bezier(0.23, 1, 0.32, 1)',
+  inOut: 'cubic-bezier(0.77, 0, 0.175, 1)',
 } as const;

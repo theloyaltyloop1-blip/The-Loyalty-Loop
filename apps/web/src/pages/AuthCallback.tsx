@@ -8,7 +8,7 @@ export function AuthCallback() {
   const { session, loading, rolesLoading, primaryRole } = useAuth()
 
   if (loading || rolesLoading) {
-    return <main className="grid min-h-screen place-items-center bg-[#F7ECDC] p-6 text-center text-[#1a1a1a]"><div><p className="font-display text-2xl font-extrabold">Finishing your sign-in…</p><p className="mt-2 text-sm text-[#1a1a1a]/55">Just a moment while we prepare your account.</p></div></main>
+    return <main className="grid min-h-screen place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-extrabold">Finishing your sign-in…</p><p className="mt-2 text-sm text-foreground/55">Just a moment while we prepare your account.</p></div></main>
   }
   if (!session) return <Navigate to="/login" replace />
   if (primaryRole === 'admin') return <Navigate to="/access" replace />

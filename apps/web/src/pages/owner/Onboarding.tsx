@@ -16,12 +16,12 @@ const STEPS = [
 ] as const
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B]'
+  'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-foreground placeholder:text-foreground/35 outline-none focus:border-primary'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block mb-4">
-      <span className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">{label}</span>
+      <span className="block text-sm font-semibold text-foreground mb-1.5">{label}</span>
       {children}
     </label>
   )
@@ -82,11 +82,11 @@ export function OwnerOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7ECDC] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-xl">
         <div className="flex items-center gap-2 justify-center mb-8">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
-          <span className="font-display font-extrabold text-lg text-[#1a1a1a]">The Loyalty Loop</span>
+          <span className="font-display font-extrabold text-lg text-foreground">The Loyalty Loop</span>
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-8">
@@ -96,28 +96,28 @@ export function OwnerOnboarding() {
                 className={
                   'h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm border-2 ' +
                   (i < step
-                    ? 'bg-[#3FA34D] border-[#3FA34D] text-white'
+                    ? 'bg-fun-green border-fun-green text-white'
                     : i === step
-                      ? 'bg-[#E8703B] border-[#E8703B] text-white'
-                      : 'bg-white border-black/10 text-[#1a1a1a]/30')
+                      ? 'bg-primary border-primary text-white'
+                      : 'bg-white border-black/10 text-foreground/30')
                 }
               >
                 {i < step ? <Check className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={'h-0.5 w-10 ' + (i < step ? 'bg-[#3FA34D]' : 'bg-black/10')} />
+                <div className={'h-0.5 w-10 ' + (i < step ? 'bg-fun-green' : 'bg-black/10')} />
               )}
             </React.Fragment>
           ))}
         </div>
 
-        <div className="rounded-3xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8">
-          <h1 className="text-2xl font-display font-extrabold text-[#1a1a1a] mb-1">
+        <div className="rounded-3xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8">
+          <h1 className="text-2xl font-display font-extrabold text-foreground mb-1">
             {step === 0 && "Let's set up your shop"}
             {step === 1 && 'Where are you?'}
             {step === 2 && 'Make it yours'}
           </h1>
-          <p className="text-sm text-[#1a1a1a]/50 mb-6">
+          <p className="text-sm text-foreground/50 mb-6">
             {step === 0 && 'The basics — you can change all of this later.'}
             {step === 1 && "Shown to customers on your shop page. It's fine to skip this and add it later."}
             {step === 2 && 'Pick a brand color and how customers will earn rewards.'}
@@ -180,7 +180,7 @@ export function OwnerOnboarding() {
 
           {step === 2 && (
             <>
-              <p className="text-sm font-semibold text-[#1a1a1a] mb-2">Brand color</p>
+              <p className="text-sm font-semibold text-foreground mb-2">Brand color</p>
               <div className="flex flex-wrap gap-2 mb-6">
                 {BRAND_COLORS.map((c) => (
                   <button
@@ -192,8 +192,8 @@ export function OwnerOnboarding() {
                 ))}
               </div>
 
-              <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Loyalty program type</p>
-              <p className="text-xs text-[#1a1a1a]/40 mb-3">You can change this any time.</p>
+              <p className="text-sm font-semibold text-foreground mb-1">Loyalty program type</p>
+              <p className="text-xs text-foreground/40 mb-3">You can change this any time.</p>
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {[
                   { value: 'stamp_card' as const, title: 'Stamps' },
@@ -206,8 +206,8 @@ export function OwnerOnboarding() {
                     className={
                       'rounded-xl border-2 py-3 font-bold text-sm ' +
                       (form.loyalty_type === opt.value
-                        ? 'border-[#E8703B] bg-white text-[#1a1a1a]'
-                        : 'border-black/10 bg-white/40 text-[#1a1a1a]/60')
+                        ? 'border-primary bg-white text-foreground'
+                        : 'border-black/10 bg-white/40 text-foreground/60')
                     }
                   >
                     {opt.title}
@@ -234,7 +234,7 @@ export function OwnerOnboarding() {
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="flex items-center gap-1.5 text-sm font-semibold text-[#1a1a1a]/50 disabled:opacity-0"
+              className="flex items-center gap-1.5 text-sm font-semibold text-foreground/50 disabled:opacity-0"
             >
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
@@ -243,7 +243,7 @@ export function OwnerOnboarding() {
               <button
                 onClick={() => setStep((s) => s + 1)}
                 disabled={!canContinue}
-                className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
               >
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
@@ -251,7 +251,7 @@ export function OwnerOnboarding() {
               <button
                 onClick={handleCreate}
                 disabled={creating}
-                className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
               >
                 {creating ? 'Creating…' : 'Go live'} <Check className="h-4 w-4" />
               </button>
@@ -259,7 +259,7 @@ export function OwnerOnboarding() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-[#1a1a1a]/40 mt-4">
+        <p className="text-center text-xs text-foreground/40 mt-4">
           Your shop goes live the moment you finish — no waiting for approval. You can add a logo, cover photo
           and gallery from Settings afterwards.
         </p>

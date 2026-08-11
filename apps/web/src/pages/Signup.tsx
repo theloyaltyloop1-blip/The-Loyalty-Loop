@@ -67,7 +67,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   if (checkEmailSent) {
     return (
       <AuthLayout title="Check your email">
-        <p className="text-[#1a1a1a] font-semibold">
+        <p className="text-foreground font-semibold">
           We've sent a confirmation link to {email}. Follow it to finish setting up your account.
         </p>
       </AuthLayout>
@@ -121,7 +121,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
         <button
           type="submit"
           disabled={loading}
-          className="h-14 rounded-lg bg-[#1a1a1a] text-white font-bold text-lg disabled:opacity-50"
+          className="h-14 rounded-lg bg-foreground text-white font-bold text-lg disabled:opacity-50"
         >
           {loading ? 'Creating account…' : asOwner ? 'Create shop account' : 'Sign up'}
         </button>

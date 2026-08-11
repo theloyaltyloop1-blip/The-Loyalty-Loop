@@ -6,6 +6,7 @@ node_modules/
 # Expo
 .expo/
 .expo-verify/
+credentials/
 dist/
 web-build/
 expo-env.d.ts

@@ -5,19 +5,19 @@ import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 export function AuthLayout({ title, children }: { title: string; children: React.ReactNode }) {
   const navigate = useNavigate()
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#EAEAE5] p-4">
-      <div className="w-full max-w-4xl rounded-md border border-[#d8d8d0] bg-white shadow-sm grid md:grid-cols-[420px_1fr] overflow-hidden">
-        <div className="bg-[#F8E4C6] flex items-center justify-center p-10">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-4xl rounded-2xl border border-black/10 bg-card shadow-sticker-lifted grid md:grid-cols-[420px_1fr] overflow-hidden">
+        <div className="bg-secondary flex items-center justify-center p-10">
           <img src={loyaltyLoopLogo} alt="The Loyalty Loop" className="w-full max-w-xs object-contain" />
         </div>
 
-        <div className="bg-[#E8ECE2] p-8 md:p-12 flex flex-col relative">
-          <h1 className="text-2xl md:text-3xl font-bold text-[#1a1a1a] mb-8">{title}</h1>
+        <div className="bg-card p-8 md:p-12 flex flex-col relative">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-8">{title}</h1>
           <div className="flex flex-col gap-4 max-w-md">{children}</div>
 
           <button
             onClick={() => navigate('/')}
-            className="absolute bottom-6 right-8 text-sm font-semibold text-[#2F6FED] hover:underline"
+            className="absolute bottom-6 right-8 text-sm font-semibold text-primary transition-colors duration-150 ease-out hover:text-primary-hover hover:underline"
           >
             Back
           </button>
@@ -31,7 +31,7 @@ export function AuthInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="h-14 w-full rounded-lg border-[1.5px] border-[#1a1a1a] bg-white px-4 text-base font-bold text-[#1a1a1a] placeholder:text-[#1a1a1a] placeholder:font-bold outline-none focus:border-[#4B6142]"
+      className="h-14 w-full rounded-lg border-[1.5px] border-foreground/20 bg-white px-4 text-base font-bold text-foreground placeholder:text-foreground/50 placeholder:font-normal outline-none transition-colors duration-150 ease-out focus:border-primary"
     />
   )
 }
@@ -54,9 +54,9 @@ export function AuthLinkLine({
   to: string
 }) {
   return (
-    <p className="text-[#1a1a1a]">
+    <p className="text-foreground">
       <span className="font-semibold">{prompt}</span>{' '}
-      <Link to={to} className="font-semibold text-[#C9622E] hover:underline">
+      <Link to={to} className="font-semibold text-primary-hover hover:underline">
         {linkText}
       </Link>
     </p>
@@ -67,7 +67,7 @@ export function AuthLinkLine({
  * lower-priority action rather than one of the primary account switches. */
 export function AuthMinorLink({ linkText, to }: { linkText: string; to: string }) {
   return (
-    <Link to={to} className="text-xs text-[#1a1a1a]/50 hover:text-[#1a1a1a]/80 hover:underline">
+    <Link to={to} className="text-xs text-foreground/50 hover:text-foreground/80 hover:underline">
       {linkText}
     </Link>
   )

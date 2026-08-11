@@ -34,7 +34,7 @@ function BusinessSwitcher() {
       <div className="relative mb-6">
         <button
           onClick={() => setOpen((o) => !o)}
-          className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-[#FBF6EC] px-4 py-3 font-semibold text-[#1a1a1a]"
+          className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-card px-4 py-3 font-semibold text-foreground transition-[transform,border-color] duration-150 ease-out active:scale-[0.98] hover:border-black/20"
         >
           <span className="flex items-center gap-2 truncate">
             <span
@@ -45,11 +45,13 @@ function BusinessSwitcher() {
             </span>
             <span className="truncate">{business.name}</span>
           </span>
-          {businesses.length > 1 && <ChevronDown className="h-4 w-4 shrink-0" />}
+          {businesses.length > 1 && (
+            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-150 ease-out ${open ? 'rotate-180' : ''}`} />
+          )}
         </button>
 
         {open && businesses.length > 1 && (
-          <div className="absolute z-10 mt-1 w-full rounded-2xl border border-black/10 bg-[#FBF6EC] shadow-lg overflow-hidden">
+          <div className="animate-pop-in absolute z-50 mt-1 w-full rounded-2xl border border-black/10 bg-card shadow-lg overflow-hidden">
             {businesses.map((b) => (
               <button
                 key={b.id}
@@ -57,7 +59,7 @@ function BusinessSwitcher() {
                   setBusinessId(b.id)
                   setOpen(false)
                 }}
-                className="w-full text-left px-4 py-2.5 font-medium text-[#1a1a1a] hover:bg-black/5"
+                className="w-full text-left px-4 py-2.5 font-medium text-foreground transition-colors duration-100 ease-out hover:bg-black/5"
               >
                 {b.name}
               </button>
@@ -70,9 +72,9 @@ function BusinessSwitcher() {
 
   if (staffBusinesses.length > 0) {
     return (
-      <div className="mb-6 rounded-2xl border border-black/10 bg-[#FBF6EC] px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Working at</p>
-        <p className="font-semibold text-[#1a1a1a] truncate">
+      <div className="mb-6 rounded-2xl border border-black/10 bg-card px-4 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/40 mb-1">Working at</p>
+        <p className="font-semibold text-foreground truncate">
           {staffBusinesses.length === 1 ? staffBusinesses[0].business.name : `${staffBusinesses.length} shops`}
         </p>
       </div>
@@ -90,11 +92,11 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
   if (!['admin', 'brand_head', 'business_owner', 'staff'].includes(primaryRole ?? '')) return <Navigate to="/dashboard" replace />
 
   return (
-    <div className="min-h-screen bg-[#f7f3eb] md:flex">
-      <aside className="border-b border-[#30442d]/10 bg-[#fffdf9] p-3 md:flex md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r md:p-5">
+    <div className="min-h-screen bg-background md:flex">
+      <aside className="border-b border-foreground/10 bg-card/80 backdrop-blur-xl p-3 md:flex md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-6">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
-          <span className="font-display text-base text-[#30442d]">The Loyalty Loop</span>
+          <span className="font-display text-base text-foreground">The Loyalty Loop</span>
         </div>
 
         <div className="mt-3 md:mt-0"><BusinessSwitcher /></div>
@@ -106,15 +108,15 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               to={to}
               end={end}
               className={({ isActive }) =>
-                'flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-base ' +
-                (isActive ? 'bg-[#30442d] text-white shadow-sm' : 'text-[#30442d]/70 hover:bg-[#f1ece2]')
+                'flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97] md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-base ' +
+                (isActive ? 'bg-foreground text-white shadow-sm' : 'text-foreground/70 hover:bg-foreground/5')
               }
             >
               <Icon className="h-5 w-5" />
               {label}
             </NavLink>
           ))}
-          <button onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[#1a1a1a]/60 hover:bg-black/5 md:hidden">
+          <button onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground/60 hover:bg-black/5 md:hidden">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </nav>
@@ -123,7 +125,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           {(isOwner || staffBusinesses.length === 0) && (
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors"
             >
               <ArrowLeftRight className="h-5 w-5" />
               Switch to customer view
@@ -131,7 +133,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           )}
           <button
             onClick={signOut}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors"
           >
             <LogOut className="h-5 w-5" />
             Sign out
@@ -141,7 +143,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
 
       <main className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
         {children}
-        <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-[#1a1a1a]/50">
+        <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-foreground/50">
           <div className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</div>
           <LegalFooterLinks />
         </footer>

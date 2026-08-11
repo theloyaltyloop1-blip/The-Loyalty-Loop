@@ -205,7 +205,7 @@ export function ShopDetail() {
     <DashboardLayout>
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm font-semibold text-[#1a1a1a]/60 hover:text-[#1a1a1a] mb-4"
+        className="flex items-center gap-2 text-sm font-semibold text-foreground/60 hover:text-foreground mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
@@ -222,7 +222,7 @@ export function ShopDetail() {
           onClick={handleToggleFavourite}
           className={
             'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors ' +
-            (favourite ? 'bg-[#F6AF23] text-white' : 'bg-white/90 text-[#1a1a1a]')
+            (favourite ? 'bg-accent text-white' : 'bg-white/90 text-foreground')
           }
         >
           <Heart className="h-5 w-5" fill={favourite ? 'currentColor' : 'none'} />
@@ -250,16 +250,16 @@ export function ShopDetail() {
       </div>
 
       {!membership ? (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center mb-6">
-          <h2 className="text-2xl font-display font-bold text-[#1a1a1a] mb-4">
+        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center mb-6">
+          <h2 className="text-2xl font-display font-bold text-foreground mb-4">
             Join {business.name}'s loyalty card
           </h2>
-          <span className="inline-block rounded-full bg-black/5 text-[#1a1a1a]/70 text-xs font-semibold px-3 py-1 mb-3">
+          <span className="inline-block rounded-full bg-black/5 text-foreground/70 text-xs font-semibold px-3 py-1 mb-3">
             Your reward
           </span>
-          <p className="text-xl font-display font-bold text-[#1a1a1a]">{rewardTitle}</p>
-          <p className="text-sm text-[#1a1a1a]/50 mb-1">{rewardSubtitle}</p>
-          <p className="text-sm text-[#1a1a1a]/50 mb-6">
+          <p className="text-xl font-display font-bold text-foreground">{rewardTitle}</p>
+          <p className="text-sm text-foreground/50 mb-1">{rewardSubtitle}</p>
+          <p className="text-sm text-foreground/50 mb-6">
             Collect {stampsRequired} {unit}
             {stampsRequired === 1 ? '' : 's'} to unlock it.
           </p>
@@ -274,16 +274,16 @@ export function ShopDetail() {
           {joinError && <p className="mt-4 text-sm font-semibold text-red-600">{joinError}</p>}
         </div>
       ) : (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6">
+        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-display font-bold text-[#1a1a1a]">
+            <h2 className="text-xl font-display font-bold text-foreground">
               {business.loyalty_type === 'points'
                 ? 'Your points'
                 : business.loyalty_type === 'tiered'
                   ? 'Your visits'
                   : 'Your stamp card'}
             </h2>
-            <p className="text-sm font-semibold text-[#1a1a1a]/60">
+            <p className="text-sm font-semibold text-foreground/60">
               {progress} / {stampsRequired} · {rewardTitle}
             </p>
           </div>
@@ -299,7 +299,7 @@ export function ShopDetail() {
                   }}
                 />
               </div>
-              <p className="text-sm text-[#1a1a1a]/50 mt-2">
+              <p className="text-sm text-foreground/50 mt-2">
                 {Math.max(0, stampsRequired - progress)} more point{stampsRequired - progress === 1 ? '' : 's'} to{' '}
                 {rewardTitle.toLowerCase()}.
               </p>
@@ -337,7 +337,7 @@ export function ShopDetail() {
                       : { borderColor: 'rgba(0,0,0,0.12)' }
                   }
                 >
-                  <StampIcon className={'h-5 w-5 ' + (filled ? 'text-white' : 'text-[#1a1a1a]/20')} />
+                  <StampIcon className={'h-5 w-5 ' + (filled ? 'text-white' : 'text-foreground/20')} />
                 </div>
               )
             })}
@@ -347,12 +347,12 @@ export function ShopDetail() {
           <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6">
             <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Manual code</p>
-              <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a] mb-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/40 mb-1">Manual code</p>
+              <p className="font-mono font-bold text-lg tracking-widest text-foreground mb-3">
                 {stampCode ?? '—'}
               </p>
-              <p className="font-semibold text-[#1a1a1a] mb-1">Show this to staff</p>
-              <p className="text-sm text-[#1a1a1a]/50 max-w-sm">
+              <p className="font-semibold text-foreground mb-1">Show this to staff</p>
+              <p className="text-sm text-foreground/50 max-w-sm">
                 They scan the code to add a {unit}, or type the manual code above. {Math.max(0, stampsRequired - progress)} {unit}
                 {Math.max(0, stampsRequired - progress) === 1 ? '' : 's'} to your next reward.
               </p>
@@ -364,7 +364,7 @@ export function ShopDetail() {
               <button
                 onClick={handleSimulateStamp}
                 disabled={stamping}
-                className="flex items-center gap-2 rounded-full border border-dashed border-[#1a1a1a]/30 px-5 h-10 font-semibold text-sm text-[#1a1a1a]/70 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full border border-dashed border-foreground/30 px-5 h-10 font-semibold text-sm text-foreground/70 disabled:opacity-50"
               >
                 <Zap className="h-4 w-4" /> {stamping ? 'Adding…' : 'Simulate stamp (owner testing)'}
               </button>
@@ -373,8 +373,8 @@ export function ShopDetail() {
 
           <div className="border-t border-black/10 mt-6 pt-5 flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="font-semibold text-[#1a1a1a]">Promotions from {business.name}</p>
-              <p className="text-sm text-[#1a1a1a]/50">
+              <p className="font-semibold text-foreground">Promotions from {business.name}</p>
+              <p className="text-sm text-foreground/50">
                 {optedIn
                   ? "You'll get occasional offers and re-engagement messages."
                   : "You won't receive promo notifications from this shop."}
@@ -382,7 +382,7 @@ export function ShopDetail() {
             </div>
             <button
               onClick={handleToggleOptIn}
-              className="rounded-full border border-black/15 px-5 h-10 font-semibold text-[#1a1a1a] shrink-0"
+              className="rounded-full border border-black/15 px-5 h-10 font-semibold text-foreground shrink-0"
             >
               {optedIn ? 'Opt out' : 'Opt in'}
             </button>
@@ -390,25 +390,25 @@ export function ShopDetail() {
         </div>
       )}
 
-      <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
-        <p className="flex items-center gap-2 font-display font-bold text-[#1a1a1a] mb-4">
-          <Gift className="h-5 w-5 text-[#E8703B]" /> What you can earn
+      <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
+        <p className="flex items-center gap-2 font-display font-bold text-foreground mb-4">
+          <Gift className="h-5 w-5 text-primary" /> What you can earn
         </p>
         <div className="rounded-xl bg-black/5 flex items-center gap-4 p-4">
           <span className="h-10 w-10 rounded-full bg-[#EFE1C8] flex items-center justify-center shrink-0">
-            <Lock className="h-4 w-4 text-[#1a1a1a]/60" />
+            <Lock className="h-4 w-4 text-foreground/60" />
           </span>
           <div>
-            <p className="font-semibold text-[#1a1a1a]">{rewardTitle}</p>
-            <p className="text-sm text-[#1a1a1a]/50">{rewardSubtitle}</p>
-            <p className="text-xs text-[#1a1a1a]/40 mt-0.5">{stampsRequired} stamps</p>
+            <p className="font-semibold text-foreground">{rewardTitle}</p>
+            <p className="text-sm text-foreground/50">{rewardSubtitle}</p>
+            <p className="text-xs text-foreground/40 mt-0.5">{stampsRequired} stamps</p>
           </div>
         </div>
       </div>
 
       {photos.length > 0 && (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
-          <p className="font-display font-bold text-[#1a1a1a] mb-4">Gallery</p>
+        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
+          <p className="font-display font-bold text-foreground mb-4">Gallery</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {photos.map((p) => (
               <div key={p.id} className="rounded-xl overflow-hidden aspect-square">
@@ -420,9 +420,9 @@ export function ShopDetail() {
       )}
 
       {business.opening_hours && Object.keys(business.opening_hours).length > 0 && (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
-          <p className="flex items-center gap-2 font-display font-bold text-[#1a1a1a] mb-4">
-            <Clock className="h-5 w-5 text-[#E8703B]" /> Opening hours
+        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
+          <p className="flex items-center gap-2 font-display font-bold text-foreground mb-4">
+            <Clock className="h-5 w-5 text-primary" /> Opening hours
           </p>
           <div className="flex flex-col divide-y divide-black/5">
             {DAY_ORDER.map(({ key, label }) => {
@@ -433,11 +433,11 @@ export function ShopDetail() {
                   key={key}
                   className={
                     'flex items-center justify-between py-2 text-sm ' +
-                    (isToday ? 'font-bold text-[#1a1a1a]' : 'text-[#1a1a1a]/60')
+                    (isToday ? 'font-bold text-foreground' : 'text-foreground/60')
                   }
                 >
                   <span>
-                    {label} {isToday && <span className="text-[#E8703B]">· Today</span>}
+                    {label} {isToday && <span className="text-primary">· Today</span>}
                   </span>
                   <span>{!day || day.closed ? 'Closed' : `${formatTime(day.open)} – ${formatTime(day.close)}`}</span>
                 </div>
@@ -457,16 +457,16 @@ export function ShopDetail() {
             )}`}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] px-5 h-12 flex items-center gap-2 font-semibold text-[#1a1a1a] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+            className="rounded-full bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] px-5 h-12 flex items-center gap-2 font-semibold text-foreground hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
           >
-            <MapPin className="h-4 w-4 text-[#E8703B]" /> {business.address}
+            <MapPin className="h-4 w-4 text-primary" /> {business.address}
             {business.postcode ? `, ${business.postcode}` : ''}
-            <Navigation className="h-3.5 w-3.5 text-[#1a1a1a]/40 ml-1" />
+            <Navigation className="h-3.5 w-3.5 text-foreground/40 ml-1" />
           </a>
         ) : (
           <div />
         )}
-        <button className="rounded-full border border-black/15 px-5 h-10 font-semibold text-[#1a1a1a] flex items-center gap-2">
+        <button className="rounded-full border border-black/15 px-5 h-10 font-semibold text-foreground flex items-center gap-2">
           <Share2 className="h-4 w-4" /> Share
         </button>
       </div>

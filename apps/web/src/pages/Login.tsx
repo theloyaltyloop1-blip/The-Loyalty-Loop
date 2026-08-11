@@ -63,7 +63,7 @@ export function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="h-14 rounded-lg bg-[#1a1a1a] text-white font-bold text-lg disabled:opacity-50"
+          className="h-14 rounded-lg bg-foreground text-white font-bold text-lg disabled:opacity-50"
         >
           {loading ? 'Signing in…' : 'Log in'}
         </button>

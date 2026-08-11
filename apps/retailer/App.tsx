@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Image, Modal, Pressable, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import type { Session } from '@supabase/supabase-js'
+import { colors } from '@loyalty-loop/design-tokens'
 import { hasSupabaseConfig, supabase } from './src/supabase'
 
 type Business = { id: string; name: string; brand_color?: string; logo_url?: string | null; loyalty_type?: string; loyalty_config?: { stamps_required?: number } }
 type StaffBusiness = { business_id: string; can_scan_stamps?: boolean; can_redeem_rewards?: boolean; business?: Business | Business[] | null }
-const green='#30442d', orange='#bd682c', cream='#f7f3eb'
+const { foreground: green, primary: orange, background: cream } = colors
 
 function Button({ title, onPress, secondary, disabled }: { title:string; onPress:()=>void; secondary?:boolean; disabled?:boolean }) { return <Pressable onPress={onPress} disabled={disabled} style={[styles.button,secondary&&styles.secondary,disabled&&styles.disabled]}><Text style={[styles.buttonText,secondary&&styles.secondaryText]}>{title}</Text></Pressable> }
 
