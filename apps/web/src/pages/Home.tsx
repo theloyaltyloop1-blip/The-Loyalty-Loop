@@ -123,15 +123,15 @@ export function Home() {
             <Sparkles className="h-4 w-4 text-primary" /> Trending nearby
           </p>
           <div className="flex gap-4 overflow-x-auto pb-2 mb-10">
-            {businesses.slice(0, 2).map((business) => (
-              <TrendingCard key={business.id} business={business} />
+            {businesses.slice(0, 2).map((business, index) => (
+              <div key={business.id} className="stagger-card" style={{ animationDelay: `${index * 45}ms` }}><TrendingCard business={business} /></div>
             ))}
           </div>
 
           <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/60 mb-4">Nearby</p>
           <div className="grid sm:grid-cols-2 gap-5">
-            {filtered.map((business) => (
-              <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
+            {filtered.map((business, index) => (
+              <div key={business.id} className="stagger-card" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><ShopCard business={business} membership={membershipByBusiness.get(business.id)} /></div>
             ))}
           </div>
         </>

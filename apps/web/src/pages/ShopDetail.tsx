@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { flushSync } from 'react-dom'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
@@ -91,6 +92,7 @@ export function ShopDetail() {
   // the latest one in flight.
   const userId = session?.user?.id
   const requestIdRef = React.useRef(0)
+  const joiningCardRef = React.useRef(false)
   const loyaltyCardRef = React.useRef<HTMLDivElement>(null)
 
   const refetch = React.useCallback(async () => {
@@ -108,7 +110,14 @@ export function ShopDetail() {
     ])
     if (thisRequestId !== requestIdRef.current) return // a newer refetch already landed — drop this stale result
     setBusiness(biz)
-    setMembership(m)
+    const applyMembership = () => setMembership(m)
+    const startViewTransition = (document as Document & { startViewTransition?: (update: () => void) => unknown }).startViewTransition
+    if (joiningCardRef.current && m && startViewTransition) {
+      startViewTransition(() => flushSync(applyMembership))
+    } else {
+      applyMembership()
+    }
+    joiningCardRef.current = false
     setCatalog(cat)
     setPhotos(pics)
     setOptedIn(m ? !m.promos_opted_out : true)
@@ -170,6 +179,7 @@ export function ShopDetail() {
     setJoinError(null)
     try {
       await joinBusiness(session.user.id, business.id)
+      joiningCardRef.current = true
       setJustJoined(true)
       await refetch()
     } catch (error) {
@@ -250,7 +260,7 @@ export function ShopDetail() {
       </div>
 
       {!membership ? (
-        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center mb-6">
+        <div className="loyalty-card-panel rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center mb-6" style={{ viewTransitionName: 'loyalty-card' }}>
           <h2 className="text-2xl font-display font-bold text-foreground mb-4">
             Join {business.name}'s loyalty card
           </h2>
@@ -274,7 +284,7 @@ export function ShopDetail() {
           {joinError && <p className="mt-4 text-sm font-semibold text-red-600">{joinError}</p>}
         </div>
       ) : (
-        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6">
+        <div className="loyalty-card-panel rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6" style={{ viewTransitionName: 'loyalty-card' }}>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-display font-bold text-foreground">
               {business.loyalty_type === 'points'
@@ -330,14 +340,15 @@ export function ShopDetail() {
               return (
                 <div
                   key={i}
-                  className="h-16 w-16 rounded-full border flex items-center justify-center"
+                  data-filled={filled}
+                  className="loyalty-stamp h-16 w-16 rounded-full border flex items-center justify-center"
                   style={
                     filled
                       ? { backgroundColor: business.brand_color, borderColor: business.brand_color }
                       : { borderColor: 'rgba(0,0,0,0.12)' }
                   }
                 >
-                  <StampIcon className={'h-5 w-5 ' + (filled ? 'text-white' : 'text-foreground/20')} />
+                  <StampIcon className={'h-5 w-5 transition-[color,transform] duration-200 ease-in-out ' + (filled ? 'text-white scale-100' : 'text-foreground/20 scale-90')} />
                 </div>
               )
             })}

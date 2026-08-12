@@ -97,11 +97,25 @@
 .cookie-consent-banner { animation: cookie-consent-enter 180ms var(--ease-out); }
 @keyframes cookie-consent-enter { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
+.loyalty-card-panel { view-transition-name: loyalty-card; animation: card-panel-enter 180ms var(--ease-out); }
+@keyframes card-panel-enter { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+::view-transition-old(loyalty-card) { animation: loyalty-card-out 180ms var(--ease-out); }
+::view-transition-new(loyalty-card) { animation: loyalty-card-in 180ms var(--ease-out); }
+@keyframes loyalty-card-out { to { opacity: 0; transform: scale(.98); } }
+@keyframes loyalty-card-in { from { opacity: 0; transform: scale(1.01); } }
+
+.loyalty-stamp { transition: background-color 200ms var(--ease-in-out), border-color 200ms var(--ease-in-out), box-shadow 200ms var(--ease-in-out), transform 200ms var(--ease-in-out); }
+.loyalty-stamp[data-filled='true'] { box-shadow: 0 5px 12px rgb(48 68 45 / .18); }
+
+.stagger-card { animation: card-stagger-enter 180ms var(--ease-out) both; }
+@keyframes card-stagger-enter { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
 button:not(:disabled):not([data-no-press-feedback]) { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform; transition-duration: 150ms; transition-timing-function: var(--ease-out); }
 button:not(:disabled):not([data-no-press-feedback]):active { transform: scale(.97); }
 
 @media (prefers-reduced-motion: reduce) {
-  .business-switcher-menu, .cookie-consent-banner { animation: none; transition: opacity 150ms ease; transform: none; }
+  .business-switcher-menu, .cookie-consent-banner, .loyalty-card-panel, .stagger-card { animation: none; transition: opacity 150ms ease; transform: none; }
+  .loyalty-stamp { transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
   button:not(:disabled):not([data-no-press-feedback]):active { transform: none; }
 }
 

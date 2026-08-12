@@ -43,8 +43,8 @@ export function FavouritesPage() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-5">
-          {businesses.map((business) => (
-            <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
+          {businesses.map((business, index) => (
+            <div key={business.id} className="stagger-card" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><ShopCard business={business} membership={membershipByBusiness.get(business.id)} /></div>
           ))}
         </div>
       )}

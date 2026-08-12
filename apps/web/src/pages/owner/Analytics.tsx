@@ -21,6 +21,32 @@ import {
 
 const PERIODS: Period[] = [7, 30, 90]
 
+function useCountUp(value: number) {
+  const [display, setDisplay] = React.useState(0)
+  const previous = React.useRef(0)
+
+  React.useEffect(() => {
+    const from = previous.current
+    previous.current = value
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(value)
+      return
+    }
+    const duration = 250
+    const startedAt = performance.now()
+    let frame = 0
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration)
+      setDisplay(Math.round(from + (value - from) * progress))
+      if (progress < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [value])
+
+  return display
+}
+
 function Delta({ current, prev }: { current: number; prev: number }) {
   const pct = pctChange(current, prev)
   if (pct === null) {
@@ -60,6 +86,7 @@ function StatTile({
   prev: number
   color: string
 }) {
+  const displayedValue = useCountUp(value)
   return (
     <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5">
       <div className="flex items-center justify-between mb-3">
@@ -68,7 +95,7 @@ function StatTile({
         </span>
         <Delta current={value} prev={prev} />
       </div>
-      <p className="text-3xl font-display font-extrabold text-foreground">{value}</p>
+      <p className="text-3xl font-display font-extrabold text-foreground" aria-label={`${value} ${label}`}>{displayedValue}</p>
       <p className="text-sm text-foreground/50 mt-0.5">{label}</p>
     </div>
   )
