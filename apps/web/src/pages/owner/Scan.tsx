@@ -473,7 +473,7 @@ export function OwnerScan() {
                       key={key}
                       onClick={() => setMode(key)}
                       className={
-                        'flex-1 h-10 rounded-full text-sm font-bold capitalize transition-colors flex items-center justify-center gap-1.5 ' +
+                        'flex-1 h-10 rounded-full text-sm font-bold capitalize transition-colors duration-150 ease-out flex items-center justify-center gap-1.5 ' +
                         (mode === key ? 'bg-primary text-white' : 'text-foreground/50')
                       }
                     >

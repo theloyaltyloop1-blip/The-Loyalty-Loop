@@ -205,13 +205,13 @@ export function ProfilePage() {
               <button
                 onClick={() => handleToggleSetting(key)}
                 className={
-                  'h-7 w-12 rounded-full transition-colors relative shrink-0 ' +
+                  'h-7 w-12 rounded-full transition-colors duration-150 ease-out relative shrink-0 ' +
                   (settings[key] ? 'bg-primary' : 'bg-black/10')
                 }
               >
                 <span
                   className={
-                    'absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ' +
+                    'absolute top-1 h-5 w-5 rounded-full bg-white transition-transform duration-150 ease-out ' +
                     (settings[key] ? 'translate-x-6' : 'translate-x-1')
                   }
                 />

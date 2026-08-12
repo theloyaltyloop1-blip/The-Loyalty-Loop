@@ -105,7 +105,7 @@ function BrandImageUpload({
       <p className="text-sm font-semibold text-foreground mb-1.5">{label}</p>
       <div
         onClick={() => inputRef.current?.click()}
-        className="h-32 rounded-xl border-2 border-dashed border-black/15 flex flex-col items-center justify-center gap-1 text-foreground/40 text-sm cursor-pointer overflow-hidden bg-white/40 hover:border-primary/50 transition-colors"
+        className="h-32 rounded-xl border-2 border-dashed border-black/15 flex flex-col items-center justify-center gap-1 text-foreground/40 text-sm cursor-pointer overflow-hidden bg-white/40 hover:border-primary/50 transition-colors duration-150 ease-out"
         style={
           currentUrl
             ? { backgroundImage: `url(${currentUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -246,7 +246,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
           <button
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="rounded-xl border-2 border-dashed border-black/15 aspect-square flex flex-col items-center justify-center gap-1 text-foreground/40 hover:border-primary/50 transition-colors disabled:opacity-50"
+            className="rounded-xl border-2 border-dashed border-black/15 aspect-square flex flex-col items-center justify-center gap-1 text-foreground/40 hover:border-primary/50 transition-colors duration-150 ease-out disabled:opacity-50"
           >
             <ImageIcon className="h-5 w-5" />
             <span className="text-xs font-semibold">{uploading ? 'Uploading…' : 'Add photo'}</span>
@@ -540,7 +540,7 @@ function LoyaltyTab() {
               key={opt.value}
               onClick={() => setLoyaltyType(opt.value)}
               className={
-                'text-left rounded-xl border-2 p-4 transition-colors ' +
+                'text-left rounded-xl border-2 p-4 transition-colors duration-150 ease-out ' +
                 (loyaltyType === opt.value ? 'border-primary bg-white' : 'border-black/10 bg-white/40')
               }
             >
@@ -960,7 +960,7 @@ function PermissionToggle({
     <button
       onClick={onToggle}
       className={
-        'flex items-center gap-2 rounded-full border-2 px-3.5 h-9 text-sm font-semibold transition-colors ' +
+        'flex items-center gap-2 rounded-full border-2 px-3.5 h-9 text-sm font-semibold transition-colors duration-150 ease-out ' +
         (active ? 'border-primary bg-primary/10 text-primary-hover' : 'border-black/10 text-foreground/40')
       }
     >
@@ -1253,7 +1253,7 @@ export function OwnerSettings() {
             key={key}
             onClick={() => setTab(key)}
             className={
-              'flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ' +
+              'flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors duration-150 ease-out ' +
               (tab === key
                 ? 'border-foreground text-foreground'
                 : 'border-transparent text-foreground/40 hover:text-foreground/70')

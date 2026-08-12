@@ -315,7 +315,7 @@ export function OwnerAnalytics() {
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={
-                  'px-4 h-9 rounded-full text-sm font-bold transition-colors ' +
+                  'px-4 h-9 rounded-full text-sm font-bold transition-colors duration-150 ease-out ' +
                   (period === p ? 'bg-primary text-white' : 'text-foreground/50 hover:text-foreground')
                 }
               >
@@ -342,7 +342,7 @@ export function OwnerAnalytics() {
                 key={key}
                 onClick={() => setView(key)}
                 className={
-                  'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px capitalize transition-colors ' +
+                  'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px capitalize transition-colors duration-150 ease-out ' +
                   (view === key
                     ? 'border-foreground text-foreground'
                     : 'border-transparent text-foreground/40 hover:text-foreground/70')

@@ -25,6 +25,28 @@ const STAFF_NAV_ITEMS = [{ label: 'Scan', to: '/owner/scan', icon: ScanLine, end
 function BusinessSwitcher() {
   const { businesses, business, staffBusinesses, setBusinessId } = useOwner()
   const [open, setOpen] = React.useState(false)
+  const [menuMounted, setMenuMounted] = React.useState(false)
+  const closeTimer = React.useRef<number | null>(null)
+
+  React.useEffect(() => () => {
+    if (closeTimer.current) window.clearTimeout(closeTimer.current)
+  }, [])
+
+  function closeMenu() {
+    setOpen(false)
+    if (closeTimer.current) window.clearTimeout(closeTimer.current)
+    closeTimer.current = window.setTimeout(() => setMenuMounted(false), 180)
+  }
+
+  function toggleMenu() {
+    if (open) {
+      closeMenu()
+      return
+    }
+    if (closeTimer.current) window.clearTimeout(closeTimer.current)
+    setMenuMounted(true)
+    window.requestAnimationFrame(() => setOpen(true))
+  }
 
   const isOwner = businesses.length > 0
 
@@ -33,7 +55,7 @@ function BusinessSwitcher() {
     return (
       <div className="relative mb-6">
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={toggleMenu}
           className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-card px-4 py-3 font-semibold text-foreground transition-[transform,border-color] duration-150 ease-out active:scale-[0.98] hover:border-black/20"
         >
           <span className="flex items-center gap-2 truncate">
@@ -50,14 +72,14 @@ function BusinessSwitcher() {
           )}
         </button>
 
-        {open && businesses.length > 1 && (
-          <div className="animate-pop-in absolute z-50 mt-1 w-full rounded-2xl border border-black/10 bg-card shadow-lg overflow-hidden">
+        {menuMounted && businesses.length > 1 && (
+          <div data-state={open ? 'open' : 'closed'} className="business-switcher-menu absolute z-50 mt-1 w-full rounded-2xl border border-black/10 bg-card shadow-lg overflow-hidden">
             {businesses.map((b) => (
               <button
                 key={b.id}
                 onClick={() => {
                   setBusinessId(b.id)
-                  setOpen(false)
+                  closeMenu()
                 }}
                 className="w-full text-left px-4 py-2.5 font-medium text-foreground transition-colors duration-100 ease-out hover:bg-black/5"
               >
@@ -125,7 +147,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           {(isOwner || staffBusinesses.length === 0) && (
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors duration-150 ease-out"
             >
               <ArrowLeftRight className="h-5 w-5" />
               Switch to customer view
@@ -133,7 +155,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           )}
           <button
             onClick={signOut}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors"
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors duration-150 ease-out"
           >
             <LogOut className="h-5 w-5" />
             Sign out

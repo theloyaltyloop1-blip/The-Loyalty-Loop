@@ -162,7 +162,7 @@ export function Landing() {
           </Link>
           <nav className="hidden md:flex items-center gap-7 font-semibold text-sm">
             {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} className="hover:text-primary transition-colors">
+              <a key={link.href} href={link.href} className="hover:text-primary transition-colors duration-150 ease-out">
                 {link.label}
               </a>
             ))}

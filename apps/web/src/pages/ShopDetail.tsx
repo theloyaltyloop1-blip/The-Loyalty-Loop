@@ -221,7 +221,7 @@ export function ShopDetail() {
         <button
           onClick={handleToggleFavourite}
           className={
-            'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors ' +
+            'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
             (favourite ? 'bg-accent text-white' : 'bg-white/90 text-foreground')
           }
         >
@@ -457,7 +457,7 @@ export function ShopDetail() {
             )}`}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] px-5 h-12 flex items-center gap-2 font-semibold text-foreground hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+            className="rounded-full bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] px-5 h-12 flex items-center gap-2 font-semibold text-foreground hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
           >
             <MapPin className="h-4 w-4 text-primary" /> {business.address}
             {business.postcode ? `, ${business.postcode}` : ''}

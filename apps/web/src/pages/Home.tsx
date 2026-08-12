@@ -20,7 +20,7 @@ function TrendingCard({ business }: { business: Business }) {
   return (
     <button
       onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
-      className="text-left w-64 shrink-0 rounded-2xl bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+      className="text-left w-64 shrink-0 rounded-2xl bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
     >
       <div
         className="h-28"
@@ -95,7 +95,7 @@ export function Home() {
         <button
           onClick={() => setCategory('All')}
           className={
-            'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
+            'rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-150 ease-out ' +
             (category === 'All' ? 'bg-primary text-white' : 'bg-card text-foreground/70 border border-black/10')
           }
         >
@@ -106,7 +106,7 @@ export function Home() {
             key={cat}
             onClick={() => setCategory(cat)}
             className={
-              'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
+              'rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-150 ease-out ' +
               (category === cat ? 'bg-primary text-white' : 'bg-card text-foreground/70 border border-black/10')
             }
           >

@@ -30,7 +30,7 @@ export function ShopCard({ business, membership }: { business: Business; members
   return (
     <button
       onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
-      className="text-left rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5 relative hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+      className="text-left rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5 relative hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
     >
       {joined && (
         <span className="absolute top-4 right-4 rounded-full bg-[#EFE1C8] text-[#5a4a30] text-[11px] font-bold uppercase tracking-wide px-3 py-1">
