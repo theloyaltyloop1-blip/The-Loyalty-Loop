@@ -1,9 +1,11 @@
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
+import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
+import { geocodeAddress } from '@/lib/geocode'
+import { ShopMap } from '@/components/shop-map'
 import {
   updateBusiness,
   uploadBusinessImage,
@@ -273,6 +275,8 @@ function ProfileTab() {
     description: business?.description ?? '',
     address: business?.address ?? '',
     postcode: business?.postcode ?? '',
+    lat: business?.lat ?? null,
+    lng: business?.lng ?? null,
     website: business?.website ?? '',
     phone: business?.phone ?? '',
     instagram: business?.instagram ?? '',
@@ -280,6 +284,11 @@ function ProfileTab() {
   const [hours, setHours] = React.useState<OpeningHours>(business?.opening_hours ?? {})
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
+  const [geocoding, setGeocoding] = React.useState(false)
+  // Starts true so loading a shop that already has coordinates doesn't
+  // immediately re-geocode and overwrite them — only a real edit to the
+  // address/postcode fields (or the effect below) flips this back off.
+  const [pinTouched, setPinTouched] = React.useState(true)
 
   React.useEffect(() => {
     if (!business) return
@@ -289,12 +298,31 @@ function ProfileTab() {
       description: business.description ?? '',
       address: business.address ?? '',
       postcode: business.postcode ?? '',
+      lat: business.lat ?? null,
+      lng: business.lng ?? null,
       website: business.website ?? '',
       phone: business.phone ?? '',
       instagram: business.instagram ?? '',
     })
     setHours(business.opening_hours ?? {})
+    setPinTouched(true)
   }, [business?.id])
+
+  React.useEffect(() => {
+    if (pinTouched) return
+    const query = [form.address, form.postcode].filter(Boolean).join(', ')
+    if (query.trim().length < 4) return
+    const handle = setTimeout(async () => {
+      setGeocoding(true)
+      try {
+        const result = await geocodeAddress(query)
+        if (result) setForm((f) => ({ ...f, lat: result.lat, lng: result.lng }))
+      } finally {
+        setGeocoding(false)
+      }
+    }, 900)
+    return () => clearTimeout(handle)
+  }, [form.address, form.postcode, pinTouched])
 
   if (!business) return null
 
@@ -391,17 +419,49 @@ function ProfileTab() {
             <input
               className={inputClass}
               value={form.address ?? ''}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              onChange={(e) => {
+                setPinTouched(false)
+                setForm({ ...form, address: e.target.value })
+              }}
             />
           </Field>
           <Field label="Postcode">
             <input
               className={inputClass}
               value={form.postcode ?? ''}
-              onChange={(e) => setForm({ ...form, postcode: e.target.value })}
+              onChange={(e) => {
+                setPinTouched(false)
+                setForm({ ...form, postcode: e.target.value })
+              }}
             />
           </Field>
         </div>
+
+        {form.lat != null && form.lng != null ? (
+          <div className="mt-4">
+            <span className="block text-sm font-semibold text-foreground mb-1.5">
+              Pin location {geocoding && <span className="text-foreground/40 font-normal">(finding address…)</span>}
+            </span>
+            <ShopMap
+              lat={form.lat}
+              lng={form.lng}
+              color={business.brand_color}
+              editable
+              onChange={(lat, lng) => {
+                setPinTouched(true)
+                setForm((f) => ({ ...f, lat, lng }))
+              }}
+            />
+            <p className="text-xs text-foreground/40 mt-1.5">
+              Drag the pin or click the map to fine-tune — this is what customers will see on your shop page.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-dashed border-black/15 bg-white/40 px-4 py-6 text-center text-sm text-foreground/40 flex items-center justify-center gap-2">
+            {geocoding && <Loader2 className="h-4 w-4 animate-spin" />}
+            {geocoding ? 'Finding your address…' : 'Enter an address to place a pin'}
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard title="Contact">

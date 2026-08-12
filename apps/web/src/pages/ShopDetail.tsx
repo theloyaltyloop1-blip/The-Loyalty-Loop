@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ReviewsSection } from '@/components/reviews-section'
+import { ShopMap } from '@/components/shop-map'
 import {
   fetchBusinessBySlug,
   fetchMembership,
@@ -459,6 +460,12 @@ export function ShopDetail() {
       )}
 
       <ReviewsSection businessId={business.id} userId={session.user.id} canReview={Boolean(membership)} />
+
+      {business.lat != null && business.lng != null && (
+        <div className="mb-6">
+          <ShopMap lat={business.lat} lng={business.lng} color={business.brand_color} height={200} />
+        </div>
+      )}
 
       <div className="flex items-center justify-between flex-wrap gap-4">
         {business.address ? (

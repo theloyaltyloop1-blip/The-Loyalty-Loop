@@ -1,9 +1,11 @@
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Check, Store, MapPin, Palette, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Check, Store, MapPin, Palette, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { createBusiness, type Business } from '@/lib/businesses'
+import { geocodeAddress } from '@/lib/geocode'
+import { ShopMap } from '@/components/shop-map'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
@@ -40,6 +42,8 @@ export function OwnerOnboarding() {
     description: string
     address: string
     postcode: string
+    lat: number | null
+    lng: number | null
     brand_color: string
     loyalty_type: Business['loyalty_type']
     stamps_required: number
@@ -49,10 +53,33 @@ export function OwnerOnboarding() {
     description: '',
     address: '',
     postcode: '',
+    lat: null,
+    lng: null,
     brand_color: BRAND_COLORS[0],
     loyalty_type: 'stamp_card',
     stamps_required: 10,
   })
+  const [geocoding, setGeocoding] = React.useState(false)
+  const [pinTouched, setPinTouched] = React.useState(false)
+
+  // Auto-places a pin from the address/postcode as the owner types, debounced
+  // to respect Nominatim's ~1 req/sec free-tier usage policy. Once the owner
+  // has manually dragged the pin (pinTouched), typing no longer overrides it.
+  React.useEffect(() => {
+    if (pinTouched) return
+    const query = [form.address, form.postcode].filter(Boolean).join(', ')
+    if (query.trim().length < 4) return
+    const handle = setTimeout(async () => {
+      setGeocoding(true)
+      try {
+        const result = await geocodeAddress(query)
+        if (result) setForm((f) => ({ ...f, lat: result.lat, lng: result.lng }))
+      } finally {
+        setGeocoding(false)
+      }
+    }, 900)
+    return () => clearTimeout(handle)
+  }, [form.address, form.postcode, pinTouched])
 
   if (loading || rolesLoading || ownerLoading) return null
   if (!session) return <Navigate to="/login" replace />
@@ -163,7 +190,10 @@ export function OwnerOnboarding() {
                 <input
                   className={inputClass}
                   value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  onChange={(e) => {
+                    setPinTouched(false)
+                    setForm({ ...form, address: e.target.value })
+                  }}
                   placeholder="12 Balham High Road"
                 />
               </Field>
@@ -171,10 +201,39 @@ export function OwnerOnboarding() {
                 <input
                   className={inputClass}
                   value={form.postcode}
-                  onChange={(e) => setForm({ ...form, postcode: e.target.value })}
+                  onChange={(e) => {
+                    setPinTouched(false)
+                    setForm({ ...form, postcode: e.target.value })
+                  }}
                   placeholder="SW12 9AA"
                 />
               </Field>
+
+              {form.lat != null && form.lng != null ? (
+                <div className="mb-4">
+                  <span className="block text-sm font-semibold text-foreground mb-1.5">
+                    Pin location {geocoding && <span className="text-foreground/40 font-normal">(finding address…)</span>}
+                  </span>
+                  <ShopMap
+                    lat={form.lat}
+                    lng={form.lng}
+                    color={form.brand_color}
+                    editable
+                    onChange={(lat, lng) => {
+                      setPinTouched(true)
+                      setForm((f) => ({ ...f, lat, lng }))
+                    }}
+                  />
+                  <p className="text-xs text-foreground/40 mt-1.5">
+                    Drag the pin or click the map to fine-tune — this is what customers will see on your shop page.
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-4 rounded-2xl border border-dashed border-black/15 bg-white/40 px-4 py-6 text-center text-sm text-foreground/40 flex items-center justify-center gap-2">
+                  {geocoding && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {geocoding ? 'Finding your address…' : 'Enter an address to place a pin'}
+                </div>
+              )}
             </>
           )}
 

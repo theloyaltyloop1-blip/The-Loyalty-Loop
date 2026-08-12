@@ -23,6 +23,8 @@ export interface Business {
   description: string | null
   address: string | null
   postcode: string | null
+  lat: number | null
+  lng: number | null
   website: string | null
   phone: string | null
   instagram: string | null
@@ -116,6 +118,8 @@ export async function createBusiness(
     description: string
     address: string
     postcode: string
+    lat?: number | null
+    lng?: number | null
     brand_color: string
     loyalty_type: Business['loyalty_type']
     stamps_required: number
@@ -131,6 +135,8 @@ export async function createBusiness(
       description: values.description || null,
       address: values.address || null,
       postcode: values.postcode || null,
+      lat: values.lat ?? null,
+      lng: values.lng ?? null,
       brand_color: values.brand_color,
       loyalty_type: values.loyalty_type,
       loyalty_config: { stamps_required: values.stamps_required },
