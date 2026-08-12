@@ -157,6 +157,12 @@ type Reward = {
   redeemed_at?: string | null
   business?: { name: string; brand_color?: string; logo_url?: string | null } | null
 }
+type RewardCatalogItem = {
+  id: string
+  title: string
+  description?: string | null
+  stamp_threshold: number
+}
 type Announcement = {
   id: string
   title: string
@@ -337,9 +343,33 @@ function ShopDetail({
   refresh: () => Promise<void>
 }) {
   const [busy, setBusy] = useState(false)
+  const [catalog, setCatalog] = useState<RewardCatalogItem[]>([])
+  const [catalogLoading, setCatalogLoading] = useState(true)
   const threshold = business.loyalty_config?.stamps_required || 10
   const value = business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
   const label = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
+
+  useEffect(() => {
+    let active = true
+    setCatalogLoading(true)
+    supabase
+      .from('reward_catalog')
+      .select('id,title,description,stamp_threshold')
+      .eq('business_id', business.id)
+      .order('stamp_threshold')
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error) {
+          setCatalog([])
+        } else {
+          setCatalog(data || [])
+        }
+        setCatalogLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [business.id])
 
   async function join() {
     setBusy(true)
@@ -393,10 +423,24 @@ function ShopDetail({
           <View style={styles.joinCard}>
             <Text style={styles.joinTitle}>Join {business.name}'s loyalty card</Text>
             <View style={styles.rewardPill}>
-              <Text style={styles.rewardPillText}>Your reward</Text>
+              <Text style={styles.rewardPillText}>REWARDS YOU CAN UNLOCK</Text>
             </View>
-            <Text style={styles.rewardTitleLarge}>{business.description || 'A reward for regulars'}</Text>
-            <Text style={styles.muted}>Collect {threshold} {label} to unlock it.</Text>
+            {catalogLoading ? (
+              <ActivityIndicator color={business.brand_color || primary} style={{ marginVertical: 12 }} />
+            ) : catalog.length ? (
+              <View style={styles.rewardTierList}>
+                {catalog.slice(0, 3).map((reward) => (
+                  <View key={reward.id} style={styles.rewardTier}>
+                    <Text style={styles.rewardTierThreshold}>{reward.stamp_threshold} {label}</Text>
+                    <Text style={styles.rewardTierTitle}>{reward.title}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.rewardTitleLarge}>Rewards are being set up</Text>
+            )}
+            {!catalogLoading && catalog.length > 3 && <Text style={styles.muted}>Plus more rewards as you collect.</Text>}
+            {!catalogLoading && !catalog.length && <Text style={styles.muted}>Collect {threshold} {label} to unlock a reward.</Text>}
             <View style={{ marginTop: 18 }}>
               <Button title={busy ? 'Joining…' : 'Join card'} onPress={join} disabled={busy} />
             </View>
@@ -1060,6 +1104,10 @@ const styles = StyleSheet.create({
   rewardPill: { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
   rewardPillText: { fontSize: 11, fontWeight: '700', color: '#6b6459' },
   rewardTitleLarge: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center' },
+  rewardTierList: { alignSelf: 'stretch', gap: 8, marginTop: 2 },
+  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4efe4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  rewardTierThreshold: { color: foreground, fontSize: 13, fontWeight: '800' },
+  rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 14 },
 
   loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
