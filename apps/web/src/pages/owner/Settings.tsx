@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
@@ -1238,7 +1238,15 @@ function DangerTab() {
 export function OwnerSettings() {
   const { session, loading } = useAuth()
   const { business, loading: ownerLoading } = useOwner()
-  const [tab, setTab] = React.useState<TabKey>('profile')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedTab = searchParams.get('tab')
+  const initialTab = TABS.some(({ key }) => key === requestedTab) ? (requestedTab as TabKey) : 'profile'
+  const [tab, setTab] = React.useState<TabKey>(initialTab)
+
+  function selectTab(nextTab: TabKey) {
+    setTab(nextTab)
+    setSearchParams({ tab: nextTab }, { replace: true })
+  }
 
   if (loading) return null
   if (!session) return <Navigate to="/login" replace />
@@ -1251,7 +1259,7 @@ export function OwnerSettings() {
         {TABS.map(({ key, label, icon: Icon }) => (
           <button data-press-feedback
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => selectTab(key)}
             className={
               'flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors duration-150 ease-out ' +
               (tab === key
