@@ -3,6 +3,10 @@ import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
 
+/** Balham, London — used as a sane default map center before an owner has
+ * entered/confirmed a real address. */
+export const DEFAULT_MAP_CENTER = { lat: 51.4514, lng: -0.1447 }
+
 /** Shared loader — every ShopMap instance on a page uses the same script-load
  * state (via the same `id`), so the Maps JS API is only ever injected once. */
 function useGoogleMapsLoader() {

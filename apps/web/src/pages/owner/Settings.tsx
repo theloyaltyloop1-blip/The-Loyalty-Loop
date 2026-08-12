@@ -1,11 +1,11 @@
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare, Loader2 } from 'lucide-react'
+import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
 import { geocodeAddress } from '@/lib/geocode'
-import { ShopMap } from '@/components/shop-map'
+import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import {
   updateBusiness,
   uploadBusinessImage,
@@ -437,31 +437,27 @@ function ProfileTab() {
           </Field>
         </div>
 
-        {form.lat != null && form.lng != null ? (
-          <div className="mt-4">
-            <span className="block text-sm font-semibold text-foreground mb-1.5">
-              Pin location {geocoding && <span className="text-foreground/40 font-normal">(finding address…)</span>}
-            </span>
-            <ShopMap
-              lat={form.lat}
-              lng={form.lng}
-              color={business.brand_color}
-              editable
-              onChange={(lat, lng) => {
-                setPinTouched(true)
-                setForm((f) => ({ ...f, lat, lng }))
-              }}
-            />
-            <p className="text-xs text-foreground/40 mt-1.5">
-              Drag the pin or click the map to fine-tune — this is what customers will see on your shop page.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 rounded-2xl border border-dashed border-black/15 bg-white/40 px-4 py-6 text-center text-sm text-foreground/40 flex items-center justify-center gap-2">
-            {geocoding && <Loader2 className="h-4 w-4 animate-spin" />}
-            {geocoding ? 'Finding your address…' : 'Enter an address to place a pin'}
-          </div>
-        )}
+        <div className="mt-4">
+          <span className="block text-sm font-semibold text-foreground mb-1.5">
+            Pin location {geocoding && <span className="text-foreground/40 font-normal">(finding address…)</span>}
+          </span>
+          <ShopMap
+            lat={form.lat ?? DEFAULT_MAP_CENTER.lat}
+            lng={form.lng ?? DEFAULT_MAP_CENTER.lng}
+            color={business.brand_color}
+            zoom={form.lat != null ? 15 : 11}
+            editable
+            onChange={(lat, lng) => {
+              setPinTouched(true)
+              setForm((f) => ({ ...f, lat, lng }))
+            }}
+          />
+          <p className="text-xs text-foreground/40 mt-1.5">
+            {form.lat != null
+              ? 'Drag the pin or click the map to fine-tune — this is what customers will see on your shop page.'
+              : 'Enter an address above to auto-place the pin, or click the map to set it manually.'}
+          </p>
+        </div>
       </SectionCard>
 
       <SectionCard title="Contact">
