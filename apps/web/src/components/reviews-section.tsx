@@ -3,7 +3,7 @@ import { Star, Trash2 } from 'lucide-react'
 import { deleteReview, fetchShopReviews, upsertReview, type ShopReview } from '@/lib/businesses'
 
 function Stars({ rating, interactive, onChange }: { rating: number; interactive?: boolean; onChange?: (rating: number) => void }) {
-  return <div className="flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" disabled={!interactive} onClick={() => onChange?.(value)} aria-label={`${value} star${value === 1 ? '' : 's'}`} className={interactive ? 'hover:scale-110 transition-transform' : 'cursor-default'}><Star className={'h-5 w-5 ' + (value <= rating ? 'fill-accent text-accent' : 'text-black/15')} /></button>)}</div>
+  return <div className="flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" disabled={!interactive} onClick={() => onChange?.(value)} aria-label={`${value} star${value === 1 ? '' : 's'}`} className={interactive ? 'star-rating-button transition-transform duration-150 ease-out active:scale-[0.97]' : 'cursor-default'}><Star className={'h-5 w-5 ' + (value <= rating ? 'fill-accent text-accent' : 'text-black/15')} /></button>)}</div>
 }
 
 export function ReviewsSection({ businessId, userId, canReview }: { businessId: string; userId: string; canReview: boolean }) {

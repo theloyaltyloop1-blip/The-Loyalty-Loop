@@ -79,9 +79,11 @@
   .animate-pop-in {
     animation: none;
   }
-  * {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .star-rating-button:hover {
+    transform: scale(1.1);
   }
 }
 

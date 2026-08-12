@@ -292,7 +292,7 @@ export function ShopDetail() {
             <div className="mb-8">
               <div className="h-4 rounded-full bg-black/5 overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all"
+                  className="h-full rounded-full transition-[width] duration-300 ease-in-out"
                   style={{
                     width: `${Math.min(100, (progress / stampsRequired) * 100)}%`,
                     backgroundColor: business.brand_color,
