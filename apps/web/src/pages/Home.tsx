@@ -18,7 +18,7 @@ function TrendingCard({ business }: { business: Business }) {
   const Icon = CATEGORY_ICON[business.category ?? ''] ?? Store
 
   return (
-    <button
+    <button data-press-feedback
       onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
       className="text-left w-64 shrink-0 rounded-2xl bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
     >
@@ -92,7 +92,7 @@ export function Home() {
       <h1 className="text-3xl font-display font-extrabold text-foreground mb-5">Discover local rewards</h1>
 
       <div className="flex flex-wrap gap-2 mb-8">
-        <button
+        <button data-press-feedback
           onClick={() => setCategory('All')}
           className={
             'rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-150 ease-out ' +
@@ -102,7 +102,7 @@ export function Home() {
           All categories
         </button>
         {Object.entries(counts).map(([cat, count]) => (
-          <button
+          <button data-press-feedback
             key={cat}
             onClick={() => setCategory(cat)}
             className={

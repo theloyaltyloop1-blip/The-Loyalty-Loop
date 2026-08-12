@@ -54,7 +54,7 @@ function BusinessSwitcher() {
     if (!business) return null
     return (
       <div className="relative mb-6">
-        <button
+        <button data-press-feedback
           onClick={toggleMenu}
           className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-card px-4 py-3 font-semibold text-foreground transition-[transform,border-color] duration-150 ease-out active:scale-[0.98] hover:border-black/20"
         >
@@ -75,7 +75,7 @@ function BusinessSwitcher() {
         {menuMounted && businesses.length > 1 && (
           <div data-state={open ? 'open' : 'closed'} className="business-switcher-menu absolute z-50 mt-1 w-full rounded-2xl border border-black/10 bg-card shadow-lg overflow-hidden">
             {businesses.map((b) => (
-              <button
+              <button data-press-feedback
                 key={b.id}
                 onClick={() => {
                   setBusinessId(b.id)
@@ -138,7 +138,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               {label}
             </NavLink>
           ))}
-          <button onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground/60 hover:bg-black/5 md:hidden">
+          <button data-press-feedback onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground/60 hover:bg-black/5 md:hidden">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </nav>
@@ -153,7 +153,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               Switch to customer view
             </Link>
           )}
-          <button
+          <button data-press-feedback
             onClick={signOut}
             className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors duration-150 ease-out"
           >

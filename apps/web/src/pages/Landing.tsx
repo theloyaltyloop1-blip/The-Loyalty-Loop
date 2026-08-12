@@ -133,7 +133,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = React.useState(false)
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <button
+      <button data-press-feedback
         className="w-full flex items-center justify-between gap-4 text-left font-display font-bold text-lg"
         onClick={() => setOpen((o) => !o)}
       >

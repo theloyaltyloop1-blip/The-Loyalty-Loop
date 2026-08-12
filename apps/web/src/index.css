@@ -110,13 +110,13 @@
 .stagger-card { animation: card-stagger-enter 180ms var(--ease-out) both; }
 @keyframes card-stagger-enter { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-button:not(:disabled):not([data-no-press-feedback]) { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform; transition-duration: 150ms; transition-timing-function: var(--ease-out); }
-button:not(:disabled):not([data-no-press-feedback]):active { transform: scale(.97); }
+button[data-press-feedback]:not(:disabled) { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform; transition-duration: 150ms; transition-timing-function: var(--ease-out); }
+button[data-press-feedback]:not(:disabled):active { transform: scale(.97); }
 
 @media (prefers-reduced-motion: reduce) {
   .business-switcher-menu, .cookie-consent-banner, .loyalty-card-panel, .stagger-card { animation: none; transition: opacity 150ms ease; transform: none; }
   .loyalty-stamp { transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
-  button:not(:disabled):not([data-no-press-feedback]):active { transform: none; }
+  button[data-press-feedback]:not(:disabled):active { transform: none; }
 }
 
 .shop-poster-print { position: relative; aspect-ratio: 210 / 297; overflow: hidden; border: 1px solid; background: #fffdf9; box-shadow: 0 12px 30px rgb(48 68 45 / .14); }

@@ -189,7 +189,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-center">
-        <button
+        <button data-press-feedback
           onClick={() => setCameraOn((c) => !c)}
           className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-foreground"
         >
@@ -214,7 +214,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           onChange={(e) => setCode(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
         />
-        <button
+        <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
           className="h-12 rounded-xl bg-foreground text-white font-bold px-5 disabled:opacity-40"
@@ -247,14 +247,14 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
               <span className="text-sm text-foreground/50">{unit}{amount === 1 ? '' : 's'}</span>
             </div>
           </div>
-          <button
+          <button data-press-feedback
             onClick={handleAward}
             disabled={busy}
             className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Check className="h-4 w-4" /> {busy ? 'Awarding…' : `Award ${amount} ${unit}${amount === 1 ? '' : 's'}`}
           </button>
-          <button onClick={reset} className="text-sm font-semibold text-foreground/50 self-center">
+          <button data-press-feedback onClick={reset} className="text-sm font-semibold text-foreground/50 self-center">
             Cancel
           </button>
         </>
@@ -340,7 +340,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-center">
-        <button
+        <button data-press-feedback
           onClick={() => setCameraOn((c) => !c)}
           className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-foreground"
         >
@@ -365,7 +365,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
           onChange={(e) => setCode(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
         />
-        <button
+        <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
           className="h-12 rounded-xl bg-foreground text-white font-bold px-5 disabled:opacity-40"
@@ -386,7 +386,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
       )}
 
       {reward && !alreadyRedeemed && !expired && (
-        <button
+        <button data-press-feedback
           onClick={handleRedeem}
           disabled={busy}
           className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
@@ -469,7 +469,7 @@ export function OwnerScan() {
                 {(['award', 'redeem'] as const)
                   .filter((key) => (key === 'award' ? canScan : canRedeem))
                   .map((key) => (
-                    <button
+                    <button data-press-feedback
                       key={key}
                       onClick={() => setMode(key)}
                       className={

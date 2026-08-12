@@ -45,7 +45,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               {label}
             </NavLink>
           ))}
-          <button onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground/60 hover:bg-black/5 md:hidden">
+          <button data-press-feedback onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground/60 hover:bg-black/5 md:hidden">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
 
@@ -63,7 +63,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </footer>
       </main>
 
-      <button
+      <button data-press-feedback
         title="Security"
         className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.95] md:bottom-6 md:right-6 md:h-14 md:w-14"
       >

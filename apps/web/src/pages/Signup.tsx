@@ -118,7 +118,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           autoComplete="new-password"
         />
         {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
-        <button
+        <button data-press-feedback
           type="submit"
           disabled={loading}
           className="h-14 rounded-lg bg-foreground text-white font-bold text-lg disabled:opacity-50"

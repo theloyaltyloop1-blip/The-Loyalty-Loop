@@ -134,7 +134,7 @@ export function ProfilePage() {
             <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/40 mb-1">Manual code</p>
             <div className="flex items-center gap-2">
               <p className="font-mono font-bold text-lg tracking-widest text-foreground">{profile?.stamp_code}</p>
-              <button onClick={handleCopyCode} className="text-foreground/40 hover:text-foreground">
+              <button data-press-feedback onClick={handleCopyCode} className="text-foreground/40 hover:text-foreground">
                 {copied ? <Check className="h-4 w-4 text-fun-green" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -175,7 +175,7 @@ export function ProfilePage() {
             />
           </Field>
         </div>
-        <button
+        <button data-press-feedback
           onClick={handleSaveProfile}
           disabled={saving}
           className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
@@ -202,7 +202,7 @@ export function ProfilePage() {
                 <p className="font-semibold text-foreground">{label}</p>
                 <p className="text-xs text-foreground/50">{desc}</p>
               </div>
-              <button
+              <button data-press-feedback
                 onClick={() => handleToggleSetting(key)}
                 className={
                   'h-7 w-12 rounded-full transition-colors duration-150 ease-out relative shrink-0 ' +
@@ -223,16 +223,16 @@ export function ProfilePage() {
 
       <SectionCard title="Invite a friend">
         <p className="text-sm text-foreground/55 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
-        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-primary px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
+        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button data-press-feedback onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-primary px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
       </SectionCard>
 
-      <button
+      <button data-press-feedback
         onClick={signOut}
         className="flex items-center gap-2 rounded-full border border-black/15 px-6 h-12 font-semibold text-foreground"
       >
         <LogOut className="h-4 w-4" /> Sign out
       </button>
-      <button onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
+      <button data-press-feedback onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
     </DashboardLayout>
   )
 }

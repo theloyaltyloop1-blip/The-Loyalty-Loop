@@ -126,7 +126,7 @@ function BrandImageUpload({
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
-      <button
+      <button data-press-feedback
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
         className="mt-2 flex items-center gap-2 rounded-full border border-black/15 px-4 h-9 text-sm font-semibold text-foreground disabled:opacity-40"
@@ -158,7 +158,7 @@ function OpeningHoursEditor({ hours, onChange }: { hours: OpeningHours; onChange
         return (
           <div key={key} className="flex items-center gap-3 flex-wrap">
             <span className="w-28 text-sm font-semibold text-foreground">{label}</span>
-            <button
+            <button data-press-feedback
               onClick={() => onChange({ ...hours, [key]: { ...day, closed: !day.closed } })}
               className={
                 'rounded-full px-3 h-8 text-xs font-bold ' +
@@ -235,7 +235,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
           {photos.map((p) => (
             <div key={p.id} className="relative rounded-xl overflow-hidden aspect-square group">
               <img src={p.url} alt="" className="h-full w-full object-cover" />
-              <button
+              <button data-press-feedback
                 onClick={() => handleDelete(p.id)}
                 className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
               >
@@ -243,7 +243,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
               </button>
             </div>
           ))}
-          <button
+          <button data-press-feedback
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
             className="rounded-xl border-2 border-dashed border-black/15 aspect-square flex flex-col items-center justify-center gap-1 text-foreground/40 hover:border-primary/50 transition-colors duration-150 ease-out disabled:opacity-50"
@@ -435,7 +435,7 @@ function ProfileTab() {
         <OpeningHoursEditor hours={hours} onChange={setHours} />
       </SectionCard>
 
-      <button
+      <button data-press-feedback
         onClick={handleSave}
         disabled={saving}
         className="rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50 mb-5"
@@ -536,7 +536,7 @@ function LoyaltyTab() {
             { value: 'points' as const, title: 'Points', desc: 'Award points per visit or spend. Best for variable rewards.' },
             { value: 'tiered' as const, title: 'Visits', desc: 'Just count visits. Simple and clean.' },
           ].map((opt) => (
-            <button
+            <button data-press-feedback
               key={opt.value}
               onClick={() => setLoyaltyType(opt.value)}
               className={
@@ -564,7 +564,7 @@ function LoyaltyTab() {
             </div>
             <div className="flex flex-wrap gap-2 mb-6">
               {BRAND_COLORS.map((c) => (
-                <button
+                <button data-press-feedback
                   key={c}
                   onClick={() => setBrandColor(c)}
                   className="h-8 w-8 rounded-full border-2"
@@ -613,7 +613,7 @@ function LoyaltyTab() {
             </p>
             <div className="flex flex-wrap gap-2 mb-2">
               {STAMP_ICON_PRESETS.map((icon) => (
-                <button
+                <button data-press-feedback
                   key={icon}
                   onClick={() => setStampIcon(icon)}
                   className={
@@ -667,7 +667,7 @@ function LoyaltyTab() {
                     {r.description} · {r.stamp_threshold} {unit.toLowerCase()}{r.stamp_threshold === 1 ? '' : 's'}
                   </p>
                 </div>
-                <button onClick={() => handleDeleteReward(r.id)} className="text-foreground/40 hover:text-red-600">
+                <button data-press-feedback onClick={() => handleDeleteReward(r.id)} className="text-foreground/40 hover:text-red-600">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -701,7 +701,7 @@ function LoyaltyTab() {
               onChange={(e) => setNewReward({ ...newReward, stamp_threshold: Number(e.target.value) })}
             />
           </Field>
-          <button
+          <button data-press-feedback
             onClick={handleAddReward}
             className="h-12 rounded-full bg-primary text-white font-bold px-5 flex items-center gap-1.5 whitespace-nowrap"
           >
@@ -710,7 +710,7 @@ function LoyaltyTab() {
         </div>
       </SectionCard>
 
-      <button
+      <button data-press-feedback
         onClick={handleSave}
         disabled={saving}
         className="rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
@@ -780,7 +780,7 @@ function WinbackTab() {
               onChange={(e) => setThreshold(Number(e.target.value))}
             />
           </Field>
-          <button
+          <button data-press-feedback
             onClick={handleSend}
             disabled={sending}
             className="h-12 rounded-full bg-primary text-white font-bold px-6 flex items-center gap-2 disabled:opacity-50"
@@ -925,14 +925,14 @@ function VerificationTab() {
             className="hidden"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
-          <button
+          <button data-press-feedback
             onClick={() => inputRef.current?.click()}
             className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-11 text-sm font-semibold text-foreground mb-4"
           >
             <FileCheck className="h-4 w-4" /> {file ? file.name : 'Choose file'}
           </button>
           {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-          <button
+          <button data-press-feedback
             onClick={handleSubmit}
             disabled={submitting || !file || !label.trim()}
             className="rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
@@ -957,7 +957,7 @@ function PermissionToggle({
   onToggle: () => void
 }) {
   return (
-    <button
+    <button data-press-feedback
       onClick={onToggle}
       className={
         'flex items-center gap-2 rounded-full border-2 px-3.5 h-9 text-sm font-semibold transition-colors duration-150 ease-out ' +
@@ -1043,7 +1043,7 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
         />
       </div>
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-      <button
+      <button data-press-feedback
         onClick={handleInvite}
         disabled={submitting}
         className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
@@ -1082,7 +1082,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
           </p>
           <p className="text-xs text-foreground/50">{staff.invited_email}</p>
         </div>
-        <button
+        <button data-press-feedback
           onClick={toggleStatus}
           disabled={busy}
           className={
@@ -1212,7 +1212,7 @@ function DangerTab() {
       <section className="rounded-2xl border border-amber-300 bg-amber-50 p-6">
         <h3 className="font-display text-lg font-bold text-amber-950">{business.is_active ? 'Deactivate shop' : 'Reactivate shop'}</h3>
         <p className="mt-2 text-sm text-amber-950/70">{business.is_active ? 'Deactivation hides your shop and stops new customer joins. Your data stays safely in place, and you can reactivate it at any time.' : 'Reactivating makes your shop available to customers again.'}</p>
-        <button onClick={() => setActive(!business.is_active)} disabled={busy} className="mt-4 rounded-xl border border-amber-500 px-4 py-2 text-sm font-bold text-amber-900 disabled:opacity-50">
+        <button data-press-feedback onClick={() => setActive(!business.is_active)} disabled={busy} className="mt-4 rounded-xl border border-amber-500 px-4 py-2 text-sm font-bold text-amber-900 disabled:opacity-50">
           {busy ? 'Saving…' : business.is_active ? 'Deactivate shop' : 'Reactivate shop'}
         </button>
       </section>
@@ -1221,12 +1221,12 @@ function DangerTab() {
         <h3 className="font-display text-lg font-bold text-red-800">Delete shop permanently</h3>
         <p className="mt-2 text-sm text-red-800/75">This permanently removes the shop, its members’ loyalty activity, rewards, reviews and related shop data. This cannot be undone.</p>
         {!confirmingDelete ? (
-          <button onClick={() => setConfirmingDelete(true)} className="mt-4 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700">Delete shop…</button>
+          <button data-press-feedback onClick={() => setConfirmingDelete(true)} className="mt-4 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700">Delete shop…</button>
         ) : (
           <div className="mt-4 max-w-md">
             <label className="block text-sm font-semibold text-red-900">Type <span className="font-bold">{business.name}</span> to confirm</label>
             <input value={deleteName} onChange={(e) => setDeleteName(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-red-300 bg-white px-3 outline-none focus:border-red-600" />
-            <div className="mt-3 flex gap-2"><button onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-xl px-4 py-2 text-sm font-bold text-red-800">Cancel</button></div>
+            <div className="mt-3 flex gap-2"><button data-press-feedback onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-xl px-4 py-2 text-sm font-bold text-red-800">Cancel</button></div>
           </div>
         )}
         {error && <p className="mt-3 text-sm font-medium text-red-700">{error}</p>}
@@ -1249,7 +1249,7 @@ export function OwnerSettings() {
 
       <div className="flex flex-wrap gap-1 border-b border-black/10 mb-6">
         {TABS.map(({ key, label, icon: Icon }) => (
-          <button
+          <button data-press-feedback
             key={key}
             onClick={() => setTab(key)}
             className={

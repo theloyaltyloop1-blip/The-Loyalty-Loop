@@ -137,7 +137,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
       ) : (
         <p className="text-sm text-foreground/80 leading-relaxed">{summary}</p>
       )}
-      <button onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-primary-hover disabled:opacity-40">
+      <button data-press-feedback onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-primary-hover disabled:opacity-40">
         Regenerate
       </button>
     </div>
@@ -176,7 +176,7 @@ function DeepBusinessReportCard({
           <Search className="h-4 w-4 text-primary" />
           <p className="font-display font-bold text-foreground">Deep business report</p>
         </div>
-        <button
+        <button data-press-feedback
           onClick={handleResearch}
           disabled={loading}
           className="flex items-center gap-2 rounded-full bg-foreground text-white text-sm font-bold px-4 h-9 disabled:opacity-50"
@@ -283,7 +283,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
         />
-        <button
+        <button data-press-feedback
           onClick={handleSend}
           disabled={sending || !input.trim()}
           className="h-11 w-11 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-40 shrink-0"
@@ -338,7 +338,7 @@ export function OwnerAnalytics() {
         {business && (
           <div className="flex items-center gap-1 bg-card rounded-full p-1 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
             {PERIODS.map((p) => (
-              <button
+              <button data-press-feedback
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={
@@ -365,7 +365,7 @@ export function OwnerAnalytics() {
         <>
           <div className="flex gap-1 overflow-x-auto border-b border-black/10 mb-6">
             {(['simplified', 'detailed'] as const).map((key) => (
-              <button
+              <button data-press-feedback
                 key={key}
                 onClick={() => setView(key)}
                 className={

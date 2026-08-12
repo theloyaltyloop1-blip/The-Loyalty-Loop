@@ -15,7 +15,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-8">{title}</h1>
           <div className="flex flex-col gap-4 max-w-md">{children}</div>
 
-          <button
+          <button data-press-feedback
             onClick={() => navigate('/')}
             className="absolute bottom-6 right-8 text-sm font-semibold text-primary transition-colors duration-150 ease-out hover:text-primary-hover hover:underline"
           >

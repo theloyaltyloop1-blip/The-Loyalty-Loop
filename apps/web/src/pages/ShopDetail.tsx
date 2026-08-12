@@ -213,7 +213,7 @@ export function ShopDetail() {
 
   return (
     <DashboardLayout>
-      <button
+      <button data-press-feedback
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm font-semibold text-foreground/60 hover:text-foreground mb-4"
       >
@@ -228,7 +228,7 @@ export function ShopDetail() {
             : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
-        <button
+        <button data-press-feedback
           onClick={handleToggleFavourite}
           className={
             'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
@@ -273,7 +273,7 @@ export function ShopDetail() {
             Collect {stampsRequired} {unit}
             {stampsRequired === 1 ? '' : 's'} to unlock it.
           </p>
-          <button
+          <button data-press-feedback
             onClick={handleJoin}
             disabled={joining}
             className="rounded-full px-8 h-12 font-bold text-white disabled:opacity-50"
@@ -372,7 +372,7 @@ export function ShopDetail() {
 
           {isOwner && (
             <div className="border-t border-black/10 mt-6 pt-5">
-              <button
+              <button data-press-feedback
                 onClick={handleSimulateStamp}
                 disabled={stamping}
                 className="flex items-center gap-2 rounded-full border border-dashed border-foreground/30 px-5 h-10 font-semibold text-sm text-foreground/70 disabled:opacity-50"
@@ -391,7 +391,7 @@ export function ShopDetail() {
                   : "You won't receive promo notifications from this shop."}
               </p>
             </div>
-            <button
+            <button data-press-feedback
               onClick={handleToggleOptIn}
               className="rounded-full border border-black/15 px-5 h-10 font-semibold text-foreground shrink-0"
             >
@@ -477,7 +477,7 @@ export function ShopDetail() {
         ) : (
           <div />
         )}
-        <button className="rounded-full border border-black/15 px-5 h-10 font-semibold text-foreground flex items-center gap-2">
+        <button data-press-feedback className="rounded-full border border-black/15 px-5 h-10 font-semibold text-foreground flex items-center gap-2">
           <Share2 className="h-4 w-4" /> Share
         </button>
       </div>

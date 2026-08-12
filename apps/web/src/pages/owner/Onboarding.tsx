@@ -183,7 +183,7 @@ export function OwnerOnboarding() {
               <p className="text-sm font-semibold text-foreground mb-2">Brand color</p>
               <div className="flex flex-wrap gap-2 mb-6">
                 {BRAND_COLORS.map((c) => (
-                  <button
+                  <button data-press-feedback
                     key={c}
                     onClick={() => setForm({ ...form, brand_color: c })}
                     className="h-9 w-9 rounded-full border-2"
@@ -200,7 +200,7 @@ export function OwnerOnboarding() {
                   { value: 'points' as const, title: 'Points' },
                   { value: 'tiered' as const, title: 'Visits' },
                 ].map((opt) => (
-                  <button
+                  <button data-press-feedback
                     key={opt.value}
                     onClick={() => setForm({ ...form, loyalty_type: opt.value })}
                     className={
@@ -231,7 +231,7 @@ export function OwnerOnboarding() {
           {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">
-            <button
+            <button data-press-feedback
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
               className="flex items-center gap-1.5 text-sm font-semibold text-foreground/50 disabled:opacity-0"
@@ -240,7 +240,7 @@ export function OwnerOnboarding() {
             </button>
 
             {step < STEPS.length - 1 ? (
-              <button
+              <button data-press-feedback
                 onClick={() => setStep((s) => s + 1)}
                 disabled={!canContinue}
                 className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
@@ -248,7 +248,7 @@ export function OwnerOnboarding() {
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
-              <button
+              <button data-press-feedback
                 onClick={handleCreate}
                 disabled={creating}
                 className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"

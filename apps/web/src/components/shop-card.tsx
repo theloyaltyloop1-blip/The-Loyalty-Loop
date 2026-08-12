@@ -28,7 +28,7 @@ export function ShopCard({ business, membership }: { business: Business; members
   const joined = Boolean(membership)
 
   return (
-    <button
+    <button data-press-feedback
       onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
       className="text-left rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5 relative hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
     >
