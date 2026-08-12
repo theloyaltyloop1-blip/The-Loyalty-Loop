@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Modal,
   Pressable,
   RefreshControl,
@@ -125,6 +126,16 @@ function CloseIcon({ color = foreground, size = 20 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M6 6l12 12M18 6 6 18" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+function WalletIcon({ color = '#fff', size = 18 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+      <Path d="M16 14h2" stroke={color} strokeWidth={2} strokeLinecap="round" />
     </Svg>
   )
 }
@@ -343,6 +354,7 @@ function ShopDetail({
   refresh: () => Promise<void>
 }) {
   const [busy, setBusy] = useState(false)
+  const [addingToWallet, setAddingToWallet] = useState(false)
   const [catalog, setCatalog] = useState<RewardCatalogItem[]>([])
   const [catalogLoading, setCatalogLoading] = useState(true)
   const threshold = business.loyalty_config?.stamps_required || 10
@@ -384,6 +396,22 @@ function ShopDetail({
     }
   }
 
+  async function addToWallet() {
+    setAddingToWallet(true)
+    try {
+      const { data, error } = await supabase.functions.invoke<{ saveUrl?: string; error?: string }>('create-wallet-pass', {
+        body: { business_id: business.id },
+      })
+      if (error) throw error
+      if (!data?.saveUrl) throw new Error(data?.error || 'Could not create the pass')
+      await Linking.openURL(data.saveUrl)
+    } catch (e) {
+      Alert.alert('Could not add to Google Wallet', e instanceof Error ? e.message : 'Please try again.')
+    } finally {
+      setAddingToWallet(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.screen}>
@@ -418,6 +446,10 @@ function ShopDetail({
               <QRCode value={`loyaltyloop:customer:${userId}`} size={150} />
               <Text style={styles.qrText}>Show this QR code when you pay</Text>
             </View>
+            <Pressable onPress={addToWallet} disabled={addingToWallet} style={[styles.walletButton, addingToWallet && styles.disabled]}>
+              <WalletIcon size={17} />
+              <Text style={styles.walletButtonText}>{addingToWallet ? 'Preparing…' : 'Add to Google Wallet'}</Text>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.joinCard}>
@@ -1116,6 +1148,8 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },
   qrText: { color: '#6b6459', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
+  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1a1a1a', borderRadius: 999, height: 46, marginTop: 18 },
+  walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Rewards
   reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
