@@ -2,7 +2,7 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation, Wallet } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -79,7 +79,6 @@ export function ShopDetail() {
   const [joinError, setJoinError] = React.useState<string | null>(null)
   const [justJoined, setJustJoined] = React.useState(false)
   const [stamping, setStamping] = React.useState(false)
-  const [addingToWallet, setAddingToWallet] = React.useState(false)
 
   // Supabase fires onAuthStateChange multiple times in quick succession after
   // login/navigation (INITIAL_SESSION, token refresh, etc.), each producing a
@@ -210,23 +209,6 @@ export function ShopDetail() {
       await refetch()
     } finally {
       setStamping(false)
-    }
-  }
-
-  async function handleAddToWallet() {
-    if (!business) return
-    setAddingToWallet(true)
-    try {
-      const { data, error } = await supabase.functions.invoke<{ saveUrl?: string; error?: string }>('create-wallet-pass', {
-        body: { business_id: business.id },
-      })
-      if (error) throw error
-      if (!data?.saveUrl) throw new Error(data?.error || 'Could not create the pass')
-      window.open(data.saveUrl, '_blank', 'noopener,noreferrer')
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not add this card to Google Wallet — try again.')
-    } finally {
-      setAddingToWallet(false)
     }
   }
 
@@ -386,14 +368,6 @@ export function ShopDetail() {
                 They scan the code to add a {unit}, or type the manual code above. {Math.max(0, stampsRequired - progress)} {unit}
                 {Math.max(0, stampsRequired - progress) === 1 ? '' : 's'} to your next reward.
               </p>
-              <button
-                data-press-feedback
-                onClick={handleAddToWallet}
-                disabled={addingToWallet}
-                className="mt-4 flex items-center gap-2 rounded-full bg-[#1a1a1a] text-white px-5 h-11 font-semibold text-sm disabled:opacity-50"
-              >
-                <Wallet className="h-4 w-4" /> {addingToWallet ? 'Preparing…' : 'Add to Google Wallet'}
-              </button>
             </div>
           </div>
 
