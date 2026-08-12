@@ -1,0 +1,9 @@
+# Local Codex/Claude configuration is not part of either mobile application.
+.agents/
+.claude/
+plans/
+supabase/.temp/
+
+# Dependencies are installed by EAS from the lockfile.
+node_modules/
+apps/*/node_modules/
