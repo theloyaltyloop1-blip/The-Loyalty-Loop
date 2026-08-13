@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -15,14 +16,13 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import Svg, { Polyline } from "react-native-svg";
 import {
-  ArrowRight,
   BadgeCheck,
   ChartNoAxesCombined,
   Gift,
   LayoutDashboard,
   Newspaper,
-  ScanLine,
   Settings,
   Sparkles,
   Stamp,
@@ -103,6 +103,8 @@ type DashboardStats = {
   rewards: number;
   redeemed: number;
   reviews: number;
+  activeMembers: number;
+  dormantMembers: number;
 };
 type MemberRow = {
   user_id: string;
@@ -143,7 +145,114 @@ const PREVIEW_STATS: DashboardStats = {
   rewards: 57,
   redeemed: 43,
   reviews: 32,
+  activeMembers: 96,
+  dormantMembers: 52,
 };
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString();
+}
+type DailyPoint = {
+  stamps: number;
+  visits: number;
+  newCustomers: number;
+  oldCustomers: number;
+};
+function dayKey(iso: string) {
+  return iso.slice(0, 10);
+}
+function buildDailySeries(
+  period: 7 | 30 | 90,
+  txRows: { created_at: string; value: number; user_id: string }[],
+  memberRows: { user_id: string; joined_at: string }[],
+): DailyPoint[] {
+  const joinedAt = new Map(memberRows.map((m) => [m.user_id, m.joined_at]));
+  const days: string[] = [];
+  for (let i = period - 1; i >= 0; i--) {
+    days.push(dayKey(new Date(Date.now() - i * 86400000).toISOString()));
+  }
+  return days.map((day) => {
+    const rowsToday = txRows.filter((r) => dayKey(r.created_at) === day);
+    const visitors = new Set(rowsToday.map((r) => r.user_id));
+    let newCustomers = 0,
+      oldCustomers = 0;
+    visitors.forEach((userId) => {
+      const joined = joinedAt.get(userId);
+      if (joined && dayKey(joined) === day) newCustomers++;
+      else oldCustomers++;
+    });
+    return {
+      stamps: rowsToday.reduce((sum, r) => sum + (r.value || 0), 0),
+      visits: visitors.size,
+      newCustomers,
+      oldCustomers,
+    };
+  });
+}
+function buildPreviewDailySeries(period: 7 | 30 | 90): DailyPoint[] {
+  return Array.from({ length: period }, (_, i) => ({
+    stamps: Math.round(4 + Math.sin(i / 3) * 3 + i / 6),
+    visits: Math.round(3 + Math.cos(i / 4) * 2 + i / 8),
+    newCustomers: Math.round(1 + Math.sin(i / 5) * 1.2),
+    oldCustomers: Math.round(2 + Math.cos(i / 3) * 1.5 + i / 10),
+  }));
+}
+function MiniLineChart({
+  data,
+  aKey,
+  bKey,
+  aLabel,
+  bLabel,
+  aColor,
+  bColor,
+}: {
+  data: DailyPoint[];
+  aKey: keyof DailyPoint;
+  bKey: keyof DailyPoint;
+  aLabel: string;
+  bLabel: string;
+  aColor: string;
+  bColor: string;
+}) {
+  const max = Math.max(1, ...data.map((d) => Math.max(d[aKey], d[bKey])));
+  const stepX = data.length > 1 ? 100 / (data.length - 1) : 100;
+  const toPoints = (key: keyof DailyPoint) =>
+    data
+      .map((d, i) => `${i * stepX},${38 - (d[key] / max) * 34}`)
+      .join(" ");
+  return (
+    <View>
+      <View style={styles.chartWrap}>
+        <Svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+          <Polyline
+            points={toPoints(bKey)}
+            fill="none"
+            stroke={bColor}
+            strokeWidth={1.6}
+            vectorEffect="non-scaling-stroke"
+          />
+          <Polyline
+            points={toPoints(aKey)}
+            fill="none"
+            stroke={aColor}
+            strokeWidth={1.6}
+            vectorEffect="non-scaling-stroke"
+          />
+        </Svg>
+      </View>
+      <View style={styles.chartLegendRow}>
+        <View style={styles.chartLegendItem}>
+          <View style={[styles.legendDot, { backgroundColor: aColor }]} />
+          <Text style={styles.legendLabel}>{aLabel}</Text>
+        </View>
+        <View style={styles.chartLegendItem}>
+          <View style={[styles.legendDot, { backgroundColor: bColor }]} />
+          <Text style={styles.legendLabel}>{bLabel}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
 const { foreground: green, primary: orange, background: cream } = colors;
 
 function Button({
@@ -303,12 +412,16 @@ function ShopPicker({
   );
 }
 
-function Scanner({
+function StampsScreen({
   business,
+  mode,
+  onModeChange,
   onDone,
   onConfigureRewards,
 }: {
   business: Business;
+  mode: "stamps" | "reward";
+  onModeChange: (mode: "stamps" | "reward") => void;
   onDone: () => void;
   onConfigureRewards: () => void;
 }) {
@@ -321,7 +434,15 @@ function Scanner({
     first_name?: string | null;
     last_name?: string | null;
   } | null>(null);
-  const [amount, setAmount] = useState("1");
+  const [memberInfo, setMemberInfo] = useState<{
+    joined_at?: string | null;
+    last_activity_at?: string | null;
+  } | null>(null);
+  const [activeReward, setActiveReward] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState(false);
   const unit =
     business.loyalty_type === "points"
@@ -351,6 +472,37 @@ function Scanner({
     };
   }, [business.id]);
 
+  function reset() {
+    setMatched(null);
+    setMemberInfo(null);
+    setActiveReward(null);
+    setCode("");
+    setAmount(1);
+  }
+
+  async function loadMemberDetails(userId: string) {
+    const [{ data: memberRows }, { data: rewardRows }] = await Promise.all([
+      supabase.rpc("get_business_members", { _business_id: business.id }),
+      supabase
+        .from("rewards")
+        .select("id,title")
+        .eq("business_id", business.id)
+        .eq("user_id", userId)
+        .is("redeemed_at", null)
+        .order("created_at", { ascending: true })
+        .limit(1),
+    ]);
+    const row = ((memberRows || []) as MemberRow[]).find(
+      (m) => m.user_id === userId,
+    );
+    setMemberInfo(
+      row
+        ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at }
+        : null,
+    );
+    setActiveReward((rewardRows || [])[0] || null);
+  }
+
   function parse(value: string) {
     const match = value.match(/^loyaltyloop:customer:(.+)$/);
     if (!match) {
@@ -361,8 +513,10 @@ function Scanner({
       return;
     }
     setCamera(false);
-    setMatched({ id: match[1] });
+    const id = match[1];
+    setMatched({ id });
     setCode("");
+    void loadMemberDetails(id);
   }
   async function lookup() {
     if (!code.trim()) return;
@@ -375,6 +529,7 @@ function Scanner({
       const person = (data || [])[0];
       if (!person) throw new Error("No customer found with that code.");
       setMatched(person);
+      void loadMemberDetails(person.id);
     } catch (e) {
       Alert.alert(
         "Could not find customer",
@@ -386,7 +541,7 @@ function Scanner({
   }
   async function award() {
     if (!matched) return;
-    const value = Math.max(1, Number(amount) || 1);
+    const value = Math.max(1, amount);
     setBusy(true);
     try {
       const { error } = await supabase.from("transactions").insert({
@@ -403,8 +558,7 @@ function Scanner({
         "Reward added",
         `${value} ${unit} awarded to ${matched.first_name || "the customer"}.`,
       );
-      setMatched(null);
-      setCode("");
+      reset();
       onDone();
     } catch (e) {
       Alert.alert(
@@ -417,9 +571,55 @@ function Scanner({
       setBusy(false);
     }
   }
+  async function redeem() {
+    if (!matched || !activeReward) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase
+        .from("rewards")
+        .update({ redeemed_at: new Date().toISOString() })
+        .eq("id", activeReward.id);
+      if (error) throw error;
+      Alert.alert(
+        "Reward redeemed",
+        `${activeReward.title} redeemed for ${matched.first_name || "the customer"}.`,
+      );
+      reset();
+      onDone();
+    } catch (e) {
+      Alert.alert(
+        "Could not redeem",
+        e instanceof Error ? e.message : "Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <View>
-      <Text style={styles.section}>Award progress</Text>
+      <Text style={styles.pageKicker}>QUICK ACTION</Text>
+      <Text style={styles.pageTitle}>Stamps</Text>
+      <View style={[styles.segment, { marginTop: 18 }]}>
+        {(["stamps", "reward"] as const).map((value) => (
+          <Pressable
+            key={value}
+            onPress={() => onModeChange(value)}
+            style={[
+              styles.segmentButton,
+              mode === value && styles.segmentActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                mode === value && styles.segmentTextActive,
+              ]}
+            >
+              {value === "stamps" ? "Stamps" : "Reward"}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
       {hasReward === null ? (
         <View style={styles.card}>
           <ActivityIndicator color={orange} />
@@ -435,87 +635,123 @@ function Scanner({
         </View>
       ) : (
         <>
-      <Text style={styles.copy}>
-        Scan their customer card or enter their short code. The database only
-        permits awards for this selected shop.
-      </Text>
-      <View style={styles.actionRow}>
-        <Button
-          title="Scan customer QR"
-          onPress={async () => {
-            if (!permission?.granted) {
-              const result = await requestPermission();
-              if (!result.granted)
-                return Alert.alert(
-                  "Camera permission needed",
-                  "Allow camera access to scan customer cards.",
-                );
-            }
-            setCamera(true);
-          }}
-        />
-        <Button
-          title="Enter code instead"
-          secondary
-          onPress={() => setCamera(false)}
-        />
-      </View>
-      {camera && (
-        <Modal animationType="slide" onRequestClose={() => setCamera(false)}>
-          <SafeAreaView style={styles.cameraWrap}>
-            <Text style={styles.cameraTitle}>Scan customer card</Text>
-            <CameraView
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-              onBarcodeScanned={({ data }) => parse(data)}
-            />
-            <Button
-              title="Cancel scan"
-              secondary
-              onPress={() => setCamera(false)}
-            />
-          </SafeAreaView>
-        </Modal>
-      )}
-      <View style={styles.card}>
-        <TextInput
-          style={styles.input}
-          value={code}
-          onChangeText={setCode}
-          placeholder="Customer short code"
-          autoCapitalize="characters"
-        />
-        <Button
-          title={busy ? "Looking up…" : "Find customer"}
-          onPress={lookup}
-          disabled={busy}
-        />
-        {matched && (
-          <View style={styles.match}>
-            <Text style={styles.matchTitle}>Customer ready</Text>
-            <Text style={styles.copy}>
-              {matched.first_name
-                ? [matched.first_name, matched.last_name]
-                    .filter(Boolean)
-                    .join(" ")
-                : "Customer card scanned"}
-            </Text>
+          {mode === "stamps" && (
+            <View style={styles.stepper}>
+              <Pressable
+                onPress={() => setAmount((a) => Math.max(1, a - 1))}
+                style={styles.stepperButton}
+              >
+                <Text style={styles.stepperText}>−</Text>
+              </Pressable>
+              <Text style={styles.stepperInput}>{amount}</Text>
+              <Pressable
+                onPress={() => setAmount((a) => a + 1)}
+                style={styles.stepperButton}
+              >
+                <Text style={styles.stepperText}>+</Text>
+              </Pressable>
+            </View>
+          )}
+          <Pressable
+            onPress={async () => {
+              if (!permission?.granted) {
+                const result = await requestPermission();
+                if (!result.granted)
+                  return Alert.alert(
+                    "Camera permission needed",
+                    "Allow camera access to scan customer cards.",
+                  );
+              }
+              setCamera(true);
+            }}
+            style={({ pressed }) => [
+              styles.cameraStartButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.cameraStartText}>Camera Start</Text>
+          </Pressable>
+          {camera && (
+            <Modal animationType="slide" onRequestClose={() => setCamera(false)}>
+              <SafeAreaView style={styles.cameraWrap}>
+                <Text style={styles.cameraTitle}>Scan customer card</Text>
+                <CameraView
+                  style={styles.camera}
+                  facing="back"
+                  barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                  onBarcodeScanned={({ data }) => parse(data)}
+                />
+                <Button
+                  title="Cancel scan"
+                  secondary
+                  onPress={() => setCamera(false)}
+                />
+              </SafeAreaView>
+            </Modal>
+          )}
+          <View style={styles.card}>
+            <Text style={styles.section}>Or enter their code</Text>
             <TextInput
-              style={[styles.input, { marginTop: 12 }]}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="number-pad"
-              placeholder={`Number of ${unit}`}
+              style={styles.input}
+              value={code}
+              onChangeText={setCode}
+              placeholder="Customer short code"
+              autoCapitalize="characters"
             />
             <Button
-              title={busy ? "Awarding…" : `Award ${unit}`}
-              onPress={award}
+              title={busy ? "Looking up…" : "Find customer"}
+              onPress={lookup}
               disabled={busy}
             />
           </View>
-        )}
-      </View>
+          {matched && (
+            <View style={styles.card}>
+              <Text style={styles.matchTitle}>Member Information:</Text>
+              <View style={styles.memberInfoRow}>
+                <Text style={styles.memberInfoLabel}>Name:</Text>
+                <Text style={styles.memberInfoValue}>
+                  {[matched.first_name, matched.last_name]
+                    .filter(Boolean)
+                    .join(" ") || "—"}
+                </Text>
+              </View>
+              <View style={styles.memberInfoRow}>
+                <Text style={styles.memberInfoLabel}>Email:</Text>
+                <Text style={styles.memberInfoValue}>
+                  Not shown on mobile
+                </Text>
+              </View>
+              <View style={styles.memberInfoRow}>
+                <Text style={styles.memberInfoLabel}>First Visit:</Text>
+                <Text style={styles.memberInfoValue}>
+                  {formatDate(memberInfo?.joined_at)}
+                </Text>
+              </View>
+              <View style={styles.memberInfoRow}>
+                <Text style={styles.memberInfoLabel}>Last Visit:</Text>
+                <Text style={styles.memberInfoValue}>
+                  {formatDate(memberInfo?.last_activity_at)}
+                </Text>
+              </View>
+              {mode === "stamps" ? (
+                <Button
+                  title={busy ? "Awarding…" : `Award ${unit}`}
+                  onPress={award}
+                  disabled={busy}
+                />
+              ) : activeReward ? (
+                <Button
+                  title={busy ? "Redeeming…" : `Redeem "${activeReward.title}"`}
+                  onPress={redeem}
+                  disabled={busy}
+                />
+              ) : (
+                <Text style={styles.copy}>
+                  This customer has no reward ready to redeem yet.
+                </Text>
+              )}
+            </View>
+          )}
         </>
       )}
     </View>
@@ -526,13 +762,15 @@ function StatTile({
   icon,
   value,
   label,
+  wide,
 }: {
   icon: ReactNode;
   value: number;
   label: string;
+  wide?: boolean;
 }) {
   return (
-    <View style={styles.statTile}>
+    <View style={[styles.statTile, wide && styles.statTileWide]}>
       {icon}
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
@@ -543,12 +781,14 @@ function StatTile({
 function DashboardHome({
   business,
   stats,
-  onScan,
+  onIssueStamp,
+  onRedeemReward,
   onReport,
 }: {
   business: Business;
   stats: DashboardStats;
-  onScan: () => void;
+  onIssueStamp: () => void;
+  onRedeemReward: () => void;
   onReport: () => void;
 }) {
   const checklist = [
@@ -600,57 +840,55 @@ function DashboardHome({
         ))}
       </View>
       <View style={styles.statsGrid}>
+        <StatTile icon={tileIcon(Stamp)} value={stats.stamps} label="Stamps" />
         <StatTile
           icon={tileIcon(Users)}
           value={stats.members}
-          label="Members"
+          label="Customers"
         />
-        <StatTile
-          icon={tileIcon(Stamp)}
-          value={stats.stamps}
-          label="Stamps given"
-        />
-        <StatTile
-          icon={tileIcon(Gift)}
-          value={stats.rewards}
-          label="Rewards earned"
-        />
+        <StatTile icon={tileIcon(Gift)} value={stats.rewards} label="Rewards" />
+      </View>
+      <View style={styles.statsGrid}>
         <StatTile
           icon={tileIcon(BadgeCheck)}
-          value={stats.redeemed}
-          label="Redeemed"
+          value={stats.activeMembers}
+          label="Active Members"
+          wide
         />
-        <StatTile icon={tileIcon(Star)} value={stats.reviews} label="Reviews" />
+        <StatTile
+          icon={tileIcon(Star)}
+          value={stats.dormantMembers}
+          label="Dormant Members"
+          wide
+        />
+      </View>
+      <View style={styles.pillRow}>
+        <Pressable
+          onPress={onIssueStamp}
+          style={({ pressed }) => [styles.pillButton, pressed && styles.pressed]}
+        >
+          <Stamp size={18} strokeWidth={2.2} color="#fff" />
+          <Text style={styles.pillButtonText}>Issue Stamp</Text>
+        </Pressable>
+        <Pressable
+          onPress={onRedeemReward}
+          style={({ pressed }) => [styles.pillButton, pressed && styles.pressed]}
+        >
+          <Gift size={18} strokeWidth={2.2} color="#fff" />
+          <Text style={styles.pillButtonText}>Redeem Reward</Text>
+        </Pressable>
       </View>
       <Pressable
-        onPress={onScan}
+        onPress={onReport}
         style={({ pressed }) => [
-          styles.dashboardAction,
+          styles.reportButtonBlack,
           pressed && styles.pressed,
         ]}
       >
-        <ScanLine size={25} strokeWidth={2.2} color={orange} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.dashboardActionTitle}>Scan a customer</Text>
-          <Text style={styles.dashboardActionCopy}>
-            Add progress in seconds.
-          </Text>
-        </View>
-        <ArrowRight size={22} color="#30312D" />
-      </Pressable>
-      <Pressable
-        onPress={onReport}
-        style={({ pressed }) => [styles.reportCard, pressed && styles.pressed]}
-      >
-        <Sparkles size={23} strokeWidth={2.1} color={orange} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.reportTitle}>Deep AI Business Report</Text>
-          <Text style={styles.reportCopy}>
-            Summarise reviews, spot red flags and uncover practical growth ideas
-            from your business data.
-          </Text>
-        </View>
-        <ArrowRight size={22} color="#30312D" />
+        <Sparkles size={20} strokeWidth={2.2} color="#fff" />
+        <Text style={styles.reportButtonBlackText}>
+          Generate Business Report
+        </Text>
       </Pressable>
     </View>
   );
@@ -741,18 +979,24 @@ function MembersPage({ business }: { business: Business }) {
 function AnalyticsPage({
   business,
   totals,
-  onDetailed,
+  userId,
+  preview,
+  onBusinessChanged,
 }: {
   business: Business;
   totals: DashboardStats;
-  onDetailed: () => void;
+  userId: string;
+  preview?: boolean;
+  onBusinessChanged: () => Promise<void>;
 }) {
   const [period, setPeriod] = useState<7 | 30 | 90>(30),
+    [detailed, setDetailed] = useState(false),
     [periodStats, setPeriodStats] = useState({
       members: 0,
       stamps: 0,
       rewards: 0,
-    });
+    }),
+    [dailySeries, setDailySeries] = useState<DailyPoint[]>([]);
   useEffect(() => {
     const since = new Date(Date.now() - period * 86400000).toISOString();
     Promise.all([
@@ -779,6 +1023,74 @@ function AnalyticsPage({
       }),
     );
   }, [business.id, period]);
+  useEffect(() => {
+    if (preview) {
+      setDailySeries(buildPreviewDailySeries(period));
+      return;
+    }
+    let active = true;
+    const since = new Date(Date.now() - period * 86400000).toISOString();
+    Promise.all([
+      supabase
+        .from("transactions")
+        .select("created_at,value,user_id")
+        .eq("business_id", business.id)
+        .eq("type", "stamp")
+        .gte("created_at", since),
+      supabase
+        .from("memberships")
+        .select("user_id,joined_at")
+        .eq("business_id", business.id),
+    ]).then(([{ data: txRows }, { data: memberRows }]) => {
+      if (!active) return;
+      setDailySeries(
+        buildDailySeries(period, txRows || [], memberRows || []),
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, [business.id, period, preview]);
+  const modeSwitch = (
+    <View style={styles.segment}>
+      {(["simple", "detailed"] as const).map((value) => (
+        <Pressable
+          key={value}
+          onPress={() => setDetailed(value === "detailed")}
+          style={[
+            styles.segmentButton,
+            (value === "detailed") === detailed && styles.segmentActive,
+          ]}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              (value === "detailed") === detailed && styles.segmentTextActive,
+            ]}
+          >
+            {value === "simple" ? "Simple" : "Detailed"}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+  if (detailed) {
+    return (
+      <View>
+        <Text style={styles.pageKicker}>PERFORMANCE</Text>
+        <Text style={styles.pageTitle}>Analytics</Text>
+        {modeSwitch}
+        <NativeOwnerPageView
+          page="ai"
+          business={business}
+          userId={userId}
+          onBack={() => setDetailed(false)}
+          onBusinessChanged={onBusinessChanged}
+          preview={preview}
+        />
+      </View>
+    );
+  }
   return (
     <View>
       <Text style={styles.pageKicker}>PERFORMANCE</Text>
@@ -786,6 +1098,7 @@ function AnalyticsPage({
       <Text style={styles.pageIntro}>
         A clear view of what changed and what to do next.
       </Text>
+      {modeSwitch}
       <View style={styles.periodSwitch}>
         {([7, 30, 90] as const).map((value) => (
           <Pressable
@@ -813,6 +1126,33 @@ function AnalyticsPage({
         <StatTile icon="♟" value={periodStats.stamps} label="Activity" />
         <StatTile icon="◇" value={periodStats.rewards} label="Rewards" />
       </View>
+      <Text style={styles.chartsHeading}>
+        The last {period} days visualised:
+      </Text>
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>Activity — stamps & visits</Text>
+        <MiniLineChart
+          data={dailySeries}
+          aKey="stamps"
+          bKey="visits"
+          aLabel="Stamps"
+          bLabel="Visits"
+          aColor={orange}
+          bColor="#8B7FD6"
+        />
+      </View>
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>Customers — new & old</Text>
+        <MiniLineChart
+          data={dailySeries}
+          aKey="newCustomers"
+          bKey="oldCustomers"
+          aLabel="New"
+          bLabel="Returning"
+          aColor="#3FA34D"
+          bColor="#20211E"
+        />
+      </View>
       <View style={styles.insightCard}>
         <Text style={styles.insightLabel}>QUICK READ</Text>
         <Text style={styles.insightTitle}>
@@ -833,7 +1173,6 @@ function AnalyticsPage({
           redeemed
         </Text>
       </View>
-      <Button title="Open detailed AI analytics" onPress={onDetailed} />
     </View>
   );
 }
@@ -1281,6 +1620,12 @@ function BusinessSettings({
           detail="Get help from The Loyalty Loop"
           onPress={() => onOpenPage("support")}
         />
+        <SettingsRow
+          icon="↗"
+          title="Visit web dashboard"
+          detail="Open the-loyalty-loop.com in your browser"
+          onPress={() => Linking.openURL("https://www.the-loyalty-loop.com")}
+        />
       </View>
       <Text style={styles.groupLabel}>ACCOUNT</Text>
       <View style={styles.settingsGroupNoPadding}>
@@ -1337,10 +1682,19 @@ function Dashboard({
       "home" | "scan" | "members" | "analytics" | "news" | "settings"
     >("home"),
     [ownerPage, setOwnerPage] = useState<NativeOwnerPage | null>(null),
+    [stampsMode, setStampsMode] = useState<"stamps" | "reward">("stamps"),
     [stats, setStats] = useState<DashboardStats>(
       preview
         ? PREVIEW_STATS
-        : { members: 0, stamps: 0, rewards: 0, redeemed: 0, reviews: 0 },
+        : {
+            members: 0,
+            stamps: 0,
+            rewards: 0,
+            redeemed: 0,
+            reviews: 0,
+            activeMembers: 0,
+            dormantMembers: 0,
+          },
     ),
     [loading, setLoading] = useState(!preview);
   async function load() {
@@ -1418,19 +1772,32 @@ function Dashboard({
         .from("reviews")
         .select("id", { count: "exact", head: true })
         .eq("business_id", selected.id),
-    ]).then(([members, stamps, rewards, redeemed, reviews]) =>
+      supabase.rpc("get_business_members", { _business_id: selected.id }),
+    ]).then(([members, stamps, rewards, redeemed, reviews, memberRows]) => {
+      const cutoff = Date.now() - 30 * 86400000;
+      let activeMembers = 0,
+        dormantMembers = 0;
+      ((memberRows.data || []) as MemberRow[]).forEach((row) => {
+        const last = row.last_activity_at
+          ? new Date(row.last_activity_at).getTime()
+          : 0;
+        if (last >= cutoff) activeMembers++;
+        else dormantMembers++;
+      });
       setStats({
         members: members.count || 0,
         stamps: stamps.count || 0,
         rewards: rewards.count || 0,
         redeemed: redeemed.count || 0,
         reviews: reviews.count || 0,
-      }),
-    );
+        activeMembers,
+        dormantMembers,
+      });
+    });
   }, [selected?.id, loading]);
   const nav = [
     { id: "home", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "scan", icon: ScanLine, label: "Scan" },
+    { id: "scan", icon: Stamp, label: "Stamps" },
     { id: "members", icon: Users, label: "Members" },
     { id: "analytics", icon: ChartNoAxesCombined, label: "Analytics" },
     { id: "news", icon: Newspaper, label: "News" },
@@ -1473,27 +1840,34 @@ function Dashboard({
                 <DashboardHome
                   business={selected}
                   stats={stats}
-                  onScan={() => setTab("scan")}
+                  onIssueStamp={() => {
+                    setStampsMode("stamps");
+                    setTab("scan");
+                  }}
+                  onRedeemReward={() => {
+                    setStampsMode("reward");
+                    setTab("scan");
+                  }}
                   onReport={() => setOwnerPage("ai")}
                 />
               )}{" "}
               {tab === "scan" && (
-                <>
-                  <Text style={styles.pageKicker}>QUICK ACTION</Text>
-                  <Text style={styles.pageTitle}>Scan</Text>
-                  <Scanner
-                    business={selected}
-                    onDone={load}
-                    onConfigureRewards={() => setOwnerPage("rewards")}
-                  />
-                </>
+                <StampsScreen
+                  business={selected}
+                  mode={stampsMode}
+                  onModeChange={setStampsMode}
+                  onDone={load}
+                  onConfigureRewards={() => setOwnerPage("rewards")}
+                />
               )}{" "}
               {tab === "members" && <MembersPage business={selected} />}{" "}
               {tab === "analytics" && (
                 <AnalyticsPage
                   business={selected}
                   totals={stats}
-                  onDetailed={() => setOwnerPage("ai")}
+                  userId={session.user.id || "preview-user"}
+                  preview={preview}
+                  onBusinessChanged={load}
                 />
               )}{" "}
               {tab === "news" && <NewsPage business={selected} />}{" "}
@@ -1843,36 +2217,49 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  dashboardAction: {
-    minHeight: 82,
-    borderWidth: 2,
-    borderColor: "#22231F",
-    borderRadius: 22,
-    paddingHorizontal: 18,
+  statTileWide: { width: "48%" },
+  pillRow: { flexDirection: "row", gap: 10, marginTop: 6, marginBottom: 12 },
+  pillButton: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 26,
+    backgroundColor: "#8B7FD6",
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    backgroundColor: "rgba(255,255,255,.62)",
-    marginBottom: 18,
+    justifyContent: "center",
+    gap: 8,
   },
-  dashboardActionIcon: { fontSize: 24, color: orange, fontWeight: "900" },
-  dashboardActionTitle: { fontSize: 18, fontWeight: "900", color: "#181916" },
-  dashboardActionCopy: { fontSize: 13, color: "#6B6E66", marginTop: 3 },
-  actionArrow: { fontSize: 25, color: "#30312D" },
-  reportCard: {
-    minHeight: 132,
-    borderWidth: 2,
-    borderColor: "#22231F",
-    borderRadius: 22,
-    padding: 18,
+  pillButtonText: { color: "#fff", fontWeight: "900", fontSize: 14 },
+  reportButtonBlack: {
+    minHeight: 56,
+    borderRadius: 28,
+    backgroundColor: "#191A18",
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 13,
-    backgroundColor: "rgba(255,255,255,.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 8,
   },
-  reportSpark: { fontSize: 22, color: orange, fontWeight: "900" },
-  reportTitle: { fontSize: 18, fontWeight: "900", color: "#181916" },
-  reportCopy: { fontSize: 13, lineHeight: 19, color: "#62665E", marginTop: 7 },
+  reportButtonBlackText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  cameraStartButton: {
+    minHeight: 52,
+    borderRadius: 26,
+    backgroundColor: "#191A18",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  cameraStartText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  memberInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(20,20,18,.07)",
+  },
+  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#4E514A" },
+  memberInfoValue: { fontSize: 13, color: "#20211E", fontWeight: "700" },
   pageKicker: {
     fontSize: 11,
     fontWeight: "900",
@@ -1967,6 +2354,32 @@ const styles = StyleSheet.create({
     marginBottom: 13,
   },
   analyticsGrid: { flexDirection: "row", justifyContent: "space-between" },
+  chartsHeading: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#41443C",
+    marginTop: 18,
+    marginBottom: 10,
+  },
+  chartCard: {
+    borderWidth: 2,
+    borderColor: "#22231F",
+    borderRadius: 20,
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,.6)",
+    marginBottom: 14,
+  },
+  chartTitle: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#191A18",
+    marginBottom: 10,
+  },
+  chartWrap: { height: 80, width: "100%" },
+  chartLegendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
+  chartLegendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { fontSize: 11, fontWeight: "800", color: "#5E625A" },
   insightCard: {
     borderRadius: 22,
     backgroundColor: "#1A1A18",
@@ -2215,16 +2628,11 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     flexDirection: "row",
-    backgroundColor: cream,
-    borderTopWidth: 2,
-    borderTopColor: "#262722",
-    paddingTop: 7,
-    paddingBottom: 9,
-    elevation: 12,
-    shadowColor: "#222",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
+    backgroundColor: "#FFFDF8",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(20,20,18,.08)",
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   tab: {
     flex: 1,
