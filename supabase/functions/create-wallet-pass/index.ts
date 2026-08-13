@@ -13,10 +13,9 @@ import { SignJWT, importPKCS8 } from "npm:jose@5";
 // must also be registered as a "Developer" user in the Google Pay & Wallet
 // Console for the issuer account that owns GOOGLE_WALLET_ISSUER_ID.
 //
-// Note: until the Wallet issuer account has publishing access (Google's
-// review process) or the requesting Google account is added as a demo-mode
-// test account in the Wallet Console, "underReview" passes will only save
-// successfully for those registered test accounts.
+// The wallet-issuer account has publishing access (approved by Google on
+// 2026-08-13), so classes are created as "approved" and work for any real
+// customer — not just accounts registered as demo-mode testers.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -112,7 +111,7 @@ Deno.serve(async (req: Request) => {
       id: classId,
       issuerName: business.name,
       programName: `${unitLabel === "Points" ? "Points" : unitLabel === "Visits" ? "Visits" : "Stamp"} Card`,
-      reviewStatus: "underReview",
+      reviewStatus: "approved",
       hexBackgroundColor: business.brand_color || "#E8703B",
       programLogo: { sourceUri: { uri: logoUri }, contentDescription: { defaultValue: { language: "en", value: `${business.name} logo` } } },
     };
