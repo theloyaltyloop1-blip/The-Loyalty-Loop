@@ -68,6 +68,11 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });
     }
 
+    const { data: withinBurst } = await authed.rpc("check_rate_limit", { _action: "winback_emails", _limit: 2, _window_seconds: 60 });
+    if (!withinBurst) {
+      return new Response(JSON.stringify({ error: "Too many requests — please slow down." }), { status: 429, headers: jsonHeaders });
+    }
+
     const cutoff = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: members, error: memErr } = await admin

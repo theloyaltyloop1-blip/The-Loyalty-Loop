@@ -18,6 +18,7 @@ import { LoopMark } from '@/components/loop-mark'
 import { ShopRowIllustration } from '@/components/shop-row-illustration'
 import { Button } from '@/components/ui/button'
 import { LegalFooterLinks } from '@/components/legal-footer'
+import { usePageMeta } from '@/lib/use-page-meta'
 
 const NAV_LINKS = [
   { label: 'How it works', href: '#how-it-works' },
@@ -152,6 +153,12 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export function Landing() {
+  usePageMeta({
+    title: 'The Loyalty Loop — digital loyalty cards for neighbourhood shops',
+    description:
+      'Discover local cafés, salons and shops running digital loyalty cards near you, or bring your own business onto The Loyalty Loop and turn visits into regulars.',
+    path: '/',
+  })
   return (
     <div className="min-h-screen overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-4 py-4 sticky top-0 z-30">

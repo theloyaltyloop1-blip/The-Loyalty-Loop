@@ -1,0 +1,9 @@
+# The Loyalty Loop
+
+> A digital loyalty-card platform for independent neighbourhood shops. Customers discover local cafés, salons and other small businesses, join their digital loyalty cards, and collect stamps or points toward rewards. Business owners run their loyalty programme, staff access, and customer analytics from a companion dashboard and mobile apps.
+
+- Homepage: https://www.the-loyalty-loop.com/
+- Sign up as a shopper: https://www.the-loyalty-loop.com/signup
+- Sign up as a business owner: https://www.the-loyalty-loop.com/signup/owner
+
+Most of the app (customer dashboard, business owner tools) sits behind account sign-in and is not publicly crawlable content — the pages above are the public entry points.

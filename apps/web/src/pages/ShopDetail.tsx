@@ -23,6 +23,7 @@ import {
   type RewardCatalogItem,
   type BusinessPhoto,
 } from '@/lib/businesses'
+import { usePageMeta } from '@/lib/use-page-meta'
 
 const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   Café: Coffee,
@@ -128,6 +129,15 @@ export function ShopDetail() {
   React.useEffect(() => {
     refetch()
   }, [refetch])
+
+  usePageMeta({
+    title: business ? `${business.name} | The Loyalty Loop` : 'Shop | The Loyalty Loop',
+    description: business
+      ? (business.description?.trim() || `Join ${business.name}'s digital loyalty card on The Loyalty Loop and start earning rewards.`)
+      : 'View this shop’s digital loyalty card on The Loyalty Loop.',
+    path: `/dashboard/shop/${slug ?? ''}`,
+    image: business?.logo_url || business?.cover_url || undefined,
+  })
 
   React.useEffect(() => {
     if (!justJoined || !membership) return

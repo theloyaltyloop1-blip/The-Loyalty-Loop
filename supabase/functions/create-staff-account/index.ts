@@ -71,6 +71,11 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });
     }
 
+    const { data: withinBurst } = await authed.rpc("check_rate_limit", { _action: "create_staff_account", _limit: 5, _window_seconds: 60 });
+    if (!withinBurst) {
+      return new Response(JSON.stringify({ error: "Too many requests — please slow down." }), { status: 429, headers: jsonHeaders });
+    }
+
     // Does this business already have a staff_members row for this email
     // (active or revoked)? Re-inviting reuses the same auth account.
     const { data: existingStaffRow } = await admin

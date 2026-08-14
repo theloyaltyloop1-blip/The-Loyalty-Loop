@@ -62,6 +62,15 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });
     }
 
+    const { data: withinBurst } = await authed.rpc("check_rate_limit", { _action: "analytics_summary", _limit: 5, _window_seconds: 60 });
+    if (!withinBurst) {
+      return new Response(JSON.stringify({ error: "Too many requests — please slow down." }), { status: 429, headers: jsonHeaders });
+    }
+    const { data: withinDailyCap } = await authed.rpc("check_daily_limit", { _action: "analytics_summary_daily", _limit: 50 });
+    if (!withinDailyCap) {
+      return new Response(JSON.stringify({ error: "Daily summary limit reached — try again tomorrow." }), { status: 429, headers: jsonHeaders });
+    }
+
     const prompt = `You are a friendly small-business analyst writing a short summary for the owner of "${business.name}" (a ${business.category ?? "local"} shop) using a neighbourhood loyalty-card app.
 
 Here are their stats for the last ${period} days, compared to the previous ${period}-day period, as JSON:

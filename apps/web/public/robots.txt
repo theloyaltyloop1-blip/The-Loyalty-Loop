@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /owner
+Disallow: /access
+Disallow: /brand
+Disallow: /auth/callback
+Disallow: /reset-password
+
+Sitemap: https://www.the-loyalty-loop.com/sitemap.xml
