@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "851159937934",
+    "project_id": "the-loyalty-loop-for-retailer",
+    "storage_bucket": "the-loyalty-loop-for-retailer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:851159937934:android:8a01c2dd7ead6868ddaadf",
+        "android_client_info": {
+          "package_name": "com.theloyaltyloop.retailer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxcPk8SAnJJHeVxOeDHOPRR9j9ZXt0fNk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

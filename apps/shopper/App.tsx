@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
+  AppState,
   Alert,
   Image,
   Linking,
@@ -21,6 +22,8 @@ import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
 import { colors } from '@loyalty-loop/design-tokens'
 import { hasSupabaseConfig, supabase } from './src/supabase'
+import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
+import { registerPushToken } from './src/push'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
@@ -305,7 +308,14 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
 // Profile sheet (opened from the header icon)
 // ---------------------------------------------------------------------
 
-function ProfileSheet({ session, userId, onClose }: { session: Session; userId: string; onClose: () => void }) {
+function ProfileSheet({ session, userId, stampCode, onClose }: { session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
+  const [biometricEnabled, setBiometricEnabled] = useState(false)
+  useEffect(() => { biometricLockEnabled().then(setBiometricEnabled) }, [])
+  async function toggleBiometricLock() {
+    const result = await setBiometricLock(!biometricEnabled)
+    if (!result.success) return Alert.alert('Could not update app lock', result.error)
+    setBiometricEnabled(!biometricEnabled)
+  }
   return (
     <Modal animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.sheetBackdrop} onPress={onClose} />
@@ -325,6 +335,15 @@ function ProfileSheet({ session, userId, onClose }: { session: Session; userId: 
             <QRCode value={`loyaltyloop:customer:${userId}`} size={160} />
           </View>
           <Text style={[styles.small, { marginTop: 14 }]}>Show this at a participating shop to collect rewards.</Text>
+          <Text style={styles.manualCodeLabel}>YOUR MANUAL CODE</Text>
+          <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
+        </View>
+        <View style={styles.securityCard}>
+          <Text style={styles.sectionTitle}>App security</Text>
+          <Text style={styles.securityCopy}>Require Face ID, Touch ID or your fingerprint whenever you open the app.</Text>
+          <Pressable onPress={toggleBiometricLock} style={styles.securityButton}>
+            <Text style={styles.securityButtonText}>{biometricEnabled ? 'Turn off app lock' : 'Turn on Face ID / fingerprint lock'}</Text>
+          </Pressable>
         </View>
         <Button title="Sign out" secondary onPress={() => supabase.auth.signOut()} />
       </SafeAreaView>
@@ -340,6 +359,7 @@ function ShopDetail({
   business,
   userId,
   membership,
+  stampCode,
   favourite,
   onBack,
   onToggleFavourite,
@@ -348,6 +368,7 @@ function ShopDetail({
   business: Business
   userId: string
   membership?: Membership
+  stampCode: string | null
   favourite: boolean
   onBack: () => void
   onToggleFavourite: () => void
@@ -446,6 +467,8 @@ function ShopDetail({
               <QRCode value={`loyaltyloop:customer:${userId}`} size={150} />
               <Text style={styles.qrText}>Show this QR code when you pay</Text>
             </View>
+            <Text style={styles.manualCodeLabel}>OR ENTER THIS CODE</Text>
+            <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
             <Pressable onPress={addToWallet} disabled={addingToWallet} style={[styles.walletButton, addingToWallet && styles.disabled]}>
               <WalletIcon size={17} />
               <Text style={styles.walletButtonText}>{addingToWallet ? 'Preparing…' : 'Add to Google Wallet'}</Text>
@@ -865,13 +888,14 @@ function AppHome({ session }: { session: Session }) {
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Business | null>(null)
   const [showProfile, setShowProfile] = useState(false)
+  const [stampCode, setStampCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const userId = session.user.id
 
   const load = async () => {
     setLoading(true)
     try {
-      const [shops, memberRows, earned, news, favs] = await Promise.all([
+      const [shops, memberRows, earned, news, favs, profile] = await Promise.all([
         supabase.from('businesses').select('*').eq('is_active', true).order('created_at'),
         supabase.from('memberships').select('*').eq('user_id', userId),
         supabase
@@ -885,6 +909,7 @@ function AppHome({ session }: { session: Session }) {
           .eq('is_active', true)
           .order('created_at', { ascending: false }),
         supabase.from('favourites').select('business_id').eq('user_id', userId),
+        supabase.from('profiles').select('stamp_code').eq('id', userId).single(),
       ])
       if (shops.error) throw shops.error
       if (memberRows.error) throw memberRows.error
@@ -896,6 +921,7 @@ function AppHome({ session }: { session: Session }) {
       setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business })))
       setAnnouncements((news.data || []).map((a: any) => ({ ...a, business: Array.isArray(a.business) ? a.business[0] : a.business })))
       setFavouriteIds(new Set((favs.data || []).map((row: any) => row.business_id as string)))
+      setStampCode(profile.data?.stamp_code || null)
     } catch (e) {
       Alert.alert('Could not refresh', e instanceof Error ? e.message : 'Please try again.')
     } finally {
@@ -946,6 +972,7 @@ function AppHome({ session }: { session: Session }) {
         business={selected}
         userId={userId}
         membership={memberships.find((m) => m.business_id === selected.id)}
+        stampCode={stampCode}
         favourite={favouriteIds.has(selected.id)}
         onBack={() => setSelected(null)}
         onToggleFavourite={() => toggleFavourite(selected)}
@@ -968,7 +995,7 @@ function AppHome({ session }: { session: Session }) {
         )}
       </ScrollView>
       <BottomTabBar tab={tab} onChange={setTab} />
-      {showProfile && <ProfileSheet session={session} userId={userId} onClose={() => setShowProfile(false)} />}
+      {showProfile && <ProfileSheet session={session} userId={userId} stampCode={stampCode} onClose={() => setShowProfile(false)} />}
     </SafeAreaView>
   )
 }
@@ -990,6 +1017,8 @@ function AppRoot() {
   const [checking, setChecking] = useState(true)
   const [allowed, setAllowed] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
+  const [locked, setLocked] = useState(false)
+  const [checkingLock, setCheckingLock] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -1017,6 +1046,24 @@ function AppRoot() {
     })()
   }, [session?.user.id])
 
+  async function checkAppLock() {
+    if (!session) { setLocked(false); return }
+    const enabled = await biometricLockEnabled()
+    if (!enabled) { setLocked(false); return }
+    setCheckingLock(true)
+    setLocked(true)
+    const success = await unlockWithBiometrics()
+    setLocked(!success)
+    setCheckingLock(false)
+  }
+
+  useEffect(() => { void checkAppLock() }, [session?.user.id])
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => { if (state === 'active' && session) void checkAppLock() })
+    return () => subscription.remove()
+  }, [session?.user.id])
+  useEffect(() => { if (session) void registerPushToken(session.user.id).catch(() => undefined) }, [session?.user.id])
+
   if (!hasSupabaseConfig) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -1027,7 +1074,7 @@ function AppRoot() {
       </SafeAreaView>
     )
   }
-  if (checking || (session && !allowed)) {
+  if (checking || (session && (!allowed || checkingLock))) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
@@ -1035,6 +1082,9 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     )
+  }
+  if (session && locked) {
+    return <SafeAreaView style={styles.safe}><View style={styles.lockScreen}><Image source={logo} style={styles.lockLogo} /><Text style={styles.title}>App locked</Text><Text style={styles.description}>Use Face ID, Touch ID or your fingerprint to continue.</Text><Button title="Unlock app" onPress={() => void checkAppLock()} /></View></SafeAreaView>
   }
   return session ? <AppHome session={session} /> : showAuth ? <AuthScreen onSession={setSession} /> : <ShopperLanding onContinue={() => setShowAuth(true)} />
 }
@@ -1063,7 +1113,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: card, borderRadius: 20, padding: 18, marginTop: 26, gap: 12, shadowColor: '#1a1a1a', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
   input: { backgroundColor: '#f4efe4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: foreground, fontSize: 16 },
 
-  button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 15, marginTop: 2 },
+  button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 15, marginTop: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', shadowColor: primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: foreground, marginTop: 18 },
   buttonText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   buttonTextSecondary: { color: foreground },
@@ -1148,6 +1198,14 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },
   qrText: { color: '#6b6459', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
+  manualCodeLabel: { color: '#8a8378', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
+  manualCode: { color: foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 5 },
+  securityCard: { backgroundColor: '#f4efe4', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
+  securityCopy: { color: '#5c564c', fontSize: 13, lineHeight: 19, marginTop: 5 },
+  securityButton: { alignSelf: 'flex-start', marginTop: 13, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: 'rgba(79,100,56,0.12)' },
+  securityButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
+  lockScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
+  lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 22 },
   walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1a1a1a', borderRadius: 999, height: 46, marginTop: 18 },
   walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 

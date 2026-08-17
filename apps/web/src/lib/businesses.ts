@@ -319,6 +319,11 @@ export async function sendVisitThankYou(businessId: string, userId: string, amou
   await supabase.functions.invoke('send-visit-thank-you', { body: { business_id: businessId, user_id: userId, amount } })
 }
 
+/** Best-effort native notification after an owner or staff member awards progress. */
+export async function sendUserPush(businessId: string, userId: string) {
+  await supabase.functions.invoke('send-user-push', { body: { business_id: businessId, user_id: userId } })
+}
+
 export interface RewardLookup {
   id: string
   title: string

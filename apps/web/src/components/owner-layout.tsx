@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { NavLink, Link, Navigate } from 'react-router-dom'
-import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench } from 'lucide-react'
+import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench, BookOpen } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
@@ -10,6 +10,7 @@ const OWNER_NAV_ITEMS = [
   { label: 'Analytics', to: '/owner', icon: LineChart, end: true },
   { label: 'Scan', to: '/owner/scan', icon: ScanLine },
   { label: 'Growth tools', to: '/owner/tools', icon: Wrench },
+  { label: 'Getting started', to: '/owner/tutorial', icon: BookOpen },
   { label: 'Notifications', to: '/owner/notifications', icon: Bell },
   { label: 'Announcements', to: '/owner/announcements', icon: Megaphone },
   { label: 'Reviews', to: '/owner/reviews', icon: Star },

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "573733696611",
+    "project_id": "the-loyalty-loop-shopper",
+    "storage_bucket": "the-loyalty-loop-shopper.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:573733696611:android:195ee1ebd22043c45b3456",
+        "android_client_info": {
+          "package_name": "com.theloyaltyloop.shopper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmmUpgdpfFt4VIX2qFTk-qOjVrHu2u96I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

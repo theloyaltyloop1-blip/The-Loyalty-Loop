@@ -1,11 +1,13 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
+import { BrowserQRCodeReader } from '@zxing/browser'
 import { Camera, CameraOff, Check, Gift, ScanLine, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
 import {
   awardProgress,
+  sendUserPush,
   findRewardByCode,
   findRewardByToken,
   lookupUserByStampCode,
@@ -23,83 +25,54 @@ const UNIT_LABEL: Record<string, string> = {
 
 type ScanMode = 'award' | 'redeem'
 
-// Native browser barcode/QR detection — Chrome/Edge only, no extra
-// dependency. Camera scanning degrades to "unavailable, use manual entry
-// below" everywhere else; manual entry always works regardless.
-function useBarcodeDetector() {
-  return React.useMemo(() => {
-    const w = window as unknown as { BarcodeDetector?: new (opts: { formats: string[] }) => { detect: (v: CanvasImageSource) => Promise<Array<{ rawValue: string }>> } }
-    if (!w.BarcodeDetector) return null
-    return new w.BarcodeDetector({ formats: ['qr_code'] })
-  }, [])
-}
-
 function CameraScanner({ onResult, active }: { onResult: (value: string) => void; active: boolean }) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
-  const streamRef = React.useRef<MediaStream | null>(null)
-  const detector = useBarcodeDetector()
+  const resultRef = React.useRef(onResult)
   const [error, setError] = React.useState<string | null>(null)
   const [running, setRunning] = React.useState(false)
 
+  React.useEffect(() => { resultRef.current = onResult }, [onResult])
+
   React.useEffect(() => {
-    if (!active || !detector) return
+    if (!active || !videoRef.current) return
     let cancelled = false
-    let raf = 0
+    let found = false
+    let controls: { stop: () => void } | undefined
+    const reader = new BrowserQRCodeReader()
+    setError(null)
+    setRunning(false)
 
     async function start() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        controls = await reader.decodeFromConstraints(
+          { audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+          videoRef.current!,
+          (result) => {
+            if (!result || found || cancelled) return
+            found = true
+            controls?.stop()
+            resultRef.current(result.getText())
+          },
+        )
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop())
+          controls.stop()
           return
         }
-        streamRef.current = stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          await videoRef.current.play()
-        }
         setRunning(true)
-
-        const tick = async () => {
-          if (cancelled || !videoRef.current) return
-          try {
-            const codes = await detector!.detect(videoRef.current)
-            if (codes.length > 0) {
-              onResult(codes[0].rawValue)
-              return
-            }
-          } catch {
-            // detection can transiently fail mid-frame; keep polling
-          }
-          raf = requestAnimationFrame(tick)
-        }
-        raf = requestAnimationFrame(tick)
       } catch {
-        setError('Camera access denied or unavailable — use manual entry below.')
+        if (!cancelled) setError('Camera access was blocked or unavailable. Check your browser permission, then use the manual code below if needed.')
       }
     }
     start()
 
     return () => {
       cancelled = true
-      cancelAnimationFrame(raf)
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-      streamRef.current = null
+      controls?.stop()
       setRunning(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, detector])
+  }, [active])
 
   if (!active) return null
-
-  if (!detector) {
-    return (
-      <div className="rounded-xl bg-black/5 p-4 text-sm text-foreground/50 flex items-center gap-2 mb-4">
-        <CameraOff className="h-4 w-4 shrink-0" /> Camera scanning isn't supported in this browser — use the code
-        entry below.
-      </div>
-    )
-  }
 
   return (
     <div className="rounded-xl overflow-hidden bg-black relative mb-4 aspect-square max-w-xs mx-auto">
@@ -177,6 +150,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
     try {
       await awardProgress(businessId, matchedUserId, amount)
       void sendVisitThankYou(businessId, matchedUserId, amount)
+      void sendUserPush(businessId, matchedUserId)
       setSuccess(`Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`)
       reset()
     } catch (e) {

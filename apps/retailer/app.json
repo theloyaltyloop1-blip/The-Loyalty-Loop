@@ -12,8 +12,10 @@
     },
     "android": {
       "package": "com.theloyaltyloop.retailer",
+      "versionCode": 102,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F8E4C6",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -23,6 +25,21 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#4F6438"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow The Loyalty Loop for Business to use Face ID to unlock your app."
+        }
+      ]
+    ],
     "owner": "the-loyalty-loop",
     "extra": {
       "eas": {

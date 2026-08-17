@@ -30,6 +30,7 @@ const OwnerAnnouncements = lazy(() => import('@/pages/owner/Announcements').then
 const OwnerReviews = lazy(() => import('@/pages/owner/Reviews').then((m) => ({ default: m.OwnerReviews })))
 const OwnerSupport = lazy(() => import('@/pages/owner/Support').then((m) => ({ default: m.OwnerSupport })))
 const OwnerTools = lazy(() => import('@/pages/owner/Tools').then((m) => ({ default: m.OwnerTools })))
+const OwnerTutorial = lazy(() => import('@/pages/owner/Tutorial').then((m) => ({ default: m.OwnerTutorial })))
 const OwnerNotifications = lazy(() => import('@/pages/owner/Notifications').then((m) => ({ default: m.OwnerNotifications })))
 const AccessPanel = lazy(() => import('@/pages/AccessPanel').then((m) => ({ default: m.AccessPanel })))
 const BrandWorkspace = lazy(() => import('@/pages/BrandWorkspace').then((m) => ({ default: m.BrandWorkspace })))
@@ -60,6 +61,7 @@ function App() {
                 <Route path="/owner/onboarding" element={<OwnerOnboarding />} />
                 <Route path="/owner/scan" element={<OwnerScan />} />
                 <Route path="/owner/tools" element={<OwnerTools />} />
+                <Route path="/owner/tutorial" element={<OwnerTutorial />} />
                 <Route path="/owner/settings" element={<OwnerSettings />} />
                 <Route path="/owner/notifications" element={<OwnerNotifications />} />
                 <Route path="/owner/announcements" element={<OwnerAnnouncements />} />

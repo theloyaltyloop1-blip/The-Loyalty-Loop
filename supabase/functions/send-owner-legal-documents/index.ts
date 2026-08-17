@@ -66,6 +66,12 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "email and site_url are required" }), { status: 400, headers: jsonHeaders });
     }
 
+    // Never fetch attachments from an arbitrary caller-controlled host.
+    // The sender and legal documents are always served from the live site.
+    if (siteUrl !== "https://www.the-loyalty-loop.com") {
+      return new Response(JSON.stringify({ error: "invalid site_url" }), { status: 400, headers: jsonHeaders });
+    }
+
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // Confirm this is a genuine, very recent owner signup — not an arbitrary
@@ -81,6 +87,15 @@ Deno.serve(async (req: Request) => {
     const isFresh = Date.now() - createdAt < 15 * 60 * 1000;
     if (intent !== "business_owner" || !isFresh) {
       return new Response(JSON.stringify({ sent: false, reason: "not a fresh owner signup" }), { status: 200, headers: jsonHeaders });
+    }
+
+    const { data: alreadySent } = await admin
+      .from("owner_legal_document_emails")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (alreadySent) {
+      return new Response(JSON.stringify({ sent: false, reason: "already sent" }), { status: 200, headers: jsonHeaders });
     }
 
     if (!RESEND_API_KEY) {
@@ -145,7 +160,14 @@ Deno.serve(async (req: Request) => {
     if (!emailRes.ok) {
       const errText = await emailRes.text();
       console.error(errText);
-      return new Response(JSON.stringify({ sent: false, reason: "Email provider rejected the message", debug: errText, fromUsed: RESEND_FROM_EMAIL }), { status: 502, headers: jsonHeaders });
+      return new Response(JSON.stringify({ sent: false, reason: "Email provider rejected the message" }), { status: 502, headers: jsonHeaders });
+    }
+
+    const { error: auditError } = await admin
+      .from("owner_legal_document_emails")
+      .insert({ user_id: user.id, email });
+    if (auditError) {
+      console.error("Could not record legal document email", auditError.message);
     }
 
     return new Response(JSON.stringify({ sent: true }), { headers: jsonHeaders });

@@ -47,7 +47,8 @@ export type NativeOwnerPage =
   | "branding"
   | "rewards"
   | "staff"
-  | "support";
+  | "support"
+  | "tutorial";
 
 export interface NativeBusiness {
   id: string;
@@ -1296,6 +1297,40 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
   );
 }
 
+function TutorialPage({ business, onBack }: PageProps) {
+  const steps = [
+    ["1", "Finish your shop", "Add your description, address, logo and cover image in Settings so customers recognise you."],
+    ["2", "Create rewards", "Open Rewards catalogue and add what customers can unlock, such as a free coffee after 10 stamps."],
+    ["3", "Invite customers", "Print your QR poster from the web dashboard or ask customers to find your shop in The Loyalty Loop."],
+    ["4", "Award progress", "Open Stamps, scan the customer's QR code or enter their manual code, choose the amount, then award it."],
+    ["5", "Keep people coming back", "Use News for updates, Analytics for trends, and Reviews to respond to customer feedback."],
+  ] as const;
+
+  return (
+    <View>
+      <PageHeader title="Getting started" eyebrow="BUSINESS GUIDE" onBack={onBack} />
+      <Section>
+        <View style={styles.iconHeading}>
+          <Sparkles size={20} color={orange} />
+          <Text style={styles.cardTitle}>Welcome to {business.name}</Text>
+        </View>
+        <Text style={styles.body}>Follow these five steps to get your loyalty programme live and use it confidently at the counter.</Text>
+      </Section>
+      {steps.map(([number, title, body]) => (
+        <Section key={number}>
+          <View style={styles.tutorialRow}>
+            <View style={styles.tutorialNumber}><Text style={styles.tutorialNumberText}>{number}</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>{title}</Text>
+              <Text style={styles.body}>{body}</Text>
+            </View>
+          </View>
+        </Section>
+      ))}
+    </View>
+  );
+}
+
 export function NativeOwnerPageView({
   page,
   ...props
@@ -1308,6 +1343,7 @@ export function NativeOwnerPageView({
         rewards: RewardsPage,
         staff: StaffPage,
         support: SupportPage,
+        tutorial: TutorialPage,
       })[page],
     [page],
   );
@@ -1361,16 +1397,26 @@ const styles = StyleSheet.create({
     gap: 9,
     marginBottom: 10,
   },
+  tutorialRow: { flexDirection: "row", gap: 13, alignItems: "flex-start" },
+  tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#F7D9CB", alignItems: "center", justifyContent: "center" },
+  tutorialNumberText: { color: "#8C3820", fontWeight: "900" },
   body: { color: "#444740", lineHeight: 21, fontSize: 14 },
   muted: { color: muted, lineHeight: 20, fontSize: 14 },
   primaryButton: {
     minHeight: 48,
-    borderRadius: 16,
+    borderRadius: 999,
     backgroundColor: ink,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 18,
     marginTop: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.72)",
+    shadowColor: ink,
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   secondaryButton: {
     backgroundColor: "transparent",

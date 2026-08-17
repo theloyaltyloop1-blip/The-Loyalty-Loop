@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Alert,
   Image,
   Linking,
@@ -33,6 +34,8 @@ import type { Session } from "@supabase/supabase-js";
 import { colors } from "@loyalty-loop/design-tokens";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
 import { NativeOwnerPageView, type NativeOwnerPage } from "./src/owner-pages";
+import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from "./src/biometric";
+import { registerPushToken } from "./src/push";
 
 function BusinessLanding({ onContinue }: { onContinue: () => void }) {
   return (
@@ -554,6 +557,9 @@ function StampsScreen({
       void supabase.functions.invoke("send-visit-thank-you", {
         body: { business_id: business.id, user_id: matched.id, amount: value },
       });
+      void supabase.functions.invoke("send-user-push", {
+        body: { business_id: business.id, user_id: matched.id },
+      });
       Alert.alert(
         "Reward added",
         `${value} ${unit} awarded to ${matched.first_name || "the customer"}.`,
@@ -643,7 +649,7 @@ function StampsScreen({
               >
                 <Text style={styles.stepperText}>−</Text>
               </Pressable>
-              <Text style={styles.stepperInput}>{amount}</Text>
+              <Text style={styles.stepperValue}>{amount}</Text>
               <Pressable
                 onPress={() => setAmount((a) => a + 1)}
                 style={styles.stepperButton}
@@ -692,10 +698,11 @@ function StampsScreen({
           <View style={styles.card}>
             <Text style={styles.section}>Or enter their code</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.customerCodeInput]}
               value={code}
               onChangeText={setCode}
               placeholder="Customer short code"
+              selectionColor="#111111"
               autoCapitalize="characters"
             />
             <Button
@@ -1361,7 +1368,8 @@ function BusinessSettings({
     [signupReward, setSignupReward] = useState(
       business.loyalty_config?.signup_reward_title || "",
     ),
-    [saving, setSaving] = useState(false);
+    [saving, setSaving] = useState(false),
+    [biometricEnabled, setBiometricEnabled] = useState(false);
   useEffect(() => {
     setName(business.name);
     setCategory(business.category || "");
@@ -1373,6 +1381,14 @@ function BusinessSettings({
     setThreshold(String(business.loyalty_config?.stamps_required || 10));
     setSignupReward(business.loyalty_config?.signup_reward_title || "");
   }, [business.id]);
+  useEffect(() => {
+    biometricLockEnabled().then(setBiometricEnabled);
+  }, []);
+  const toggleBiometricLock = async () => {
+    const result = await setBiometricLock(!biometricEnabled);
+    if (result.success) setBiometricEnabled(!biometricEnabled);
+    else Alert.alert("Could not update app lock", result.error);
+  };
   const save = async () => {
     if (!name.trim())
       return Alert.alert("Shop name needed", "Enter a name for your business.");
@@ -1619,6 +1635,18 @@ function BusinessSettings({
           title="Help & support"
           detail="Get help from The Loyalty Loop"
           onPress={() => onOpenPage("support")}
+        />
+        <SettingsRow
+          icon="•"
+          title="Face ID / fingerprint lock"
+          detail={biometricEnabled ? "Required when opening this app" : "Protect access to this app"}
+          onPress={() => void toggleBiometricLock()}
+        />
+        <SettingsRow
+          icon="i"
+          title="How to use your loyalty programme"
+          detail="A short step-by-step business guide"
+          onPress={() => onOpenPage("tutorial")}
         />
         <SettingsRow
           icon="↗"
@@ -1939,7 +1967,9 @@ function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
     [checking, setChecking] = useState(true),
     [allowed, setAllowed] = useState(false),
-    [showAuth, setShowAuth] = useState(false);
+    [showAuth, setShowAuth] = useState(false),
+    [locked, setLocked] = useState(false),
+    [checkingLock, setCheckingLock] = useState(false);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -1975,6 +2005,33 @@ function AppRoot() {
       }
     })();
   }, [session?.user.id]);
+  async function checkAppLock() {
+    if (!session) {
+      setLocked(false);
+      return;
+    }
+    if (!(await biometricLockEnabled())) {
+      setLocked(false);
+      return;
+    }
+    setCheckingLock(true);
+    setLocked(true);
+    const success = await unlockWithBiometrics();
+    setLocked(!success);
+    setCheckingLock(false);
+  }
+  useEffect(() => {
+    void checkAppLock();
+  }, [session?.user.id]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && session) void checkAppLock();
+    });
+    return () => subscription.remove();
+  }, [session?.user.id]);
+  useEffect(() => {
+    if (session) void registerPushToken(session.user.id).catch(() => undefined);
+  }, [session?.user.id]);
   if (!hasSupabaseConfig)
     return (
       <SafeAreaView style={styles.safe}>
@@ -1987,11 +2044,22 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     );
-  if (checking || (session && !allowed))
+  if (checking || (session && (!allowed || checkingLock)))
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={green} />
+        </View>
+      </SafeAreaView>
+    );
+  if (session && locked)
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.lockScreen}>
+          <View style={styles.mark}><Text style={styles.markText}>↻</Text></View>
+          <Text style={styles.title}>App locked</Text>
+          <Text style={styles.copy}>Use Face ID, Touch ID or your fingerprint to continue.</Text>
+          <Button title="Unlock app" onPress={() => void checkAppLock()} />
         </View>
       </SafeAreaView>
     );
@@ -2009,6 +2077,7 @@ const styles = StyleSheet.create({
   auth: { flexGrow: 1, padding: 28, justifyContent: "center" },
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
+  lockScreen: { flex: 1, padding: 28, alignItems: "center", justifyContent: "center" },
   mark: {
     width: 62,
     height: 62,
@@ -2067,13 +2136,21 @@ const styles = StyleSheet.create({
     color: "#243021",
     fontSize: 16,
   },
+  customerCodeInput: { color: "#111111" },
   button: {
     backgroundColor: green,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: "center",
     padding: 15,
     marginTop: 3,
     flex: 1,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.72)",
+    shadowColor: green,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
   },
   secondary: {
     backgroundColor: "transparent",
@@ -2571,6 +2648,17 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 17,
+    fontWeight: "900",
+    color: "#111",
+    backgroundColor: "#fff",
+  },
+  stepperValue: {
+    flex: 1,
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontSize: 17,
+    lineHeight: 50,
+    includeFontPadding: false,
     fontWeight: "900",
     color: "#111",
     backgroundColor: "#fff",

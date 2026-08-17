@@ -4,6 +4,14 @@ build/
 .expo/
 .env
 .env.local
+.env.*
+!.env.example
+credentials.json
+*.pem
+*.jks
+*.p12
+*.p8
+*.key
 *.log
 .DS_Store
 .tmp/
