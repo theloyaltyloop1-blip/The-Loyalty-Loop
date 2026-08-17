@@ -506,12 +506,50 @@ function StampsScreen({
     setActiveReward((rewardRows || [])[0] || null);
   }
 
-  function parse(value: string) {
+  async function loadMemberInfo(userId: string) {
+    const { data } = await supabase.rpc("get_business_members", {
+      _business_id: business.id,
+    });
+    const row = ((data || []) as MemberRow[]).find((member) => member.user_id === userId);
+    setMemberInfo(row ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at } : null);
+  }
+
+  async function parse(value: string) {
+    const rewardMatch = value.match(/^loyaltyloop:reward:(.+)$/);
+    if (rewardMatch) {
+      if (mode !== "reward") {
+        Alert.alert("Reward QR code", "Switch to Reward mode before redeeming this QR code.");
+        return;
+      }
+      setCamera(false);
+      setBusy(true);
+      try {
+        const { data: reward, error } = await supabase
+          .from("rewards")
+          .select("id,title,user_id,redeemed_at,expires_at")
+          .eq("business_id", business.id)
+          .eq("qr_token", rewardMatch[1])
+          .maybeSingle();
+        if (error) throw error;
+        if (!reward) throw new Error("That reward does not belong to this shop.");
+        if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
+        if (reward.expires_at && new Date(reward.expires_at) < new Date()) throw new Error("This reward has expired.");
+        setMatched({ id: reward.user_id });
+        setActiveReward({ id: reward.id, title: reward.title });
+        setCode("");
+        void loadMemberInfo(reward.user_id);
+      } catch (e) {
+        Alert.alert("Could not find reward", e instanceof Error ? e.message : "Please try again.");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const match = value.match(/^loyaltyloop:customer:(.+)$/);
     if (!match) {
       Alert.alert(
-        "Not a customer card",
-        "Scan a Loyalty Loop customer QR code.",
+        "Not a Loyalty Loop code",
+        mode === "reward" ? "Scan the customer's reward QR code." : "Scan a Loyalty Loop customer QR code.",
       );
       return;
     }
@@ -526,7 +564,7 @@ function StampsScreen({
     setBusy(true);
     try {
       const { data, error } = await supabase.rpc("lookup_user_by_stamp_code", {
-        _code: code.trim(),
+        _code: code.replace(/\s+/g, "").toUpperCase(),
       });
       if (error) throw error;
       const person = (data || [])[0];
@@ -680,7 +718,7 @@ function StampsScreen({
           {camera && (
             <Modal animationType="slide" onRequestClose={() => setCamera(false)}>
               <SafeAreaView style={styles.cameraWrap}>
-                <Text style={styles.cameraTitle}>Scan customer card</Text>
+                <Text style={styles.cameraTitle}>{mode === "reward" ? "Scan reward QR code" : "Scan customer card"}</Text>
                 <CameraView
                   style={styles.camera}
                   facing="back"
@@ -696,7 +734,7 @@ function StampsScreen({
             </Modal>
           )}
           <View style={styles.card}>
-            <Text style={styles.section}>Or enter their code</Text>
+            <Text style={styles.section}>{mode === "reward" ? "Or enter their customer code" : "Or enter their code"}</Text>
             <TextInput
               style={[styles.input, styles.customerCodeInput]}
               value={code}

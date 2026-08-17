@@ -297,7 +297,7 @@ export interface StampCodeMatch {
  * server-side, never a direct client select against profiles (RLS on
  * profiles is self-only). */
 export async function lookupUserByStampCode(code: string): Promise<StampCodeMatch | null> {
-  const { data, error } = await supabase.rpc('lookup_user_by_stamp_code', { _code: code.trim() })
+  const { data, error } = await supabase.rpc('lookup_user_by_stamp_code', { _code: code.replace(/\s+/g, '').toUpperCase() })
   if (error) throw error
   return (data as StampCodeMatch[])[0] ?? null
 }
@@ -476,7 +476,7 @@ export async function findRewardByCode(businessId: string, code: string): Promis
     .from('rewards')
     .select('id, title, short_code, redeemed_at, expires_at')
     .eq('business_id', businessId)
-    .eq('short_code', code.trim())
+    .eq('short_code', code.replace(/\s+/g, '').toUpperCase())
     .maybeSingle()
   if (error) throw error
   return data as RewardLookup | null

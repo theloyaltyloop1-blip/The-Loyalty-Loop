@@ -185,7 +185,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-primary"
           placeholder="Customer's manual code"
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
           onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
         />
         <button data-press-feedback
