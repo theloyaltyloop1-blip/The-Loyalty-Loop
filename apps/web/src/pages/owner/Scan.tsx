@@ -11,10 +11,11 @@ import {
   findRewardByCode,
   findRewardByToken,
   lookupUserByStampCode,
+  fetchScannedMemberDetails,
   redeemReward,
   sendVisitThankYou,
   type RewardLookup,
-  type StampCodeMatch,
+  type ScannedMemberDetails,
 } from '@/lib/businesses'
 
 const UNIT_LABEL: Record<string, string> = {
@@ -94,7 +95,7 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
 function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) {
   const [cameraOn, setCameraOn] = React.useState(false)
   const [code, setCode] = React.useState('')
-  const [match, setMatch] = React.useState<StampCodeMatch | null>(null)
+  const [match, setMatch] = React.useState<ScannedMemberDetails | null>(null)
   const [matchedUserId, setMatchedUserId] = React.useState<string | null>(null)
   const [amount, setAmount] = React.useState(1)
   const [busy, setBusy] = React.useState(false)
@@ -121,7 +122,8 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
         setMatchedUserId(null)
         return
       }
-      setMatch(result)
+      const details = await fetchScannedMemberDetails(businessId, result.id)
+      setMatch(details)
       setMatchedUserId(result.id)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Lookup failed')
@@ -130,7 +132,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
     }
   }
 
-  function handleQrResult(value: string) {
+  async function handleQrResult(value: string) {
     setCameraOn(false)
     const m = value.match(/^loyaltyloop:customer:(.+)$/)
     if (!m) {
@@ -139,8 +141,10 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
     }
     setError(null)
     setSuccess(null)
-    setMatch(null)
-    setMatchedUserId(m[1])
+    try {
+      setMatch(await fetchScannedMemberDetails(businessId, m[1]))
+      setMatchedUserId(m[1])
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not load customer details') }
   }
 
   async function handleAward() {
@@ -202,6 +206,10 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           <p className="font-semibold text-foreground">
             {match.first_name || match.last_name ? `${match.first_name ?? ''} ${match.last_name ?? ''}`.trim() : 'Customer found'}
           </p>
+          <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-sm text-foreground/70">
+            <span>Email: {match.email ?? 'Not available'}</span><span>Joined: {new Date(match.joined_at).toLocaleDateString()}</span>
+            <span>Last visit: {match.last_activity_at ? new Date(match.last_activity_at).toLocaleDateString() : 'Not yet'}</span><span>{match.stamp_count} stamps · {match.points_balance} points · {match.visit_count} visits</span>
+          </div>
         </div>
       )}
 

@@ -318,6 +318,19 @@ export async function awardProgress(businessId: string, userId: string, value = 
 export async function sendVisitThankYou(businessId: string, userId: string, amount: number) {
   await supabase.functions.invoke('send-visit-thank-you', { body: { business_id: businessId, user_id: userId, amount } })
 }
+export interface ScannedMemberDetails extends StampCodeMatch {
+  email: string | null
+  stamp_count: number
+  points_balance: number
+  visit_count: number
+  joined_at: string
+  last_activity_at: string | null
+}
+export async function fetchScannedMemberDetails(businessId: string, userId: string): Promise<ScannedMemberDetails | null> {
+  const { data, error } = await supabase.rpc('get_scanned_member_details', { _business_id: businessId, _user_id: userId })
+  if (error) throw error
+  return (data as ScannedMemberDetails[])[0] ?? null
+}
 
 /** Best-effort native notification after an owner or staff member awards progress. */
 export async function sendUserPush(businessId: string, userId: string) {

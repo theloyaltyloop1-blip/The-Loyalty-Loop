@@ -119,6 +119,7 @@ type MemberRow = {
   last_activity_at?: string | null;
   joined_at: string;
 };
+type ScannedMemberDetails = MemberRow & { id: string; email?: string | null };
 type Announcement = {
   id: string;
   title: string;
@@ -436,6 +437,7 @@ function StampsScreen({
     id: string;
     first_name?: string | null;
     last_name?: string | null;
+    email?: string | null;
   } | null>(null);
   const [memberInfo, setMemberInfo] = useState<{
     joined_at?: string | null;
@@ -485,7 +487,7 @@ function StampsScreen({
 
   async function loadMemberDetails(userId: string) {
     const [{ data: memberRows }, { data: rewardRows }] = await Promise.all([
-      supabase.rpc("get_business_members", { _business_id: business.id }),
+      supabase.rpc("get_scanned_member_details", { _business_id: business.id, _user_id: userId }),
       supabase
         .from("rewards")
         .select("id,title")
@@ -495,9 +497,8 @@ function StampsScreen({
         .order("created_at", { ascending: true })
         .limit(1),
     ]);
-    const row = ((memberRows || []) as MemberRow[]).find(
-      (m) => m.user_id === userId,
-    );
+    const row = (memberRows || [])[0] as ScannedMemberDetails | undefined;
+    if (row) setMatched({ id: row.id, first_name: row.first_name, last_name: row.last_name, email: row.email });
     setMemberInfo(
       row
         ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at }
@@ -507,10 +508,11 @@ function StampsScreen({
   }
 
   async function loadMemberInfo(userId: string) {
-    const { data } = await supabase.rpc("get_business_members", {
-      _business_id: business.id,
+    const { data } = await supabase.rpc("get_scanned_member_details", {
+      _business_id: business.id, _user_id: userId,
     });
-    const row = ((data || []) as MemberRow[]).find((member) => member.user_id === userId);
+    const row = (data || [])[0] as ScannedMemberDetails | undefined;
+    if (row) setMatched({ id: row.id, first_name: row.first_name, last_name: row.last_name, email: row.email });
     setMemberInfo(row ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at } : null);
   }
 
@@ -763,7 +765,7 @@ function StampsScreen({
               <View style={styles.memberInfoRow}>
                 <Text style={styles.memberInfoLabel}>Email:</Text>
                 <Text style={styles.memberInfoValue}>
-                  Not shown on mobile
+                  {matched.email || "Not available"}
                 </Text>
               </View>
               <View style={styles.memberInfoRow}>
