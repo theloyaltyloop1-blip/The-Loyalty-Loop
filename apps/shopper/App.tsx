@@ -722,7 +722,8 @@ function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (b
       {pins.length > 0 ? (
         <View style={styles.mapWebviewWrap}>
           <WebView
-            source={{ html }}
+            source={{ html, baseUrl: 'https://www.the-loyalty-loop.com' }}
+            originWhitelist={['*']}
             style={{ flex: 1 }}
             onMessage={(e) => {
               const business = businesses.find((b) => b.id === e.nativeEvent.data)
