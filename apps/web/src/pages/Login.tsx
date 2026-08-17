@@ -1,12 +1,13 @@
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { supabase, setRememberMe } from '@/lib/supabase'
 import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, AuthMinorLink } from '@/components/auth-layout'
 
 export function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [remember, setRemember] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
 
@@ -15,6 +16,7 @@ export function Login() {
     setError(null)
 
     setLoading(true)
+    setRememberMe(remember)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -59,6 +61,15 @@ export function Login() {
           required
           autoComplete="current-password"
         />
+        <label className="flex items-center gap-2 -mt-1 text-sm font-semibold text-foreground/70 select-none">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="h-4 w-4 rounded accent-foreground"
+          />
+          Remember me for 6 months
+        </label>
         {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
         <button data-press-feedback
           type="submit"
