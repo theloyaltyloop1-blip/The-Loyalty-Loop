@@ -12,7 +12,7 @@ as $$
 begin
   if auth.uid() is null then raise exception 'not authenticated'; end if;
   if not (
-    exists (select 1 from public.businesses where id = _business_id and owner_id = auth.uid())
+    exists (select 1 from public.businesses b where b.id = _business_id and b.owner_id = auth.uid())
     or public.has_role(auth.uid(), 'admin')
     or public.staff_has_permission(_business_id, auth.uid(), 'scan_stamps')
     or public.staff_has_permission(_business_id, auth.uid(), 'redeem_rewards')
