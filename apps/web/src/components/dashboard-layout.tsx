@@ -65,7 +65,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       <button data-press-feedback
         title="Security"
-        className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.95] md:bottom-6 md:right-6 md:h-14 md:w-14"
+        className="fixed h-12 w-12 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.95] md:h-14 md:w-14"
+        style={{
+          bottom: 'calc(1rem + env(safe-area-inset-bottom))',
+          right: 'calc(1rem + env(safe-area-inset-right))',
+        }}
       >
         <Shield className="h-6 w-6" />
       </button>

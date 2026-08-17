@@ -638,7 +638,7 @@ function LoyaltyTab() {
                 {business.name.charAt(0).toUpperCase()}
               </div>
               <p className="font-bold text-sm text-foreground">{business.name}</p>
-              <p className="text-[10px] uppercase text-foreground/40 mb-2">{business.category}</p>
+              <p className="text-[0.625rem] uppercase text-foreground/40 mb-2">{business.category}</p>
               <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1 text-foreground/60">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: brandColor }} /> Tap to join

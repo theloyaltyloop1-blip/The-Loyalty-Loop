@@ -223,7 +223,7 @@ export function Landing() {
 
             <div className="absolute -top-5 -right-4 h-20 w-20 rounded-full bg-accent shadow-sticker flex flex-col items-center justify-center text-center rotate-6">
               <span className="font-display font-extrabold text-sm leading-none">FREE</span>
-              <span className="text-[10px] font-bold uppercase leading-none mt-1">to join</span>
+              <span className="text-[0.625rem] font-bold uppercase leading-none mt-1">to join</span>
             </div>
 
             <div className="absolute -bottom-8 -left-4 w-56 rounded-2xl border border-border bg-card p-4 shadow-sticker -rotate-2">
@@ -245,7 +245,7 @@ export function Landing() {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] font-bold uppercase mt-3 text-foreground/60">3 more for a free flat white</p>
+              <p className="text-[0.6875rem] font-bold uppercase mt-3 text-foreground/60">3 more for a free flat white</p>
             </div>
           </div>
         </section>
@@ -309,7 +309,7 @@ export function Landing() {
                       <ShopDots filled={Math.max(filled - 5, 0)} total={total - 5} color={dotColor} />
                     </div>
                   )}
-                  <p className="text-[11px] font-bold uppercase text-foreground/50 mt-3">{reward}</p>
+                  <p className="text-[0.6875rem] font-bold uppercase text-foreground/50 mt-3">{reward}</p>
                 </div>
               </div>
             ))}
@@ -340,7 +340,7 @@ export function Landing() {
         {/* business CTA */}
         <section id="business" className="py-10">
           <div className="relative rounded-3xl bg-[#30442d] text-white p-8 md:p-10 overflow-hidden shadow-sticker-lifted">
-            <div className="absolute top-6 right-10 h-20 w-20 rounded-full bg-accent text-foreground flex items-center justify-center text-[11px] font-bold uppercase rotate-12">
+            <div className="absolute top-6 right-10 h-20 w-20 rounded-full bg-accent text-foreground flex items-center justify-center text-[0.6875rem] font-bold uppercase rotate-12">
               Signup
             </div>
             <span className="inline-block rounded-full bg-white/15 text-white px-4 py-1.5 font-semibold text-xs tracking-[0.12em] mb-4">

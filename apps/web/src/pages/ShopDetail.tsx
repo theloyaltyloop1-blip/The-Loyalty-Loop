@@ -340,7 +340,7 @@ export function ShopDetail() {
                       <Gift className="h-5 w-5" />
                     </div>
                     <span
-                      className="text-[9px] font-extrabold uppercase tracking-wide"
+                      className="text-[0.5625rem] font-extrabold uppercase tracking-wide"
                       style={{ color: business.brand_color }}
                     >
                       Free {rewardTitle.replace(/^free\s+/i, '')}
@@ -369,7 +369,7 @@ export function ShopDetail() {
           <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6">
             <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/40 mb-1">Manual code</p>
+              <p className="text-[0.625rem] font-bold uppercase tracking-wide text-foreground/40 mb-1">Manual code</p>
               <p className="font-mono font-bold text-lg tracking-widest text-foreground mb-3">
                 {stampCode ?? '—'}
               </p>

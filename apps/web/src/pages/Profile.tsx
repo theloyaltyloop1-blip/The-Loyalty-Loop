@@ -131,7 +131,7 @@ export function ProfilePage() {
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/40 mb-1">Manual code</p>
+            <p className="text-[0.625rem] font-bold uppercase tracking-wide text-foreground/40 mb-1">Manual code</p>
             <div className="flex items-center gap-2">
               <p className="font-mono font-bold text-lg tracking-widest text-foreground">{profile?.stamp_code}</p>
               <button data-press-feedback onClick={handleCopyCode} className="text-foreground/40 hover:text-foreground">

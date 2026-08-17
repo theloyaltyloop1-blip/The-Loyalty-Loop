@@ -95,7 +95,7 @@ function BusinessSwitcher() {
   if (staffBusinesses.length > 0) {
     return (
       <div className="mb-6 rounded-2xl border border-black/10 bg-card px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-foreground/40 mb-1">Working at</p>
+        <p className="text-[0.625rem] font-bold uppercase tracking-wide text-foreground/40 mb-1">Working at</p>
         <p className="font-semibold text-foreground truncate">
           {staffBusinesses.length === 1 ? staffBusinesses[0].business.name : `${staffBusinesses.length} shops`}
         </p>

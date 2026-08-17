@@ -2165,7 +2165,7 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     fontSize: 34,
-    lineHeight: 38,
+    lineHeight: 40,
     fontWeight: "900",
     color: "#151613",
     letterSpacing: -1,
@@ -2270,7 +2270,7 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontSize: 34,
-    lineHeight: 39,
+    lineHeight: 40,
     fontWeight: "900",
     letterSpacing: -0.8,
     color: "#171815",

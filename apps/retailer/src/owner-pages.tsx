@@ -1338,7 +1338,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: muted,
   },
-  title: { fontSize: 28, lineHeight: 32, fontWeight: "900", color: ink },
+  title: { fontSize: 28, lineHeight: 34, fontWeight: "900", color: ink },
   section: {
     backgroundColor: card,
     borderWidth: 1.5,
