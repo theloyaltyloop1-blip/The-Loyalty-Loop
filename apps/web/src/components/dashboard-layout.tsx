@@ -1,12 +1,13 @@
 import * as React from 'react'
 import { NavLink, Navigate } from 'react-router-dom'
-import { Home, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
+import { Home, Clapperboard, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },
+  { label: 'Discover', to: '/dashboard/discover', icon: Clapperboard },
   { label: 'News', to: '/dashboard/news', icon: Megaphone },
   { label: 'Rewards', to: '/dashboard/rewards', icon: Gift },
   { label: 'Activity', to: '/dashboard/activity', icon: History },

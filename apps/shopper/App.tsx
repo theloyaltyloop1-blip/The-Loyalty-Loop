@@ -3,12 +3,15 @@ import {
   ActivityIndicator,
   AppState,
   Alert,
+  Dimensions,
+  FlatList,
   Image,
   Linking,
   Modal,
   Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -18,6 +21,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Svg, { Circle, Path } from 'react-native-svg'
+import { LinearGradient } from 'expo-linear-gradient'
 import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
 import { colors } from '@loyalty-loop/design-tokens'
@@ -27,6 +31,7 @@ import { registerPushToken } from './src/push'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
+const TAB_BAR_HEIGHT = 78
 
 // ---------------------------------------------------------------------
 // Icons — small, consistent line icons (stroke-based, 2px, round caps)
@@ -133,6 +138,40 @@ function CloseIcon({ color = foreground, size = 20 }: IconProps) {
   )
 }
 
+function ReelsIcon({ color = foreground, size = 22, filled = false }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 4.5h16a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+        fill={filled ? color : 'none'}
+      />
+      <Path d="M10 9.2v5.6l5-2.8-5-2.8z" fill={filled ? background : color} />
+    </Svg>
+  )
+}
+
+function ShareIcon({ color = '#fff', size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 3v12" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M8 7l4-4 4 4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
+function CheckBadgeIcon({ color = primary, size = 14 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={10} fill={color} />
+      <Path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
 function WalletIcon({ color = '#fff', size = 18 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -190,6 +229,12 @@ type ShopReview = {
   created_at: string
 }
 type BusinessPhoto = { id: string; url: string; sort_order: number }
+type GalleryPhoto = {
+  id: string
+  url: string
+  created_at: string
+  business: Business
+}
 type Announcement = {
   id: string
   title: string
@@ -197,7 +242,7 @@ type Announcement = {
   created_at: string
   business: { name: string; brand_color?: string; logo_url?: string | null } | null
 }
-type Tab = 'home' | 'map' | 'news' | 'rewards' | 'favourites'
+type Tab = 'home' | 'discover' | 'map' | 'news' | 'rewards' | 'favourites'
 
 const isShopper = (roles: string[]) =>
   roles.includes('consumer') && !roles.some((role) => ['business_owner', 'staff', 'brand_head'].includes(role))
@@ -982,6 +1027,157 @@ function NewsTab({ announcements }: { announcements: Announcement[] }) {
 }
 
 // ---------------------------------------------------------------------
+// Discover tab — full-screen, swipeable feed of shop gallery photos.
+// ---------------------------------------------------------------------
+
+function timeAgo(iso: string) {
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  const weeks = Math.floor(days / 7)
+  if (weeks < 5) return `${weeks}w ago`
+  return new Date(iso).toLocaleDateString()
+}
+
+function DiscoverCard({
+  photo,
+  height,
+  favourite,
+  onToggleFavourite,
+  onOpenShop,
+}: {
+  photo: GalleryPhoto
+  height: number
+  favourite: boolean
+  onToggleFavourite: () => void
+  onOpenShop: () => void
+}) {
+  return (
+    <View style={{ height, width: '100%' }}>
+      <Image source={{ uri: photo.url }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.72)']}
+        locations={[0, 0.45, 1]}
+        style={styles.discoverGradient}
+      />
+      <View style={styles.discoverActionRail}>
+        <Pressable onPress={onToggleFavourite} style={styles.discoverActionButton} hitSlop={10}>
+          <HeartIcon color={favourite ? primary : '#fff'} filled={favourite} size={27} />
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            void Share.share({ message: `Check out ${photo.business.name} on The Loyalty Loop!` })
+          }}
+          style={styles.discoverActionButton}
+          hitSlop={10}
+        >
+          <ShareIcon size={25} />
+        </Pressable>
+      </View>
+      <Pressable style={styles.discoverInfo} onPress={onOpenShop}>
+        <View style={styles.discoverShopRow}>
+          {photo.business.logo_url ? (
+            <Image source={{ uri: photo.business.logo_url }} style={styles.discoverLogo} />
+          ) : (
+            <View style={[styles.discoverLogo, { backgroundColor: photo.business.brand_color || ink }]} />
+          )}
+          <Text style={styles.discoverShopName} numberOfLines={1}>
+            {photo.business.name}
+          </Text>
+          <CheckBadgeIcon />
+          <Text style={styles.discoverTime}>· {timeAgo(photo.created_at)}</Text>
+        </View>
+        {!!photo.business.description && (
+          <Text numberOfLines={2} style={styles.discoverCaption}>
+            {photo.business.description}
+          </Text>
+        )}
+        <Text style={styles.discoverViewShop}>View shop →</Text>
+      </Pressable>
+    </View>
+  )
+}
+
+function DiscoverTab({
+  favouriteIds,
+  onToggleFavourite,
+  onOpenShop,
+}: {
+  favouriteIds: Set<string>
+  onToggleFavourite: (business: Business) => void
+  onOpenShop: (business: Business) => void
+}) {
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [containerHeight, setContainerHeight] = useState(0)
+  const feedHeight = containerHeight || Dimensions.get('window').height - TAB_BAR_HEIGHT
+
+  useEffect(() => {
+    let active = true
+    supabase
+      .from('business_photos')
+      .select('id,url,created_at,business:businesses(*)')
+      .order('created_at', { ascending: false })
+      .limit(60)
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error) {
+          setLoading(false)
+          return
+        }
+        const rows = (data || [])
+          .map((row: any) => ({ ...row, business: Array.isArray(row.business) ? row.business[0] : row.business }))
+          .filter((row: any) => row.business) as GalleryPhoto[]
+        setPhotos(rows)
+        setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return (
+    <View style={{ flex: 1 }} onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}>
+      {loading ? (
+        <View style={[styles.discoverEmpty, { height: feedHeight }]}>
+          <ActivityIndicator color={primary} />
+        </View>
+      ) : photos.length === 0 ? (
+        <View style={[styles.discoverEmpty, { height: feedHeight }]}>
+          <ReelsIcon color={primary} size={30} />
+          <Text style={styles.discoverEmptyText}>No shop photos yet — check back soon.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={photos}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <DiscoverCard
+              photo={item}
+              height={feedHeight}
+              favourite={favouriteIds.has(item.business.id)}
+              onToggleFavourite={() => onToggleFavourite(item.business)}
+              onOpenShop={() => onOpenShop(item.business)}
+            />
+          )}
+          pagingEnabled
+          showsVerticalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={feedHeight}
+          snapToAlignment="start"
+          bounces={false}
+        />
+      )}
+    </View>
+  )
+}
+
+// ---------------------------------------------------------------------
 // Rewards tab
 // ---------------------------------------------------------------------
 
@@ -1070,6 +1266,7 @@ function FavouritesTab({
 
 const TABS: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
   { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? primary : foreground} /> },
+  { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? primary : foreground} filled={active} /> },
   { id: 'map', label: 'Map', icon: (active) => <MapPinIcon color={active ? primary : foreground} /> },
   { id: 'news', label: 'News', icon: (active) => <MegaphoneIcon color={active ? primary : foreground} /> },
   { id: 'rewards', label: 'Rewards', icon: (active) => <GiftIcon color={active ? primary : foreground} /> },
@@ -1198,19 +1395,25 @@ function AppHome({ session }: { session: Session }) {
     )
   }
 
+  const discovering = tab === 'discover'
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <AppHeader onOpenProfile={() => setShowProfile(true)} />
-      <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
-        {tab === 'home' && <HomeTab businesses={businesses} announcements={announcements} onSelect={setSelected} />}
-        {tab === 'map' && <MapTab businesses={businesses} onSelect={setSelected} />}
-        {tab === 'news' && <NewsTab announcements={announcements} />}
-        {tab === 'rewards' && <RewardsTab rewards={rewards} />}
-        {tab === 'favourites' && (
-          <FavouritesTab favourites={favouriteBusinesses} memberships={memberships} onSelect={setSelected} onQuickJoin={quickJoin} />
-        )}
-      </ScrollView>
+    <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
+      <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
+      {!discovering && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
+      {discovering ? (
+        <DiscoverTab favouriteIds={favouriteIds} onToggleFavourite={toggleFavourite} onOpenShop={setSelected} />
+      ) : (
+        <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
+          {tab === 'home' && <HomeTab businesses={businesses} announcements={announcements} onSelect={setSelected} />}
+          {tab === 'map' && <MapTab businesses={businesses} onSelect={setSelected} />}
+          {tab === 'news' && <NewsTab announcements={announcements} />}
+          {tab === 'rewards' && <RewardsTab rewards={rewards} />}
+          {tab === 'favourites' && (
+            <FavouritesTab favourites={favouriteBusinesses} memberships={memberships} onSelect={setSelected} onQuickJoin={quickJoin} />
+          )}
+        </ScrollView>
+      )}
       <BottomTabBar tab={tab} onChange={setTab} />
       {showProfile && <ProfileSheet session={session} userId={userId} stampCode={stampCode} onClose={() => setShowProfile(false)} />}
     </SafeAreaView>
@@ -1500,4 +1703,18 @@ const styles = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', gap: 3 },
   tabText: { color: '#8a8378', fontWeight: '700', fontSize: 11 },
   tabTextActive: { color: primary },
+
+  // Discover feed
+  discoverGradient: { ...StyleSheet.absoluteFillObject },
+  discoverActionRail: { position: 'absolute', right: 14, bottom: 110, alignItems: 'center', gap: 22 },
+  discoverActionButton: { alignItems: 'center', justifyContent: 'center' },
+  discoverInfo: { position: 'absolute', left: 18, right: 80, bottom: 34 },
+  discoverShopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  discoverLogo: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.8)' },
+  discoverShopName: { color: '#fff', fontWeight: '800', fontSize: 15, flexShrink: 1 },
+  discoverTime: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '600' },
+  discoverCaption: { color: '#fff', fontSize: 13.5, lineHeight: 19, marginTop: 8 },
+  discoverViewShop: { color: '#fff', fontWeight: '800', fontSize: 13, marginTop: 10 },
+  discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: background, paddingHorizontal: 40 },
+  discoverEmptyText: { color: '#6b6459', fontSize: 14, textAlign: 'center' },
 })

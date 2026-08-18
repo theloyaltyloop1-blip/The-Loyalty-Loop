@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import { OwnerProvider } from '@/lib/owner-context'
 import { Landing } from '@/pages/Landing'
 import { Home } from '@/pages/Home'
+import { DiscoverPage } from '@/pages/Discover'
 import { ShopDetail } from '@/pages/ShopDetail'
 import { RewardsPage } from '@/pages/Rewards'
 import { NewsPage } from '@/pages/News'
@@ -47,6 +48,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Home />} />
+                <Route path="/dashboard/discover" element={<DiscoverPage />} />
                 <Route path="/dashboard/shop/:id" element={<ShopDetail />} />
                 <Route path="/dashboard/rewards" element={<RewardsPage />} />
                 <Route path="/dashboard/news" element={<NewsPage />} />

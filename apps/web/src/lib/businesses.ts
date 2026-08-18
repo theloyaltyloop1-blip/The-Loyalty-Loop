@@ -151,6 +151,44 @@ export async function createBusiness(
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+const FILE_EXTENSION_BY_MIME: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'application/pdf': 'pdf',
+}
+
+/**
+ * File names and browser-reported MIME types can be forged. Check the leading
+ * bytes as a user-friendly first line of defence; the Storage bucket and its
+ * RLS policy enforce the same allow-list on the server for direct uploads.
+ */
+async function assertSafeUpload(file: File, allowedTypes: readonly string[], maxBytes: number, label: string) {
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error(`Please choose an approved ${label} file type.`)
+  }
+  if (!file.size) {
+    throw new Error('The selected file is empty.')
+  }
+  if (file.size > maxBytes) {
+    throw new Error(`${label} must be ${Math.floor(maxBytes / 1024 / 1024)}MB or smaller.`)
+  }
+
+  const header = new Uint8Array(await file.slice(0, 16).arrayBuffer())
+  const matches = (...bytes: number[]) => bytes.every((byte, index) => header[index] === byte)
+  const ascii = (offset: number, value: string) => value.split('').every((char, index) => header[offset + index] === char.charCodeAt(0))
+  const validSignature =
+    (file.type === 'image/png' && matches(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) ||
+    (file.type === 'image/jpeg' && matches(0xff, 0xd8, 0xff)) ||
+    (file.type === 'image/webp' && ascii(0, 'RIFF') && ascii(8, 'WEBP')) ||
+    (file.type === 'image/gif' && (ascii(0, 'GIF87a') || ascii(0, 'GIF89a'))) ||
+    (file.type === 'application/pdf' && ascii(0, '%PDF-'))
+
+  if (!validSignature) {
+    throw new Error('This file does not match the selected file type. Please choose the original image or PDF file.')
+  }
+}
 
 /** Uploads to the `logos`/`covers` public bucket at `{businessId}/{field}-{timestamp}.{ext}`,
  * then persists the resulting public URL onto the business row. Storage RLS
@@ -161,15 +199,10 @@ export async function uploadBusinessImage(
   field: 'logo_url' | 'cover_url',
   file: File
 ): Promise<Business> {
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new Error('Please choose a PNG, JPEG, WEBP or GIF image.')
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    throw new Error('Image must be 5MB or smaller.')
-  }
+  await assertSafeUpload(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, 'image')
 
   const bucket = field === 'logo_url' ? 'logos' : 'covers'
-  const ext = file.name.split('.').pop() || 'png'
+  const ext = FILE_EXTENSION_BY_MIME[file.type]
   const path = `${businessId}/${field}-${Date.now()}.${ext}`
 
   const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
@@ -530,14 +563,9 @@ export async function submitVerificationDocument(
   file: File,
   label: string
 ): Promise<Business> {
-  if (!ALLOWED_DOC_TYPES.includes(file.type)) {
-    throw new Error('Please upload a PNG, JPEG, WEBP or PDF file.')
-  }
-  if (file.size > MAX_DOC_BYTES) {
-    throw new Error('File must be 10MB or smaller.')
-  }
+  await assertSafeUpload(file, ALLOWED_DOC_TYPES, MAX_DOC_BYTES, 'verification document')
 
-  const ext = file.name.split('.').pop() || 'pdf'
+  const ext = FILE_EXTENSION_BY_MIME[file.type]
   const path = `${userId}/${businessId}-${Date.now()}.${ext}`
 
   const { error: uploadError } = await supabase.storage.from('owner_verification_docs').upload(path, file, {
@@ -785,18 +813,34 @@ export async function fetchBusinessPhotos(businessId: string): Promise<BusinessP
   return data as BusinessPhoto[]
 }
 
+export interface GalleryFeedItem {
+  id: string
+  url: string
+  created_at: string
+  business: Business
+}
+
+/** Newest-first cross-shop gallery feed for the Discover page — RLS on
+ * business_photos already restricts this to active/approved shops. */
+export async function fetchGalleryFeed(limit = 60): Promise<GalleryFeedItem[]> {
+  const { data, error } = await supabase
+    .from('business_photos')
+    .select('id,url,created_at,business:businesses(*)')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? [])
+    .map((row) => ({ ...row, business: Array.isArray(row.business) ? row.business[0] : row.business }))
+    .filter((row) => row.business) as GalleryFeedItem[]
+}
+
 const MAX_GALLERY_BYTES = 5 * 1024 * 1024
 const ALLOWED_GALLERY_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 
 export async function uploadGalleryPhoto(businessId: string, file: File, sortOrder: number): Promise<BusinessPhoto> {
-  if (!ALLOWED_GALLERY_TYPES.includes(file.type)) {
-    throw new Error('Please choose a PNG, JPEG, WEBP or GIF image.')
-  }
-  if (file.size > MAX_GALLERY_BYTES) {
-    throw new Error('Image must be 5MB or smaller.')
-  }
+  await assertSafeUpload(file, ALLOWED_GALLERY_TYPES, MAX_GALLERY_BYTES, 'image')
 
-  const ext = file.name.split('.').pop() || 'png'
+  const ext = FILE_EXTENSION_BY_MIME[file.type]
   const path = `${businessId}/${Date.now()}.${ext}`
 
   const { error: uploadError } = await supabase.storage.from('gallery').upload(path, file, {
