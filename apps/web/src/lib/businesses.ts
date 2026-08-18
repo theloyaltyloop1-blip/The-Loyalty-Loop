@@ -100,6 +100,17 @@ export async function deleteOwnedBusiness(businessId: string, confirmationName: 
   if (error) throw error
 }
 
+/** Admin-only: move a shop to an existing account and make that account a
+ * business owner. The database function performs the permission check and
+ * records the handoff in the platform audit log. */
+export async function adminTransferBusinessOwnership(businessId: string, newOwnerEmail: string) {
+  const { error } = await supabase.rpc('admin_transfer_business_ownership', {
+    _business_id: businessId,
+    _new_owner_email: newOwnerEmail.trim(),
+  })
+  if (error) throw error
+}
+
 function slugify(name: string) {
   const base = name
     .toLowerCase()
