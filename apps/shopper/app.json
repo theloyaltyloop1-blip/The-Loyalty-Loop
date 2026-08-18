@@ -26,6 +26,15 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F8E4C6"
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/android-icon-monochrome.png",

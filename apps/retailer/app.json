@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.theloyaltyloop.retailer",
-      "versionCode": 105,
+      "versionCode": 106,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#F8E4C6",
@@ -25,6 +25,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F8E4C6"
+        }
+      ],
       [
         "expo-notifications",
         {
