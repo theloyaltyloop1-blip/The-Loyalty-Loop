@@ -129,9 +129,9 @@ export function Home() {
           </div>
 
           <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/60 mb-4">Nearby</p>
-          <div className="grid sm:grid-cols-2 gap-5">
+          <div className="grid gap-5 md:grid-cols-2">
             {filtered.map((business, index) => (
-              <div key={business.id} className="stagger-card" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><ShopCard business={business} membership={membershipByBusiness.get(business.id)} /></div>
+              <div key={business.id} className="stagger-card w-full" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><ShopCard business={business} membership={membershipByBusiness.get(business.id)} /></div>
             ))}
           </div>
         </>

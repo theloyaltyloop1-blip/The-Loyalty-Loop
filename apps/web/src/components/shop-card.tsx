@@ -30,7 +30,7 @@ export function ShopCard({ business, membership }: { business: Business; members
   return (
     <button data-press-feedback
       onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
-      className="text-left rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5 relative hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
+      className="w-full text-left rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5 relative hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
     >
       {joined && (
         <span className="absolute top-4 right-4 rounded-full bg-[#EFE1C8] text-[#5a4a30] text-[0.6875rem] font-bold uppercase tracking-wide px-3 py-1">
@@ -50,12 +50,12 @@ export function ShopCard({ business, membership }: { business: Business; members
         {business.category}
       </p>
 
-      <div className="border-t border-foreground/10 pt-3 flex items-center justify-between">
-        <span className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: business.brand_color }} />
-          {joined ? "You're a member" : 'Tap to join'}
+      <div className="border-t border-foreground/10 pt-3 flex min-w-0 items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground/70">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: business.brand_color }} />
+          <span className="truncate">{joined ? "You're a member" : 'Tap to join'}</span>
         </span>
-        <span className="flex items-center gap-1 text-sm font-bold text-primary-hover">
+        <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-primary-hover">
           View <ArrowRight className="h-3.5 w-3.5" />
         </span>
       </div>
