@@ -564,18 +564,38 @@ function StampsScreen({
   async function lookup() {
     if (!code.trim()) return;
     setBusy(true);
+    const normalized = code.replace(/\s+/g, "").toUpperCase();
     try {
+      if (mode === "reward") {
+        const { data: reward, error: rewardError } = await supabase
+          .from("rewards")
+          .select("id,title,user_id,redeemed_at,expires_at")
+          .eq("business_id", business.id)
+          .eq("short_code", normalized)
+          .maybeSingle();
+        if (rewardError) throw rewardError;
+        if (reward) {
+          if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
+          if (reward.expires_at && new Date(reward.expires_at) < new Date()) throw new Error("This reward has expired.");
+          setMatched({ id: reward.user_id });
+          setActiveReward({ id: reward.id, title: reward.title });
+          setCode("");
+          void loadMemberInfo(reward.user_id);
+          return;
+        }
+      }
       const { data, error } = await supabase.rpc("lookup_user_by_stamp_code", {
-        _code: code.replace(/\s+/g, "").toUpperCase(),
+        _code: normalized,
       });
       if (error) throw error;
       const person = (data || [])[0];
-      if (!person) throw new Error("No customer found with that code.");
+      if (!person) throw new Error(mode === "reward" ? "No reward or customer found with that code." : "No customer found with that code.");
       setMatched(person);
+      setCode("");
       void loadMemberDetails(person.id);
     } catch (e) {
       Alert.alert(
-        "Could not find customer",
+        mode === "reward" ? "Could not find reward" : "Could not find customer",
         e instanceof Error ? e.message : "Please try again.",
       );
     } finally {
@@ -739,12 +759,12 @@ function StampsScreen({
             </Modal>
           )}
           <View style={styles.card}>
-            <Text style={styles.section}>{mode === "reward" ? "Or enter their customer code" : "Or enter their code"}</Text>
+            <Text style={styles.section}>{mode === "reward" ? "Or enter their reward or customer code" : "Or enter their code"}</Text>
             <TextInput
               style={[styles.input, styles.customerCodeInput]}
               value={code}
               onChangeText={setCode}
-              placeholder="Customer short code"
+              placeholder={mode === "reward" ? "Reward or customer short code" : "Customer short code"}
               selectionColor="#111111"
               autoCapitalize="characters"
             />
@@ -756,7 +776,42 @@ function StampsScreen({
           </View>
           {matched && (
             <View style={styles.card}>
-              <Text style={styles.matchTitle}>Member Information:</Text>
+              {mode === "stamps" ? (
+                <Pressable
+                  onPress={award}
+                  disabled={busy}
+                  style={({ pressed }) => [
+                    styles.bigActionButton,
+                    pressed && styles.pressed,
+                    busy && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.bigActionButtonText}>
+                    {busy ? "Awarding…" : `Award ${unit}`}
+                  </Text>
+                </Pressable>
+              ) : activeReward ? (
+                <Pressable
+                  onPress={redeem}
+                  disabled={busy}
+                  style={({ pressed }) => [
+                    styles.bigActionButton,
+                    pressed && styles.pressed,
+                    busy && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.bigActionButtonText}>
+                    {busy ? "Redeeming…" : `Redeem "${activeReward.title}"`}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.copy}>
+                  This customer has no reward ready to redeem yet.
+                </Text>
+              )}
+              <Text style={[styles.matchTitle, { marginTop: 18 }]}>
+                Member Information:
+              </Text>
               <View style={styles.memberInfoRow}>
                 <Text style={styles.memberInfoLabel}>Name:</Text>
                 <Text style={styles.memberInfoValue}>
@@ -783,23 +838,6 @@ function StampsScreen({
                   {formatDate(memberInfo?.last_activity_at)}
                 </Text>
               </View>
-              {mode === "stamps" ? (
-                <Button
-                  title={busy ? "Awarding…" : `Award ${unit}`}
-                  onPress={award}
-                  disabled={busy}
-                />
-              ) : activeReward ? (
-                <Button
-                  title={busy ? "Redeeming…" : `Redeem "${activeReward.title}"`}
-                  onPress={redeem}
-                  disabled={busy}
-                />
-              ) : (
-                <Text style={styles.copy}>
-                  This customer has no reward ready to redeem yet.
-                </Text>
-              )}
             </View>
           )}
         </>
@@ -2386,6 +2424,15 @@ const styles = StyleSheet.create({
   },
   memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#4E514A", flexShrink: 0, marginRight: 12 },
   memberInfoValue: { flex: 1, fontSize: 13, color: "#20211E", fontWeight: "700", textAlign: "right" },
+  bigActionButton: {
+    minHeight: 64,
+    borderRadius: 32,
+    backgroundColor: orange,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  bigActionButtonText: { color: "#fff", fontWeight: "900", fontSize: 18 },
   pageKicker: {
     fontSize: 11,
     fontWeight: "900",
