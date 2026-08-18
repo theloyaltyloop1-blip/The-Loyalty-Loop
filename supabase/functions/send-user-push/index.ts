@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     const [{ data: business }, { data: staff }] = await Promise.all([
       admin.from("businesses").select("owner_id").eq("id", businessId).single(),
-      admin.from("staff_members").select("id").eq("business_id", businessId).eq("user_id", user.id).eq("status", "active").eq("can_scan_stamps", true).maybeSingle(),
+      admin.from("staff_members").select("id,can_scan_stamps,can_redeem_rewards").eq("business_id", businessId).eq("user_id", user.id).eq("status", "active").or("can_scan_stamps.eq.true,can_redeem_rewards.eq.true").maybeSingle(),
     ]);
     if (!business || (business.owner_id !== user.id && !staff)) {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });

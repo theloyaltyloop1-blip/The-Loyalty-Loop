@@ -28,6 +28,8 @@ export interface Business {
   website: string | null
   phone: string | null
   instagram: string | null
+  tiktok: string | null
+  youtube: string | null
   brand_color: string
   logo_url: string | null
   cover_url: string | null
@@ -339,6 +341,7 @@ export async function sendUserPush(businessId: string, userId: string) {
 
 export interface RewardLookup {
   id: string
+  user_id: string
   title: string
   short_code: string
   redeemed_at: string | null
@@ -487,7 +490,7 @@ export async function deleteAnnouncement(id: string) {
 export async function findRewardByCode(businessId: string, code: string): Promise<RewardLookup | null> {
   const { data, error } = await supabase
     .from('rewards')
-    .select('id, title, short_code, redeemed_at, expires_at')
+    .select('id, user_id, title, short_code, redeemed_at, expires_at')
     .eq('business_id', businessId)
     .eq('short_code', code.replace(/\s+/g, '').toUpperCase())
     .maybeSingle()
@@ -498,7 +501,7 @@ export async function findRewardByCode(businessId: string, code: string): Promis
 export async function findRewardByToken(businessId: string, qrToken: string): Promise<RewardLookup | null> {
   const { data, error } = await supabase
     .from('rewards')
-    .select('id, title, short_code, redeemed_at, expires_at')
+    .select('id, user_id, title, short_code, redeemed_at, expires_at')
     .eq('business_id', businessId)
     .eq('qr_token', qrToken)
     .maybeSingle()

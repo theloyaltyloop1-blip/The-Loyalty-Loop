@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "The Loyalty Loop Admin",
+    "slug": "localoop-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "../shopper/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.theloyaltyloop.admin",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "../shopper/assets/icon.png",
+        "backgroundColor": "#F8E4C6"
+      }
+    },
+    "owner": "the-loyalty-loop",
+    "extra": {
+      "eas": {
+        "projectId": "c27febd0-08e3-4a1c-bc64-d2aafe8933ef"
+      }
+    }
+  }
+}

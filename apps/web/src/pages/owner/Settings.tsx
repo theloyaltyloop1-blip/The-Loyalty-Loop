@@ -280,6 +280,8 @@ function ProfileTab() {
     website: business?.website ?? '',
     phone: business?.phone ?? '',
     instagram: business?.instagram ?? '',
+    tiktok: business?.tiktok ?? '',
+    youtube: business?.youtube ?? '',
   })
   const [hours, setHours] = React.useState<OpeningHours>(business?.opening_hours ?? {})
   const [saving, setSaving] = React.useState(false)
@@ -303,6 +305,8 @@ function ProfileTab() {
       website: business.website ?? '',
       phone: business.phone ?? '',
       instagram: business.instagram ?? '',
+      tiktok: business.tiktok ?? '',
+      youtube: business.youtube ?? '',
     })
     setHours(business.opening_hours ?? {})
     setPinTouched(true)
@@ -477,14 +481,11 @@ function ProfileTab() {
             />
           </Field>
         </div>
-        <Field label="Instagram">
-          <input
-            className={inputClass}
-            placeholder="@yourshop"
-            value={form.instagram ?? ''}
-            onChange={(e) => setForm({ ...form, instagram: e.target.value })}
-          />
-        </Field>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label="Instagram"><input className={inputClass} placeholder="@yourshop" value={form.instagram ?? ''} onChange={(e) => setForm({ ...form, instagram: e.target.value })} /></Field>
+          <Field label="TikTok"><input className={inputClass} placeholder="@yourshop" value={form.tiktok ?? ''} onChange={(e) => setForm({ ...form, tiktok: e.target.value })} /></Field>
+          <Field label="YouTube"><input className={inputClass} placeholder="Channel URL" value={form.youtube ?? ''} onChange={(e) => setForm({ ...form, youtube: e.target.value })} /></Field>
+        </div>
       </SectionCard>
 
       <SectionCard title="Opening hours">

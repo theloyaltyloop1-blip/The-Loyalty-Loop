@@ -626,6 +626,9 @@ function StampsScreen({
         .update({ redeemed_at: new Date().toISOString() })
         .eq("id", activeReward.id);
       if (error) throw error;
+      void supabase.functions.invoke("send-user-push", {
+        body: { business_id: business.id, user_id: matched.id },
+      });
       Alert.alert(
         "Reward redeemed",
         `${activeReward.title} redeemed for ${matched.first_name || "the customer"}.`,
@@ -1665,6 +1668,12 @@ function BusinessSettings({
           onPress={() => onOpenPage("rewards")}
         />
         <SettingsRow
+          icon="✦"
+          title="Customer reviews"
+          detail="Read feedback and reply as your shop"
+          onPress={() => onOpenPage("reviews")}
+        />
+        <SettingsRow
           icon="♟"
           title="Staff & permissions"
           detail="Invite, revoke and manage access"
@@ -2375,8 +2384,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(20,20,18,.07)",
   },
-  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#4E514A" },
-  memberInfoValue: { fontSize: 13, color: "#20211E", fontWeight: "700" },
+  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#4E514A", flexShrink: 0, marginRight: 12 },
+  memberInfoValue: { flex: 1, fontSize: 13, color: "#20211E", fontWeight: "700", textAlign: "right" },
   pageKicker: {
     fontSize: 11,
     fontWeight: "900",

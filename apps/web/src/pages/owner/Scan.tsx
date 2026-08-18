@@ -165,7 +165,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="relative flex flex-col gap-4 lg:pr-[21rem]">
       <div className="flex items-center justify-center">
         <button data-press-feedback
           onClick={() => setCameraOn((c) => !c)}
@@ -202,15 +202,16 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
       </div>
 
       {match && (
-        <div className="rounded-xl bg-black/5 px-4 py-3">
-          <p className="font-semibold text-foreground">
+        <aside className="rounded-2xl border border-black/5 bg-black/[0.045] px-5 py-5 lg:absolute lg:right-0 lg:top-0 lg:w-[19rem]">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/45">Member information</p>
+          <p className="mt-2 text-lg font-semibold text-foreground">
             {match.first_name || match.last_name ? `${match.first_name ?? ''} ${match.last_name ?? ''}`.trim() : 'Customer found'}
           </p>
           <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-sm text-foreground/70">
             <span>Email: {match.email ?? 'Not available'}</span><span>Joined: {new Date(match.joined_at).toLocaleDateString()}</span>
             <span>Last visit: {match.last_activity_at ? new Date(match.last_activity_at).toLocaleDateString() : 'Not yet'}</span><span>{match.stamp_count} stamps · {match.points_balance} points · {match.visit_count} visits</span>
           </div>
-        </div>
+        </aside>
       )}
 
       {matchedUserId && (
@@ -306,6 +307,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
     setError(null)
     try {
       await redeemReward(reward.id)
+      void sendUserPush(businessId, reward.user_id)
       setSuccess(`Redeemed: ${reward.title}`)
       setReward(null)
       setCode('')

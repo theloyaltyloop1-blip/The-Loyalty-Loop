@@ -31,6 +31,7 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
+  Star,
   Trash2,
   UserPlus,
 } from "lucide-react-native";
@@ -46,6 +47,7 @@ export type NativeOwnerPage =
   | "ai"
   | "branding"
   | "rewards"
+  | "reviews"
   | "staff"
   | "support"
   | "tutorial";
@@ -99,6 +101,14 @@ interface RewardItem {
   description: string | null;
   stamp_threshold: number;
   sort_order: number;
+}
+interface CustomerReview {
+  id: string;
+  user_id: string;
+  rating: number;
+  body: string | null;
+  created_at: string;
+  reply?: { id: string; body: string; created_at: string }[] | null;
 }
 interface StaffMember {
   id: string;
@@ -1158,6 +1168,80 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
   );
 }
 
+function ReviewsPage({ business, userId, onBack, preview = false }: PageProps) {
+  const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (preview) return;
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("id,user_id,rating,body,created_at,reply:review_replies(id,body,created_at)")
+      .eq("business_id", business.id)
+      .order("created_at", { ascending: false });
+    if (error) {
+      Alert.alert("Could not load reviews", error.message);
+      return;
+    }
+    const items = (data || []) as CustomerReview[];
+    setReviews(items);
+    setDrafts(Object.fromEntries(items.map((review) => [review.id, review.reply?.[0]?.body || ""])));
+  }, [business.id, preview]);
+
+  useEffect(() => {
+    if (preview) {
+      setReviews([{ id: "preview-review", user_id: "customer", rating: 5, body: "Lovely service and a great reward programme.", created_at: new Date().toISOString() }]);
+      return;
+    }
+    void load();
+  }, [load, preview]);
+
+  async function saveReply(review: CustomerReview) {
+    const body = (drafts[review.id] || "").trim();
+    if (!body) {
+      Alert.alert("Write a reply first", "Add a short response before saving.");
+      return;
+    }
+    setBusyId(review.id);
+    try {
+      const existing = review.reply?.[0];
+      const query = existing
+        ? supabase.from("review_replies").update({ body }).eq("id", existing.id)
+        : supabase.from("review_replies").insert({ review_id: review.id, business_id: business.id, owner_id: userId, body });
+      const { error } = await query;
+      if (error) throw error;
+      await load();
+    } catch (error) {
+      Alert.alert("Could not save reply", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <View>
+      <PageHeader title="Reviews" eyebrow="CUSTOMER FEEDBACK" onBack={onBack} />
+      <Text style={styles.body}>Read customer feedback and reply from your shop.</Text>
+      {reviews.length ? reviews.map((review) => (
+        <Section key={review.id}>
+          <View style={styles.requestHeading}>
+            <View>
+              <Text style={styles.listTitle}>Customer review</Text>
+              <Text style={styles.date}>{new Date(review.created_at).toLocaleDateString()}</Text>
+            </View>
+            <View style={styles.reviewRating}><Star size={16} fill={orange} color={orange} /><Text style={styles.reviewRatingText}>{review.rating}/5</Text></View>
+          </View>
+          <Text style={styles.body}>{review.body || "No written comment."}</Text>
+          <Text style={styles.replyTitle}>{review.reply?.[0] ? "Your reply" : "Reply from your shop"}</Text>
+          <Field value={drafts[review.id] || ""} onChangeText={(value) => setDrafts((current) => ({ ...current, [review.id]: value }))} placeholder="Thank them for their feedback…" multiline />
+          <PrimaryButton label={review.reply?.[0] ? "Update reply" : "Post reply"} onPress={() => void saveReply(review)} busy={busyId === review.id} />
+        </Section>
+      )) : <Section><Text style={styles.empty}>No customer reviews yet.</Text></Section>}
+    </View>
+  );
+}
+
 function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
   const [items, setItems] = useState<SupportRequest[]>([]);
   const [subject, setSubject] = useState("");
@@ -1341,6 +1425,7 @@ export function NativeOwnerPageView({
         ai: AiAnalyticsPage,
         branding: BrandingPage,
         rewards: RewardsPage,
+        reviews: ReviewsPage,
         staff: StaffPage,
         support: SupportPage,
         tutorial: TutorialPage,
@@ -1615,6 +1700,8 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
+  reviewRating: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FFF0E8", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999 },
+  reviewRatingText: { color: ink, fontSize: 12, fontWeight: "900" },
   reply: {
     borderLeftWidth: 3,
     borderLeftColor: orange,

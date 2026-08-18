@@ -16,7 +16,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { WebView } from 'react-native-webview'
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Svg, { Circle, Path } from 'react-native-svg'
 import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
@@ -155,6 +155,11 @@ type Business = {
   address?: string | null
   lat?: number | null
   lng?: number | null
+  website?: string | null
+  phone?: string | null
+  instagram?: string | null
+  tiktok?: string | null
+  youtube?: string | null
   brand_color?: string
   logo_url?: string | null
   cover_url?: string | null
@@ -177,6 +182,14 @@ type RewardCatalogItem = {
   description?: string | null
   stamp_threshold: number
 }
+type ShopReview = {
+  id: string
+  user_id: string
+  rating: number
+  body?: string | null
+  created_at: string
+}
+type BusinessPhoto = { id: string; url: string; sort_order: number }
 type Announcement = {
   id: string
   title: string
@@ -378,9 +391,24 @@ function ShopDetail({
   const [addingToWallet, setAddingToWallet] = useState(false)
   const [catalog, setCatalog] = useState<RewardCatalogItem[]>([])
   const [catalogLoading, setCatalogLoading] = useState(true)
+  const [reviews, setReviews] = useState<ShopReview[]>([])
+  const [gallery, setGallery] = useState<BusinessPhoto[]>([])
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewBody, setReviewBody] = useState('')
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [savingReview, setSavingReview] = useState(false)
   const threshold = business.loyalty_config?.stamps_required || 10
   const value = business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
   const label = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
+  const hasMapCoordinates = typeof business.lat === 'number' && typeof business.lng === 'number'
+  const mapDestination = hasMapCoordinates ? `${business.lat},${business.lng}` : business.address || ''
+  const externalUrl = (value: string) => /^https?:\/\//i.test(value) ? value : `https://${value}`
+  const socialLinks = [
+    business.website && { label: 'Website', value: business.website, url: externalUrl(business.website) },
+    business.instagram && { label: 'Instagram', value: business.instagram, url: `https://instagram.com/${business.instagram.replace(/^@|https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '')}` },
+    business.tiktok && { label: 'TikTok', value: business.tiktok, url: `https://www.tiktok.com/@${business.tiktok.replace(/^@|https?:\/\/(www\.)?tiktok\.com\/@?/i, '').replace(/\/$/, '')}` },
+    business.youtube && { label: 'YouTube', value: business.youtube, url: externalUrl(business.youtube) },
+  ].filter(Boolean) as { label: string; value: string; url: string }[]
 
   useEffect(() => {
     let active = true
@@ -403,6 +431,90 @@ function ShopDetail({
       active = false
     }
   }, [business.id])
+
+  useEffect(() => {
+    let active = true
+    supabase
+      .from('business_photos')
+      .select('id,url,sort_order')
+      .eq('business_id', business.id)
+      .order('sort_order')
+      .then(({ data, error }) => {
+        if (active && !error) setGallery((data || []) as BusinessPhoto[])
+      })
+    return () => { active = false }
+  }, [business.id])
+
+  const loadReviews = async () => {
+    setReviewsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('id,user_id,rating,body,created_at')
+        .eq('business_id', business.id)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      const items = (data || []) as ShopReview[]
+      setReviews(items)
+      const mine = items.find((review) => review.user_id === userId)
+      if (mine) {
+        setReviewRating(mine.rating)
+        setReviewBody(mine.body || '')
+      }
+    } catch {
+      setReviews([])
+    } finally {
+      setReviewsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadReviews()
+  }, [business.id, userId])
+
+  const myReview = reviews.find((review) => review.user_id === userId)
+
+  async function saveReview() {
+    setSavingReview(true)
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .upsert(
+          { business_id: business.id, user_id: userId, rating: reviewRating, body: reviewBody.trim() || null },
+          { onConflict: 'user_id,business_id' },
+        )
+      if (error) throw error
+      await loadReviews()
+      Alert.alert('Review saved', 'Thank you for sharing your experience.')
+    } catch (error) {
+      Alert.alert('Could not save review', error instanceof Error ? error.message : 'Please try again.')
+    } finally {
+      setSavingReview(false)
+    }
+  }
+
+  function deleteReview() {
+    if (!myReview) return
+    Alert.alert('Delete your review?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          setSavingReview(true)
+          try {
+            const { error } = await supabase.from('reviews').delete().eq('id', myReview.id)
+            if (error) throw error
+            setReviewRating(5)
+            setReviewBody('')
+            await loadReviews()
+          } catch (error) {
+            Alert.alert('Could not delete review', error instanceof Error ? error.message : 'Please try again.')
+          } finally {
+            setSavingReview(false)
+          }
+        },
+      },
+    ])
+  }
 
   async function join() {
     setBusy(true)
@@ -502,10 +614,107 @@ function ShopDetail({
           </View>
         )}
 
+        {membership && mapDestination && <View style={styles.visitSection}>
+          <Text style={styles.sectionTitle}>Find your way there</Text>
+          {hasMapCoordinates ? (
+            <View style={styles.mapEmbed}>
+              <MapView
+                provider={PROVIDER_GOOGLE}
+                style={styles.nativeMap}
+                initialRegion={{
+                  latitude: business.lat!,
+                  longitude: business.lng!,
+                  latitudeDelta: 0.012,
+                  longitudeDelta: 0.012,
+                }}
+                scrollEnabled
+                rotateEnabled={false}
+              >
+                <Marker
+                  coordinate={{ latitude: business.lat!, longitude: business.lng! }}
+                  title={business.name}
+                  description={business.address || undefined}
+                  pinColor={business.brand_color || primary}
+                />
+              </MapView>
+            </View>
+          ) : null}
+          <Text style={styles.mapAddress}>{business.address || 'Open Google Maps for directions'}</Text>
+          <Pressable onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`)} style={styles.directionsButton}>
+            <Text style={styles.directionsButtonText}>Get directions in Google Maps →</Text>
+          </Pressable>
+        </View>}
+
+        {membership && (business.phone || socialLinks.length > 0) && <View style={styles.visitSection}>
+          <Text style={styles.sectionTitle}>Stay connected</Text>
+          <View style={styles.contactList}>
+            {business.phone && <Pressable onPress={() => void Linking.openURL(`tel:${business.phone}`)} style={styles.contactRow}><Text style={styles.contactLabel}>Call the shop</Text><Text style={styles.contactValue}>{business.phone}</Text></Pressable>}
+            {socialLinks.map((link) => <Pressable key={link.label} onPress={() => void Linking.openURL(link.url)} style={styles.contactRow}><Text style={styles.contactLabel}>{link.label}</Text><Text numberOfLines={1} style={styles.contactValue}>{link.value}</Text></Pressable>)}
+          </View>
+        </View>}
+
+        {membership && gallery.length > 0 && <View style={styles.gallerySection}>
+          <View style={styles.galleryHeading}><View><Text style={styles.sectionTitle}>From the shop</Text><Text style={styles.gallerySubheading}>Scroll through their latest moments</Text></View><Text style={styles.galleryCount}>{gallery.length} photos</Text></View>
+          <View style={styles.shortsFeed}>
+            {gallery.map((photo, index) => <View key={photo.id} style={styles.shortCard}>
+              <Image source={{ uri: photo.url }} style={styles.shortImage} resizeMode="cover" />
+              <View style={styles.shortOverlay}><Text style={styles.shortIndex}>{String(index + 1).padStart(2, '0')} / {String(gallery.length).padStart(2, '0')}</Text><Text style={styles.shortShopName}>{business.name}</Text></View>
+            </View>)}
+          </View>
+        </View>}
+
         <Text style={styles.sectionTitle}>How it works</Text>
         <Text style={styles.description}>
           Earn a {label.slice(0, -1)} every time you visit. When you reach the target, your reward will appear in the Rewards tab.
         </Text>
+
+        <View style={styles.reviewsSection}>
+          <Text style={styles.sectionTitle}>Reviews</Text>
+          {!membership ? (
+            <Text style={styles.reviewHint}>Join this loyalty card to share your experience.</Text>
+          ) : (
+            <View style={styles.reviewComposer}>
+              <Text style={styles.reviewComposerTitle}>{myReview ? 'Update your review' : 'Share your experience'}</Text>
+              <View style={styles.starRow}>
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <Pressable key={rating} onPress={() => setReviewRating(rating)} hitSlop={8} style={styles.starButton}>
+                    <Text style={[styles.star, rating <= reviewRating && styles.starSelected]}>★</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                value={reviewBody}
+                onChangeText={setReviewBody}
+                placeholder="What did you enjoy?"
+                placeholderTextColor="#8a8378"
+                multiline
+                maxLength={2000}
+                style={styles.reviewInput}
+              />
+              <Button title={savingReview ? 'Saving…' : myReview ? 'Update review' : 'Post review'} onPress={saveReview} disabled={savingReview} />
+              {myReview && <Pressable onPress={deleteReview} disabled={savingReview}><Text style={styles.deleteReview}>Delete review</Text></Pressable>}
+            </View>
+          )}
+
+          {reviewsLoading ? (
+            <ActivityIndicator color={primary} style={{ marginTop: 18 }} />
+          ) : reviews.length === 0 ? (
+            <Text style={styles.reviewHint}>Be the first to review this shop.</Text>
+          ) : (
+            <View style={styles.reviewList}>
+              {reviews.map((review) => (
+                <View key={review.id} style={styles.reviewItem}>
+                  <View style={styles.reviewHeaderRow}>
+                    <Text style={styles.reviewAuthor}>{review.user_id === userId ? 'You' : 'Neighbour'}</Text>
+                    <Text style={styles.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</Text>
+                  </View>
+                  <Text style={styles.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</Text>
+                  {!!review.body && <Text style={styles.reviewBody}>{review.body}</Text>}
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   )
@@ -714,22 +923,29 @@ function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (b
   const pins = businesses
     .filter((b): b is Business & { lat: number; lng: number } => b.lat != null && b.lng != null)
     .map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, name: b.name, color: b.brand_color || primary }))
-  const html = useMemo(() => buildMapHtml(pins), [JSON.stringify(pins)])
+  const initialRegion = pins.length
+    ? { latitude: pins[0].lat, longitude: pins[0].lng, latitudeDelta: 0.07, longitudeDelta: 0.07 }
+    : undefined
 
   return (
     <>
       <Text style={styles.pageTitle}>Shops near you</Text>
       {pins.length > 0 ? (
         <View style={styles.mapWebviewWrap}>
-          <WebView
-            source={{ html, baseUrl: 'https://www.the-loyalty-loop.com' }}
-            originWhitelist={['*']}
-            style={{ flex: 1 }}
-            onMessage={(e) => {
-              const business = businesses.find((b) => b.id === e.nativeEvent.data)
-              if (business) onSelect(business)
-            }}
-          />
+          <MapView provider={PROVIDER_GOOGLE} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false}>
+            {pins.map((pin) => (
+              <Marker
+                key={pin.id}
+                coordinate={{ latitude: pin.lat, longitude: pin.lng }}
+                title={pin.name}
+                pinColor={pin.color}
+                onCalloutPress={() => {
+                  const business = businesses.find((item) => item.id === pin.id)
+                  if (business) onSelect(business)
+                }}
+              />
+            ))}
+          </MapView>
         </View>
       ) : (
         <View style={styles.mapPlaceholder}>
@@ -1209,6 +1425,49 @@ const styles = StyleSheet.create({
   lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 22 },
   walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1a1a1a', borderRadius: 999, height: 46, marginTop: 18 },
   walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  // Visit and contact details
+  visitSection: { marginTop: 28 },
+  mapEmbed: { height: 150, marginTop: 10, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#efe8db' },
+  nativeMap: { flex: 1 },
+  mapAddress: { color: '#6b6459', fontSize: 13, lineHeight: 19, marginTop: 9 },
+  directionsButton: { alignSelf: 'flex-start', marginTop: 11, borderRadius: 999, backgroundColor: 'rgba(79,100,56,0.12)', paddingHorizontal: 14, paddingVertical: 10 },
+  directionsButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
+  contactList: { marginTop: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', borderRadius: 18, overflow: 'hidden', backgroundColor: card },
+  contactRow: { minHeight: 54, paddingHorizontal: 15, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.07)' },
+  contactLabel: { color: foreground, fontSize: 14, fontWeight: '800', flexShrink: 0 },
+  contactValue: { color: primary, fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
+
+  // Shop gallery — a tall, photo-first scrolling feed.
+  gallerySection: { marginTop: 30 },
+  galleryHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
+  gallerySubheading: { color: '#8a8378', fontSize: 12.5, marginTop: 3 },
+  galleryCount: { color: primary, fontSize: 12, fontWeight: '800' },
+  shortsFeed: { gap: 14, marginTop: 12 },
+  shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: '#e7dfd2', position: 'relative' },
+  shortImage: { width: '100%', height: '100%' },
+  shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 14, justifyContent: 'flex-end', backgroundColor: 'rgba(20,20,18,0.42)' },
+  shortIndex: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  shortShopName: { color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 4 },
+
+  // Reviews
+  reviewsSection: { marginTop: 30 },
+  reviewHint: { color: '#6b6459', fontSize: 13.5, lineHeight: 20, marginTop: 9 },
+  reviewComposer: { backgroundColor: card, borderRadius: 18, padding: 16, marginTop: 13, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
+  reviewComposerTitle: { fontSize: 15, fontWeight: '800', color: foreground },
+  starRow: { flexDirection: 'row', gap: 4, marginTop: 9 },
+  starButton: { paddingVertical: 3, paddingRight: 3 },
+  star: { fontSize: 29, lineHeight: 34, color: '#d7d0c4' },
+  starSelected: { color: accent },
+  reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.12)', backgroundColor: '#fff', color: foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 13, paddingVertical: 11, textAlignVertical: 'top' },
+  deleteReview: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 14 },
+  reviewList: { marginTop: 18, gap: 14 },
+  reviewItem: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.09)', paddingTop: 14 },
+  reviewHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  reviewAuthor: { fontSize: 14, fontWeight: '800', color: foreground },
+  reviewDate: { color: '#8a8378', fontSize: 11.5 },
+  reviewStars: { color: accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
+  reviewBody: { color: '#5c564c', fontSize: 13.5, lineHeight: 20, marginTop: 6 },
 
   // Rewards
   reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },

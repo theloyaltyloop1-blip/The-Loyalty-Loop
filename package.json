@@ -5,6 +5,7 @@
   "workspaces": [
     "apps/shopper",
     "apps/retailer",
+    "apps/admin",
     "packages/design-tokens"
   ],
   "scripts": {
