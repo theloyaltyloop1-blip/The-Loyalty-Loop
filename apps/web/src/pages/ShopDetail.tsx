@@ -113,9 +113,11 @@ export function ShopDetail() {
     if (thisRequestId !== requestIdRef.current) return // a newer refetch already landed — drop this stale result
     setBusiness(biz)
     const applyMembership = () => setMembership(m)
-    const startViewTransition = (document as Document & { startViewTransition?: (update: () => void) => unknown }).startViewTransition
-    if (joiningCardRef.current && m && startViewTransition) {
-      startViewTransition(() => flushSync(applyMembership))
+    const documentWithViewTransition = document as Document & { startViewTransition?: (update: () => void) => unknown }
+    if (joiningCardRef.current && m && documentWithViewTransition.startViewTransition) {
+      // startViewTransition is a Document method. Calling a detached reference
+      // loses its `this` value in Chromium and throws "Illegal invocation".
+      documentWithViewTransition.startViewTransition(() => flushSync(applyMembership))
     } else {
       applyMembership()
     }
