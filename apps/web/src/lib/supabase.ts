@@ -65,3 +65,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Auth emails must always bring people back to the published app, even when
 // the account was created from a local development session.
 export const AUTH_REDIRECT_URL = 'https://www.the-loyalty-loop.com'
+
+// Read by AuthCallback once the OAuth redirect lands with a session, since
+// signInWithOAuth has no equivalent of signUp's `options.data` for passing
+// custom signup intent (business_owner vs consumer) through the provider.
+export const OAUTH_INTENT_KEY = 'll-oauth-intent'
+
+export async function signInWithGoogle(intent?: 'business_owner') {
+  if (intent) localStorage.setItem(OAUTH_INTENT_KEY, intent)
+  else localStorage.removeItem(OAUTH_INTENT_KEY)
+  setRememberMe(true)
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${AUTH_REDIRECT_URL}/auth/callback` },
+  })
+  if (error) throw error
+}

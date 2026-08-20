@@ -28,6 +28,7 @@ import { colors } from '@loyalty-loop/design-tokens'
 import { hasSupabaseConfig, supabase } from './src/supabase'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
+import { signInWithGoogle } from './src/google-auth'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
@@ -134,6 +135,17 @@ function CloseIcon({ color = foreground, size = 20 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M6 6l12 12M18 6 6 18" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+function GoogleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+      <Path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <Path fill="#4CAF50" d="M24 44c5.4 0 10.3-1.8 14.1-5l-6.5-5.5C29.5 35.4 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.7 16.3 44 24 44z" />
+      <Path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.5 5.5C39.6 37 44 31 44 24c0-1.3-.1-2.7-.4-3.5z" />
     </Svg>
   )
 }
@@ -336,6 +348,18 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
     }
   }
 
+  async function submitGoogle() {
+    setBusy(true)
+    try {
+      const session = await signInWithGoogle()
+      if (session) onSession(session)
+    } catch (e) {
+      Alert.alert('Could not sign in with Google', e instanceof Error ? e.message : 'Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
@@ -346,6 +370,15 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
         <Text style={styles.hero}>Local rewards,{'\n'}in your pocket.</Text>
         <Text style={styles.copy}>Collect loyalty rewards from the places you love.</Text>
         <View style={styles.card}>
+          <Pressable onPress={submitGoogle} disabled={busy} style={styles.googleButton}>
+            <GoogleIcon />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
+          </Pressable>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
           {mode === 'signUp' && (
             <TextInput value={name} onChangeText={setName} placeholder="First name" placeholderTextColor="#8a8378" style={styles.input} autoCapitalize="words" />
           )}
@@ -1532,6 +1565,11 @@ const styles = StyleSheet.create({
 
   card: { backgroundColor: card, borderRadius: 20, padding: 18, marginTop: 26, gap: 12, shadowColor: '#1a1a1a', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
   input: { backgroundColor: '#f4efe4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: foreground, fontSize: 16 },
+  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', paddingVertical: 14 },
+  googleButtonText: { color: foreground, fontWeight: '800', fontSize: 15 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.1)' },
+  dividerText: { color: '#8a8378', fontSize: 12, fontWeight: '700' },
 
   button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 15, marginTop: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', shadowColor: primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: foreground, marginTop: 18 },

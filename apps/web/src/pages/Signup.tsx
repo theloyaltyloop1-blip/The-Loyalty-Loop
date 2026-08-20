@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { AUTH_REDIRECT_URL, supabase } from '@/lib/supabase'
-import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine } from '@/components/auth-layout'
+import { AUTH_REDIRECT_URL, supabase, signInWithGoogle } from '@/lib/supabase'
+import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, GoogleButton, AuthDivider } from '@/components/auth-layout'
 
 export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   const [searchParams] = useSearchParams()
@@ -76,6 +76,8 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
 
   return (
     <AuthLayout title="Welcome to The Loyalty Loop">
+      <GoogleButton onClick={() => signInWithGoogle(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
+      <AuthDivider />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <AuthInput

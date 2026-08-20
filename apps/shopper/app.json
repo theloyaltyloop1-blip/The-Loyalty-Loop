@@ -3,6 +3,7 @@
     "name": "The Loyalty Loop",
     "slug": "localoop-rewards",
     "version": "1.0.0",
+    "scheme": "loyaltyloop",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +13,7 @@
     },
     "android": {
       "package": "com.theloyaltyloop.shopper",
-      "versionCode": 108,
+      "versionCode": 109,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#F8E4C6",
@@ -25,6 +26,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {
