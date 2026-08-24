@@ -130,9 +130,26 @@ async function processText(admin: ReturnType<typeof createClient>, phone: string
     }
     // START is an explicit request to resume the optional channel, including
     // for someone who previously used STOP.
-    if (contact.user_id) {
+    // An existing Loyalty Loop customer may be new to WhatsApp. Match their
+    // confirmed profile number before starting the new-account conversation,
+    // so they can immediately see their existing cards and balances.
+    let linkedUserId = contact.user_id;
+    if (!linkedUserId) {
+      const { data: existingProfile } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("phone", phone)
+        .maybeSingle();
+      if (existingProfile?.id) {
+        linkedUserId = existingProfile.id;
+        await admin.from("whatsapp_contacts")
+          .update({ user_id: linkedUserId, opted_out_at: null, last_inbound_at: new Date().toISOString() })
+          .eq("phone_e164", phone);
+      }
+    }
+    if (linkedUserId) {
       await admin.from("whatsapp_contacts").update({ opted_out_at: null, last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
-      await linkedCustomerReply(admin, phone, contact.user_id, businessId);
+      await linkedCustomerReply(admin, phone, linkedUserId, businessId);
       return;
     }
     await admin.from("whatsapp_contacts").update({ opted_out_at: null, last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
