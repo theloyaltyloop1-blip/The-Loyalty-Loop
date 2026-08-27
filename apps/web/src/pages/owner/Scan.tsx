@@ -4,10 +4,12 @@ import { BrowserQRCodeReader } from '@zxing/browser'
 import { Camera, CameraOff, Check, Gift, ScanLine, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import {
   awardProgress,
   sendUserPush,
+  updateWalletPass,
   findRewardByCode,
   findRewardByToken,
   lookupUserByStampCode,
@@ -155,6 +157,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
       await awardProgress(businessId, matchedUserId, amount)
       void sendVisitThankYou(businessId, matchedUserId, amount)
       void sendUserPush(businessId, matchedUserId)
+      void updateWalletPass(businessId, matchedUserId)
       setSuccess(`Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`)
       reset()
     } catch (e) {
@@ -308,6 +311,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
     try {
       await redeemReward(reward.id)
       void sendUserPush(businessId, reward.user_id)
+      void updateWalletPass(businessId, reward.user_id)
       setSuccess(`Redeemed: ${reward.title}`)
       setReward(null)
       setCode('')
@@ -411,7 +415,7 @@ export function OwnerScan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canScan, canRedeem])
 
-  if (loading) return null
+  if (loading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
 
   return (

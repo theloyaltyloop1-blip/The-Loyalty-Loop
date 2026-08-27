@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { MessageCircle, Star } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import { fetchShopReviews, replyToReview, type ShopReview } from '@/lib/businesses'
 
@@ -28,7 +29,7 @@ export function OwnerReviews() {
   const canRespond = Boolean(business || staffBusinesses[0]?.can_respond_reviews)
   const reload = React.useCallback(() => { if (!activeBusiness) return; fetchShopReviews(activeBusiness.id).then(setReviews).catch((err) => setError(typeof err?.message === 'string' ? err.message : 'Could not load reviews.')) }, [activeBusiness])
   React.useEffect(() => { reload() }, [reload])
-  if (authLoading || ownerLoading) return null
+  if (authLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   const average = reviews.length ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1) : '—'
   return <OwnerLayout><p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Customer feedback</p><h1 className="text-3xl font-display font-extrabold text-foreground">Reviews</h1>{!activeBusiness ? <div className="mt-7 rounded-2xl bg-card p-8 text-center text-foreground/55">You are not assigned to a shop yet.</div> : <>{!canRespond && <p className="mt-4 rounded-xl bg-[#FFF0CD] p-4 text-sm text-[#72520D]">You can view reviews, but your manager has not given you permission to reply.</p>}<div className="mt-6 mb-7 rounded-2xl bg-card p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)] flex items-center gap-4"><div className="h-12 w-12 rounded-2xl bg-[#FFF0CD] flex items-center justify-center"><Star className="h-6 w-6 fill-accent text-accent" /></div><div><p className="font-display text-2xl font-extrabold">{average}</p><p className="text-sm text-foreground/50">from {reviews.length} review{reviews.length === 1 ? '' : 's'}</p></div></div>{error && <p className="mb-4 text-sm text-red-600">{error}</p>}{reviews.length === 0 ? <div className="rounded-2xl bg-card p-10 text-center text-foreground/55"><MessageCircle className="h-9 w-9 mx-auto mb-3 text-primary" />No customer reviews yet.</div> : <div className="grid gap-5">{reviews.map((review) => <ReviewCard key={review.id} review={review} ownerId={session.user.id} canRespond={canRespond} onSaved={reload} />)}</div>}</>}</OwnerLayout>

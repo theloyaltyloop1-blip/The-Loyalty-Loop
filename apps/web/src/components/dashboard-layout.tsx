@@ -25,6 +25,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background md:flex">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <aside className="border-b border-foreground/10 bg-card/80 backdrop-blur-xl p-3 md:flex md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-8">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
@@ -54,7 +55,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       </aside>
 
-      <main className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
+      <main id="main-content" tabIndex={-1} className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
         {children}
         <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-foreground/50">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">

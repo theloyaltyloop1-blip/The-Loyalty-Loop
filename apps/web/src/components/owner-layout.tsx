@@ -39,6 +39,10 @@ function BusinessSwitcher() {
     closeTimer.current = window.setTimeout(() => setMenuMounted(false), 180)
   }
 
+  function onMenuKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
+    if (event.key === 'Escape') closeMenu()
+  }
+
   function toggleMenu() {
     if (open) {
       closeMenu()
@@ -57,6 +61,10 @@ function BusinessSwitcher() {
       <div className="relative mb-6">
         <button data-press-feedback
           onClick={toggleMenu}
+          onKeyDown={onMenuKeyDown}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          aria-controls="business-switcher-menu"
           className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-card px-4 py-3 font-semibold text-foreground transition-[transform,border-color] duration-150 ease-out active:scale-[0.98] hover:border-black/20"
         >
           <span className="flex items-center gap-2 truncate">
@@ -74,10 +82,11 @@ function BusinessSwitcher() {
         </button>
 
         {menuMounted && businesses.length > 1 && (
-          <div data-state={open ? 'open' : 'closed'} className="business-switcher-menu absolute z-50 mt-1 w-full rounded-2xl border border-black/10 bg-card shadow-lg overflow-hidden">
+          <div id="business-switcher-menu" role="menu" aria-label="Choose a shop" data-state={open ? 'open' : 'closed'} className="business-switcher-menu absolute z-50 mt-1 w-full rounded-2xl border border-black/10 bg-card shadow-lg overflow-hidden">
             {businesses.map((b) => (
               <button data-press-feedback
                 key={b.id}
+                role="menuitem"
                 onClick={() => {
                   setBusinessId(b.id)
                   closeMenu()
@@ -116,6 +125,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background md:flex">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <aside className="border-b border-foreground/10 bg-card/80 backdrop-blur-xl p-3 md:flex md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-6">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
@@ -164,7 +174,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
+      <main id="main-content" tabIndex={-1} className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
         {children}
         <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-foreground/50">
           <div className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</div>

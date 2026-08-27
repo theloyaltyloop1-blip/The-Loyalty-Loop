@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Megaphone } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { fetchAnnouncements, type Announcement } from '@/lib/businesses'
 
 export function NewsPage() {
@@ -10,7 +11,7 @@ export function NewsPage() {
   const [items, setItems] = React.useState<Announcement[]>([])
   const [ready, setReady] = React.useState(false)
   React.useEffect(() => { if (session) fetchAnnouncements().then(setItems).finally(() => setReady(true)) }, [session])
-  if (loading || !ready) return null
+  if (loading || !ready) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   return <DashboardLayout>
     <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">From local shops</p>

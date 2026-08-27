@@ -4,6 +4,7 @@ import { Search, Sparkles, Coffee, Scissors, UtensilsCrossed, Store } from 'luci
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { ShopCard } from '@/components/shop-card'
 import { fetchBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
 
@@ -61,7 +62,7 @@ export function Home() {
       .finally(() => setFetching(false))
   }, [session?.user])
 
-  if (loading || rolesLoading) return null
+  if (loading || rolesLoading) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (primaryRole === 'admin') return <Navigate to="/access" replace />
   if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />

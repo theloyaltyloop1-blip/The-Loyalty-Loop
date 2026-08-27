@@ -19,3 +19,9 @@ export async function getReferralCode(userId: string) { const { data, error } = 
 export async function applyReferralCode(code: string) { const { data, error } = await supabase.rpc('apply_referral_code', { _code: code }); if (error) throw error; return Boolean(data) }
 export async function acceptLegal(userId: string) { const rows = ['terms', 'privacy'].map((document_key) => ({ user_id: userId, document_key, document_version: '2026-08-07' })); const { error } = await supabase.from('legal_acceptances').upsert(rows, { onConflict: 'user_id,document_key,document_version' }); if (error) throw error }
 export async function requestAccountDeletion() { const { error } = await supabase.functions.invoke('delete-my-account'); if (error) throw error }
+
+export async function canDeleteCurrentAccount() {
+  const { data, error } = await supabase.rpc('can_delete_current_account')
+  if (error) throw error
+  return (data?.[0] ?? { can_delete: false, reason: 'We could not check account deletion.' }) as { can_delete: boolean; reason: string | null }
+}

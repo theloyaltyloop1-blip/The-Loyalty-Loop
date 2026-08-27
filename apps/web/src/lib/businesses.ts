@@ -100,6 +100,16 @@ export async function deleteOwnedBusiness(businessId: string, confirmationName: 
   if (error) throw error
 }
 
+/** Transfers a shop to an existing Loyalty Loop account. The database checks
+ * that the caller owns the shop; owner IDs are never changed in the browser. */
+export async function transferOwnedBusinessOwnership(businessId: string, newOwnerEmail: string) {
+  const { error } = await supabase.rpc('transfer_owned_business_ownership', {
+    _business_id: businessId,
+    _new_owner_email: newOwnerEmail.trim(),
+  })
+  if (error) throw error
+}
+
 /** Admin-only: move a shop to an existing account and make that account a
  * business owner. The database function performs the permission check and
  * records the handoff in the platform audit log. */
@@ -381,6 +391,11 @@ export async function fetchScannedMemberDetails(businessId: string, userId: stri
 /** Best-effort native notification after an owner or staff member awards progress. */
 export async function sendUserPush(businessId: string, userId: string) {
   await supabase.functions.invoke('send-user-push', { body: { business_id: businessId, user_id: userId } })
+}
+
+/** Pushes the customer's new stamp/points balance to their saved Google Wallet pass, if any. */
+export async function updateWalletPass(businessId: string, userId: string) {
+  await supabase.functions.invoke('update-wallet-pass', { body: { business_id: businessId, user_id: userId } })
 }
 
 export interface RewardLookup {

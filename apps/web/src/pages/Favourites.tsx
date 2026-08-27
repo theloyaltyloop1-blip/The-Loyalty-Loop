@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { PageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
 import { ShopCard } from '@/components/shop-card'
 import { fetchFavouriteBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
 
@@ -22,18 +23,17 @@ export function FavouritesPage() {
       .finally(() => setFetching(false))
   }, [session?.user])
 
-  if (loading) return null
+  if (loading) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
 
   const membershipByBusiness = new Map(memberships.map((m) => [m.business_id, m]))
 
   return (
     <DashboardLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Favourites</p>
-      <h1 className="text-3xl font-display font-extrabold text-foreground mb-6">Shops you've saved</h1>
+      <h1 className="text-3xl font-display font-extrabold text-foreground mb-6">Shops you’ve saved</h1>
 
       {fetching ? (
-        <p className="text-foreground/40">Loading…</p>
+        <div role="status" aria-live="polite" className="grid gap-5 sm:grid-cols-2"><span className="sr-only">Loading favourite shops</span><SkeletonBlock className="h-64" /><SkeletonBlock className="h-64" /></div>
       ) : businesses.length === 0 ? (
         <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
           <Heart className="h-8 w-8 text-foreground/20 mx-auto mb-3" />

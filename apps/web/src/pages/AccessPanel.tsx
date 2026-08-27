@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
 import { AccessTools } from '@/pages/AccessTools'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 import { fetchAdminSupportRequests, fetchPendingVerifications, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type SupportRequest } from '@/lib/businesses'
 
 type Tab = 'overview' | 'controls' | 'verifications' | 'support'
@@ -43,7 +44,7 @@ export function AccessPanel() {
   }, [])
 
   React.useEffect(() => { if (primaryRole === 'admin') void load() }, [primaryRole, load])
-  if (loading || rolesLoading) return null
+  if (loading || rolesLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (primaryRole !== 'admin') return <Navigate to="/dashboard" replace />
 

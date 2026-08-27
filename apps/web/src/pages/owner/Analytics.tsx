@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Users, Stamp, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import {
   fetchPeriodStats,
@@ -322,7 +323,7 @@ export function OwnerAnalytics() {
     fetchLatestWebResearch(business.id).then(setWebResearch)
   }, [business?.id])
 
-  if (loading || rolesLoading || ownerLoading) return null
+  if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (roles.includes('business_owner') && businesses.length === 0 && staffBusinesses.length === 0) {
     return <Navigate to="/owner/onboarding" replace />

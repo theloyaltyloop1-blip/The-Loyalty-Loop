@@ -5,6 +5,7 @@ import { User, Bell, LogOut, Copy, Check, Trash2, Share2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { getReferralCode, requestAccountDeletion } from '@/lib/engagement'
 
 interface ProfileData {
@@ -75,7 +76,7 @@ export function ProfilePage() {
     })
   }, [session?.user])
 
-  if (loading || !ready) return null
+  if (loading || !ready) return <PageSkeleton variant="detail" />
   if (!session) return <Navigate to="/login" replace />
 
   async function handleSaveProfile() {
@@ -121,7 +122,6 @@ export function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Profile</p>
       <h1 className="text-3xl font-display font-extrabold text-foreground mb-6">Your account</h1>
 
       <SectionCard title="Your stamp card code">

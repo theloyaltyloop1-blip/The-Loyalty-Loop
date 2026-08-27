@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Megaphone, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import { createAnnouncement, deleteAnnouncement, fetchOwnedAnnouncements, updateAnnouncement, type Announcement } from '@/lib/businesses'
 
@@ -27,7 +28,7 @@ export function OwnerAnnouncements() {
   }, [business])
   React.useEffect(() => { reload() }, [reload])
 
-  if (authLoading || ownerLoading) return null
+  if (authLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
 
   async function publish(e: React.FormEvent) {

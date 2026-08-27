@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Gift, Ticket } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { fetchMyRewards, type CustomerReward } from '@/lib/businesses'
 
 function RewardCard({ reward }: { reward: CustomerReward }) {
@@ -46,7 +47,7 @@ export function RewardsPage() {
     fetchMyRewards(session.user.id).then(setRewards).finally(() => setReady(true))
   }, [session?.user])
 
-  if (loading || !ready) return null
+  if (loading || !ready) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
 
   const available = rewards.filter((reward) => !reward.redeemed_at && (!reward.expires_at || new Date(reward.expires_at) >= new Date()))
@@ -54,7 +55,6 @@ export function RewardsPage() {
 
   return (
     <DashboardLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Your loyalty</p>
       <h1 className="text-3xl font-display font-extrabold text-foreground">Rewards</h1>
       <p className="text-foreground/55 mt-2 mb-7">Your earned rewards are ready to use here.</p>
       {available.length === 0 ? (

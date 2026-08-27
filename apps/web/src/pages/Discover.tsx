@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Heart, Share2, BadgeCheck } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { SkeletonBlock } from '@/components/page-skeleton'
 import { usePageMeta } from '@/lib/use-page-meta'
 import {
   fetchGalleryFeed,
@@ -144,7 +145,7 @@ export function DiscoverPage() {
     <DashboardLayout>
       <div className="h-[calc(100vh-2rem)] sm:h-[calc(100vh-3rem)] md:h-[calc(100vh-5rem)] -mx-4 sm:-mx-6 md:mx-0">
         {loading ? (
-          <div className="flex h-full items-center justify-center text-foreground/50">Loading…</div>
+          <div role="status" aria-live="polite" className="h-full p-1"><span className="sr-only">Loading shop photos</span><SkeletonBlock className="h-full w-full rounded-3xl" /></div>
         ) : items.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center text-foreground/50">
             <p className="font-display text-xl font-bold text-foreground">No shop photos yet</p>

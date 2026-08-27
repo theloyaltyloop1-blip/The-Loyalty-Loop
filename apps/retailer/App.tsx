@@ -620,6 +620,9 @@ function StampsScreen({
       void supabase.functions.invoke("send-user-push", {
         body: { business_id: business.id, user_id: matched.id },
       });
+      void supabase.functions.invoke("update-wallet-pass", {
+        body: { business_id: business.id, user_id: matched.id },
+      });
       Alert.alert(
         "Reward added",
         `${value} ${unit} awarded to ${matched.first_name || "the customer"}.`,
@@ -647,6 +650,9 @@ function StampsScreen({
         .eq("id", activeReward.id);
       if (error) throw error;
       void supabase.functions.invoke("send-user-push", {
+        body: { business_id: business.id, user_id: matched.id },
+      });
+      void supabase.functions.invoke("update-wallet-pass", {
         body: { business_id: business.id, user_id: matched.id },
       });
       Alert.alert(

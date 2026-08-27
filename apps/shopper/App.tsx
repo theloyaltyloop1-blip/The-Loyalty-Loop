@@ -18,7 +18,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -32,7 +32,6 @@ import { signInWithGoogle } from './src/google-auth'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
-const TAB_BAR_HEIGHT = 78
 
 // ---------------------------------------------------------------------
 // Icons — small, consistent line icons (stroke-based, 2px, round caps)
@@ -127,6 +126,14 @@ function ArrowRightIcon({ color = primary, size = 16 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M4 12h16M13 5.5 19.5 12 13 18.5" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
+function ArrowLeftIcon({ color = '#fff', size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M20 12H4M11 5.5 4.5 12 11 18.5" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   )
 }
@@ -1140,15 +1147,18 @@ function DiscoverTab({
   favouriteIds,
   onToggleFavourite,
   onOpenShop,
+  onBack,
 }: {
   favouriteIds: Set<string>
   onToggleFavourite: (business: Business) => void
   onOpenShop: (business: Business) => void
+  onBack: () => void
 }) {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [containerHeight, setContainerHeight] = useState(0)
-  const feedHeight = containerHeight || Dimensions.get('window').height - TAB_BAR_HEIGHT
+  const feedHeight = containerHeight || Dimensions.get('window').height
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     let active = true
@@ -1176,6 +1186,13 @@ function DiscoverTab({
 
   return (
     <View style={{ flex: 1 }} onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}>
+      <Pressable
+        onPress={onBack}
+        hitSlop={12}
+        style={[styles.discoverBack, { top: insets.top + 12 }]}
+      >
+        <ArrowLeftIcon />
+      </Pressable>
       {loading ? (
         <View style={[styles.discoverEmpty, { height: feedHeight }]}>
           <ActivityIndicator color={primary} />
@@ -1435,7 +1452,12 @@ function AppHome({ session }: { session: Session }) {
       <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
       {!discovering && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
       {discovering ? (
-        <DiscoverTab favouriteIds={favouriteIds} onToggleFavourite={toggleFavourite} onOpenShop={setSelected} />
+        <DiscoverTab
+          favouriteIds={favouriteIds}
+          onToggleFavourite={toggleFavourite}
+          onOpenShop={setSelected}
+          onBack={() => setTab('home')}
+        />
       ) : (
         <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
           {tab === 'home' && <HomeTab businesses={businesses} announcements={announcements} onSelect={setSelected} />}
@@ -1447,7 +1469,7 @@ function AppHome({ session }: { session: Session }) {
           )}
         </ScrollView>
       )}
-      <BottomTabBar tab={tab} onChange={setTab} />
+      {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
       {showProfile && <ProfileSheet session={session} userId={userId} stampCode={stampCode} onClose={() => setShowProfile(false)} />}
     </SafeAreaView>
   )
@@ -1753,6 +1775,17 @@ const styles = StyleSheet.create({
   discoverTime: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '600' },
   discoverCaption: { color: '#fff', fontSize: 13.5, lineHeight: 19, marginTop: 8 },
   discoverViewShop: { color: '#fff', fontWeight: '800', fontSize: 13, marginTop: 10 },
+  discoverBack: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
   discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: background, paddingHorizontal: 40 },
   discoverEmptyText: { color: '#6b6459', fontSize: 14, textAlign: 'center' },
 })

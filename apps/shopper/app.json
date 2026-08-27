@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.theloyaltyloop.shopper",
-      "versionCode": 109,
+      "versionCode": 112,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#F8E4C6",

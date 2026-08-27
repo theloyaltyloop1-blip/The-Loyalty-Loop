@@ -7,6 +7,7 @@ import { createBusiness, type Business } from '@/lib/businesses'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
@@ -81,7 +82,7 @@ export function OwnerOnboarding() {
     return () => clearTimeout(handle)
   }, [form.address, form.postcode, pinTouched])
 
-  if (loading || rolesLoading || ownerLoading) return null
+  if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (!roles.includes('business_owner')) return <Navigate to="/dashboard" replace />
   if (businesses.length > 0) return <Navigate to="/owner" replace />

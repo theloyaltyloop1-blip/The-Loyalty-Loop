@@ -23,6 +23,7 @@ import {
   fetchBusinessPhotos,
   uploadGalleryPhoto,
   deleteBusinessPhoto,
+  transferOwnedBusinessOwnership,
   type RewardCatalogItem,
   type WinbackLogEntry,
   type StaffMember,
@@ -30,6 +31,8 @@ import {
   type OpeningHours,
   type DayHours,
 } from '@/lib/businesses'
+import { canDeleteCurrentAccount, requestAccountDeletion } from '@/lib/engagement'
+import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 
@@ -231,7 +234,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         each.
       </p>
       {loadingPhotos ? (
-        <p className="text-sm text-foreground/40">Loading…</p>
+        <div role="status" aria-label="Loading gallery" className="grid grid-cols-2 gap-3 sm:grid-cols-4"><span className="sr-only">Loading gallery</span><SkeletonBlock className="aspect-square" /><SkeletonBlock className="aspect-square" /></div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {photos.map((p) => (
@@ -851,7 +854,7 @@ function WinbackTab() {
 
       <SectionCard title="Send history">
         {loadingLog ? (
-          <p className="text-sm text-foreground/40">Loading…</p>
+          <div role="status" aria-label="Loading email history" className="space-y-2"><span className="sr-only">Loading email history</span><SkeletonBlock className="h-14" /><SkeletonBlock className="h-14" /></div>
         ) : log.length === 0 ? (
           <p className="text-sm text-foreground/40">No win-back emails sent yet.</p>
         ) : (
@@ -1194,7 +1197,7 @@ function StaffTab() {
 
       <SectionCard title="Staff">
         {loadingStaff ? (
-          <p className="text-sm text-foreground/40">Loading…</p>
+          <div role="status" aria-label="Loading staff" className="space-y-3"><span className="sr-only">Loading staff</span><SkeletonBlock className="h-20" /><SkeletonBlock className="h-20" /></div>
         ) : staff.length === 0 ? (
           <p className="text-sm text-foreground/40">No staff added yet.</p>
         ) : (
@@ -1232,12 +1235,16 @@ function HelpTab() {
 }
 
 function DangerTab() {
-  const { business, updateLocalBusiness, refetch } = useOwner()
+  const { business, businesses, updateLocalBusiness, refetch } = useOwner()
+  const { signOut } = useAuth()
   const navigate = useNavigate()
   const [busy, setBusy] = React.useState(false)
   const [deleteName, setDeleteName] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = React.useState(false)
+  const [newOwnerEmail, setNewOwnerEmail] = React.useState('')
+  const [transferring, setTransferring] = React.useState(false)
+  const [deletingAccount, setDeletingAccount] = React.useState(false)
 
   if (!business) return null
   const shop = business
@@ -1264,6 +1271,32 @@ function DangerTab() {
     } finally { setBusy(false) }
   }
 
+  async function transferShop() {
+    if (!newOwnerEmail.trim()) return
+    setTransferring(true); setError(null)
+    try {
+      await transferOwnedBusinessOwnership(shop.id, newOwnerEmail)
+      await refetch()
+      navigate('/owner/settings?tab=danger', { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not transfer this shop.')
+    } finally { setTransferring(false) }
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true); setError(null)
+    try {
+      const status = await canDeleteCurrentAccount()
+      if (!status.can_delete) throw new Error(status.reason ?? 'Resolve your shops first.')
+      if (!window.confirm('Delete your account and personal data? This cannot be undone.')) return
+      await requestAccountDeletion()
+      await signOut()
+      navigate('/', { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete your account.')
+    } finally { setDeletingAccount(false) }
+  }
+
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-amber-300 bg-amber-50 p-6">
@@ -1288,13 +1321,29 @@ function DangerTab() {
         )}
         {error && <p className="mt-3 text-sm font-medium text-red-700">{error}</p>}
       </section>
+
+      <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
+        <h3 className="font-display text-lg font-bold text-red-800">Transfer shop, then delete account</h3>
+        <p className="mt-2 text-sm text-red-800/75">You cannot delete an owner account while it owns a shop. Transfer this shop to an existing Loyalty Loop account, or delete the shop and its customer data above.</p>
+        <label className="mt-4 block text-sm font-semibold text-red-900" htmlFor="new-owner-email">New owner’s account email</label>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <input id="new-owner-email" type="email" value={newOwnerEmail} onChange={(event) => setNewOwnerEmail(event.target.value)} placeholder="owner@example.com" className="h-11 flex-1 rounded-xl border border-red-300 bg-white px-3 outline-none focus:border-red-600" />
+          <button data-press-feedback onClick={transferShop} disabled={transferring || !newOwnerEmail.trim()} className="rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 disabled:opacity-40">{transferring ? 'Transferring…' : 'Transfer shop'}</button>
+        </div>
+      </section>
+
+      {businesses.length === 0 && <section className="rounded-2xl border border-red-300 bg-red-50 p-6">
+        <h3 className="font-display text-lg font-bold text-red-800">Delete account permanently</h3>
+        <p className="mt-2 text-sm text-red-800/75">All shops have been resolved. This permanently deletes your login and personal account data.</p>
+        <button data-press-feedback onClick={deleteAccount} disabled={deletingAccount} className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
+      </section>}
     </div>
   )
 }
 
 export function OwnerSettings() {
-  const { session, loading } = useAuth()
-  const { business, loading: ownerLoading } = useOwner()
+  const { session, loading, signOut } = useAuth()
+  const { business, businesses, loading: ownerLoading } = useOwner()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
   const initialTab = TABS.some(({ key }) => key === requestedTab) ? (requestedTab as TabKey) : 'profile'
@@ -1305,8 +1354,28 @@ export function OwnerSettings() {
     setSearchParams({ tab: nextTab }, { replace: true })
   }
 
-  if (loading) return null
+  if (loading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
+  if (ownerLoading || !business) {
+    return (
+      <OwnerLayout>
+        <SkeletonBlock className="h-9 w-52 mb-2" />
+        <SkeletonBlock className="h-5 w-40 mb-6" />
+        <div className="flex gap-1 border-b border-black/10 mb-6 pb-3">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonBlock key={i} className="h-8 w-24" />)}
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-card p-5 shadow-sm">
+              <SkeletonBlock className="h-5 w-2/3" />
+              <SkeletonBlock className="mt-3 h-4 w-full" />
+              <SkeletonBlock className="mt-2 h-4 w-4/5" />
+            </div>
+          ))}
+        </div>
+      </OwnerLayout>
+    )
+  }
 
   return (
     <OwnerLayout>
@@ -1330,7 +1399,16 @@ export function OwnerSettings() {
       </div>
 
       {ownerLoading ? null : !business ? (
-        <p className="text-foreground/50">You don't have a shop yet.</p>
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
+          <h2 className="font-display text-xl font-bold text-red-800">Delete account</h2>
+          <p className="mt-2 text-sm text-red-800/75">You have no shops assigned to this account. Deleting it permanently removes your login and personal data.</p>
+          <button data-press-feedback onClick={async () => {
+            const status = await canDeleteCurrentAccount()
+            if (!status.can_delete) return window.alert(status.reason ?? 'Resolve ownership first.')
+            if (!window.confirm('Delete your account and personal data? This cannot be undone.')) return
+            await requestAccountDeletion(); await signOut()
+          }} disabled={businesses.length > 0} className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">Delete account permanently</button>
+        </section>
       ) : (
         <>
           {tab === 'profile' && <ProfileTab />}

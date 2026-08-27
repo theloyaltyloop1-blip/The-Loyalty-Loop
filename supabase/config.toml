@@ -1,8 +1,0 @@
-[functions.whatsapp-webhook]
-verify_jwt = false
-
-[functions.whatsapp-handoff]
-verify_jwt = false
-
-[functions.whatsapp-dispatch]
-verify_jwt = false

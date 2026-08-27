@@ -8,13 +8,11 @@ import { OwnerLayout } from '@/components/owner-layout'
 import { supabase } from '@/lib/supabase'
 import { updateBusiness } from '@/lib/businesses'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 
 type Member = { user_id: string; first_name: string | null; last_name: string | null; stamp_count: number; points_balance: number; visit_count: number; last_activity_at: string | null; joined_at: string }
 
 function ShopPoster({ business }: { business: { name: string; slug: string; logo_url: string | null; brand_color: string; category: string | null } }) {
-  // WhatsApp is an optional add-on, not the default customer journey. Normal
-  // shop posters continue to open the core Loyalty Loop card; enabled shops
-  // can use the dedicated WhatsApp QR route separately.
   const shopUrl = `${window.location.origin}/dashboard/shop/${business.slug}`
   const brandColor = business.brand_color || '#30442d'
   return <div id="shop-poster" className="shop-poster-print" style={{ borderColor: brandColor }}><div className="shop-poster-topline" style={{ backgroundColor: brandColor }} /><div className="shop-poster-inner"><div className="shop-poster-platform"><img src={loyaltyLoopLogo} alt="The Loyalty Loop" /><span>The Loyalty Loop</span></div><div className="shop-poster-shop">{business.logo_url ? <img className="shop-poster-logo" src={business.logo_url} alt={`${business.name} logo`} /> : <span className="shop-poster-monogram" style={{ backgroundColor: brandColor }}>{business.name.charAt(0).toUpperCase()}</span>}<p className="shop-poster-kicker">LOCAL LOYALTY REWARDS</p><h2>{business.name}</h2><p className="shop-poster-subtitle">{business.category ? `${business.category} · ` : ''}Collect rewards when you visit</p></div><div className="shop-poster-qr-wrap"><QRCodeSVG value={shopUrl} size={230} level="H" includeMargin /></div><p className="shop-poster-scan">Scan to join and start collecting</p><p className="shop-poster-detail">No app download required · Your rewards stay in one place</p><div className="shop-poster-steps"><span><b>1</b> Scan</span><i /><span><b>2</b> Join</span><i /><span><b>3</b> Earn rewards</span></div></div></div>
@@ -23,7 +21,7 @@ function ShopPoster({ business }: { business: { name: string; slug: string; logo
 export function OwnerTools() {
   const { session, loading } = useAuth(); const { business, updateLocalBusiness } = useOwner(); const [members, setMembers] = React.useState<Member[]>([]); const [form, setForm] = React.useState({ title: '', body: '', audience: 'all' }); const [sent, setSent] = React.useState(false); const [busy, setBusy] = React.useState(false)
   React.useEffect(() => { if (business) supabase.rpc('get_business_members', { _business_id: business.id }).then(({ data }) => setMembers((data ?? []) as Member[])) }, [business])
-  if (loading) return null; if (!session) return <Navigate to="/login" replace />; if (!business) return <Navigate to="/owner/onboarding" replace />
+  if (loading) return <BarePageSkeleton />; if (!session) return <Navigate to="/login" replace />; if (!business) return <Navigate to="/owner/onboarding" replace />
   const activeBusiness = business; const complete = [activeBusiness.description, activeBusiness.address, activeBusiness.logo_url, activeBusiness.cover_url].filter(Boolean).length
   async function savePromo(e: React.FormEvent) { e.preventDefault(); if (!form.title || !form.body) return; setBusy(true); const { error } = await supabase.from('business_promotions').insert({ business_id: activeBusiness.id, ...form }); setBusy(false); if (!error) { setForm({ title: '', body: '', audience: 'all' }); setSent(true) } }
   async function deactivate() { if (!confirm('Deactivate this shop? Customers will no longer be able to join it. You can contact support to reactivate.')) return; const next = await updateBusiness(activeBusiness.id, { is_active: false } as never); updateLocalBusiness(next) }

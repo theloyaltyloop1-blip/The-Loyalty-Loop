@@ -6,6 +6,7 @@ import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Z
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { ReviewsSection } from '@/components/reviews-section'
 import { ShopMap } from '@/components/shop-map'
 import {
@@ -174,7 +175,7 @@ export function ShopDetail() {
     }
   }
 
-  if (loading || !ready) return null
+  if (loading || !ready) return <PageSkeleton variant="detail" />
   if (!session) return <Navigate to="/login" replace />
   if (!business) return <Navigate to="/dashboard" replace />
 
