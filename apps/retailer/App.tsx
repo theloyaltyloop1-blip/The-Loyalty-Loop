@@ -36,6 +36,7 @@ import { hasSupabaseConfig, supabase } from "./src/supabase";
 import { NativeOwnerPageView, type NativeOwnerPage } from "./src/owner-pages";
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from "./src/biometric";
 import { registerPushToken } from "./src/push";
+import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
 
 function BusinessLanding({ onContinue }: { onContinue: () => void }) {
   return (
@@ -72,6 +73,23 @@ function BusinessLanding({ onContinue }: { onContinue: () => void }) {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function BusinessOnboarding({ onComplete }: { onComplete: () => void }) {
+  const [step, setStep] = useState(0);
+  const slides = [
+    { eyebrow: "WELCOME", title: "Loyalty made\nsimple.", copy: "Everything your team needs to reward regular customers in seconds." },
+    { eyebrow: "SCAN", title: "Reward every\nvisit.", copy: "Scan a customer QR code or enter their code to award stamps, visits or points." },
+    { eyebrow: "GROW", title: "See what\nbrings them back.", copy: "Use your dashboard to understand loyalty activity, rewards and customer trends." },
+  ];
+  const current = slides[step];
+  const finish = async (analyticsAllowed: boolean) => { await completeOnboarding(analyticsAllowed); onComplete(); };
+  return <SafeAreaView style={styles.safe}><View style={styles.onboarding}>
+    <View style={styles.onboardingMark}><Text style={styles.markText}>↻</Text></View>
+    <Text style={styles.eyebrow}>{current.eyebrow}</Text><Text style={styles.onboardingTitle}>{current.title}</Text><Text style={styles.copy}>{current.copy}</Text>
+    <View style={styles.onboardingDots}>{slides.map((_, index) => <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />)}</View>
+    {step < slides.length - 1 ? <><Button title="Continue" onPress={() => setStep(step + 1)} /><Pressable onPress={() => setStep(slides.length - 1)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Skip introduction</Text></Pressable></> : <View style={styles.onboardingConsent}><Text style={styles.section}>Help improve the business app?</Text><Text style={styles.copy}>Allow anonymous feature-use analytics. No customer data, QR codes, emails or message content is recorded.</Text><Button title="Allow anonymous analytics" onPress={() => void finish(true)} /><Pressable onPress={() => void finish(false)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Continue without analytics</Text></Pressable></View>}
+  </View></SafeAreaView>;
 }
 
 type Business = {
@@ -1456,7 +1474,8 @@ function BusinessSettings({
       business.loyalty_config?.signup_reward_title || "",
     ),
     [saving, setSaving] = useState(false),
-    [biometricEnabled, setBiometricEnabled] = useState(false);
+    [biometricEnabled, setBiometricEnabled] = useState(false),
+    [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   useEffect(() => {
     setName(business.name);
     setCategory(business.category || "");
@@ -1470,12 +1489,14 @@ function BusinessSettings({
   }, [business.id]);
   useEffect(() => {
     biometricLockEnabled().then(setBiometricEnabled);
+    getUsageAnalyticsConsent().then(setAnalyticsEnabled);
   }, []);
   const toggleBiometricLock = async () => {
     const result = await setBiometricLock(!biometricEnabled);
     if (result.success) setBiometricEnabled(!biometricEnabled);
     else Alert.alert("Could not update app lock", result.error);
   };
+  const toggleUsageAnalytics = async () => { const next = !analyticsEnabled; await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next); };
   const save = async () => {
     if (!name.trim())
       return Alert.alert("Shop name needed", "Enter a name for your business.");
@@ -1736,6 +1757,12 @@ function BusinessSettings({
           onPress={() => void toggleBiometricLock()}
         />
         <SettingsRow
+          icon="◌"
+          title={analyticsEnabled ? "Anonymous analytics on" : "Anonymous analytics off"}
+          detail="Choose whether feature-use insights are shared"
+          onPress={() => void toggleUsageAnalytics()}
+        />
+        <SettingsRow
           icon="i"
           title="How to use your loyalty programme"
           detail="A short step-by-step business guide"
@@ -1818,6 +1845,7 @@ function Dashboard({
           },
     ),
     [loading, setLoading] = useState(!preview);
+  useEffect(() => { if (!preview) void trackUsageEvent(session.user.id, 'tab_viewed', tab); }, [preview, session.user.id, tab]);
   async function load() {
     if (preview) return;
     setLoading(true);
@@ -1962,10 +1990,12 @@ function Dashboard({
                   business={selected}
                   stats={stats}
                   onIssueStamp={() => {
+                    void trackUsageEvent(session.user.id, 'scan_started', 'award');
                     setStampsMode("stamps");
                     setTab("scan");
                   }}
                   onRedeemReward={() => {
+                    void trackUsageEvent(session.user.id, 'scan_started', 'redeem');
                     setStampsMode("reward");
                     setTab("scan");
                   }}
@@ -2063,6 +2093,8 @@ function AppRoot() {
     [showAuth, setShowAuth] = useState(false),
     [locked, setLocked] = useState(false),
     [checkingLock, setCheckingLock] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  useEffect(() => { getOnboardingComplete().then(setOnboardingComplete); }, []);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -2137,7 +2169,7 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     );
-  if (checking || (session && (!allowed || checkingLock)))
+  if (onboardingComplete === null || checking || (session && (!allowed || checkingLock)))
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
@@ -2156,6 +2188,7 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     );
+  if (!onboardingComplete) return <BusinessOnboarding onComplete={() => setOnboardingComplete(true)} />;
   return session ? (
     <Dashboard session={session} />
   ) : showAuth ? (
@@ -2170,6 +2203,15 @@ const styles = StyleSheet.create({
   auth: { flexGrow: 1, padding: 28, justifyContent: "center" },
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
+  onboarding: { flex: 1, padding: 28, justifyContent: "center" },
+  onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: green, alignItems: "center", justifyContent: "center", marginBottom: 42 },
+  onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontWeight: "800", lineHeight: 44, letterSpacing: -1.1 },
+  onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#d5c6ae" },
+  onboardingDotActive: { width: 26, backgroundColor: orange },
+  onboardingConsent: { marginTop: 26 },
+  onboardingSkip: { alignItems: "center", padding: 16 },
+  onboardingSkipText: { color: green, fontSize: 15, fontWeight: "700" },
   lockScreen: { flex: 1, padding: 28, alignItems: "center", justifyContent: "center" },
   mark: {
     width: 62,

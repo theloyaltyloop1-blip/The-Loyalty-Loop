@@ -21,6 +21,7 @@ import { CookieConsent } from '@/components/cookie-consent'
 import { AuthCallback } from '@/pages/AuthCallback'
 import { NotFound } from '@/pages/NotFound'
 import { BarePageSkeleton } from '@/components/page-skeleton'
+import { UsageTracker } from '@/components/usage-tracker'
 
 // Owner/admin-only screens are rarely hit by a typical customer visit, so
 // they're code-split out of the main bundle rather than shipped upfront.
@@ -46,6 +47,7 @@ function App() {
         <OwnerProvider>
           <BrowserRouter>
             <Suspense fallback={<BarePageSkeleton />}>
+              <UsageTracker />
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Home />} />

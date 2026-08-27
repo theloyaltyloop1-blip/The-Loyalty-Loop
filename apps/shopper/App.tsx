@@ -29,6 +29,7 @@ import { hasSupabaseConfig, supabase } from './src/supabase'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
 import { signInWithGoogle } from './src/google-auth'
+import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
@@ -321,6 +322,26 @@ function ShopperLanding({ onContinue }: { onContinue: () => void }) {
   )
 }
 
+function ShopperOnboarding({ onComplete }: { onComplete: (analyticsAllowed: boolean) => void }) {
+  const [step, setStep] = useState(0)
+  const slides = [
+    { eyebrow: 'WELCOME', title: 'Local rewards,\nin your pocket.', copy: 'Discover independent shops nearby and keep every loyalty card together.' },
+    { eyebrow: 'COLLECT', title: 'One code.\nEvery visit.', copy: 'Show your personal QR code at the counter and watch your stamps build up.' },
+    { eyebrow: 'REWARDS', title: 'Never miss\na reward.', copy: 'Your rewards, shop news and loyalty history are ready whenever you are.' },
+  ]
+  const current = slides[step]
+  const finish = async (analyticsAllowed: boolean) => {
+    await completeOnboarding(analyticsAllowed)
+    onComplete(analyticsAllowed)
+  }
+  return <SafeAreaView style={styles.safe}><View style={styles.onboarding}>
+    <Image source={logo} style={styles.onboardingLogo} />
+    <Text style={styles.eyebrow}>{current.eyebrow}</Text><Text style={styles.onboardingTitle}>{current.title}</Text><Text style={styles.copy}>{current.copy}</Text>
+    <View style={styles.onboardingDots}>{slides.map((_, index) => <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />)}</View>
+    {step < slides.length - 1 ? <><Button title="Continue" onPress={() => setStep(step + 1)} /><Pressable onPress={() => setStep(slides.length - 1)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Skip introduction</Text></Pressable></> : <View style={styles.onboardingConsent}><Text style={styles.sectionTitle}>Help improve the app?</Text><Text style={styles.description}>Allow anonymous feature-use analytics. We never record your email, password, QR code or messages.</Text><Button title="Allow anonymous analytics" onPress={() => void finish(true)} /><Pressable onPress={() => void finish(false)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Continue without analytics</Text></Pressable></View>}
+  </View></SafeAreaView>
+}
+
 function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn')
   const [email, setEmail] = useState('')
@@ -408,12 +429,14 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
 
 function ProfileSheet({ session, userId, stampCode, onClose }: { session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
   const [biometricEnabled, setBiometricEnabled] = useState(false)
-  useEffect(() => { biometricLockEnabled().then(setBiometricEnabled) }, [])
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
+  useEffect(() => { biometricLockEnabled().then(setBiometricEnabled); getUsageAnalyticsConsent().then(setAnalyticsEnabled) }, [])
   async function toggleBiometricLock() {
     const result = await setBiometricLock(!biometricEnabled)
     if (!result.success) return Alert.alert('Could not update app lock', result.error)
     setBiometricEnabled(!biometricEnabled)
   }
+  async function toggleUsageAnalytics() { const next = !analyticsEnabled; await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next) }
   return (
     <Modal animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.sheetBackdrop} onPress={onClose} />
@@ -441,6 +464,13 @@ function ProfileSheet({ session, userId, stampCode, onClose }: { session: Sessio
           <Text style={styles.securityCopy}>Require Face ID, Touch ID or your fingerprint whenever you open the app.</Text>
           <Pressable onPress={toggleBiometricLock} style={styles.securityButton}>
             <Text style={styles.securityButtonText}>{biometricEnabled ? 'Turn off app lock' : 'Turn on Face ID / fingerprint lock'}</Text>
+          </Pressable>
+        </View>
+        <View style={styles.securityCard}>
+          <Text style={styles.sectionTitle}>Usage analytics</Text>
+          <Text style={styles.securityCopy}>Share anonymous feature-use information to help us improve The Loyalty Loop. Your email, QR code and messages are never included.</Text>
+          <Pressable onPress={() => void toggleUsageAnalytics()} style={styles.securityButton}>
+            <Text style={styles.securityButtonText}>{analyticsEnabled ? 'Turn off anonymous analytics' : 'Allow anonymous analytics'}</Text>
           </Pressable>
         </View>
         <Button title="Sign out" secondary onPress={() => supabase.auth.signOut()} />
@@ -1356,6 +1386,9 @@ function AppHome({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true)
   const userId = session.user.id
 
+  useEffect(() => { void trackUsageEvent(userId, 'tab_viewed', tab) }, [tab, userId])
+  useEffect(() => { if (selected) void trackUsageEvent(userId, 'shop_opened') }, [selected?.id, userId])
+
   const load = async () => {
     setLoading(true)
     try {
@@ -1413,6 +1446,7 @@ function AppHome({ session }: { session: Session }) {
         if (error) throw error
         setFavouriteIds((prev) => new Set(prev).add(business.id))
       }
+      void trackUsageEvent(userId, isFav ? 'favourite_removed' : 'favourite_added')
     } catch (e) {
       Alert.alert('Could not update favourites', e instanceof Error ? e.message : 'Please try again.')
     }
@@ -1423,6 +1457,7 @@ function AppHome({ session }: { session: Session }) {
       const { error } = await supabase.from('memberships').upsert({ user_id: userId, business_id: business.id }, { onConflict: 'user_id,business_id' })
       if (error) throw error
       await load()
+      void trackUsageEvent(userId, 'loyalty_card_joined')
     } catch (e) {
       Alert.alert('Could not join', e instanceof Error ? e.message : 'Please try again.')
     }
@@ -1494,6 +1529,9 @@ function AppRoot() {
   const [showAuth, setShowAuth] = useState(false)
   const [locked, setLocked] = useState(false)
   const [checkingLock, setCheckingLock] = useState(false)
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null)
+
+  useEffect(() => { getOnboardingComplete().then(setOnboardingComplete) }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -1549,7 +1587,7 @@ function AppRoot() {
       </SafeAreaView>
     )
   }
-  if (checking || (session && (!allowed || checkingLock))) {
+  if (onboardingComplete === null || checking || (session && (!allowed || checkingLock))) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
@@ -1561,6 +1599,7 @@ function AppRoot() {
   if (session && locked) {
     return <SafeAreaView style={styles.safe}><View style={styles.lockScreen}><Image source={logo} style={styles.lockLogo} /><Text style={styles.title}>App locked</Text><Text style={styles.description}>Use Face ID, Touch ID or your fingerprint to continue.</Text><Button title="Unlock app" onPress={() => void checkAppLock()} /></View></SafeAreaView>
   }
+  if (!onboardingComplete) return <ShopperOnboarding onComplete={() => setOnboardingComplete(true)} />
   return session ? <AppHome session={session} /> : showAuth ? <AuthScreen onSession={setSession} /> : <ShopperLanding onContinue={() => setShowAuth(true)} />
 }
 
@@ -1573,6 +1612,15 @@ const styles = StyleSheet.create({
   auth: { flexGrow: 1, padding: 28, justifyContent: 'center' },
   screen: { padding: 20, paddingBottom: 130 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  onboarding: { flex: 1, padding: 28, justifyContent: 'center' },
+  onboardingLogo: { width: 66, height: 66, resizeMode: 'contain', marginBottom: 44 },
+  onboardingTitle: { color: foreground, fontSize: 38, fontWeight: '800', lineHeight: 44, letterSpacing: -1.1 },
+  onboardingDots: { flexDirection: 'row', gap: 8, marginTop: 34, marginBottom: 36 },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#d5c6ae' },
+  onboardingDotActive: { width: 26, backgroundColor: primary },
+  onboardingConsent: { marginTop: 26 },
+  onboardingSkip: { alignItems: 'center', padding: 16 },
+  onboardingSkipText: { color: primary, fontSize: 15, fontWeight: '700' },
 
   mark: { width: 64, height: 64, borderRadius: 18, backgroundColor: card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 28, overflow: 'hidden' },
   markImage: { width: 46, height: 46, resizeMode: 'contain' },
