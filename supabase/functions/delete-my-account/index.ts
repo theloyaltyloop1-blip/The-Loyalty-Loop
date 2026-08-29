@@ -22,7 +22,10 @@ Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('o
 
   // Remove the customer’s personal records in dependency order. Analytics is
   // calculated from shop data; their individually identifiable activity is not retained.
-  for (const table of ['notifications', 'transactions', 'rewards', 'memberships', 'winback_email_log', 'reviews', 'platform_audit_log']) {
+  // Deleting a WhatsApp contact cascades its short-lived handoff links,
+  // conversation state and metadata-only message log. It must happen before
+  // Auth deletion, otherwise the contact would be detached but retained.
+  for (const table of ['whatsapp_contacts', 'notifications', 'transactions', 'rewards', 'memberships', 'winback_email_log', 'reviews', 'platform_audit_log']) {
     const { error: deleteError } = await admin.from(table).delete().eq(table === 'platform_audit_log' ? 'actor_id' : 'user_id', user.id);
     if (deleteError) throw deleteError;
   }

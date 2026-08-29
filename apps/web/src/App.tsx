@@ -37,6 +37,9 @@ const OwnerTutorial = lazy(() => import('@/pages/owner/Tutorial').then((m) => ({
 const OwnerNotifications = lazy(() => import('@/pages/owner/Notifications').then((m) => ({ default: m.OwnerNotifications })))
 const AccessPanel = lazy(() => import('@/pages/AccessPanel').then((m) => ({ default: m.AccessPanel })))
 const BrandWorkspace = lazy(() => import('@/pages/BrandWorkspace').then((m) => ({ default: m.BrandWorkspace })))
+const WhatsAppOnboarding = lazy(() => import('@/pages/WhatsAppOnboarding').then((m) => ({ default: m.WhatsAppOnboarding })))
+const WhatsAppCard = lazy(() => import('@/pages/WhatsAppCard').then((m) => ({ default: m.WhatsAppCard })))
+const WhatsAppStart = lazy(() => import('@/pages/WhatsAppStart').then((m) => ({ default: m.WhatsAppStart })))
 
 const queryClient = new QueryClient()
 
@@ -74,6 +77,9 @@ function App() {
                 <Route path="/owner/support" element={<OwnerSupport />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/whatsapp/onboarding" element={<WhatsAppOnboarding />} />
+                <Route path="/whatsapp/card" element={<WhatsAppCard />} />
+                <Route path="/whatsapp/start" element={<WhatsAppStart />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/signup/owner" element={<Signup asOwner />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
