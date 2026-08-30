@@ -164,6 +164,10 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
       }
       setMatch(details)
       setMatchedUserId(m[1])
+      // Stop the preview once a customer has been identified so the award
+      // controls and their details stay clearly visible. It reopens after a
+      // successful award for the next person in the queue.
+      setCameraOn(false)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load customer details')
       setScanCycle((cycle) => cycle + 1)
@@ -228,7 +232,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
       </div>
 
       {match && (
-        <aside className="rounded-2xl border border-black/5 bg-black/[0.045] px-5 py-5 lg:absolute lg:right-0 lg:top-0 lg:w-[19rem]">
+        <aside className="rounded-2xl border border-black/5 bg-black/[0.045] px-5 py-5 lg:ml-auto lg:w-[19rem]">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/45">Member information</p>
           <p className="mt-2 text-lg font-semibold text-foreground">
             {match.first_name || match.last_name ? `${match.first_name ?? ''} ${match.last_name ?? ''}`.trim() : 'Customer found'}
