@@ -22,6 +22,8 @@ import { AuthCallback } from '@/pages/AuthCallback'
 import { NotFound } from '@/pages/NotFound'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { UsageTracker } from '@/components/usage-tracker'
+import { ThemeProvider } from '@/components/theme-toggle'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 // Owner/admin-only screens are rarely hit by a typical customer visit, so
 // they're code-split out of the main bundle rather than shipped upfront.
@@ -45,13 +47,17 @@ const queryClient = new QueryClient()
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <OwnerProvider>
-          <BrowserRouter>
-            <Suspense fallback={<BarePageSkeleton />}>
-              <UsageTracker />
-              <Routes>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <OwnerProvider>
+            <BrowserRouter>
+              <div className="fixed right-3 top-3 z-[70] rounded-xl border border-foreground/10 bg-card/90 p-0.5 shadow-sm backdrop-blur-md sm:right-5 sm:top-5">
+                <ThemeToggle compact />
+              </div>
+              <Suspense fallback={<BarePageSkeleton />}>
+                <UsageTracker />
+                <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Home />} />
                 <Route path="/dashboard/discover" element={<DiscoverPage />} />
@@ -85,13 +91,14 @@ function App() {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-            <CookieConsent />
-          </BrowserRouter>
-        </OwnerProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+                </Routes>
+              </Suspense>
+              <CookieConsent />
+            </BrowserRouter>
+          </OwnerProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }
 
