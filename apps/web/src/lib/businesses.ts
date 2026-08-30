@@ -42,6 +42,7 @@ export interface Business {
   verification_submitted_at: string | null
   verification_rejection_reason: string | null
   is_active: boolean
+  whatsapp_onboarding_enabled: boolean
 }
 
 export interface RewardCatalogItem {
