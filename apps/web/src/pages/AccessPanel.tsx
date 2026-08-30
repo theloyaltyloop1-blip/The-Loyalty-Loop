@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Navigate, Link } from 'react-router-dom'
-import { CheckCircle2, ShieldCheck, XCircle } from 'lucide-react'
+import { CheckCircle2, Download, LockKeyhole, ShieldCheck, XCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
@@ -8,12 +8,12 @@ import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { fetchAdminSupportRequests, fetchPendingVerifications, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type SupportRequest } from '@/lib/businesses'
 
-type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support'
+type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'backups'
 type Health = { label: string; detail: string; ok: boolean; targetTab?: Tab }
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support',
+  overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', backups: 'Laptop backups',
 }
 
 export function AccessPanel() {
@@ -65,7 +65,7 @@ export function AccessPanel() {
     </aside>
     <main className="w-full flex-1 p-4 sm:p-6 lg:max-w-6xl lg:p-10">
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs uppercase tracking-wide text-white/40">Platform operations</p><h1 className="font-display text-3xl font-extrabold sm:text-4xl">{tabLabels[tab]}</h1></div><button data-press-feedback onClick={() => void load()} className="w-fit rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Refresh</button></div>
-      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : <SupportQueue items={support} refresh={load} />}
+      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : <LaptopBackups />}
     </main>
   </div>
 }
@@ -88,4 +88,99 @@ function VerificationQueue({ items, refresh }: { items: PendingVerification[]; r
 function SupportQueue({ items, refresh }: { items: SupportRequest[]; refresh: () => Promise<void> }) {
   const open = items.filter((item) => item.status === 'open')
   return <div className="grid gap-4">{open.length ? open.map((item) => <article key={item.id} className="rounded-2xl bg-white/6 p-4 sm:p-5"><p className="font-bold">{item.subject}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-white/60">{item.body}</p><button data-press-feedback onClick={async () => { await resolveSupportRequest(item.id); void refresh() }} className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold">Resolve</button></article>) : <p className="text-white/55">No open support requests.</p>}</div>
+}
+
+type LaptopBackup = {
+  id: string
+  created_at: string
+  download_confirmed_at: string | null
+  table_count: number
+  record_count: number
+  archive_bytes: number
+  status: 'prepared' | 'download_confirmed'
+}
+
+type BackupArchive = {
+  format: string
+  format_version: number
+  created_at: string
+  recovery_notes: string
+  tables: Record<string, unknown[]>
+}
+
+function toBase64(bytes: Uint8Array) {
+  let result = ''
+  for (let index = 0; index < bytes.length; index += 0x8000) result += String.fromCharCode(...bytes.subarray(index, index + 0x8000))
+  return window.btoa(result)
+}
+
+async function encryptArchive(archive: BackupArchive, passphrase: string) {
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveKey'])
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600_000, hash: 'SHA-256' }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt'])
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(archive)))
+  return JSON.stringify({
+    format: 'the-loyalty-loop-encrypted-backup',
+    format_version: 1,
+    created_at: archive.created_at,
+    encryption: { algorithm: 'AES-GCM', key_derivation: 'PBKDF2-SHA-256', iterations: 600_000, salt: toBase64(salt), iv: toBase64(iv) },
+    ciphertext: toBase64(new Uint8Array(encrypted)),
+  })
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) return `${value} B`
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function LaptopBackups() {
+  const [history, setHistory] = React.useState<LaptopBackup[]>([])
+  const [passphrase, setPassphrase] = React.useState('')
+  const [confirmation, setConfirmation] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  const [message, setMessage] = React.useState<string | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const loadHistory = React.useCallback(async () => {
+    const { data, error: historyError } = await supabase.from('admin_laptop_backups').select('id, created_at, download_confirmed_at, table_count, record_count, archive_bytes, status').order('created_at', { ascending: false }).limit(30)
+    if (historyError) { setError(historyError.message); return }
+    setHistory((data ?? []) as LaptopBackup[])
+  }, [])
+
+  React.useEffect(() => { void loadHistory() }, [loadHistory])
+
+  async function createBackup() {
+    setMessage(null)
+    setError(null)
+    if (passphrase.length < 12) { setError('Use an encryption password of at least 12 characters.'); return }
+    if (passphrase !== confirmation) { setError('The two encryption passwords do not match.'); return }
+    setBusy(true)
+    try {
+      const { data, error: exportError } = await supabase.functions.invoke<{ backup: LaptopBackup; archive: BackupArchive }>('export-platform-backup', { body: {} })
+      if (exportError || !data?.archive || !data.backup) throw new Error(exportError?.message ?? 'The backup could not be prepared.')
+      const encryptedArchive = await encryptArchive(data.archive, passphrase)
+      const blob = new Blob([encryptedArchive], { type: 'application/json' })
+      const downloadUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = `the-loyalty-loop-backup-${data.archive.created_at.slice(0, 10)}.tllbackup`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(downloadUrl)
+      await supabase.functions.invoke('export-platform-backup', { body: { action: 'confirm_download', backup_id: data.backup.id } })
+      setMessage(`Encrypted backup downloaded. It contains ${data.backup.record_count.toLocaleString()} records from ${data.backup.table_count} tables.`)
+      setPassphrase('')
+      setConfirmation('')
+      await loadHistory()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The backup could not be created.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return <section className="max-w-3xl"><div className="rounded-2xl border border-white/10 bg-white/6 p-5 sm:p-7"><div className="flex gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary"><LockKeyhole className="h-5 w-5" /></span><div><h2 className="font-display text-2xl font-bold">Encrypted backup for this laptop</h2><p className="mt-2 text-sm leading-6 text-white/65">Create a recovery copy of the Loyalty Loop application data and save it on this device. The encryption password stays only with you—we cannot recover it.</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Encryption password<input value={passphrase} onChange={(event) => setPassphrase(event.target.value)} type="password" autoComplete="new-password" className="mt-2 h-11 w-full rounded-xl border border-white/15 bg-black/20 px-3 text-white outline-none focus:border-primary" placeholder="At least 12 characters" /></label><label className="text-sm font-semibold">Repeat password<input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} type="password" autoComplete="new-password" className="mt-2 h-11 w-full rounded-xl border border-white/15 bg-black/20 px-3 text-white outline-none focus:border-primary" placeholder="Repeat it exactly" /></label></div><p className="mt-4 text-xs leading-5 text-white/50">Includes the recovery data needed for accounts, shops, loyalty cards, stamps, rewards, reviews and promotions. It deliberately excludes passwords, service secrets, uploaded file bytes, WhatsApp chats, push tokens and support messages. Keep the backup file and its password separately and securely.</p>{error && <p className="mt-4 text-sm text-red-300">{error}</p>}{message && <p className="mt-4 text-sm text-[#8de39a]">{message}</p>}<button data-press-feedback disabled={busy} onClick={() => void createBackup()} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold disabled:opacity-60"><Download className="h-4 w-4" />{busy ? 'Preparing encrypted backup…' : 'Download encrypted backup'}</button></div><div className="mt-6"><h2 className="font-display text-xl font-bold">Backup history</h2><p className="mt-1 text-sm text-white/55">This shows exports prepared from the admin panel. “Saved to laptop” is confirmed after the download starts.</p><div className="mt-4 overflow-hidden rounded-2xl border border-white/10">{history.length ? history.map((backup) => <div key={backup.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-4 last:border-b-0"><div><p className="font-semibold">{new Date(backup.created_at).toLocaleString()}</p><p className="mt-1 text-sm text-white/55">{backup.record_count.toLocaleString()} records · {backup.table_count} tables · {formatBytes(backup.archive_bytes)}</p></div><span className={backup.status === 'download_confirmed' ? 'rounded-full bg-[#1E4A29] px-3 py-1 text-xs font-bold text-[#8de39a]' : 'rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white/60'}>{backup.status === 'download_confirmed' ? 'Saved to laptop' : 'Prepared'}</span></div>) : <p className="p-5 text-sm text-white/55">No laptop backups yet.</p>}</div></div></section>
 }
