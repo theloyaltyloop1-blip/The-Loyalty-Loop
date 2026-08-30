@@ -28,18 +28,19 @@ const UNIT_LABEL: Record<string, string> = {
 
 type ScanMode = 'award' | 'redeem'
 
-function CameraScanner({ onResult, active }: { onResult: (value: string) => void; active: boolean }) {
+function CameraScanner({ onResult, active, scanCycle = 0 }: { onResult: (value: string) => void; active: boolean; scanCycle?: number }) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const resultRef = React.useRef(onResult)
+  const foundRef = React.useRef(false)
   const [error, setError] = React.useState<string | null>(null)
   const [running, setRunning] = React.useState(false)
 
   React.useEffect(() => { resultRef.current = onResult }, [onResult])
+  React.useEffect(() => { foundRef.current = false }, [scanCycle])
 
   React.useEffect(() => {
     if (!active || !videoRef.current) return
     let cancelled = false
-    let found = false
     let controls: { stop: () => void } | undefined
     const reader = new BrowserQRCodeReader()
     setError(null)
@@ -51,9 +52,10 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
           { audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
           videoRef.current!,
           (result) => {
-            if (!result || found || cancelled) return
-            found = true
-            controls?.stop()
+            if (!result || foundRef.current || cancelled) return
+            // Keep the camera warm after a match. Awarding re-arms it for the
+            // next person without asking the device to start the camera again.
+            foundRef.current = true
             resultRef.current(result.getText())
           },
         )
@@ -95,7 +97,8 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
 }
 
 function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) {
-  const [cameraOn, setCameraOn] = React.useState(false)
+  const [cameraOn, setCameraOn] = React.useState(true)
+  const [scanCycle, setScanCycle] = React.useState(0)
   const [code, setCode] = React.useState('')
   const [match, setMatch] = React.useState<ScannedMemberDetails | null>(null)
   const [matchedUserId, setMatchedUserId] = React.useState<string | null>(null)
@@ -113,6 +116,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
   async function handleLookup() {
     if (!code.trim()) return
+    setCameraOn(false)
     setBusy(true)
     setError(null)
     setSuccess(null)
@@ -125,6 +129,12 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
         return
       }
       const details = await fetchScannedMemberDetails(businessId, result.id)
+      if (!details) {
+        setError('This customer has not joined this shop yet.')
+        setMatch(null)
+        setMatchedUserId(null)
+        return
+      }
       setMatch(details)
       setMatchedUserId(result.id)
     } catch (e) {
@@ -135,18 +145,30 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
   }
 
   async function handleQrResult(value: string) {
-    setCameraOn(false)
     const m = value.match(/^loyaltyloop:customer:(.+)$/)
     if (!m) {
       setError('That QR code is not a Loyalty Loop customer card.')
+      setScanCycle((cycle) => cycle + 1)
       return
     }
     setError(null)
     setSuccess(null)
+    setBusy(true)
     try {
-      setMatch(await fetchScannedMemberDetails(businessId, m[1]))
+      const details = await fetchScannedMemberDetails(businessId, m[1])
+      if (!details) {
+        setMatchedUserId(null)
+        setError('This customer has not joined this shop yet.')
+        setScanCycle((cycle) => cycle + 1)
+        return
+      }
+      setMatch(details)
       setMatchedUserId(m[1])
-    } catch (e) { setError(e instanceof Error ? e.message : 'Could not load customer details') }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load customer details')
+      setScanCycle((cycle) => cycle + 1)
+    }
+    finally { setBusy(false) }
   }
 
   async function handleAward() {
@@ -160,6 +182,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
       void updateWalletPass(businessId, matchedUserId)
       setSuccess(`Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`)
       reset()
+      setScanCycle((cycle) => cycle + 1)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not award — is this customer a member of your shop?')
     } finally {
@@ -175,15 +198,15 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-foreground"
         >
           {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-          {cameraOn ? 'Stop camera' : 'Scan customer QR'}
+          {cameraOn ? 'Camera ready' : 'Start camera'}
         </button>
       </div>
 
-      <CameraScanner active={cameraOn} onResult={handleQrResult} />
+      <CameraScanner active={cameraOn} onResult={handleQrResult} scanCycle={scanCycle} />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-foreground/30">or manual code</span>
+        <span className="text-xs font-bold uppercase tracking-wide text-foreground/30">manual code instead</span>
         <div className="flex-1 h-px bg-black/10" />
       </div>
 

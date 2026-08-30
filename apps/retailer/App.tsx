@@ -495,6 +495,14 @@ function StampsScreen({
     };
   }, [business.id]);
 
+  // Once a staff member has allowed the camera, open it automatically when
+  // they arrive on the stamp screen. This removes a repeated counter-side tap.
+  useEffect(() => {
+    if (hasReward && mode === "stamps" && permission?.granted && !matched) {
+      setCamera(true);
+    }
+  }, [hasReward, matched, mode, permission?.granted]);
+
   function reset() {
     setMatched(null);
     setMemberInfo(null);
@@ -641,11 +649,9 @@ function StampsScreen({
       void supabase.functions.invoke("update-wallet-pass", {
         body: { business_id: business.id, user_id: matched.id },
       });
-      Alert.alert(
-        "Reward added",
-        `${value} ${unit} awarded to ${matched.first_name || "the customer"}.`,
-      );
       reset();
+      // Return immediately to the camera for the next person in the queue.
+      setCamera(true);
       onDone();
     } catch (e) {
       Alert.alert(
@@ -673,11 +679,8 @@ function StampsScreen({
       void supabase.functions.invoke("update-wallet-pass", {
         body: { business_id: business.id, user_id: matched.id },
       });
-      Alert.alert(
-        "Reward redeemed",
-        `${activeReward.title} redeemed for ${matched.first_name || "the customer"}.`,
-      );
       reset();
+      setCamera(true);
       onDone();
     } catch (e) {
       Alert.alert(
@@ -762,7 +765,7 @@ function StampsScreen({
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.cameraStartText}>Camera Start</Text>
+            <Text style={styles.cameraStartText}>Scan customer QR</Text>
           </Pressable>
           {camera && (
             <Modal animationType="slide" onRequestClose={() => setCamera(false)}>
@@ -1846,9 +1849,9 @@ function Dashboard({
     ),
     [loading, setLoading] = useState(!preview);
   useEffect(() => { if (!preview) void trackUsageEvent(session.user.id, 'tab_viewed', tab); }, [preview, session.user.id, tab]);
-  async function load() {
+  async function load(silent = false) {
     if (preview) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const [
         { data: owned, error: ownedError },
@@ -1890,7 +1893,7 @@ function Dashboard({
         e instanceof Error ? e.message : "Please try again.",
       );
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
   useEffect(() => {
@@ -2007,7 +2010,7 @@ function Dashboard({
                   business={selected}
                   mode={stampsMode}
                   onModeChange={setStampsMode}
-                  onDone={load}
+                  onDone={() => { void load(true); }}
                   onConfigureRewards={() => setOwnerPage("rewards")}
                 />
               )}{" "}
