@@ -80,7 +80,7 @@ function CameraScanner({ onResult, active, scanCycle = 0 }: { onResult: (value: 
   if (!active) return null
 
   return (
-    <div className="rounded-xl overflow-hidden bg-black relative mb-4 aspect-square max-w-xs mx-auto">
+    <div className="relative mb-4 w-full overflow-hidden rounded-2xl bg-black aspect-[4/3]">
       <video ref={videoRef} muted playsInline className="w-full h-full object-cover" />
       {!running && !error && (
         <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black/40">
@@ -191,7 +191,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
   }
 
   return (
-    <div className="relative flex flex-col gap-4 lg:pr-[21rem]">
+    <div className="relative flex flex-col gap-4">
       <div className="flex items-center justify-center">
         <button data-press-feedback
           onClick={() => setCameraOn((c) => !c)}
