@@ -8,6 +8,7 @@ export function NotFound() {
     title: 'Page not found | The Loyalty Loop',
     description: 'The page you’re looking for doesn’t exist.',
     path: '/404',
+    robots: 'noindex,nofollow,noarchive',
   })
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center bg-background">

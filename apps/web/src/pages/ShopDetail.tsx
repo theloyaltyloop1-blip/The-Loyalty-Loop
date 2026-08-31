@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { flushSync } from 'react-dom'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
@@ -133,6 +133,32 @@ export function ShopDetail() {
     refetch()
   }, [refetch])
 
+  const shopStructuredData = business
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        name: business.name,
+        description: business.description ?? undefined,
+        url: `https://www.the-loyalty-loop.com/dashboard/shop/${business.slug}`,
+        image: business.cover_url ?? business.logo_url ?? undefined,
+        telephone: business.phone ?? undefined,
+        address:
+          business.address || business.postcode
+            ? {
+                '@type': 'PostalAddress',
+                streetAddress: business.address ?? undefined,
+                postalCode: business.postcode ?? undefined,
+                addressCountry: 'GB',
+              }
+            : undefined,
+        geo:
+          business.lat != null && business.lng != null
+            ? { '@type': 'GeoCoordinates', latitude: business.lat, longitude: business.lng }
+            : undefined,
+        sameAs: [business.website, business.instagram, business.tiktok, business.youtube].filter(Boolean),
+      }
+    : undefined
+
   usePageMeta({
     title: business ? `${business.name} | The Loyalty Loop` : 'Shop | The Loyalty Loop',
     description: business
@@ -140,6 +166,8 @@ export function ShopDetail() {
       : 'View this shop’s digital loyalty card on The Loyalty Loop.',
     path: `/dashboard/shop/${slug ?? ''}`,
     image: business?.logo_url || business?.cover_url || undefined,
+    robots: 'noindex,nofollow,noarchive',
+    structuredData: shopStructuredData,
   })
 
   React.useEffect(() => {
@@ -227,6 +255,13 @@ export function ShopDetail() {
 
   return (
     <DashboardLayout>
+      <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-foreground/55">
+        <Link to="/dashboard" className="hover:text-primary">Home</Link>
+        <span aria-hidden="true">/</span>
+        <Link to="/dashboard/discover" className="hover:text-primary">Discover</Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page" className="text-foreground/80">{business.name}</span>
+      </nav>
       <button data-press-feedback
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm font-semibold text-foreground/60 hover:text-foreground mb-4"
@@ -244,6 +279,7 @@ export function ShopDetail() {
       >
         <button data-press-feedback
           onClick={handleToggleFavourite}
+          aria-label={favourite ? `Remove ${business.name} from favourites` : `Add ${business.name} to favourites`}
           className={
             'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
             (favourite ? 'bg-accent text-white' : 'bg-white/90 text-foreground')
@@ -257,7 +293,7 @@ export function ShopDetail() {
           style={{ color: business.brand_color }}
         >
           {business.logo_url ? (
-            <img src={business.logo_url} alt="" className="h-full w-full object-cover" />
+            <img src={business.logo_url} alt={`${business.name} logo`} className="h-full w-full object-cover" />
           ) : (
             business.name.charAt(0).toUpperCase()
           )}
@@ -435,9 +471,9 @@ export function ShopDetail() {
         <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-6">
           <p className="font-display font-bold text-foreground mb-4">Gallery</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {photos.map((p) => (
+            {photos.map((p, index) => (
               <div key={p.id} className="rounded-xl overflow-hidden aspect-square">
-                <img src={p.url} alt="" className="h-full w-full object-cover" />
+                <img src={p.url} alt={`${business.name} gallery photo ${index + 1}`} className="h-full w-full object-cover" />
               </div>
             ))}
           </div>

@@ -54,7 +54,7 @@ function DiscoverCard({
 
   return (
     <div className="relative h-full w-full snap-start shrink-0 overflow-hidden rounded-3xl bg-black">
-      <img src={item.url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <img src={item.url} alt={`${business.name} gallery update`} className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
 
       <div className="absolute right-4 bottom-28 flex flex-col items-center gap-6">
@@ -107,6 +107,7 @@ export function DiscoverPage() {
     title: 'Discover | The Loyalty Loop',
     description: 'Browse photos from local shops running loyalty cards near you.',
     path: '/dashboard/discover',
+    robots: 'noindex,nofollow,noarchive',
   })
 
   React.useEffect(() => {
