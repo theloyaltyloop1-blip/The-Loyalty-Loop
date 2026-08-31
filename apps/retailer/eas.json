@@ -18,6 +18,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "credentialsSource": "local",
       "channel": "production"
     },
     "store-upload": {
