@@ -33,7 +33,11 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { colors } from "@loyalty-loop/design-tokens";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
-import { NativeOwnerPageView, type NativeOwnerPage } from "./src/owner-pages";
+import {
+  NativeOwnerPageView,
+  type NativeOnboardingDestination,
+  type NativeOwnerPage,
+} from "./src/owner-pages";
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from "./src/biometric";
 import { registerPushToken } from "./src/push";
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
@@ -84,12 +88,14 @@ function BusinessOnboarding({ onComplete }: { onComplete: () => void }) {
   ];
   const current = slides[step];
   const finish = async (analyticsAllowed: boolean) => { await completeOnboarding(analyticsAllowed); onComplete(); };
-  return <SafeAreaView style={styles.safe}><View style={styles.onboarding}>
+  return <SafeAreaView style={styles.safe}>
+    <StatusBar barStyle="dark-content" />
+    <ScrollView contentContainerStyle={styles.onboarding}>
     <View style={styles.onboardingMark}><Text style={styles.markText}>↻</Text></View>
     <Text style={styles.eyebrow}>{current.eyebrow}</Text><Text style={styles.onboardingTitle}>{current.title}</Text><Text style={styles.copy}>{current.copy}</Text>
     <View style={styles.onboardingDots}>{slides.map((_, index) => <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />)}</View>
     {step < slides.length - 1 ? <><Button title="Continue" onPress={() => setStep(step + 1)} /><Pressable onPress={() => setStep(slides.length - 1)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Skip introduction</Text></Pressable></> : <View style={styles.onboardingConsent}><Text style={styles.section}>Help improve the business app?</Text><Text style={styles.copy}>Allow anonymous feature-use analytics. No customer data, QR codes, emails or message content is recorded.</Text><Button title="Allow anonymous analytics" onPress={() => void finish(true)} /><Pressable onPress={() => void finish(false)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Continue without analytics</Text></Pressable></View>}
-  </View></SafeAreaView>;
+  </ScrollView></SafeAreaView>;
 }
 
 type Business = {
@@ -292,6 +298,8 @@ function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
       style={[
         styles.button,
         secondary && styles.secondary,
@@ -899,12 +907,14 @@ function DashboardHome({
   onIssueStamp,
   onRedeemReward,
   onReport,
+  onOpenGuide,
 }: {
   business: Business;
   stats: DashboardStats;
   onIssueStamp: () => void;
   onRedeemReward: () => void;
   onReport: () => void;
+  onOpenGuide: () => void;
 }) {
   const checklist = [
     { label: "Add your address", done: Boolean(business.address) },
@@ -953,6 +963,15 @@ function DashboardHome({
             </Text>
           </View>
         ))}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open the setup guide"
+          onPress={onOpenGuide}
+          style={({ pressed }) => [styles.setupGuideButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.setupGuideText}>Open setup guide</Text>
+          <Text style={styles.setupGuideArrow}>›</Text>
+        </Pressable>
       </View>
       <View style={styles.statsGrid}>
         <StatTile icon={tileIcon(Stamp)} value={stats.stamps} label="Stamps" />
@@ -1201,6 +1220,7 @@ function AnalyticsPage({
           userId={userId}
           onBack={() => setDetailed(false)}
           onBusinessChanged={onBusinessChanged}
+          onNavigate={() => setDetailed(false)}
           preview={preview}
         />
       </View>
@@ -1848,6 +1868,20 @@ function Dashboard({
           },
     ),
     [loading, setLoading] = useState(!preview);
+  const navigateOnboarding = (destination: NativeOnboardingDestination) => {
+    setOwnerPage(null);
+    if (destination === "branding" || destination === "rewards") {
+      setOwnerPage(destination);
+      return;
+    }
+    if (destination === "tools") {
+      void Linking.openURL("https://www.the-loyalty-loop.com/owner/tools");
+      return;
+    }
+    if (destination === "settings" || destination === "scan" || destination === "analytics" || destination === "news") {
+      setTab(destination);
+    }
+  };
   useEffect(() => { if (!preview) void trackUsageEvent(session.user.id, 'tab_viewed', tab); }, [preview, session.user.id, tab]);
   async function load(silent = false) {
     if (preview) return;
@@ -1984,6 +2018,7 @@ function Dashboard({
               userId={session.user.id || "preview-user"}
               onBack={() => setOwnerPage(null)}
               onBusinessChanged={load}
+              onNavigate={navigateOnboarding}
               preview={preview}
             />
           ) : (
@@ -2003,6 +2038,7 @@ function Dashboard({
                     setTab("scan");
                   }}
                   onReport={() => setOwnerPage("ai")}
+                  onOpenGuide={() => setOwnerPage("tutorial")}
                 />
               )}{" "}
               {tab === "scan" && (
@@ -2206,7 +2242,7 @@ const styles = StyleSheet.create({
   auth: { flexGrow: 1, padding: 28, justifyContent: "center" },
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
-  onboarding: { flex: 1, padding: 28, justifyContent: "center" },
+  onboarding: { flexGrow: 1, padding: 28, justifyContent: "center" },
   onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: green, alignItems: "center", justifyContent: "center", marginBottom: 42 },
   onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontWeight: "800", lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
@@ -2214,7 +2250,7 @@ const styles = StyleSheet.create({
   onboardingDotActive: { width: 26, backgroundColor: orange },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: "center", padding: 16 },
-  onboardingSkipText: { color: green, fontSize: 15, fontWeight: "700" },
+  onboardingSkipText: { color: green, fontSize: 15, fontWeight: "700", textAlign: "center" },
   lockScreen: { flex: 1, padding: 28, alignItems: "center", justifyContent: "center" },
   mark: {
     width: 62,
@@ -2279,9 +2315,12 @@ const styles = StyleSheet.create({
     backgroundColor: green,
     borderRadius: 999,
     alignItems: "center",
+    justifyContent: "center",
+    minHeight: 52,
+    flexGrow: 0,
+    flexShrink: 0,
     padding: 15,
     marginTop: 3,
-    flex: 1,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.72)",
     shadowColor: green,
@@ -2295,7 +2334,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: green,
   },
-  buttonText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  buttonText: { color: "#fff", fontWeight: "800", fontSize: 15, textAlign: "center" },
   secondaryText: { color: green },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
@@ -2426,6 +2465,9 @@ const styles = StyleSheet.create({
   checkMark: { fontSize: 13, fontWeight: "900", color: "#8C3820" },
   checkText: { fontSize: 14, fontWeight: "700", color: "#30312D" },
   checkTextDone: { color: "#8A8C85", textDecorationLine: "line-through" },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#191A18", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
+  setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

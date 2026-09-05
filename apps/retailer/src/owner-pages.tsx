@@ -52,6 +52,15 @@ export type NativeOwnerPage =
   | "support"
   | "tutorial";
 
+export type NativeOnboardingDestination =
+  | "analytics"
+  | "branding"
+  | "news"
+  | "rewards"
+  | "scan"
+  | "settings"
+  | "tools";
+
 export interface NativeBusiness {
   id: string;
   name: string;
@@ -65,6 +74,7 @@ interface PageProps {
   userId: string;
   onBack: () => void;
   onBusinessChanged: () => Promise<void>;
+  onNavigate: (destination: NativeOnboardingDestination) => void;
   preview?: boolean;
 }
 
@@ -1381,14 +1391,57 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
   );
 }
 
-function TutorialPage({ business, onBack }: PageProps) {
-  const steps = [
-    ["1", "Finish your shop", "Add your description, address, logo and cover image in Settings so customers recognise you."],
-    ["2", "Create rewards", "Open Rewards catalogue and add what customers can unlock, such as a free coffee after 10 stamps."],
-    ["3", "Invite customers", "Print your QR poster from the web dashboard or ask customers to find your shop in The Loyalty Loop."],
-    ["4", "Award progress", "Open Stamps, scan the customer's QR code or enter their manual code, choose the amount, then award it."],
-    ["5", "Keep people coming back", "Use News for updates, Analytics for trends, and Reviews to respond to customer feedback."],
-  ] as const;
+function TutorialPage({ business, onBack, onNavigate }: PageProps) {
+  const steps: Array<{
+    number: string;
+    title: string;
+    body: string;
+    action: string;
+    destination: NativeOnboardingDestination;
+  }> = [
+    {
+      number: "1",
+      title: "Finish your shop profile",
+      body: "Add your category, description, address and phone number so customers can find and recognise you.",
+      action: "Open shop settings",
+      destination: "settings",
+    },
+    {
+      number: "2",
+      title: "Make your shop look like yours",
+      body: "Add a logo and cover image for your customer card and Discover listing.",
+      action: "Add branding",
+      destination: "branding",
+    },
+    {
+      number: "3",
+      title: "Create a reward",
+      body: "Set a reward customers can unlock, such as a free coffee after 10 stamps.",
+      action: "Create a reward",
+      destination: "rewards",
+    },
+    {
+      number: "4",
+      title: "Invite customers",
+      body: "Print your dedicated QR poster and place it beside the till so customers can join in seconds.",
+      action: "Open QR poster",
+      destination: "tools",
+    },
+    {
+      number: "5",
+      title: "Award the first stamp",
+      body: "Open Stamps, scan the customer QR code or enter their manual code, then award their progress.",
+      action: "Open Stamps",
+      destination: "scan",
+    },
+    {
+      number: "6",
+      title: "Bring customers back",
+      body: "Use News for updates and Analytics to see which loyalty activity is working.",
+      action: "Open Analytics",
+      destination: "analytics",
+    },
+  ];
 
   return (
     <View>
@@ -1398,15 +1451,24 @@ function TutorialPage({ business, onBack }: PageProps) {
           <Sparkles size={20} color={orange} />
           <Text style={styles.cardTitle}>Welcome to {business.name}</Text>
         </View>
-        <Text style={styles.body}>Follow these five steps to get your loyalty programme live and use it confidently at the counter.</Text>
+        <Text style={styles.body}>Everything here opens the right tool, so you can set up your loyalty programme without hunting through the app.</Text>
       </Section>
-      {steps.map(([number, title, body]) => (
+      {steps.map(({ number, title, body, action, destination }) => (
         <Section key={number}>
           <View style={styles.tutorialRow}>
             <View style={styles.tutorialNumber}><Text style={styles.tutorialNumberText}>{number}</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{title}</Text>
               <Text style={styles.body}>{body}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={action}
+                onPress={() => onNavigate(destination)}
+                style={({ pressed }) => [styles.tutorialAction, pressed && styles.pressed]}
+              >
+                <Text style={styles.tutorialActionText}>{action}</Text>
+                <ChevronRight size={17} color={ink} />
+              </Pressable>
             </View>
           </View>
         </Section>
@@ -1485,6 +1547,8 @@ const styles = StyleSheet.create({
   tutorialRow: { flexDirection: "row", gap: 13, alignItems: "flex-start" },
   tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#F7D9CB", alignItems: "center", justifyContent: "center" },
   tutorialNumberText: { color: "#8C3820", fontWeight: "900" },
+  tutorialAction: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44, borderRadius: 13, backgroundColor: cream, paddingHorizontal: 12, marginTop: 13 },
+  tutorialActionText: { color: ink, fontSize: 13, fontWeight: "900" },
   body: { color: "#444740", lineHeight: 21, fontSize: 14 },
   muted: { color: muted, lineHeight: 20, fontSize: 14 },
   primaryButton: {
