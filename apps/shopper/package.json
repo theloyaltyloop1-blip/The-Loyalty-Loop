@@ -6,6 +6,7 @@
     "@loyalty-loop/design-tokens": "*",
     "@supabase/supabase-js": "^2.112.2",
     "expo": "~54.0.36",
+    "expo-apple-authentication": "~8.0.8",
     "expo-auth-session": "~7.0.11",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",

@@ -8,6 +8,7 @@ import {
   Image,
   Linking,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -29,6 +30,8 @@ import { hasSupabaseConfig, supabase } from './src/supabase'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
 import { signInWithGoogle } from './src/google-auth'
+import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
+import * as AppleAuthentication from 'expo-apple-authentication'
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
@@ -154,6 +157,17 @@ function GoogleIcon({ size = 20 }: { size?: number }) {
       <Path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
       <Path fill="#4CAF50" d="M24 44c5.4 0 10.3-1.8 14.1-5l-6.5-5.5C29.5 35.4 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.7 16.3 44 24 44z" />
       <Path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.5 5.5C39.6 37 44 31 44 24c0-1.3-.1-2.7-.4-3.5z" />
+    </Svg>
+  )
+}
+
+function AppleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size * 1.2} viewBox="0 0 384 512">
+      <Path
+        fill="#fff"
+        d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5c0 26.2 4.8 53.3 14.4 81.2 12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"
+      />
     </Svg>
   )
 }
@@ -388,6 +402,32 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
     }
   }
 
+  async function submitApple() {
+    setBusy(true)
+    try {
+      const session = await signInWithApple()
+      if (session) onSession(session)
+    } catch (e) {
+      // The user cancelling the Apple sheet isn't an error worth alerting on.
+      if (e instanceof Error && e.message.includes('ERR_REQUEST_CANCELED')) return
+      Alert.alert('Could not sign in with Apple', e instanceof Error ? e.message : 'Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function submitAppleWeb() {
+    setBusy(true)
+    try {
+      const session = await signInWithAppleWeb()
+      if (session) onSession(session)
+    } catch (e) {
+      Alert.alert('Could not sign in with Apple', e instanceof Error ? e.message : 'Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
@@ -398,6 +438,20 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
         <Text style={styles.hero}>Local rewards,{'\n'}in your pocket.</Text>
         <Text style={styles.copy}>Collect loyalty rewards from the places you love.</Text>
         <View style={styles.card}>
+          {Platform.OS === 'ios' ? (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={12}
+              style={styles.appleButton}
+              onPress={submitApple}
+            />
+          ) : (
+            <Pressable onPress={submitAppleWeb} disabled={busy} style={[styles.appleButton, styles.appleButtonAndroid]}>
+              <AppleIcon />
+              <Text style={styles.appleButtonText}>Continue with Apple</Text>
+            </Pressable>
+          )}
           <Pressable onPress={submitGoogle} disabled={busy} style={styles.googleButton}>
             <GoogleIcon />
             <Text style={styles.googleButtonText}>Continue with Google</Text>
@@ -1635,6 +1689,9 @@ const styles = StyleSheet.create({
 
   card: { backgroundColor: card, borderRadius: 20, padding: 18, marginTop: 26, gap: 12, shadowColor: '#1a1a1a', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
   input: { backgroundColor: '#f4efe4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: foreground, fontSize: 16 },
+  appleButton: { width: '100%', height: 48, marginBottom: 12 },
+  appleButtonAndroid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#000', borderRadius: 12 },
+  appleButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', paddingVertical: 14 },
   googleButtonText: { color: foreground, fontWeight: '800', fontSize: 15 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
