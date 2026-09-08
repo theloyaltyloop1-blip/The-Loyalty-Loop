@@ -1,9 +1,17 @@
 const app = require('./app.json')
 
 const mapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+const mapsApiKeyIos = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS
 
 module.exports = {
   ...app.expo,
+  ios: {
+    ...app.expo.ios,
+    config: {
+      ...app.expo.ios.config,
+      googleMapsApiKey: mapsApiKeyIos || undefined,
+    },
+  },
   android: {
     ...app.expo.android,
     config: {
