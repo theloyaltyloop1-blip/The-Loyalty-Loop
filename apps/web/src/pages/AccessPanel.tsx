@@ -16,6 +16,31 @@ const tabLabels: Record<Tab, string> = {
   overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', backups: 'Laptop backups',
 }
 
+// Apple caps "Sign in with Apple" OAuth client secrets (the JWT in Supabase →
+// Auth → Providers → Apple → "Secret Key (for OAuth)") at 6 months. There's
+// no reminder from Apple or Supabase when it's about to expire — it just
+// silently starts rejecting every Apple sign-in one day. This constant is the
+// exact expiry of the secret generated 2026-09-08 (Key ID A2QVMBB8JN, Services
+// ID com.theloyaltyloop.shopper.signin); regenerate it with the same script
+// used to create this one before this date, paste the new JWT into Supabase,
+// and update this constant to the new expiry.
+const APPLE_SECRET_EXPIRES_AT = '2027-03-10T10:04:36.000Z'
+
+function appleSignInHealth(): Health {
+  const expiresAt = new Date(APPLE_SECRET_EXPIRES_AT)
+  const daysLeft = Math.round((expiresAt.getTime() - Date.now()) / 86_400_000)
+  const expiredOrSoon = daysLeft <= 45
+  return {
+    label: 'Apple Sign-In secret',
+    ok: !expiredOrSoon,
+    detail: daysLeft <= 0
+      ? `Expired ${expiresAt.toLocaleDateString()}. Apple sign-in is broken until you generate a new secret and paste it into Supabase → Auth → Providers → Apple.`
+      : expiredOrSoon
+        ? `Expires ${expiresAt.toLocaleDateString()} — ${daysLeft} days left. Generate a new secret soon and paste it into Supabase → Auth → Providers → Apple, or Apple sign-in will silently break.`
+        : `Expires ${expiresAt.toLocaleDateString()} (Apple caps these at 6 months). No action needed yet.`,
+  }
+}
+
 export function AccessPanel() {
   const { session, loading, rolesLoading, primaryRole, signOut } = useAuth()
   const [tab, setTab] = React.useState<Tab>('overview')
@@ -40,7 +65,7 @@ export function AccessPanel() {
       fetchAdminSupportRequests().catch(() => []),
       (async () => { const { data } = await supabase.rpc('admin_usage_analytics', { _days: 30 }); return (data || []) as UsageEvent[] })().catch(() => []),
     ])
-    setHealth([...tableChecks, storage, ...functionChecks])
+    setHealth([...tableChecks, storage, ...functionChecks, appleSignInHealth()])
     setVerifications(pending)
     setSupport(requests)
     setUsage(usageData)

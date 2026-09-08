@@ -29,6 +29,8 @@ import { colors } from '@loyalty-loop/design-tokens'
 import { hasSupabaseConfig, supabase } from './src/supabase'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
+import { File, Paths } from 'expo-file-system'
+import * as Sharing from 'expo-sharing'
 import { signInWithGoogle } from './src/google-auth'
 import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
 import * as AppleAuthentication from 'expo-apple-authentication'
@@ -701,14 +703,44 @@ function ShopDetail({
   async function addToWallet() {
     setAddingToWallet(true)
     try {
-      const { data, error } = await supabase.functions.invoke<{ saveUrl?: string; error?: string }>('create-wallet-pass', {
-        body: { business_id: business.id },
-      })
-      if (error) throw error
-      if (!data?.saveUrl) throw new Error(data?.error || 'Could not create the pass')
-      await Linking.openURL(data.saveUrl)
+      if (Platform.OS === 'ios') {
+        // Apple Wallet passes are a signed .pkpass file we build ourselves
+        // (see supabase/functions/create-apple-wallet-pass), not a save link
+        // Apple's servers resolve — so this fetches the binary directly,
+        // writes it to a temp file, then hands it to the share sheet, which
+        // iOS recognises as a Wallet pass and offers "Add to Apple Wallet".
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+        if (!accessToken) throw new Error('Please sign in again.')
+        const res = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-apple-wallet-pass`, {
+          method: 'POST',
+          headers: {
+            apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ business_id: business.id }),
+        })
+        if (!res.ok) {
+          const message = await res.json().catch(() => null)
+          throw new Error((message as { error?: string } | null)?.error || 'Could not create the pass')
+        }
+        const bytes = new Uint8Array(await res.arrayBuffer())
+        const file = new File(Paths.cache, `${business.name.replace(/[^a-z0-9]+/gi, '-')}.pkpass`)
+        if (file.exists) file.delete()
+        file.write(bytes)
+        if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.')
+        await Sharing.shareAsync(file.uri, { mimeType: 'application/vnd.apple.pkpass', UTI: 'com.apple.pkpass' })
+      } else {
+        const { data, error } = await supabase.functions.invoke<{ saveUrl?: string; error?: string }>('create-wallet-pass', {
+          body: { business_id: business.id },
+        })
+        if (error) throw error
+        if (!data?.saveUrl) throw new Error(data?.error || 'Could not create the pass')
+        await Linking.openURL(data.saveUrl)
+      }
     } catch (e) {
-      Alert.alert('Could not add to Google Wallet', e instanceof Error ? e.message : 'Please try again.')
+      Alert.alert(Platform.OS === 'ios' ? 'Could not add to Apple Wallet' : 'Could not add to Google Wallet', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setAddingToWallet(false)
     }
@@ -752,7 +784,7 @@ function ShopDetail({
             <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
             <Pressable onPress={addToWallet} disabled={addingToWallet} style={[styles.walletButton, addingToWallet && styles.disabled]}>
               <WalletIcon size={17} />
-              <Text style={styles.walletButtonText}>{addingToWallet ? 'Preparing…' : 'Add to Google Wallet'}</Text>
+              <Text style={styles.walletButtonText}>{addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'}</Text>
             </Pressable>
           </View>
         ) : (
