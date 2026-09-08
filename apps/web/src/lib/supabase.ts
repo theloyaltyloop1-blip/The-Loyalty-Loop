@@ -81,3 +81,18 @@ export async function signInWithGoogle(intent?: 'business_owner') {
   })
   if (error) throw error
 }
+
+// Uses the same Services ID ("com.theloyaltyloop.shopper.signin") and OAuth
+// secret already configured in Supabase's Apple provider for the shopper
+// app's Android sign-in — the web flow is identical, just a different
+// client of the same provider config.
+export async function signInWithApple(intent?: 'business_owner') {
+  if (intent) localStorage.setItem(OAUTH_INTENT_KEY, intent)
+  else localStorage.removeItem(OAUTH_INTENT_KEY)
+  setRememberMe(true)
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'apple',
+    options: { redirectTo: `${AUTH_REDIRECT_URL}/auth/callback` },
+  })
+  if (error) throw error
+}

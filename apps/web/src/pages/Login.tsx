@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, setRememberMe, signInWithGoogle } from '@/lib/supabase'
-import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, AuthMinorLink, GoogleButton, AuthDivider } from '@/components/auth-layout'
+import { supabase, setRememberMe, signInWithGoogle, signInWithApple } from '@/lib/supabase'
+import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, AuthMinorLink, GoogleButton, AppleButton, AuthDivider } from '@/components/auth-layout'
 
 export function Login() {
   const navigate = useNavigate()
@@ -44,6 +44,7 @@ export function Login() {
 
   return (
     <AuthLayout title="Welcome back">
+      <AppleButton onClick={() => signInWithApple().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.'))} />
       <GoogleButton onClick={() => signInWithGoogle().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
       <AuthDivider />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
