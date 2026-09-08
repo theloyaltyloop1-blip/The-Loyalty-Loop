@@ -3,11 +3,19 @@
   "build": {
     "development": { "developmentClient": true, "distribution": "internal", "channel": "development" },
     "preview": { "distribution": "internal", "android": { "buildType": "apk" }, "channel": "preview" },
-    "production": { "autoIncrement": true, "channel": "production" },
+    "production": { "autoIncrement": true, "credentialsSource": "local", "channel": "production" },
     "store-upload": {
       "extends": "production",
       "credentialsSource": "local",
       "channel": "store-upload"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6809930346",
+        "appleTeamId": "9QSSA475TR"
+      }
     }
   }
 }
