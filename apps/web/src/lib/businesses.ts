@@ -689,6 +689,50 @@ export async function resolveSupportRequest(id: string, response = '') {
 }
 
 // ---------------------------------------------------------------------
+// Review moderation (admin) — a shopper flags an objectionable review from
+// the app; these land here for a moderator to remove or dismiss within 24h.
+
+export interface ReviewReport {
+  id: string
+  review_id: string
+  reason: 'spam' | 'offensive' | 'harassment' | 'off_topic' | 'other'
+  detail: string | null
+  status: 'open' | 'actioned' | 'dismissed'
+  created_at: string
+  review: { id: string; rating: number; body: string | null; created_at: string; business: { name: string } | null } | null
+}
+
+export async function fetchOpenReviewReports(): Promise<ReviewReport[]> {
+  const { data, error } = await supabase
+    .from('review_reports')
+    .select('id,review_id,reason,detail,status,created_at,review:reviews(id,rating,body,created_at,business:businesses(name))')
+    .eq('status', 'open')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map((row) => ({
+    ...row,
+    review: Array.isArray(row.review) ? row.review[0] ?? null : row.review,
+  })).map((row) => ({
+    ...row,
+    review: row.review ? { ...row.review, business: Array.isArray(row.review.business) ? row.review.business[0] ?? null : row.review.business } : null,
+  })) as ReviewReport[]
+}
+
+/** Delete the offending review and mark every report against it "actioned". */
+export async function removeReportedReview(reviewId: string) {
+  const { error: delError } = await supabase.from('reviews').delete().eq('id', reviewId)
+  if (delError) throw delError
+  const { error } = await supabase.from('review_reports').update({ status: 'actioned', resolved_at: new Date().toISOString() }).eq('review_id', reviewId)
+  if (error) throw error
+}
+
+/** Keep the review, close this one report. */
+export async function dismissReviewReport(id: string) {
+  const { error } = await supabase.from('review_reports').update({ status: 'dismissed', resolved_at: new Date().toISOString() }).eq('id', id)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------
 // Favourites
 
 export async function fetchFavouriteIds(userId: string): Promise<Set<string>> {

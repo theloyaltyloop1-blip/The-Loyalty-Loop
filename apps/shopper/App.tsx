@@ -284,6 +284,15 @@ type Tab = 'home' | 'discover' | 'map' | 'news' | 'rewards' | 'favourites'
 const isShopper = (roles: string[]) =>
   roles.includes('consumer') && !roles.some((role) => ['business_owner', 'staff', 'brand_head'].includes(role))
 
+// A light first-pass filter that stops the most clearly objectionable review
+// text from being posted at all. It is deliberately small and conservative —
+// the report + moderator queue is the real safety net for anything borderline.
+const BLOCKED_LANGUAGE = ['nigger', 'faggot', 'retard', 'kike', 'chink', 'spic', 'tranny', 'kill yourself', 'kys ']
+function containsBlockedLanguage(text: string) {
+  const normalised = text.toLowerCase().replace(/[^a-z ]+/g, '')
+  return BLOCKED_LANGUAGE.some((term) => normalised.includes(term))
+}
+
 // ---------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------
@@ -490,7 +499,14 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
 function ProfileSheet({ session, userId, stampCode, onClose }: { session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
-  useEffect(() => { biometricLockEnabled().then(setBiometricEnabled); getUsageAnalyticsConsent().then(setAnalyticsEnabled) }, [])
+  const [blocks, setBlocks] = useState<{ blocked_id: string; created_at: string }[]>([])
+  const loadBlocks = () => supabase.from('user_blocks').select('blocked_id,created_at').eq('blocker_id', userId).order('created_at', { ascending: false }).then(({ data }) => setBlocks(data || []))
+  useEffect(() => { biometricLockEnabled().then(setBiometricEnabled); getUsageAnalyticsConsent().then(setAnalyticsEnabled); void loadBlocks() }, [])
+  async function unblock(blockedId: string) {
+    const { error } = await supabase.from('user_blocks').delete().eq('blocker_id', userId).eq('blocked_id', blockedId)
+    if (error) return Alert.alert('Could not unblock', error.message)
+    void loadBlocks()
+  }
   async function toggleBiometricLock() {
     const result = await setBiometricLock(!biometricEnabled)
     if (!result.success) return Alert.alert('Could not update app lock', result.error)
@@ -533,6 +549,20 @@ function ProfileSheet({ session, userId, stampCode, onClose }: { session: Sessio
             <Text style={styles.securityButtonText}>{analyticsEnabled ? 'Turn off anonymous analytics' : 'Allow anonymous analytics'}</Text>
           </Pressable>
         </View>
+        {blocks.length > 0 && (
+          <View style={styles.securityCard}>
+            <Text style={styles.sectionTitle}>Blocked people</Text>
+            <Text style={styles.securityCopy}>You don’t see reviews written by these people. Unblock anyone to see their reviews again.</Text>
+            {blocks.map((block) => (
+              <View key={block.blocked_id} style={styles.blockRow}>
+                <Text style={styles.blockRowText}>Blocked {new Date(block.created_at).toLocaleDateString()}</Text>
+                <Pressable onPress={() => void unblock(block.blocked_id)} hitSlop={8}>
+                  <Text style={styles.blockRowUnblock}>Unblock</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
         <Button title="Sign out" secondary onPress={() => supabase.auth.signOut()} />
       </SafeAreaView>
     </Modal>
@@ -572,6 +602,7 @@ function ShopDetail({
   const [reviewBody, setReviewBody] = useState('')
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
+  const [hiddenReviewIds, setHiddenReviewIds] = useState<Set<string>>(new Set())
   const threshold = business.loyalty_config?.stamps_required || 10
   const value = business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
   const label = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
@@ -623,13 +654,15 @@ function ShopDetail({
   const loadReviews = async () => {
     setReviewsLoading(true)
     try {
+      // Reviews by users this shopper has blocked never come back — the
+      // `reviews_select_visible` RLS policy filters them out server-side.
       const { data, error } = await supabase
         .from('reviews')
         .select('id,user_id,rating,body,created_at')
         .eq('business_id', business.id)
         .order('created_at', { ascending: false })
       if (error) throw error
-      const items = (data || []) as ShopReview[]
+      const items = ((data || []) as ShopReview[]).filter((review) => !hiddenReviewIds.has(review.id))
       setReviews(items)
       const mine = items.find((review) => review.user_id === userId)
       if (mine) {
@@ -650,12 +683,17 @@ function ShopDetail({
   const myReview = reviews.find((review) => review.user_id === userId)
 
   async function saveReview() {
+    const cleaned = reviewBody.trim()
+    if (cleaned && containsBlockedLanguage(cleaned)) {
+      Alert.alert('Please rewrite your review', 'It looks like your review contains language that breaks our community rules. Reviews with hate speech, slurs or harassment are not allowed.')
+      return
+    }
     setSavingReview(true)
     try {
       const { error } = await supabase
         .from('reviews')
         .upsert(
-          { business_id: business.id, user_id: userId, rating: reviewRating, body: reviewBody.trim() || null },
+          { business_id: business.id, user_id: userId, rating: reviewRating, body: cleaned || null },
           { onConflict: 'user_id,business_id' },
         )
       if (error) throw error
@@ -666,6 +704,56 @@ function ShopDetail({
     } finally {
       setSavingReview(false)
     }
+  }
+
+  function reportReview(review: ShopReview) {
+    const submit = async (reason: 'spam' | 'offensive' | 'harassment' | 'off_topic' | 'other') => {
+      // Hide it immediately for this shopper, then queue it for a moderator.
+      setHiddenReviewIds((prev) => new Set(prev).add(review.id))
+      setReviews((prev) => prev.filter((item) => item.id !== review.id))
+      try {
+        const { error } = await supabase
+          .from('review_reports')
+          .upsert({ review_id: review.id, reporter_id: userId, reason }, { onConflict: 'review_id,reporter_id' })
+        if (error) throw error
+        Alert.alert('Thanks for letting us know', 'We’ve hidden this review for you and our team will look at it within 24 hours.')
+      } catch (e) {
+        Alert.alert('Could not send the report', e instanceof Error ? e.message : 'Please try again.')
+      }
+    }
+    Alert.alert('Report this review', 'Why are you reporting it?', [
+      { text: 'Spam or fake', onPress: () => void submit('spam') },
+      { text: 'Offensive or hateful', onPress: () => void submit('offensive') },
+      { text: 'Harassment or bullying', onPress: () => void submit('harassment') },
+      { text: 'Not about this shop', onPress: () => void submit('off_topic') },
+      { text: 'Cancel', style: 'cancel' },
+    ])
+  }
+
+  function blockAuthor(review: ShopReview) {
+    Alert.alert(
+      'Block this person?',
+      'You will no longer see any reviews written by this person, on any shop. You can undo this from your profile.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('user_blocks')
+                .upsert({ blocker_id: userId, blocked_id: review.user_id }, { onConflict: 'blocker_id,blocked_id' })
+              if (error) throw error
+              setReviews((prev) => prev.filter((item) => item.user_id !== review.user_id))
+              Alert.alert('Blocked', 'You will not see reviews from this person any more.')
+            } catch (e) {
+              Alert.alert('Could not block', e instanceof Error ? e.message : 'Please try again.')
+            }
+          },
+        },
+      ],
+    )
   }
 
   function deleteReview() {
@@ -915,6 +1003,17 @@ function ShopDetail({
                   </View>
                   <Text style={styles.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</Text>
                   {!!review.body && <Text style={styles.reviewBody}>{review.body}</Text>}
+                  {review.user_id !== userId && (
+                    <View style={styles.reviewModRow}>
+                      <Pressable onPress={() => reportReview(review)} hitSlop={8}>
+                        <Text style={styles.reviewModLink}>Report</Text>
+                      </Pressable>
+                      <Text style={styles.reviewModDot}>·</Text>
+                      <Pressable onPress={() => blockAuthor(review)} hitSlop={8}>
+                        <Text style={styles.reviewModLink}>Block this person</Text>
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
               ))}
             </View>
@@ -1892,6 +1991,12 @@ const styles = StyleSheet.create({
   reviewDate: { color: '#8a8378', fontSize: 11.5 },
   reviewStars: { color: accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
   reviewBody: { color: '#5c564c', fontSize: 13.5, lineHeight: 20, marginTop: 6 },
+  reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  reviewModLink: { color: '#8a8378', fontSize: 12, fontWeight: '600' },
+  reviewModDot: { color: '#c9c2b6', fontSize: 12 },
+  blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  blockRowText: { color: '#5c564c', fontSize: 13 },
+  blockRowUnblock: { color: primary, fontSize: 13, fontWeight: '700' },
 
   // Rewards
   reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },

@@ -6,14 +6,18 @@ import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
 import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
-import { fetchAdminSupportRequests, fetchPendingVerifications, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type SupportRequest } from '@/lib/businesses'
+import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
 
-type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'backups'
+type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups'
 type Health = { label: string; detail: string; ok: boolean; targetTab?: Tab }
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', backups: 'Laptop backups',
+  overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups',
+}
+
+const REASON_LABELS: Record<ReviewReport['reason'], string> = {
+  spam: 'Spam or fake', offensive: 'Offensive or hateful', harassment: 'Harassment or bullying', off_topic: 'Not about this shop', other: 'Other',
 }
 
 // Apple caps "Sign in with Apple" OAuth client secrets (the JWT in Supabase →
@@ -48,6 +52,7 @@ export function AccessPanel() {
   const [selectedHealth, setSelectedHealth] = React.useState<Health | null>(null)
   const [verifications, setVerifications] = React.useState<PendingVerification[]>([])
   const [support, setSupport] = React.useState<SupportRequest[]>([])
+  const [reports, setReports] = React.useState<ReviewReport[]>([])
   const [usage, setUsage] = React.useState<UsageEvent[]>([])
   const [busy, setBusy] = React.useState(true)
 
@@ -58,16 +63,18 @@ export function AccessPanel() {
       const targetTab = label === 'businesses' ? 'verifications' : label === 'support_requests' ? 'support' : undefined
       return { label, ok: !error, targetTab, detail: error ? error.message : `${count ?? 0} records reachable` }
     }))
-    const [storage, functionChecks, pending, requests, usageData] = await Promise.all([
+    const [storage, functionChecks, pending, requests, reviewReports, usageData] = await Promise.all([
       supabase.storage.from('logos').list('', { limit: 1 }).then(({ error }) => ({ label: 'Storage', ok: !error, detail: error ? error.message : 'Logo storage bucket reachable' })),
       fetchPlatformHealth().catch((error) => [{ label: 'Platform health function', ok: false, detail: error instanceof Error ? error.message : 'Unavailable' }]),
       fetchPendingVerifications().catch(() => []),
       fetchAdminSupportRequests().catch(() => []),
+      fetchOpenReviewReports().catch(() => []),
       (async () => { const { data } = await supabase.rpc('admin_usage_analytics', { _days: 30 }); return (data || []) as UsageEvent[] })().catch(() => []),
     ])
     setHealth([...tableChecks, storage, ...functionChecks, appleSignInHealth()])
     setVerifications(pending)
     setSupport(requests)
+    setReports(reviewReports)
     setUsage(usageData)
     setBusy(false)
   }, [])
@@ -82,7 +89,7 @@ export function AccessPanel() {
       <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-primary"><ShieldCheck className="h-6 w-6" /></span><div><p className="font-display font-bold">Access Panel</p><p className="text-xs text-white/45">The Loyalty Loop</p></div></div>
       <nav aria-label="Access panel navigation" className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:mt-10 lg:flex-col lg:overflow-visible">
         {(Object.keys(tabLabels) as Tab[]).map((key) => <button data-press-feedback key={key} onClick={() => setTab(key)} className={'shrink-0 rounded-xl px-4 py-2.5 text-left text-sm font-semibold lg:w-full lg:py-3 lg:text-base ' + (tab === key ? 'bg-primary' : 'text-white/60 hover:bg-white/10')}>
-          {key === 'verifications' ? `Listings (${verifications.length})` : key === 'support' ? `Support (${support.filter((item) => item.status === 'open').length})` : tabLabels[key]}
+          {key === 'verifications' ? `Listings (${verifications.length})` : key === 'support' ? `Support (${support.filter((item) => item.status === 'open').length})` : key === 'moderation' ? `Reported reviews (${reports.length})` : tabLabels[key]}
         </button>)}
         <button data-press-feedback onClick={signOut} className="shrink-0 rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-white/60 hover:bg-white/10 lg:hidden">Sign out</button>
       </nav>
@@ -90,7 +97,7 @@ export function AccessPanel() {
     </aside>
     <main className="w-full flex-1 p-4 sm:p-6 lg:max-w-6xl lg:p-10">
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs uppercase tracking-wide text-white/40">Platform operations</p><h1 className="font-display text-3xl font-extrabold sm:text-4xl">{tabLabels[tab]}</h1></div><button data-press-feedback onClick={() => void load()} className="w-fit rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Refresh</button></div>
-      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : <LaptopBackups />}
+      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : <LaptopBackups />}
     </main>
   </div>
 }
@@ -113,6 +120,32 @@ function VerificationQueue({ items, refresh }: { items: PendingVerification[]; r
 function SupportQueue({ items, refresh }: { items: SupportRequest[]; refresh: () => Promise<void> }) {
   const open = items.filter((item) => item.status === 'open')
   return <div className="grid gap-4">{open.length ? open.map((item) => <article key={item.id} className="rounded-2xl bg-white/6 p-4 sm:p-5"><p className="font-bold">{item.subject}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-white/60">{item.body}</p><button data-press-feedback onClick={async () => { await resolveSupportRequest(item.id); void refresh() }} className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold">Resolve</button></article>) : <p className="text-white/55">No open support requests.</p>}</div>
+}
+
+function ReviewReportsQueue({ items, refresh }: { items: ReviewReport[]; refresh: () => Promise<void> }) {
+  const [busyId, setBusyId] = React.useState<string | null>(null)
+  async function act(fn: () => Promise<void>, id: string) {
+    setBusyId(id)
+    try { await fn(); void refresh() } catch (error) { alert(error instanceof Error ? error.message : 'Something went wrong.') } finally { setBusyId(null) }
+  }
+  return <div className="grid gap-4">
+    <p className="text-sm text-white/50">Reviews a shopper flagged as objectionable. It’s already hidden from the person who reported it — decide within 24 hours whether to remove it for everyone.</p>
+    {items.length ? items.map((report) => <article key={report.id} className="rounded-2xl bg-white/6 p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-300">{REASON_LABELS[report.reason]}</span>
+        <span className="text-xs text-white/40">reported {new Date(report.created_at).toLocaleString()}</span>
+      </div>
+      {report.review ? <>
+        <p className="mt-3 text-sm text-white/45">{report.review.business?.name ?? 'Unknown shop'} · {'★'.repeat(report.review.rating)}{'☆'.repeat(5 - report.review.rating)}</p>
+        <p className="mt-1 whitespace-pre-wrap break-words text-white/80">{report.review.body || <span className="italic text-white/40">(rating only, no text)</span>}</p>
+      </> : <p className="mt-3 text-sm italic text-white/40">The review has already been deleted.</p>}
+      {report.detail && <p className="mt-2 text-sm text-white/55">Reporter added: “{report.detail}”</p>}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {report.review && <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => removeReportedReview(report.review_id), report.id)} className="rounded-xl bg-red-500/90 px-4 py-2 text-sm font-bold disabled:opacity-50">Remove review</button>}
+        <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => dismissReviewReport(report.id), report.id)} className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold disabled:opacity-50">Dismiss report</button>
+      </div>
+    </article>) : <p className="text-white/55">No reported reviews. 🎉</p>}
+  </div>
 }
 
 type LaptopBackup = {
