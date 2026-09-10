@@ -15,12 +15,20 @@ export function AuthLayout({ title, children }: { title: string; children: React
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-8">{title}</h1>
           <div className="flex flex-col gap-4 max-w-md">{children}</div>
 
-          <button data-press-feedback
-            onClick={() => navigate('/')}
-            className="absolute bottom-6 right-8 text-sm font-semibold text-primary transition-colors duration-150 ease-out hover:text-primary-hover hover:underline"
-          >
-            Back
-          </button>
+          <div className="absolute bottom-6 right-8 flex items-center gap-4 text-sm font-semibold">
+            <Link
+              to="/help"
+              className="text-foreground/50 transition-colors duration-150 ease-out hover:text-foreground/80 hover:underline"
+            >
+              Help
+            </Link>
+            <button data-press-feedback
+              onClick={() => navigate('/')}
+              className="text-primary transition-colors duration-150 ease-out hover:text-primary-hover hover:underline"
+            >
+              Back
+            </button>
+          </div>
         </div>
       </div>
     </div>

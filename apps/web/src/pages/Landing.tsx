@@ -381,6 +381,11 @@ export function Landing() {
 
       <footer className="border-t-[3px] border-foreground/10 px-6 py-8 text-center text-sm text-foreground/60">
         <p className="mb-3">© {new Date().getFullYear()} The Loyalty Loop. Made for the high street.</p>
+        <p className="mb-3">
+          <Link to="/help" className="font-semibold text-primary underline underline-offset-2">
+            Help &amp; FAQ
+          </Link>
+        </p>
         <LegalFooterLinks className="justify-center" />
       </footer>
     </div>

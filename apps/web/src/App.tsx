@@ -38,6 +38,7 @@ const ActivityPage = lazy(() => import('@/pages/Activity').then((m) => ({ defaul
 const InboxPage = lazy(() => import('@/pages/Inbox').then((m) => ({ default: m.InboxPage })))
 const AuthCallback = lazy(() => import('@/pages/AuthCallback').then((m) => ({ default: m.AuthCallback })))
 const NotFound = lazy(() => import('@/pages/NotFound').then((m) => ({ default: m.NotFound })))
+const Help = lazy(() => import('@/pages/Help').then((m) => ({ default: m.Help })))
 const AccessPanel = lazy(() => import('@/pages/AccessPanel').then((m) => ({ default: m.AccessPanel })))
 const BrandWorkspace = lazy(() => import('@/pages/BrandWorkspace').then((m) => ({ default: m.BrandWorkspace })))
 const WhatsAppOnboarding = lazy(() => import('@/pages/WhatsAppOnboarding').then((m) => ({ default: m.WhatsAppOnboarding })))
@@ -66,7 +67,7 @@ function RouteMeta() {
     '/owner/settings': { title: 'Shop settings | The Loyalty Loop', description: 'Manage your business profile and loyalty programme.' },
   }
   const meta = labels[pathname] ?? { title: 'The Loyalty Loop', description: 'Digital loyalty cards for independent neighbourhood shops.' }
-  const pageOwnsMeta = pathname === '/' || pathname === '/dashboard/discover' || pathname.startsWith('/dashboard/shop/') || pathname === '/404'
+  const pageOwnsMeta = pathname === '/' || pathname === '/help' || pathname === '/dashboard/discover' || pathname.startsWith('/dashboard/shop/') || pathname === '/404'
   usePageMeta({ title: meta.title, description: meta.description, path: pathname, robots: privatePage ? 'noindex,nofollow,noarchive' : undefined, enabled: !pageOwnsMeta })
   return null
 }
@@ -86,6 +87,7 @@ function App() {
                 <RouteMeta />
                 <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/help" element={<Help />} />
                 <Route path="/dashboard" element={<Home />} />
                 <Route path="/dashboard/discover" element={<DiscoverPage />} />
                 <Route path="/dashboard/shop/:id" element={<ShopDetail />} />
