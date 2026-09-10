@@ -1,0 +1,34 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "version": "1.0",
+    "release": {
+      "automaticRelease": true
+    },
+    "categories": ["LIFESTYLE", "SHOPPING"],
+    "info": {
+      "en-GB": {
+        "title": "The Loyalty Loop",
+        "subtitle": "Stamp cards for local shops",
+        "description": "The Loyalty Loop turns the loyalty cards from your favourite local shops into one simple app.\n\nCollect stamps and points at independent cafes, bakeries, restaurants, salons and studios near you. When you hit the shop's goal, a one-time reward code appears in the app - show it at the till and enjoy.\n\nHOW IT WORKS\n- Discover: browse local shops, cafes and studios on a friendly map\n- Collect: show your QR code or 6-character code when you pay to add a stamp\n- Redeem: hit the goal and your reward unlocks instantly\n\nMORE\n- Add your loyalty card to Apple Wallet so it's one tap away\n- Save your favourite shops to keep them at the top\n- See your stamp and reward history any time\n\nNo paper cards to lose. No plastic. Just support your high street and get rewarded for it.\n\nThe Loyalty Loop is free for shoppers, with no ads, and we never sell your data.",
+        "keywords": [
+          "rewards",
+          "stamp card",
+          "loyalty card",
+          "shop local",
+          "cafe",
+          "coffee",
+          "points",
+          "small business",
+          "independent",
+          "reward card"
+        ],
+        "releaseNotes": "The first release of The Loyalty Loop. Discover local shops, collect stamps and points when you visit, and unlock rewards - all in one app.",
+        "promoText": "Collect digital stamps at independent cafes, bakeries and salons near you, and unlock real rewards. No more paper cards to lose.",
+        "marketingUrl": "https://www.the-loyalty-loop.com",
+        "supportUrl": "https://www.the-loyalty-loop.com/help",
+        "privacyPolicyUrl": "https://www.the-loyalty-loop.com/legal/privacy-notice.pdf"
+      }
+    }
+  }
+}

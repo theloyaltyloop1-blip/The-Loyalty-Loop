@@ -35,6 +35,7 @@ import { signInWithGoogle } from './src/google-auth'
 import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
+import { syncShopperWidget } from './src/widgets/state'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
@@ -474,6 +475,9 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
           </Pressable>
         </View>
         <Text style={styles.small}>Business or staff account? Use The Loyalty Loop for Business app.</Text>
+        <Pressable onPress={() => void Linking.openURL('https://www.the-loyalty-loop.com/help')} style={styles.authHelpLink}>
+          <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   )
@@ -1505,6 +1509,7 @@ function AppHome({ session }: { session: Session }) {
       setAnnouncements((news.data || []).map((a: any) => ({ ...a, business: Array.isArray(a.business) ? a.business[0] : a.business })))
       setFavouriteIds(new Set((favs.data || []).map((row: any) => row.business_id as string)))
       setStampCode(profile.data?.stamp_code || null)
+      void syncShopperWidget(shops.data || [], memberRows.data || []).catch(() => undefined)
     } catch (e) {
       Alert.alert('Could not refresh', e instanceof Error ? e.message : 'Please try again.')
     } finally {
@@ -1514,6 +1519,23 @@ function AppHome({ session }: { session: Session }) {
 
   useEffect(() => {
     load()
+  }, [])
+
+  useEffect(() => {
+    const openWidgetDestination = ({ url }: { url: string }) => {
+      if (url.includes('widget/qr')) {
+        setSelected(null)
+        setShowProfile(true)
+      }
+      if (url.includes('widget/rewards')) {
+        setSelected(null)
+        setShowProfile(false)
+        setTab('rewards')
+      }
+    }
+    void Linking.getInitialURL().then((url) => { if (url) openWidgetDestination({ url }) })
+    const subscription = Linking.addEventListener('url', openWidgetDestination)
+    return () => subscription.remove()
   }, [])
 
   async function toggleFavourite(business: Business) {
@@ -1737,6 +1759,8 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.55 },
   link: { color: primary, textAlign: 'center', fontWeight: '700', marginTop: 8 },
   small: { color: '#8a8378', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 22 },
+  authHelpLink: { alignSelf: 'center', marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
+  authHelpLinkText: { color: '#8a8378', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 6, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },

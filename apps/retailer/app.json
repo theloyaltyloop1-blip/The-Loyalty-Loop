@@ -3,16 +3,23 @@
     "name": "The Loyalty Loop for Business",
     "slug": "localoop-business",
     "version": "1.0.0",
+    "scheme": "loyaltyloop-business",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.theloyaltyloop.retailer"
+      "bundleIdentifier": "com.theloyaltyloop.retailer",
+      "appleTeamId": "9QSSA475TR",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.theloyaltyloop.retailer"
+        ]
+      }
     },
     "android": {
       "package": "com.theloyaltyloop.retailer",
-      "versionCode": 113,
+      "versionCode": 114,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#F8E4C6",
@@ -52,7 +59,26 @@
         {
           "faceIDPermission": "Allow The Loyalty Loop for Business to use Face ID to unlock your app."
         }
-      ]
+      ],
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "RetailerScanWidget",
+              "label": "Open scanner",
+              "description": "Open the customer scanner and see today's loyalty activity.",
+              "minWidth": "250dp",
+              "minHeight": "140dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ],
+      "expo-sqlite"
     ],
     "owner": "the-loyalty-loop",
     "extra": {

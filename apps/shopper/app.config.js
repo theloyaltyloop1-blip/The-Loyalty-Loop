@@ -7,6 +7,11 @@ module.exports = {
   ...app.expo,
   ios: {
     ...app.expo.ios,
+    appleTeamId: '9QSSA475TR',
+    entitlements: {
+      ...app.expo.ios.entitlements,
+      'com.apple.security.application-groups': ['group.com.theloyaltyloop.shopper'],
+    },
     config: {
       ...app.expo.ios.config,
       googleMapsApiKey: mapsApiKeyIos || undefined,
@@ -25,4 +30,26 @@ module.exports = {
   runtimeVersion: {
     policy: 'appVersion',
   },
+  plugins: [
+    ...(app.expo.plugins || []),
+    'expo-sqlite',
+    '@bacons/apple-targets',
+    [
+      'react-native-android-widget',
+      {
+        widgets: [
+          {
+            name: 'ShopperLoyaltyWidget',
+            label: 'Loyalty progress',
+            description: 'See the next reward at a glance and open your customer card.',
+            minWidth: '250dp',
+            minHeight: '140dp',
+            targetCellWidth: 4,
+            targetCellHeight: 2,
+            updatePeriodMillis: 1800000,
+          },
+        ],
+      },
+    ],
+  ],
 }

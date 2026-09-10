@@ -41,6 +41,7 @@ import {
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from "./src/biometric";
 import { registerPushToken } from "./src/push";
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
+import { syncRetailerWidget } from "./src/widgets/state";
 
 function BusinessLanding({ onContinue }: { onContinue: () => void }) {
   return (
@@ -381,6 +382,12 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
         <Text style={styles.small}>
           Customer account? Use The Loyalty Loop shopper app.
         </Text>
+        <Pressable
+          onPress={() => void Linking.openURL("https://www.the-loyalty-loop.com/help")}
+          style={styles.authHelpLink}
+        >
+          <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -1854,6 +1861,7 @@ function Dashboard({
     >("home"),
     [ownerPage, setOwnerPage] = useState<NativeOwnerPage | null>(null),
     [stampsMode, setStampsMode] = useState<"stamps" | "reward">("stamps"),
+    [widgetRefreshKey, setWidgetRefreshKey] = useState(0),
     [stats, setStats] = useState<DashboardStats>(
       preview
         ? PREVIEW_STATS
@@ -1935,6 +1943,8 @@ function Dashboard({
   }, [preview]);
   useEffect(() => {
     if (preview || !selected) return;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
     Promise.all([
       supabase
         .from("memberships")
@@ -1945,6 +1955,11 @@ function Dashboard({
         .select("id", { count: "exact", head: true })
         .eq("business_id", selected.id)
         .eq("type", "stamp"),
+      supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", selected.id)
+        .gte("created_at", startOfToday.toISOString()),
       supabase
         .from("rewards")
         .select("id", { count: "exact", head: true })
@@ -1959,7 +1974,7 @@ function Dashboard({
         .select("id", { count: "exact", head: true })
         .eq("business_id", selected.id),
       supabase.rpc("get_business_members", { _business_id: selected.id }),
-    ]).then(([members, stamps, rewards, redeemed, reviews, memberRows]) => {
+    ]).then(([members, stamps, todayActions, rewards, redeemed, reviews, memberRows]) => {
       const cutoff = Date.now() - 30 * 86400000;
       let activeMembers = 0,
         dormantMembers = 0;
@@ -1970,7 +1985,7 @@ function Dashboard({
         if (last >= cutoff) activeMembers++;
         else dormantMembers++;
       });
-      setStats({
+      const nextStats = {
         members: members.count || 0,
         stamps: stamps.count || 0,
         rewards: rewards.count || 0,
@@ -1978,9 +1993,28 @@ function Dashboard({
         reviews: reviews.count || 0,
         activeMembers,
         dormantMembers,
-      });
+      };
+      setStats(nextStats);
+      void syncRetailerWidget({
+        businessName: selected.name,
+        todayActions: todayActions.count || 0,
+        members: nextStats.members,
+        updatedAt: new Date().toISOString(),
+      }).catch(() => undefined);
     });
-  }, [selected?.id, loading]);
+  }, [selected?.id, loading, widgetRefreshKey]);
+  useEffect(() => {
+    const openWidgetDestination = ({ url }: { url: string }) => {
+      if (url.includes("widget/scan")) {
+        setOwnerPage(null);
+        setStampsMode("stamps");
+        setTab("scan");
+      }
+    };
+    void Linking.getInitialURL().then((url) => { if (url) openWidgetDestination({ url }); });
+    const subscription = Linking.addEventListener("url", openWidgetDestination);
+    return () => subscription.remove();
+  }, []);
   const nav = [
     { id: "home", icon: LayoutDashboard, label: "Dashboard" },
     { id: "scan", icon: Stamp, label: "Stamps" },
@@ -2046,7 +2080,7 @@ function Dashboard({
                   business={selected}
                   mode={stampsMode}
                   onModeChange={setStampsMode}
-                  onDone={() => { void load(true); }}
+                  onDone={() => { void load(true); setWidgetRefreshKey((key) => key + 1); }}
                   onConfigureRewards={() => setOwnerPage("rewards")}
                 />
               )}{" "}
@@ -2291,6 +2325,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 22,
   },
+  authHelpLink: { alignSelf: "center", marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
+  authHelpLinkText: { color: "#7a8178", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
   card: {
     backgroundColor: "#fff",
     borderRadius: 18,

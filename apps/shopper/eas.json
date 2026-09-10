@@ -3,11 +3,11 @@
   "build": {
     "development": { "developmentClient": true, "distribution": "internal", "channel": "development" },
     "preview": { "distribution": "internal", "android": { "buildType": "apk" }, "channel": "preview" },
-    "production": { "autoIncrement": true, "credentialsSource": "local", "channel": "production" },
+    "production": { "autoIncrement": true, "channel": "production", "android": { "credentialsSource": "local" } },
     "store-upload": {
       "extends": "production",
-      "credentialsSource": "local",
-      "channel": "store-upload"
+      "channel": "store-upload",
+      "android": { "credentialsSource": "local" }
     }
   },
   "submit": {

@@ -1,0 +1,32 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "version": "1.0",
+    "release": {
+      "automaticRelease": true
+    },
+    "categories": ["BUSINESS", "PRODUCTIVITY"],
+    "info": {
+      "en-GB": {
+        "title": "The Loyalty Loop for Business",
+        "subtitle": "Loyalty rewards for your shop",
+        "description": "The Loyalty Loop for Business is the easiest way to run a loyalty programme for your cafe, salon, bakery or shop - no card printer, no extra hardware.\n\nWHAT YOU CAN DO\n- Stamp customers in seconds: scan their code or type it in\n- Set your own reward: stamps, points, or visit-based\n- See what's working: visits, repeat-visit rate, rewards and reviews in one view\n- Personalised AI coach: weekly wins, watch-outs and next steps based on your data\n- Deep AI Business Report: summarise your reviews, spot red flags, and get growth ideas\n- Get discovered: your shop appears on the map in the customer app\n\nSetup takes minutes - add your address, pin your location on the map, write a short description, and you're live to nearby shoppers.\n\nFree to get started.",
+        "keywords": [
+          "loyalty program",
+          "rewards",
+          "stamp card",
+          "customer retention",
+          "small business",
+          "repeat customers",
+          "retail",
+          "cafe"
+        ],
+        "releaseNotes": "The first release of The Loyalty Loop for Business. Set up a digital loyalty programme, stamp customers with a scan, and track what drives repeat visits.",
+        "promoText": "Run a digital loyalty programme in minutes. Stamp customers with a scan, see what drives repeat visits, and get weekly AI coaching.",
+        "marketingUrl": "https://www.the-loyalty-loop.com",
+        "supportUrl": "https://www.the-loyalty-loop.com/help",
+        "privacyPolicyUrl": "https://www.the-loyalty-loop.com/legal/privacy-notice.pdf"
+      }
+    }
+  }
+}
