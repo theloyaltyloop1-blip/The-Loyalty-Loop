@@ -117,11 +117,17 @@ function BusinessSwitcher() {
 }
 
 export function OwnerLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole } = useAuth()
-  const { businesses, staffBusinesses } = useOwner()
+  const { signOut, primaryRole, roles } = useAuth()
+  const { businesses, staffBusinesses, business, loading, needsRewardSetup } = useOwner()
   const isOwner = businesses.length > 0
   const navItems = isOwner ? OWNER_NAV_ITEMS : STAFF_NAV_ITEMS
   if (!['admin', 'brand_head', 'business_owner', 'staff'].includes(primaryRole ?? '')) return <Navigate to="/dashboard" replace />
+  // Setup is mandatory: an owner with no shop, or a shop with no reward yet,
+  // can't reach any owner page until onboarding is finished.
+  if (!loading && roles.includes('business_owner') && businesses.length === 0 && staffBusinesses.length === 0) {
+    return <Navigate to="/owner/onboarding" replace />
+  }
+  if (!loading && business && needsRewardSetup) return <Navigate to="/owner/onboarding" replace />
 
   return (
     <div className="min-h-screen bg-background md:flex">

@@ -314,18 +314,52 @@ function Button({
   );
 }
 
+const WEB_ORIGIN = "https://www.the-loyalty-loop.com";
+
 function Auth({ onSession }: { onSession: (session: Session) => void }) {
-  const [email, setEmail] = useState(""),
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [firstName, setFirstName] = useState(""),
+    [lastName, setLastName] = useState(""),
+    [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false);
-  async function signIn() {
+  const signup = mode === "signup";
+  async function submit() {
     if (!email.trim() || !password)
       return Alert.alert(
         "Check your details",
         "Enter your business email and password.",
       );
+    if (signup && (!firstName.trim() || !lastName.trim()))
+      return Alert.alert("Check your details", "Enter your first name and surname.");
+    if (signup && password.length < 8)
+      return Alert.alert("Choose a longer password", "Use at least 8 characters.");
     setBusy(true);
     try {
+      if (signup) {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            emailRedirectTo: `${WEB_ORIGIN}/auth/callback`,
+            data: { first_name: firstName.trim(), last_name: lastName.trim(), intent: "business_owner" },
+          },
+        });
+        if (error) throw error;
+        void supabase.functions
+          .invoke("send-owner-legal-documents", { body: { email: email.trim(), site_url: WEB_ORIGIN } })
+          .catch(() => undefined);
+        if (data.session) {
+          onSession(data.session);
+          return;
+        }
+        setMode("signin");
+        Alert.alert(
+          "Check your email",
+          `We've sent a confirmation link to ${email.trim()}. Follow it, then sign in here to set up your shop.`,
+        );
+        return;
+      }
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -334,7 +368,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
       onSession(data.session);
     } catch (e) {
       Alert.alert(
-        "Could not sign in",
+        signup ? "Could not create account" : "Could not sign in",
         e instanceof Error ? e.message : "Please try again.",
       );
     } finally {
@@ -351,11 +385,35 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
           <Text style={styles.markText}>↻</Text>
         </View>
         <Text style={styles.eyebrow}>THE LOYALTY LOOP FOR BUSINESS</Text>
-        <Text style={styles.hero}>Your regulars,{"\n"}all in one place.</Text>
+        <Text style={styles.hero}>
+          {signup ? "Bring your shop\nto the loop." : "Your regulars,\nall in one place."}
+        </Text>
         <Text style={styles.copy}>
-          Sign in as an owner or staff member to reward customers at your shop.
+          {signup
+            ? "Create your business account, then set up your shop and rewards in a couple of minutes."
+            : "Sign in as an owner or staff member to reward customers at your shop."}
         </Text>
         <View style={styles.card}>
+          {signup && (
+            <>
+              <TextInput
+                style={styles.input}
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="First name"
+                placeholderTextColor="#111111"
+                autoCapitalize="words"
+              />
+              <TextInput
+                style={styles.input}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Surname"
+                placeholderTextColor="#111111"
+                autoCapitalize="words"
+              />
+            </>
+          )}
           <TextInput
             style={styles.input}
             value={email}
@@ -369,16 +427,21 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={signup ? "Password (8+ characters)" : "Password"}
             placeholderTextColor="#111111"
             secureTextEntry
           />
           <Button
-            title={busy ? "Signing in…" : "Sign in to business"}
-            onPress={signIn}
+            title={busy ? (signup ? "Creating account…" : "Signing in…") : signup ? "Create business account" : "Sign in to business"}
+            onPress={submit}
             disabled={busy}
           />
         </View>
+        <Pressable onPress={() => setMode(signup ? "signin" : "signup")} style={styles.onboardingSkip}>
+          <Text style={styles.onboardingSkipText}>
+            {signup ? "Already registered? Sign in" : "New here? Create a business account"}
+          </Text>
+        </Pressable>
         <Text style={styles.small}>
           Customer account? Use The Loyalty Loop shopper app.
         </Text>
@@ -1871,15 +1934,25 @@ function LoyaltyProgramSetup({
   const [step, setStep] = useState(0);
   const [loyaltyType, setLoyaltyType] = useState<NonNullable<Business["loyalty_type"]>>(business.loyalty_type || "stamp_card");
   const [threshold, setThreshold] = useState(String(business.loyalty_config?.stamps_required || 10));
-  const [rewardTitle, setRewardTitle] = useState("");
-  const [rewardDescription, setRewardDescription] = useState("");
+  const [rewards, setRewards] = useState<{ title: string; description: string; threshold: string }[]>([
+    { title: "", description: "", threshold: "" },
+  ]);
   const [saving, setSaving] = useState(false);
   const unit = LOYALTY_TYPE_OPTIONS.find((option) => option.type === loyaltyType)!.unit;
   const thresholdNumber = Math.max(1, Number(threshold) || 10);
+  const updateReward = (index: number, patch: Partial<(typeof rewards)[number]>) =>
+    setRewards((list) => list.map((reward, i) => (i === index ? { ...reward, ...patch } : reward)));
 
   async function finish() {
-    if (!rewardTitle.trim()) {
-      Alert.alert("Add a reward", "For example: Free coffee.");
+    const rows = rewards.map((reward, index) => ({
+      business_id: business.id,
+      title: reward.title.trim(),
+      description: reward.description.trim() || null,
+      stamp_threshold: Math.max(1, Number(reward.threshold) || thresholdNumber),
+      sort_order: index,
+    }));
+    if (rows.some((row) => !row.title)) {
+      Alert.alert("Add a reward", "Every reward needs a name — for example: Free coffee.");
       return;
     }
     setSaving(true);
@@ -1892,13 +1965,7 @@ function LoyaltyProgramSetup({
         })
         .eq("id", business.id);
       if (bizError) throw bizError;
-      const { error: rewardError } = await supabase.from("reward_catalog").insert({
-        business_id: business.id,
-        title: rewardTitle.trim(),
-        description: rewardDescription.trim() || null,
-        stamp_threshold: thresholdNumber,
-        sort_order: 0,
-      });
+      const { error: rewardError } = await supabase.from("reward_catalog").insert(rows);
       if (rewardError) throw rewardError;
       onDone();
     } catch (e) {
@@ -1963,27 +2030,50 @@ function LoyaltyProgramSetup({
         )}
         {step === 2 && (
           <>
-            <Text style={styles.hero}>What's the{"\n"}reward?</Text>
-            <Text style={styles.copy}>What do customers get after {thresholdNumber} {unit}?</Text>
-            <View style={styles.card}>
-              <Text style={styles.fieldLabel}>Reward</Text>
-              <TextInput
-                style={styles.input}
-                value={rewardTitle}
-                onChangeText={setRewardTitle}
-                placeholder="e.g. Free coffee"
-                placeholderTextColor="#111111"
-              />
-              <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Details (optional)</Text>
-              <TextInput
-                style={[styles.input, { height: 88, textAlignVertical: "top" }]}
-                value={rewardDescription}
-                onChangeText={setRewardDescription}
-                placeholder="Anything customers should know"
-                placeholderTextColor="#111111"
-                multiline
-              />
-            </View>
+            <Text style={styles.hero}>What can customers{"\n"}unlock?</Text>
+            <Text style={styles.copy}>
+              Add at least one reward. Bigger rewards can unlock at a higher number of {unit} — you can add more later in Settings.
+            </Text>
+            {rewards.map((reward, index) => (
+              <View key={index} style={styles.card}>
+                <Text style={styles.fieldLabel}>Reward {rewards.length > 1 ? index + 1 : ""}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={reward.title}
+                  onChangeText={(value) => updateReward(index, { title: value })}
+                  placeholder="e.g. Free coffee"
+                  placeholderTextColor="#111111"
+                />
+                <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Details (optional)</Text>
+                <TextInput
+                  style={[styles.input, { height: 88, textAlignVertical: "top" }]}
+                  value={reward.description}
+                  onChangeText={(value) => updateReward(index, { description: value })}
+                  placeholder="Anything customers should know"
+                  placeholderTextColor="#111111"
+                  multiline
+                />
+                <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks at ({unit})</Text>
+                <TextInput
+                  style={styles.input}
+                  value={reward.threshold}
+                  onChangeText={(value) => updateReward(index, { threshold: value.replace(/[^0-9]/g, "") })}
+                  keyboardType="number-pad"
+                  placeholder={String(thresholdNumber)}
+                  placeholderTextColor="#111111"
+                />
+                {rewards.length > 1 && (
+                  <Pressable onPress={() => setRewards((list) => list.filter((_, i) => i !== index))} style={styles.onboardingSkip}>
+                    <Text style={styles.onboardingSkipText}>Remove this reward</Text>
+                  </Pressable>
+                )}
+              </View>
+            ))}
+            <Button
+              title="Add another reward"
+              secondary
+              onPress={() => setRewards((list) => [...list, { title: "", description: "", threshold: "" }])}
+            />
             <Button title={saving ? "Saving…" : "Finish setup"} onPress={finish} disabled={saving} />
             <Pressable onPress={() => setStep(1)} style={styles.onboardingSkip}>
               <Text style={styles.onboardingSkipText}>Back</Text>
@@ -2000,12 +2090,126 @@ function LoyaltyProgramSetup({
   );
 }
 
+const BUSINESS_CATEGORIES = ["Café", "Restaurant", "Barber", "Salon", "Bakery", "Retail", "Other"];
+
+function slugify(name: string) {
+  const base = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `${base || "shop"}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/** Mandatory first screen for an owner account that has no shop yet. Only
+ * creates the businesses row — the loyalty programme wizard follows on its
+ * own because the new shop has no reward_catalog rows. */
+function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () => void }) {
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState(BUSINESS_CATEGORIES[0]);
+  const [address, setAddress] = useState("");
+  const [postcode, setPostcode] = useState("");
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function create() {
+    if (!name.trim()) {
+      Alert.alert("Add your shop name", "Customers will see this on their loyalty card.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("businesses").insert({
+        owner_id: ownerId,
+        name: name.trim(),
+        slug: slugify(name),
+        category,
+        address: address.trim() || null,
+        postcode: postcode.trim() || null,
+        phone: phone.trim() || null,
+        brand_color: "#8B7355",
+      });
+      if (error) throw error;
+      onCreated();
+    } catch (e) {
+      Alert.alert("Could not create your shop", e instanceof Error ? e.message : "Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
+        <View style={styles.mark}>
+          <Text style={styles.markText}>↻</Text>
+        </View>
+        <Text style={styles.eyebrow}>SET UP YOUR SHOP</Text>
+        <Text style={styles.hero}>Tell us about{"\n"}your shop.</Text>
+        <Text style={styles.copy}>
+          You'll choose your loyalty programme and rewards next. Everything here can be edited later in Settings.
+        </Text>
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>Shop name</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Bean & Bird"
+            placeholderTextColor="#111111"
+          />
+          <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Category</Text>
+          <View style={styles.categoryRow}>
+            {BUSINESS_CATEGORIES.map((option) => {
+              const active = category === option;
+              return (
+                <Pressable
+                  key={option}
+                  onPress={() => setCategory(option)}
+                  style={[styles.categoryChip, active && styles.categoryChipActive]}
+                >
+                  <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{option}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Address (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="12 Balham High Road"
+            placeholderTextColor="#111111"
+          />
+          <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Postcode (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={postcode}
+            onChangeText={setPostcode}
+            placeholder="SW12 9AA"
+            placeholderTextColor="#111111"
+            autoCapitalize="characters"
+          />
+          <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Phone (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="020 0000 0000"
+            placeholderTextColor="#111111"
+            keyboardType="phone-pad"
+          />
+        </View>
+        <Button title={saving ? "Creating…" : "Continue"} onPress={create} disabled={saving} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 function Dashboard({
   session,
   preview = false,
+  canCreateBusiness = false,
 }: {
   session: Session;
   preview?: boolean;
+  canCreateBusiness?: boolean;
 }) {
   const [shops, setShops] = useState<Business[]>(
       preview ? [PREVIEW_BUSINESS] : [],
@@ -2205,6 +2409,18 @@ function Dashboard({
     { id: "news", icon: Newspaper, label: "News" },
     { id: "settings", icon: Settings, label: "Settings" },
   ] as const;
+  if (!loading && !shops.length && canCreateBusiness) {
+    return <BusinessSetup ownerId={session.user.id} onCreated={() => void load(true)} />;
+  }
+  if (!loading && selected && ownedIds.has(selected.id) && needsLoyaltySetup === null) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={green} />
+        </View>
+      </SafeAreaView>
+    );
+  }
   if (!loading && selected && needsLoyaltySetup) {
     return (
       <LoyaltyProgramSetup
@@ -2356,6 +2572,7 @@ function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
     [checking, setChecking] = useState(true),
     [allowed, setAllowed] = useState(false),
+    [isOwner, setIsOwner] = useState(false),
     [showAuth, setShowAuth] = useState(false),
     [locked, setLocked] = useState(false),
     [checkingLock, setCheckingLock] = useState(false);
@@ -2374,6 +2591,7 @@ function AppRoot() {
   useEffect(() => {
     if (!session) {
       setAllowed(false);
+      setIsOwner(false);
       return;
     }
     (async () => {
@@ -2386,6 +2604,7 @@ function AppRoot() {
       const ok = roles.some((role: string) =>
         ["admin", "brand_head", "business_owner", "staff"].includes(role),
       );
+      setIsOwner(roles.includes("business_owner"));
       setAllowed(ok);
       if (!ok) {
         Alert.alert(
@@ -2456,7 +2675,7 @@ function AppRoot() {
     );
   if (!onboardingComplete) return <BusinessOnboarding onComplete={() => setOnboardingComplete(true)} />;
   return session ? (
-    <Dashboard session={session} />
+    <Dashboard session={session} canCreateBusiness={isOwner} />
   ) : showAuth ? (
     <Auth onSession={setSession} />
   ) : (
@@ -2526,6 +2745,18 @@ const styles = StyleSheet.create({
   setupOptionTitleActive: { color: "#fff" },
   setupOptionBlurb: { color: "#657060", fontSize: 13, marginTop: 2 },
   setupOptionBlurbActive: { color: "rgba(255,255,255,0.85)" },
+  categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: "rgba(0,0,0,0.12)",
+    backgroundColor: "#fff",
+  },
+  categoryChipActive: { backgroundColor: orange, borderColor: orange },
+  categoryChipText: { color: green, fontWeight: "800", fontSize: 13 },
+  categoryChipTextActive: { color: "#fff" },
   small: {
     color: "#7a8178",
     fontSize: 13,

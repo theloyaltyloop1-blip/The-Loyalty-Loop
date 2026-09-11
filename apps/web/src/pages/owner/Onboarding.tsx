@@ -1,9 +1,9 @@
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Check, Store, MapPin, Palette, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Check, Store, MapPin, Palette, Gift, ArrowRight, ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
-import { createBusiness, type Business } from '@/lib/businesses'
+import { createBusiness, addRewardCatalogItem, type Business } from '@/lib/businesses'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
@@ -16,7 +16,12 @@ const STEPS = [
   { key: 'basics', label: 'Basics', icon: Store },
   { key: 'location', label: 'Location', icon: MapPin },
   { key: 'brand', label: 'Brand & loyalty', icon: Palette },
+  { key: 'rewards', label: 'Rewards', icon: Gift },
 ] as const
+
+type RewardDraft = { title: string; description: string; stamp_threshold: number }
+
+const EMPTY_REWARD: RewardDraft = { title: '', description: '', stamp_threshold: 10 }
 
 const inputClass =
   'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-foreground placeholder:text-foreground/35 outline-none focus:border-primary'
@@ -32,11 +37,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function OwnerOnboarding() {
   const { session, loading, rolesLoading, roles } = useAuth()
-  const { businesses, loading: ownerLoading, refetch, setBusinessId } = useOwner()
+  const { businesses, business, needsRewardSetup, markRewardsReady, loading: ownerLoading, refetch, setBusinessId } = useOwner()
   const navigate = useNavigate()
-  const [step, setStep] = React.useState(0)
+  const [stepState, setStep] = React.useState(0)
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [rewards, setRewards] = React.useState<RewardDraft[]>([EMPTY_REWARD])
+  // Guards against creating a second shop if the reward inserts fail and the
+  // owner retries "Go live".
+  const createdRef = React.useRef<Business | null>(null)
   const [form, setForm] = React.useState<{
     name: string
     category: string
@@ -82,25 +91,61 @@ export function OwnerOnboarding() {
     return () => clearTimeout(handle)
   }, [form.address, form.postcode, pinTouched])
 
+  // A shop created earlier (e.g. before rewards were mandatory) that still
+  // has no reward: skip straight to the rewards step for that shop.
+  const resumeBusiness = businesses.length > 0 && business && needsRewardSetup ? business : null
+  const step = resumeBusiness ? STEPS.length - 1 : stepState
+
+  React.useEffect(() => {
+    if (!resumeBusiness) return
+    const threshold = resumeBusiness.loyalty_config?.stamps_required ?? 10
+    setRewards((list) => list.map((r, i) => (i === 0 ? { ...r, stamp_threshold: threshold } : r)))
+  }, [resumeBusiness?.id])
+
   if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (!roles.includes('business_owner')) return <Navigate to="/dashboard" replace />
-  if (businesses.length > 0) return <Navigate to="/owner" replace />
+  if (businesses.length > 0 && !resumeBusiness) return <Navigate to="/owner" replace />
 
+  const rewardValid = (r: RewardDraft) =>
+    r.title.trim().length > 0 && Number.isInteger(r.stamp_threshold) && r.stamp_threshold >= 1 && r.stamp_threshold <= 100
   const canContinue =
     step === 0
       ? form.name.trim().length > 0 && Boolean(form.category)
       : step === 2
         ? Number.isInteger(form.stamps_required) && form.stamps_required >= 1 && form.stamps_required <= 100
-        : true
+        : step === 3
+          ? rewards.length > 0 && rewards.every(rewardValid)
+          : true
+
+  function updateReward(index: number, patch: Partial<RewardDraft>) {
+    setRewards((list) => list.map((r, i) => (i === index ? { ...r, ...patch } : r)))
+  }
+
+  function goNext() {
+    // The first reward unlocks at the programme threshold unless edited later.
+    if (step === 2) setRewards((list) => list.map((r, i) => (i === 0 ? { ...r, stamp_threshold: form.stamps_required } : r)))
+    setStep((s) => s + 1)
+  }
 
   async function handleCreate() {
     setCreating(true)
     setError(null)
     try {
-      const business = await createBusiness(session!.user.id, form)
+      const target = resumeBusiness ?? createdRef.current ?? (createdRef.current = await createBusiness(session!.user.id, form))
+      await Promise.all(
+        rewards.map((r, i) =>
+          addRewardCatalogItem(target.id, {
+            title: r.title.trim(),
+            description: r.description.trim() || null,
+            stamp_threshold: r.stamp_threshold,
+            sort_order: i,
+          })
+        )
+      )
+      markRewardsReady(target.id)
       await refetch()
-      setBusinessId(business.id)
+      setBusinessId(target.id)
       navigate('/owner')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create your shop — try again.')
@@ -144,11 +189,13 @@ export function OwnerOnboarding() {
             {step === 0 && "Let's set up your shop"}
             {step === 1 && 'Where are you?'}
             {step === 2 && 'Make it yours'}
+            {step === 3 && (resumeBusiness ? `Add rewards for ${resumeBusiness.name}` : 'What can customers unlock?')}
           </h1>
           <p className="text-sm text-foreground/50 mb-6">
             {step === 0 && 'The basics — you can change all of this later.'}
             {step === 1 && "Shown to customers on your shop page. It's fine to skip this and add it later."}
             {step === 2 && 'Pick a brand color and how customers will earn rewards.'}
+            {step === 3 && 'Add at least one reward — this is what customers are collecting for. You can add more from Settings later.'}
           </p>
 
           {step === 0 && (
@@ -284,12 +331,66 @@ export function OwnerOnboarding() {
             </>
           )}
 
+          {step === 3 && (
+            <>
+              {rewards.map((reward, index) => (
+                <div key={index} className="rounded-2xl border border-black/10 bg-white/60 p-4 mb-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-foreground">Reward {rewards.length > 1 ? index + 1 : ''}</span>
+                    {rewards.length > 1 && (
+                      <button data-press-feedback
+                        type="button"
+                        onClick={() => setRewards((list) => list.filter((_, i) => i !== index))}
+                        className="flex items-center gap-1 text-xs font-semibold text-foreground/50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Remove
+                      </button>
+                    )}
+                  </div>
+                  <Field label="Reward *">
+                    <input
+                      className={inputClass}
+                      value={reward.title}
+                      onChange={(e) => updateReward(index, { title: e.target.value })}
+                      placeholder="e.g. Free coffee"
+                    />
+                  </Field>
+                  <Field label="Details">
+                    <input
+                      className={inputClass}
+                      value={reward.description}
+                      onChange={(e) => updateReward(index, { description: e.target.value })}
+                      placeholder="Anything customers should know"
+                    />
+                  </Field>
+                  <Field label={`Unlocks at (${form.loyalty_type === 'points' ? 'points' : form.loyalty_type === 'tiered' ? 'visits' : 'stamps'}) *`}>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      className={inputClass}
+                      value={reward.stamp_threshold}
+                      onChange={(e) => updateReward(index, { stamp_threshold: Number(e.target.value) })}
+                    />
+                  </Field>
+                </div>
+              ))}
+              <button data-press-feedback
+                type="button"
+                onClick={() => setRewards((list) => [...list, { ...EMPTY_REWARD, stamp_threshold: form.stamps_required }])}
+                className="flex items-center gap-1.5 text-sm font-semibold text-primary mb-2"
+              >
+                <Plus className="h-4 w-4" /> Add another reward
+              </button>
+            </>
+          )}
+
           {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">
             <button data-press-feedback
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
+              disabled={step === 0 || Boolean(resumeBusiness)}
               className="flex items-center gap-1.5 text-sm font-semibold text-foreground/50 disabled:opacity-0"
             >
               <ArrowLeft className="h-4 w-4" /> Back
@@ -297,7 +398,7 @@ export function OwnerOnboarding() {
 
             {step < STEPS.length - 1 ? (
               <button data-press-feedback
-                onClick={() => setStep((s) => s + 1)}
+                onClick={goNext}
                 disabled={!canContinue}
                 className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
               >
@@ -306,7 +407,7 @@ export function OwnerOnboarding() {
             ) : (
               <button data-press-feedback
                 onClick={handleCreate}
-                disabled={creating}
+                disabled={creating || !canContinue}
                 className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
               >
                 {creating ? 'Creating…' : 'Go live'} <Check className="h-4 w-4" />

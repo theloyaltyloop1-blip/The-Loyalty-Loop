@@ -117,6 +117,25 @@ profile, and `apps/retailer/store.config.json` is written and
 - First-time loyalty-programme setup wizard in the retailer app — shown once
   per shop when its owner has no `reward_catalog` row yet; walks through
   Stamps/Points/Visits, the threshold, and the reward.
+- **Mandatory business setup on account creation (2026-09-11)**, both
+  surfaces:
+  - Retailer app: `Auth` now has a "Create a business account" mode
+    (`signUp` with `intent: 'business_owner'`, confirmation email links to
+    the website's `/auth/callback`). An owner with no shop is forced into
+    `BusinessSetup` (name/category/address) and then straight into
+    `LoyaltyProgramSetup`, which now accepts multiple rewards. Gated by
+    `canCreateBusiness` (= has `business_owner` role) so staff-only accounts
+    still see "No business found" rather than an insert that RLS would reject.
+  - Web: `OwnerLayout` redirects to `/owner/onboarding` when an owner has no
+    shop *or* the active shop has no `reward_catalog` row
+    (`needsRewardSetup` in `owner-context.tsx`). Onboarding gained a 4th
+    "Rewards" step (≥1 reward required, "Go live" inserts them) and a resume
+    mode that jumps existing reward-less shops straight to that step.
+  - **Follow-up needed before store review**: the retailer app now creates
+    accounts in-app, so both Google Play (account-deletion policy) and Apple
+    (Guideline 5.1.1(v)) require an in-app "Delete account" option. The
+    retailer app has none yet — the shopper app's implementation is the
+    template.
 - CSP fix for Google Maps on the web (see above).
 
 All of the above JS-only changes have already been pushed via `eas update`
