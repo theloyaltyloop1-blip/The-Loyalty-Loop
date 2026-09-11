@@ -1843,6 +1843,163 @@ function BusinessSettings({
   );
 }
 
+const LOYALTY_TYPE_OPTIONS: {
+  type: NonNullable<Business["loyalty_type"]>;
+  icon: typeof Stamp;
+  title: string;
+  blurb: string;
+  unit: string;
+}[] = [
+  { type: "stamp_card", icon: Stamp, title: "Stamps", blurb: "A stamp for every visit or purchase.", unit: "stamps" },
+  { type: "points", icon: Star, title: "Points", blurb: "Points for spend or specific actions.", unit: "points" },
+  { type: "tiered", icon: BadgeCheck, title: "Visits", blurb: "Count how many times they visit.", unit: "visits" },
+];
+
+/** Shown once, the first time an owner opens the app with no reward set up
+ * yet (checked via reward_catalog being empty for their shop — see the
+ * `needsLoyaltySetup` effect in Dashboard). Walks them through the three
+ * decisions a loyalty programme actually needs: how progress is tracked,
+ * how much is needed, and what the reward is — then writes both
+ * businesses.loyalty_type/loyalty_config and the first reward_catalog row. */
+function LoyaltyProgramSetup({
+  business,
+  onDone,
+}: {
+  business: Business;
+  onDone: () => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [loyaltyType, setLoyaltyType] = useState<NonNullable<Business["loyalty_type"]>>(business.loyalty_type || "stamp_card");
+  const [threshold, setThreshold] = useState(String(business.loyalty_config?.stamps_required || 10));
+  const [rewardTitle, setRewardTitle] = useState("");
+  const [rewardDescription, setRewardDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const unit = LOYALTY_TYPE_OPTIONS.find((option) => option.type === loyaltyType)!.unit;
+  const thresholdNumber = Math.max(1, Number(threshold) || 10);
+
+  async function finish() {
+    if (!rewardTitle.trim()) {
+      Alert.alert("Add a reward", "For example: Free coffee.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error: bizError } = await supabase
+        .from("businesses")
+        .update({
+          loyalty_type: loyaltyType,
+          loyalty_config: { ...business.loyalty_config, stamps_required: thresholdNumber },
+        })
+        .eq("id", business.id);
+      if (bizError) throw bizError;
+      const { error: rewardError } = await supabase.from("reward_catalog").insert({
+        business_id: business.id,
+        title: rewardTitle.trim(),
+        description: rewardDescription.trim() || null,
+        stamp_threshold: thresholdNumber,
+        sort_order: 0,
+      });
+      if (rewardError) throw rewardError;
+      onDone();
+    } catch (e) {
+      Alert.alert("Could not save your loyalty programme", e instanceof Error ? e.message : "Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
+        <View style={styles.mark}>
+          <Gift size={30} color="#e4b666" />
+        </View>
+        <Text style={styles.eyebrow}>SET UP YOUR LOYALTY PROGRAMME</Text>
+        {step === 0 && (
+          <>
+            <Text style={styles.hero}>How do customers{"\n"}earn a reward?</Text>
+            <Text style={styles.copy}>Pick how {business.name} tracks loyalty. You can change this later in Settings.</Text>
+            <View style={{ marginTop: 22, gap: 12 }}>
+              {LOYALTY_TYPE_OPTIONS.map((option) => {
+                const active = loyaltyType === option.type;
+                return (
+                  <Pressable
+                    key={option.type}
+                    onPress={() => setLoyaltyType(option.type)}
+                    style={[styles.setupOptionCard, active && styles.setupOptionCardActive]}
+                  >
+                    <option.icon size={22} color={active ? "#fff" : orange} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.setupOptionTitle, active && styles.setupOptionTitleActive]}>{option.title}</Text>
+                      <Text style={[styles.setupOptionBlurb, active && styles.setupOptionBlurbActive]}>{option.blurb}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Button title="Continue" onPress={() => setStep(1)} />
+          </>
+        )}
+        {step === 1 && (
+          <>
+            <Text style={styles.hero}>How many {unit}{"\n"}for a reward?</Text>
+            <Text style={styles.copy}>Customers unlock their reward once they reach this number.</Text>
+            <View style={styles.card}>
+              <Text style={styles.fieldLabel}>Number of {unit}</Text>
+              <TextInput
+                style={styles.input}
+                value={threshold}
+                onChangeText={(value) => setThreshold(value.replace(/[^0-9]/g, ""))}
+                keyboardType="number-pad"
+                placeholder="10"
+                placeholderTextColor="#111111"
+              />
+            </View>
+            <Button title="Continue" onPress={() => setStep(2)} />
+            <Pressable onPress={() => setStep(0)} style={styles.onboardingSkip}>
+              <Text style={styles.onboardingSkipText}>Back</Text>
+            </Pressable>
+          </>
+        )}
+        {step === 2 && (
+          <>
+            <Text style={styles.hero}>What's the{"\n"}reward?</Text>
+            <Text style={styles.copy}>What do customers get after {thresholdNumber} {unit}?</Text>
+            <View style={styles.card}>
+              <Text style={styles.fieldLabel}>Reward</Text>
+              <TextInput
+                style={styles.input}
+                value={rewardTitle}
+                onChangeText={setRewardTitle}
+                placeholder="e.g. Free coffee"
+                placeholderTextColor="#111111"
+              />
+              <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Details (optional)</Text>
+              <TextInput
+                style={[styles.input, { height: 88, textAlignVertical: "top" }]}
+                value={rewardDescription}
+                onChangeText={setRewardDescription}
+                placeholder="Anything customers should know"
+                placeholderTextColor="#111111"
+                multiline
+              />
+            </View>
+            <Button title={saving ? "Saving…" : "Finish setup"} onPress={finish} disabled={saving} />
+            <Pressable onPress={() => setStep(1)} style={styles.onboardingSkip}>
+              <Text style={styles.onboardingSkipText}>Back</Text>
+            </Pressable>
+          </>
+        )}
+        <View style={styles.onboardingDots}>
+          {[0, 1, 2].map((index) => (
+            <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 function Dashboard({
   session,
   preview = false,
@@ -1876,6 +2033,8 @@ function Dashboard({
           },
     ),
     [loading, setLoading] = useState(!preview);
+  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
+  const [needsLoyaltySetup, setNeedsLoyaltySetup] = useState<boolean | null>(null);
   const navigateOnboarding = (destination: NativeOnboardingDestination) => {
     setOwnerPage(null);
     if (destination === "branding" || destination === "rewards") {
@@ -1924,6 +2083,7 @@ function Dashboard({
         ...staffShops.filter((s) => !(owned || []).some((o) => o.id === s.id)),
       ];
       setShops(all);
+      setOwnedIds(new Set((owned || []).map((b) => b.id)));
       setSelected((current) =>
         current
           ? all.find((s) => s.id === current.id) || all[0] || null
@@ -1941,6 +2101,28 @@ function Dashboard({
   useEffect(() => {
     if (!preview) load();
   }, [preview]);
+  // Force the first-run loyalty programme wizard for an owner (never staff)
+  // whose shop has no reward defined yet — see LoyaltyProgramSetup above.
+  useEffect(() => {
+    if (preview || !selected || !ownedIds.has(selected.id)) {
+      setNeedsLoyaltySetup(false);
+      return;
+    }
+    let active = true;
+    setNeedsLoyaltySetup(null);
+    void supabase
+      .from("reward_catalog")
+      .select("id")
+      .eq("business_id", selected.id)
+      .limit(1)
+      .then(({ data, error }) => {
+        if (!active) return;
+        setNeedsLoyaltySetup(!error && (data || []).length === 0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [preview, selected, ownedIds]);
   useEffect(() => {
     if (preview || !selected) return;
     const startOfToday = new Date();
@@ -2023,6 +2205,17 @@ function Dashboard({
     { id: "news", icon: Newspaper, label: "News" },
     { id: "settings", icon: Settings, label: "Settings" },
   ] as const;
+  if (!loading && selected && needsLoyaltySetup) {
+    return (
+      <LoyaltyProgramSetup
+        business={selected}
+        onDone={() => {
+          setNeedsLoyaltySetup(false);
+          void load(true);
+        }}
+      />
+    );
+  }
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
@@ -2318,6 +2511,21 @@ const styles = StyleSheet.create({
     letterSpacing: -0.7,
   },
   copy: { color: "#657060", fontSize: 16, lineHeight: 24, marginTop: 9 },
+  setupOptionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: "#eee0cc",
+    padding: 16,
+  },
+  setupOptionCardActive: { backgroundColor: orange, borderColor: orange },
+  setupOptionTitle: { color: green, fontSize: 16, fontWeight: "800" },
+  setupOptionTitleActive: { color: "#fff" },
+  setupOptionBlurb: { color: "#657060", fontSize: 13, marginTop: 2 },
+  setupOptionBlurbActive: { color: "rgba(255,255,255,0.85)" },
   small: {
     color: "#7a8178",
     fontSize: 13,
