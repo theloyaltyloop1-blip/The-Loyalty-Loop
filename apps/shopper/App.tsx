@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   AppState,
@@ -1166,64 +1166,13 @@ function HomeTab({
 }
 
 // ---------------------------------------------------------------------
-// Map tab — real Google Maps pins via a WebView running the Maps JS API.
-// Avoids react-native-maps (whose native module needs a custom dev-client
-// build, breaking plain Expo Go) while still giving a real interactive,
-// pannable/zoomable Google map with tappable pins — same API key as web.
+// Map tab — native Google map (react-native-maps). The Android SDK key
+// comes from EXPO_PUBLIC_GOOGLE_MAPS_API_KEY via app.config.js and is baked
+// into the AndroidManifest at build time, so changing it needs a new build.
 // ---------------------------------------------------------------------
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-
-function buildMapHtml(pins: { id: string; lat: number; lng: number; name: string; color: string }[]) {
-  const center = pins.length ? [pins[0].lat, pins[0].lng] : [51.4514, -0.1447] // Balham, as a sane default
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <style>
-    html, body, #map { height: 100%; margin: 0; padding: 0; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    const pins = ${JSON.stringify(pins)};
-    function initMap() {
-      const map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: ${center[0]}, lng: ${center[1]} },
-        zoom: ${pins.length ? 13 : 12},
-        disableDefaultUI: true,
-        gestureHandling: 'greedy',
-      });
-      pins.forEach(function (p) {
-        const icon = {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-            '<svg width="30" height="40" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="' + p.color + '" stroke="white" stroke-width="1.5"/><circle cx="12" cy="12" r="4.5" fill="white"/></svg>'
-          ),
-          scaledSize: new google.maps.Size(30, 40),
-          anchor: new google.maps.Point(15, 40),
-        };
-        const marker = new google.maps.Marker({ position: { lat: p.lat, lng: p.lng }, map: map, icon: icon, title: p.name });
-        const info = new google.maps.InfoWindow({
-          content: '<div style="font-family:-apple-system,Roboto,sans-serif;font-weight:700;">' + p.name +
-            '<div><a href="#" id="view-' + p.id + '" style="color:${primary};text-decoration:none;">View shop</a></div></div>',
-        });
-        marker.addListener('click', function () {
-          info.open(map, marker);
-          setTimeout(function () {
-            const link = document.getElementById('view-' + p.id);
-            if (link) link.onclick = function () { window.ReactNativeWebView.postMessage(p.id); };
-          }, 0);
-        });
-      });
-    }
-  </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap" async defer></script>
-</body>
-</html>`
-}
-
 function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (business: Business) => void }) {
+  const mapRef = useRef<MapView>(null)
   const pins = businesses
     .filter((b): b is Business & { lat: number; lng: number } => b.lat != null && b.lng != null)
     .map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, name: b.name, color: b.brand_color || primary }))
@@ -1231,12 +1180,20 @@ function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (b
     ? { latitude: pins[0].lat, longitude: pins[0].lng, latitudeDelta: 0.07, longitudeDelta: 0.07 }
     : undefined
 
+  const fitAllPins = () => {
+    if (pins.length < 2) return
+    mapRef.current?.fitToCoordinates(
+      pins.map((p) => ({ latitude: p.lat, longitude: p.lng })),
+      { edgePadding: { top: 60, right: 60, bottom: 60, left: 60 }, animated: false },
+    )
+  }
+
   return (
     <>
       <Text style={styles.pageTitle}>Shops near you</Text>
       {pins.length > 0 ? (
-        <View style={styles.mapWebviewWrap}>
-          <MapView provider={PROVIDER_GOOGLE} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false}>
+        <View style={styles.mapWrap}>
+          <MapView ref={mapRef} provider={PROVIDER_GOOGLE} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false} onMapReady={fitAllPins}>
             {pins.map((pin) => (
               <Marker
                 key={pin.id}
@@ -1906,7 +1863,7 @@ const styles = StyleSheet.create({
   empty: { color: '#8a8378', fontSize: 15, lineHeight: 22, marginTop: 12 },
 
   // Map
-  mapWebviewWrap: { height: 320, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 20 },
+  mapWrap: { height: 320, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 20 },
   mapPlaceholder: { backgroundColor: card, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', padding: 22, alignItems: 'center', gap: 10, marginBottom: 20 },
   mapPlaceholderText: { textAlign: 'center', color: '#5c564c', fontSize: 13.5, lineHeight: 19 },
 

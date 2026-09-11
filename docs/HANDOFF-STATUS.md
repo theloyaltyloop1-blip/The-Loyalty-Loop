@@ -92,10 +92,17 @@ profile, and `apps/retailer/store.config.json` is written and
   Android/iOS SDK key** (different product from the JS API key) and a fresh
   native build. Ask the user which before building — it's a real scope
   decision.
-- The **shopper app**'s map (the "Map" tab, pins for nearby shops) is a
-  WebView running the Google Maps JS API with
-  `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (Android) — this one works and is
-  unrelated to the above.
+- The **shopper app**'s map (the "Map" tab + the shop page "Find your way
+  there" embed) is a **native** `react-native-maps` Google map, not a
+  WebView. Android build 116 already ships the native module, but was blank
+  because the key in `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (EAS env, all
+  environments) is the *website's* key — HTTP-referrer restricted, so the
+  Android Maps SDK rejects it. Fix = a separate key restricted to Android
+  apps (package `com.theloyaltyloop.shopper`, upload-cert SHA-1
+  `47:A4:36:09:CA:6C:83:11:5E:F1:C8:BB:83:73:01:29:DD:22:D3:09` **plus** the
+  Play App Signing SHA-1 from Play Console) with "Maps SDK for Android"
+  enabled, set in EAS env, then a fresh Android build — the key lives in
+  AndroidManifest, OTA can't change it.
 
 ## Recently shipped (this session), all committed + pushed to `main`
 - Apple Wallet passes for iOS shopper app (signed `.pkpass` via a new
