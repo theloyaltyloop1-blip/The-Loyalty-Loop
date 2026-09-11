@@ -496,6 +496,39 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
 // Profile sheet (opened from the header icon)
 // ---------------------------------------------------------------------
 
+/** Store-policy requirement: an app that creates accounts must let the user
+ * delete the account in-app. The delete-my-account function removes the
+ * shopper's memberships, stamps, rewards and reviews before the login. */
+function confirmDeleteAccount() {
+  const run = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-my-account')
+      if (error) throw error
+      if (data && typeof data === 'object' && 'error' in data && data.error) throw new Error(String(data.error))
+      await supabase.auth.signOut().catch(() => undefined)
+      Alert.alert('Account deleted', 'Your account and its data have been permanently deleted.')
+    } catch (e) {
+      Alert.alert('Could not delete account', e instanceof Error ? e.message : 'Please try again.')
+    }
+  }
+  Alert.alert(
+    'Delete your account?',
+    'This permanently deletes your login, loyalty cards, stamps, rewards and reviews. This cannot be undone.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Continue',
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert('Are you absolutely sure?', 'There is no way to recover your account or rewards afterwards.', [
+            { text: 'Keep my account', style: 'cancel' },
+            { text: 'Delete everything', style: 'destructive', onPress: () => void run() },
+          ]),
+      },
+    ],
+  )
+}
+
 function ProfileSheet({ session, userId, stampCode, onClose }: { session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
@@ -524,6 +557,7 @@ function ProfileSheet({ session, userId, stampCode, onClose }: { session: Sessio
             <CloseIcon />
           </Pressable>
         </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetScroll}>
         <Text style={styles.title}>{session.user.user_metadata?.first_name || 'Shopper'}</Text>
         <Text style={styles.description}>{session.user.email}</Text>
         <View style={styles.card}>
@@ -564,6 +598,10 @@ function ProfileSheet({ session, userId, stampCode, onClose }: { session: Sessio
           </View>
         )}
         <Button title="Sign out" secondary onPress={() => supabase.auth.signOut()} />
+        <Pressable onPress={confirmDeleteAccount} hitSlop={8}>
+          <Text style={styles.deleteAccount}>Delete account</Text>
+        </Pressable>
+        </ScrollView>
       </SafeAreaView>
     </Modal>
   )
@@ -1976,7 +2014,9 @@ const styles = StyleSheet.create({
 
   // Profile sheet
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { backgroundColor: background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 24 },
+  sheet: { backgroundColor: background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 24, maxHeight: '90%' },
+  sheetScroll: { paddingBottom: 16 },
+  deleteAccount: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
   sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 16 },
   sheetHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   sheetTitle: { fontSize: 13, fontWeight: '800', color: '#8a8378', letterSpacing: 0.6, textTransform: 'uppercase' },
