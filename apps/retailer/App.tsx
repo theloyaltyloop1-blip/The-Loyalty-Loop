@@ -1897,12 +1897,66 @@ function BusinessSettings({
           onPress={() => supabase.auth.signOut()}
           danger
         />
+        <SettingsRow
+          icon="✕"
+          title="Delete account"
+          detail="Permanently delete your account and any shops you own"
+          onPress={() => confirmDeleteAccount(session.user.id)}
+          danger
+        />
       </View>
       <Text style={styles.settingsFootnote}>
-        Permanent shop deletion remains on the website so it cannot be triggered
-        accidentally from a phone.
+        Deleting your account also permanently deletes every shop you own.
+        Deleting a single shop, or transferring it to another owner, is done on
+        the website.
       </Text>
     </View>
+  );
+}
+
+/** Store-policy requirement: an app that creates accounts must let the user
+ * delete the account in-app. The delete-my-account function refuses while
+ * the user still owns shops, so owned shops are deleted first via the same
+ * RPC the website uses, after two explicit destructive confirmations. */
+function confirmDeleteAccount(userId: string) {
+  const run = async () => {
+    try {
+      const { data: owned, error: ownedError } = await supabase
+        .from("businesses")
+        .select("id,name")
+        .eq("owner_id", userId);
+      if (ownedError) throw ownedError;
+      for (const shop of owned || []) {
+        const { error } = await supabase.rpc("delete_owned_business", {
+          _business_id: shop.id,
+          _confirmation_name: shop.name,
+        });
+        if (error) throw error;
+      }
+      const { data, error } = await supabase.functions.invoke("delete-my-account");
+      if (error) throw error;
+      if (data && typeof data === "object" && "error" in data && data.error) throw new Error(String(data.error));
+      await supabase.auth.signOut().catch(() => undefined);
+      Alert.alert("Account deleted", "Your account and its data have been permanently deleted.");
+    } catch (e) {
+      Alert.alert("Could not delete account", e instanceof Error ? e.message : "Please try again.");
+    }
+  };
+  Alert.alert(
+    "Delete your account?",
+    "This permanently deletes your login and personal data. Every shop you own — including its customers' loyalty progress, rewards and reviews — is deleted too. This cannot be undone.",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Continue",
+        style: "destructive",
+        onPress: () =>
+          Alert.alert("Are you absolutely sure?", "There is no way to recover the account or its shops afterwards.", [
+            { text: "Keep my account", style: "cancel" },
+            { text: "Delete everything", style: "destructive", onPress: () => void run() },
+          ]),
+      },
+    ],
   );
 }
 
