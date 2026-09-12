@@ -93,16 +93,22 @@ profile, and `apps/retailer/store.config.json` is written and
   native build. Ask the user which before building — it's a real scope
   decision.
 - The **shopper app**'s map (the "Map" tab + the shop page "Find your way
-  there" embed) is a **native** `react-native-maps` Google map, not a
-  WebView. Android build 116 already ships the native module, but was blank
-  because the key in `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (EAS env, all
-  environments) is the *website's* key — HTTP-referrer restricted, so the
-  Android Maps SDK rejects it. Fix = a separate key restricted to Android
-  apps (package `com.theloyaltyloop.shopper`, upload-cert SHA-1
-  `47:A4:36:09:CA:6C:83:11:5E:F1:C8:BB:83:73:01:29:DD:22:D3:09` **plus** the
-  Play App Signing SHA-1 from Play Console) with "Maps SDK for Android"
-  enabled, set in EAS env, then a fresh Android build — the key lives in
-  AndroidManifest, OTA can't change it.
+  there" embed) is a **native** `react-native-maps` Google map. Android
+  builds up to 116 were blank because the key baked in was the *website's*
+  referrer-restricted key. **Fixed 2026-09-12:** a dedicated Android key
+  ("The Loyalty Loop - Google Maps for Android", GCP project
+  `the-loyalty-loop`) is set as the project-scoped EAS env var
+  `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` and baked into Android build 118 (live
+  on Play). Its Android restriction lists `com.theloyaltyloop.shopper` with
+  **both** certificates — upload key
+  `47:A4:36:09:CA:6C:83:11:5E:F1:C8:BB:83:73:01:29:DD:22:D3:09` and the Play
+  App Signing key `D7:7D:A3:6B:89:1B:15:AB:14:4D:6C:73:75:8F:39:DF:12:46:05:65`
+  (Play re-signs everything it distributes, so the upload SHA-1 alone shows
+  a grey map with just the Google logo). Gotcha: saving that key in the
+  Cloud console pops a "type UPDATE to confirm" dialog because the key also
+  sees Static Maps traffic; the save silently does nothing until confirmed.
+  A separate iOS key (`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS`) exists for
+  shopper iOS builds — check its bundle-ID restriction before shipping.
 
 ## Recently shipped (this session), all committed + pushed to `main`
 - Apple Wallet passes for iOS shopper app (signed `.pkpass` via a new
