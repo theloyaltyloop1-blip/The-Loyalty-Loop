@@ -810,8 +810,12 @@ function ShopDetail({
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
   const [hiddenReviewIds, setHiddenReviewIds] = useState<Set<string>>(new Set())
-  const threshold = business.loyalty_config?.stamps_required || 10
   const value = business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
+  // Rewards unlock at the catalogue tiers (transactions trigger, migration 0011);
+  // stamps_required is only the fallback for shops with no catalogue. Progress is
+  // therefore shown towards the next tier.
+  const nextTier = catalog.find((reward) => reward.stamp_threshold > value) ?? catalog[catalog.length - 1]
+  const threshold = nextTier?.stamp_threshold || business.loyalty_config?.stamps_required || 10
   const label = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
   const hasMapCoordinates = typeof business.lat === 'number' && typeof business.lng === 'number'
   const mapDestination = hasMapCoordinates ? `${business.lat},${business.lng}` : business.address || ''
@@ -1069,7 +1073,7 @@ function ShopDetail({
         {membership ? (
           <View style={styles.loyaltyCard}>
             <View style={styles.loyaltyCardHeaderRow}>
-              <Text style={styles.sectionTitle}>{business.loyalty_type === 'points' ? 'Your points' : 'Your stamp card'}</Text>
+              <Text style={styles.sectionTitle}>{business.loyalty_type === 'points' ? 'Your points' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
               <Text style={styles.loyaltyCardCount}>{value} / {threshold}</Text>
             </View>
             <View style={styles.bar}>

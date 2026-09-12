@@ -67,6 +67,7 @@ export interface NativeBusiness {
   logo_url?: string | null;
   cover_url?: string | null;
   brand_color?: string;
+  loyalty_type?: "stamp_card" | "points" | "tiered";
 }
 
 interface PageProps {
@@ -828,6 +829,12 @@ function RewardsPage({ business, onBack, preview = false }: PageProps) {
   const [description, setDescription] = useState("");
   const [threshold, setThreshold] = useState("10");
   const [busy, setBusy] = useState(false);
+  const unit =
+    business.loyalty_type === "points"
+      ? "points"
+      : business.loyalty_type === "tiered"
+        ? "visits"
+        : "stamps";
   const load = useCallback(async () => {
     if (preview) {
       setItems([
@@ -913,7 +920,7 @@ function RewardsPage({ business, onBack, preview = false }: PageProps) {
         <Field
           value={threshold}
           onChangeText={setThreshold}
-          placeholder="Points or stamps required"
+          placeholder={`${unit.charAt(0).toUpperCase()}${unit.slice(1)} needed to unlock it, e.g. 10`}
           keyboardType="number-pad"
         />
         <PrimaryButton label="Add reward" onPress={add} busy={busy} />
@@ -928,7 +935,7 @@ function RewardsPage({ business, onBack, preview = false }: PageProps) {
             <View style={{ flex: 1 }}>
               <Text style={styles.listTitle}>{item.title}</Text>
               <Text style={styles.muted}>
-                {item.stamp_threshold} required
+                Unlocks at {item.stamp_threshold} {unit}
                 {item.description ? ` · ${item.description}` : ""}
               </Text>
             </View>
@@ -942,7 +949,10 @@ function RewardsPage({ business, onBack, preview = false }: PageProps) {
           </View>
         ))
       ) : (
-        <Text style={styles.empty}>No reward tiers yet.</Text>
+        <Text style={styles.empty}>
+          No rewards yet. Until you add one, customers get a generic "Free
+          reward" at the target set in Settings.
+        </Text>
       )}
     </View>
   );
