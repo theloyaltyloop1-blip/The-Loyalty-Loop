@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -560,6 +560,10 @@ function StampsScreen({
   } | null>(null);
   const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState(false);
+  // How the current customer was found. Only camera scans return to the camera
+  // afterwards; a typed short code stays on the code entry (otherwise awarding
+  // after a code lookup unexpectedly opened the camera).
+  const lookupVia = useRef<"camera" | "code" | null>(null);
   const unit =
     business.loyalty_type === "points"
       ? "points"
@@ -591,7 +595,7 @@ function StampsScreen({
   // Once a staff member has allowed the camera, open it automatically when
   // they arrive on the stamp screen. This removes a repeated counter-side tap.
   useEffect(() => {
-    if (hasReward && mode === "stamps" && permission?.granted && !matched) {
+    if (hasReward && mode === "stamps" && permission?.granted && !matched && lookupVia.current !== "code") {
       setCamera(true);
     }
   }, [hasReward, matched, mode, permission?.granted]);
@@ -682,6 +686,7 @@ function StampsScreen({
   }
   async function lookup() {
     if (!code.trim()) return;
+    lookupVia.current = "code";
     setBusy(true);
     const normalized = code.replace(/\s+/g, "").toUpperCase();
     try {
@@ -743,8 +748,9 @@ function StampsScreen({
         body: { business_id: business.id, user_id: matched.id },
       });
       reset();
-      // Return immediately to the camera for the next person in the queue.
-      setCamera(true);
+      // After a camera scan, go straight back to the camera for the next person
+      // in the queue; after a typed code, stay on code entry.
+      setCamera(lookupVia.current === "camera");
       onDone();
     } catch (e) {
       Alert.alert(
@@ -773,7 +779,7 @@ function StampsScreen({
         body: { business_id: business.id, user_id: matched.id },
       });
       reset();
-      setCamera(true);
+      setCamera(lookupVia.current === "camera");
       onDone();
     } catch (e) {
       Alert.alert(
@@ -868,7 +874,10 @@ function StampsScreen({
                   style={styles.camera}
                   facing="back"
                   barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-                  onBarcodeScanned={({ data }) => parse(data)}
+                  onBarcodeScanned={({ data }) => {
+                    lookupVia.current = "camera";
+                    void parse(data);
+                  }}
                 />
                 <Button
                   title="Cancel scan"
