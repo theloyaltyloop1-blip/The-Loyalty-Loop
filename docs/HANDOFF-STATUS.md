@@ -110,6 +110,8 @@ profile, and `apps/retailer/store.config.json` is written and
   A separate iOS key (`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS`) exists for
   shopper iOS builds — check its bundle-ID restriction before shipping.
 
+- **Android pins fixed 2026-09-12.** Custom marker views are snapshotted at 100x100 px under the New Architecture (react-native-maps only learns the view size through a Paper-only shadow node), so on Android `ShopMarker` now loads a PNG from the public `map-pin` Supabase Edge Function (`supabase/functions/map-pin`). iOS keeps the view-based pin. Details in HANDOFF-DEV-NOTES.md, "Map pins on Android".
+
 ## Recently shipped (this session), all committed + pushed to `main`
 - Apple Wallet passes for iOS shopper app (signed `.pkpass` via a new
   `create-apple-wallet-pass` edge function).
