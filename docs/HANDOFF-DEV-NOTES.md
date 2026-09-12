@@ -137,3 +137,31 @@ CASCADE`, so it must be deleted explicitly before the user, or
 `auth.users` deletion fails with a 500/FK violation) plus
 `DELETE /auth/v1/admin/users/{id}`. Always clean up before ending the
 session — don't leave test accounts/businesses in production data.
+
+## Google Play uploads via EAS Submit (set up 2026-09-12)
+
+Claude can push Android builds to Google Play without the Play Console UI:
+
+- Service account `eas-submit@the-loyalty-loop.iam.gserviceaccount.com`
+  (GCP project `the-loyalty-loop`, key id `837af0567d3f`). It is an Active
+  user in Play Console with, for all three Play apps
+  (`com.theloyaltyloop.shopper`, `com.theloyaltyloop.retailer`,
+  `com.theloyaltyloop.business`): View app information, Release to
+  production, Release apps to testing tracks (+ the auto-added Manage policy
+  declarations / Manage deep links). The Google Play Android Developer API
+  is enabled on the project (required by EAS Submit).
+- The JSON key lives **outside the repo** at
+  `C:\Users\zahih\keys\play-eas-submit.json` (never commit it). Both apps'
+  `eas.json` `submit.production.android` point at it with
+  `track: "internal"`, `releaseStatus: "completed"`.
+- Usage, from the app folder: `npx eas-cli submit --platform android --latest
+  --profile production --non-interactive` (or `--id <buildId>`); add
+  `--track production` to go straight to production. OTA is the default for
+  JS-only changes; only submit when there is a native build.
+- Play apps: `com.theloyaltyloop.retailer` is listed in Play as "The Loyalty
+  Loop - Retailer"; an older "The Loyalty Loop for Business" app with package
+  `com.theloyaltyloop.business` also exists, which the current retailer
+  codebase does **not** build.
+- Brave gotcha: Google Cloud's "Create private key" download sat as a
+  `<guid>.tmp` (2.3 KB) in Downloads waiting on a Brave download bubble; that
+  `.tmp` is the complete JSON key.
