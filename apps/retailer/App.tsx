@@ -1592,14 +1592,26 @@ function SettingsRow({
   );
 }
 
+// Editing shop identity/location/loyalty settings, and the branding, rewards
+// and staff pages it links to, all write to tables whose RLS only allows the
+// business owner (or an admin) to write — see businesses_update_owner_or_admin,
+// reward_catalog_write_owner_or_admin, staff_members_owner_full_access,
+// business_photos_write_owner_or_admin. A staff account could still open this
+// screen, edit a field and tap Save; the write matched zero rows under RLS, the
+// client reported no error (no `.select()` was chained to notice), so the app
+// said "Settings saved" and the field silently reverted on the next reload.
+// Fixed by showing staff a read-only view of what only the owner can change,
+// and by having save() check that a row actually came back.
 function BusinessSettings({
   business,
   session,
+  isOwner,
   onChanged,
   onOpenPage,
 }: {
   business: Business;
   session: Session;
+  isOwner: boolean;
   onChanged: () => Promise<void>;
   onOpenPage: (page: NativeOwnerPage) => void;
 }) {
@@ -1663,7 +1675,11 @@ function BusinessSettings({
       return Alert.alert("Shop name needed", "Enter a name for your business.");
     setSaving(true);
     try {
-      const { error } = await supabase
+      // .select("id") matters here: without it, a write that RLS silently
+      // matches zero rows against comes back as { error: null, data: null },
+      // which looks exactly like success. Checking the returned row is what
+      // catches that instead of reporting "Settings saved" for nothing.
+      const { data, error } = await supabase
         .from("businesses")
         .update({
           name: name.trim(),
@@ -1680,8 +1696,14 @@ function BusinessSettings({
               : business.loyalty_config?.stamps_required || 10,
           },
         })
-        .eq("id", business.id);
+        .eq("id", business.id)
+        .select("id");
       if (error) throw error;
+      if (!data?.length) {
+        throw new Error(
+          "Nothing was saved — only the shop owner can change these details.",
+        );
+      }
       await onChanged();
       Alert.alert(
         "Settings saved",
@@ -1748,137 +1770,191 @@ function BusinessSettings({
           )}
         </View>
       </View>
-      <Text style={styles.groupLabel}>SHOP PROFILE</Text>
-      <View style={styles.settingsGroup}>
-        <Text style={styles.fieldLabel}>Shop name</Text>
-        <TextInput
-          style={styles.settingsInput}
-          value={name}
-          onChangeText={setName}
-          placeholderTextColor="#6F726B"
-        />
-        <Text style={styles.fieldLabel}>Category</Text>
-        <TextInput
-          style={styles.settingsInput}
-          value={category}
-          onChangeText={setCategory}
-          placeholder="Cafe, salon, restaurant…"
-          placeholderTextColor="#6F726B"
-        />
-        <Text style={styles.fieldLabel}>Description</Text>
-        <TextInput
-          style={[styles.settingsInput, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Tell customers what makes you special"
-          placeholderTextColor="#6F726B"
-          multiline
-          textAlignVertical="top"
-        />
-        <Text style={styles.fieldLabel}>Address</Text>
-        <TextInput
-          style={styles.settingsInput}
-          value={address}
-          onChangeText={setAddress}
-          placeholderTextColor="#6F726B"
-        />
-        <View style={styles.twoColumns}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>Postcode</Text>
-            <TextInput
-              style={styles.settingsInput}
-              value={postcode}
-              onChangeText={setPostcode}
-              placeholderTextColor="#6F726B"
-              autoCapitalize="characters"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>Phone</Text>
-            <TextInput
-              style={styles.settingsInput}
-              value={phone}
-              onChangeText={setPhone}
-              placeholderTextColor="#6F726B"
-              keyboardType="phone-pad"
-            />
-          </View>
-        </View>
-      </View>
-      <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
-      <View style={styles.settingsGroup}>
-        <Text style={styles.fieldLabel}>How customers collect</Text>
-        <View style={styles.segment}>
-          {LOYALTY_TYPE_OPTIONS.map((option) => (
-            <Pressable
-              key={option.type}
-              onPress={() => setLoyaltyType(option.type)}
-              style={[
-                styles.segmentButton,
-                loyaltyType === option.type && styles.segmentActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  loyaltyType === option.type && styles.segmentTextActive,
-                ]}
-              >
-                {option.title}
+      {isOwner ? (
+        <>
+                <Text style={styles.groupLabel}>SHOP PROFILE</Text>
+                <View style={styles.settingsGroup}>
+                  <Text style={styles.fieldLabel}>Shop name</Text>
+                  <TextInput
+                    style={styles.settingsInput}
+                    value={name}
+                    onChangeText={setName}
+                    placeholderTextColor="#6F726B"
+                  />
+                  <Text style={styles.fieldLabel}>Category</Text>
+                  <TextInput
+                    style={styles.settingsInput}
+                    value={category}
+                    onChangeText={setCategory}
+                    placeholder="Cafe, salon, restaurant…"
+                    placeholderTextColor="#6F726B"
+                  />
+                  <Text style={styles.fieldLabel}>Description</Text>
+                  <TextInput
+                    style={[styles.settingsInput, styles.textArea]}
+                    value={description}
+                    onChangeText={setDescription}
+                    placeholder="Tell customers what makes you special"
+                    placeholderTextColor="#6F726B"
+                    multiline
+                    textAlignVertical="top"
+                  />
+                  <Text style={styles.fieldLabel}>Address</Text>
+                  <TextInput
+                    style={styles.settingsInput}
+                    value={address}
+                    onChangeText={setAddress}
+                    placeholderTextColor="#6F726B"
+                  />
+                  <View style={styles.twoColumns}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.fieldLabel}>Postcode</Text>
+                      <TextInput
+                        style={styles.settingsInput}
+                        value={postcode}
+                        onChangeText={setPostcode}
+                        placeholderTextColor="#6F726B"
+                        autoCapitalize="characters"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.fieldLabel}>Phone</Text>
+                      <TextInput
+                        style={styles.settingsInput}
+                        value={phone}
+                        onChangeText={setPhone}
+                        placeholderTextColor="#6F726B"
+                        keyboardType="phone-pad"
+                      />
+                    </View>
+                  </View>
+                </View>
+                <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
+                <View style={styles.settingsGroup}>
+                  <Text style={styles.fieldLabel}>How customers collect</Text>
+                  <View style={styles.segment}>
+                    {LOYALTY_TYPE_OPTIONS.map((option) => (
+                      <Pressable
+                        key={option.type}
+                        onPress={() => setLoyaltyType(option.type)}
+                        style={[
+                          styles.segmentButton,
+                          loyaltyType === option.type && styles.segmentActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.segmentText,
+                            loyaltyType === option.type && styles.segmentTextActive,
+                          ]}
+                        >
+                          {option.title}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={styles.fieldHelp}>{modeHelp}</Text>
+                  <Pressable
+                    onPress={() => onOpenPage("rewards")}
+                    style={({ pressed }) => [styles.catalogueLink, pressed && styles.pressed]}
+                  >
+                    <View style={styles.tierBadge}>
+                      <Gift size={18} color="#2F8A4C" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.tierTitle}>Rewards catalogue</Text>
+                      <Text style={styles.tierMeta}>
+                        {catalog === null
+                          ? "Loading…"
+                          : catalog.length
+                            ? `${catalog.length} reward${catalog.length === 1 ? "" : "s"} · unlock at the ${unit} you set`
+                            : `Add what customers unlock and at how many ${unit}`}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#2F8A4C" />
+                  </Pressable>
+                </View>
+                <Pressable
+                  onPress={save}
+                  disabled={saving}
+                  style={({ pressed }) => [
+                    styles.saveSettings,
+                    pressed && styles.pressed,
+                    saving && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.saveSettingsText}>
+                    {saving ? "Saving…" : "Save changes"}
+                  </Text>
+                </Pressable>
+
+        </>
+      ) : (
+        <>
+          <Text style={styles.groupLabel}>SHOP PROFILE</Text>
+          <View style={styles.settingsGroup}>
+            <View style={styles.readOnlyNotice}>
+              <Text style={styles.readOnlyNoticeText}>
+                Only the shop owner can edit these details, from this screen or
+                the website dashboard.
               </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.fieldHelp}>{modeHelp}</Text>
-        <Pressable
-          onPress={() => onOpenPage("rewards")}
-          style={({ pressed }) => [styles.catalogueLink, pressed && styles.pressed]}
-        >
-          <View style={styles.tierBadge}>
-            <Gift size={18} color="#2F8A4C" />
+            </View>
+            <Text style={styles.fieldLabel}>Shop name</Text>
+            <Text style={styles.readOnlyValue}>{business.name}</Text>
+            <Text style={styles.fieldLabel}>Category</Text>
+            <Text style={styles.readOnlyValue}>{business.category || "—"}</Text>
+            <Text style={styles.fieldLabel}>Description</Text>
+            <Text style={styles.readOnlyValue}>{business.description || "—"}</Text>
+            <Text style={styles.fieldLabel}>Address</Text>
+            <Text style={styles.readOnlyValue}>{business.address || "—"}</Text>
+            <View style={styles.twoColumns}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Postcode</Text>
+                <Text style={styles.readOnlyValue}>{business.postcode || "—"}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Phone</Text>
+                <Text style={styles.readOnlyValue}>{business.phone || "—"}</Text>
+              </View>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.tierTitle}>Rewards catalogue</Text>
-            <Text style={styles.tierMeta}>
+          <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
+          <View style={styles.settingsGroup}>
+            <Text style={styles.fieldLabel}>How customers collect</Text>
+            <Text style={styles.readOnlyValue}>
+              {LOYALTY_TYPE_OPTIONS.find((option) => option.type === loyaltyType)?.title ?? "Stamps"}
+            </Text>
+            <Text style={styles.fieldHelp}>{modeHelp}</Text>
+            <Text style={styles.fieldHelp}>
               {catalog === null
-                ? "Loading…"
+                ? "Loading rewards…"
                 : catalog.length
-                  ? `${catalog.length} reward${catalog.length === 1 ? "" : "s"} · unlock at the ${unit} you set`
-                  : `Add what customers unlock and at how many ${unit}`}
+                  ? `${catalog.length} reward${catalog.length === 1 ? "" : "s"} set, unlocking at the ${unit} the owner chose.`
+                  : "No rewards set up yet."}
             </Text>
           </View>
-          <ChevronRight size={18} color="#2F8A4C" />
-        </Pressable>
-      </View>
-      <Pressable
-        onPress={save}
-        disabled={saving}
-        style={({ pressed }) => [
-          styles.saveSettings,
-          pressed && styles.pressed,
-          saving && styles.disabled,
-        ]}
-      >
-        <Text style={styles.saveSettingsText}>
-          {saving ? "Saving…" : "Save changes"}
-        </Text>
-      </Pressable>
+        </>
+      )}
       <Text style={styles.groupLabel}>SHOP TOOLS</Text>
       <View style={styles.settingsGroupNoPadding}>
-        <SettingsRow
-          icon={ImageIcon}
-          tile="orange"
-          title="Logo & cover images"
-          detail="Update your storefront branding"
-          onPress={() => onOpenPage("branding")}
-        />
-        <SettingsRow
-          icon={Gift}
-          tile="amber"
-          title="Rewards catalogue"
-          detail="Create and edit reward tiers"
-          onPress={() => onOpenPage("rewards")}
-        />
+        {isOwner && (
+          <SettingsRow
+            icon={ImageIcon}
+            tile="orange"
+            title="Logo & cover images"
+            detail="Update your storefront branding"
+            onPress={() => onOpenPage("branding")}
+          />
+        )}
+        {isOwner && (
+          <SettingsRow
+            icon={Gift}
+            tile="amber"
+            title="Rewards catalogue"
+            detail="Create and edit reward tiers"
+            onPress={() => onOpenPage("rewards")}
+          />
+        )}
         <SettingsRow
           icon={Star}
           tile="purple"
@@ -1886,12 +1962,21 @@ function BusinessSettings({
           detail="Read feedback and reply as your shop"
           onPress={() => onOpenPage("reviews")}
         />
+        {isOwner && (
+          <SettingsRow
+            icon={Users}
+            tile="blue"
+            title="Staff & permissions"
+            detail="Invite, revoke and manage access"
+            onPress={() => onOpenPage("staff")}
+          />
+        )}
         <SettingsRow
-          icon={Users}
-          tile="blue"
-          title="Staff & permissions"
-          detail="Invite, revoke and manage access"
-          onPress={() => onOpenPage("staff")}
+          icon={LifeBuoy}
+          tile="teal"
+          title="Help & support"
+          detail="Get help from The Loyalty Loop"
+          onPress={() => onOpenPage("support")}
           last
         />
       </View>
@@ -1933,13 +2018,6 @@ function BusinessSettings({
           title="How to use your loyalty programme"
           detail="A short step-by-step business guide"
           onPress={() => onOpenPage("tutorial")}
-        />
-        <SettingsRow
-          icon={LifeBuoy}
-          tile="teal"
-          title="Help & support"
-          detail="Get help from The Loyalty Loop"
-          onPress={() => onOpenPage("support")}
         />
         <SettingsRow
           icon={Bell}
@@ -1989,20 +2067,22 @@ function BusinessSettings({
           title="Signed in as"
           detail={session.user.email || "Business account"}
         />
-        <SettingsRow
-          icon={business.is_active === false ? Eye : EyeOff}
-          tile="amber"
-          title={
-            business.is_active === false ? "Reactivate shop" : "Deactivate shop"
-          }
-          detail={
-            business.is_active === false
-              ? "Make your shop visible again"
-              : "Temporarily hide your shop"
-          }
-          onPress={toggleActive}
-          danger={business.is_active !== false}
-        />
+        {isOwner && (
+          <SettingsRow
+            icon={business.is_active === false ? Eye : EyeOff}
+            tile="amber"
+            title={
+              business.is_active === false ? "Reactivate shop" : "Deactivate shop"
+            }
+            detail={
+              business.is_active === false
+                ? "Make your shop visible again"
+                : "Temporarily hide your shop"
+            }
+            onPress={toggleActive}
+            danger={business.is_active !== false}
+          />
+        )}
         <SettingsRow
           icon={LogOut}
           tile="orange"
@@ -2686,6 +2766,7 @@ function Dashboard({
                 <BusinessSettings
                   business={selected}
                   session={session}
+                  isOwner={ownedIds.has(selected.id)}
                   onChanged={load}
                   onOpenPage={setOwnerPage}
                 />
@@ -3452,6 +3533,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   textArea: { minHeight: 96 },
+  readOnlyNotice: {
+    backgroundColor: "#FDECCD",
+    borderRadius: 13,
+    padding: 12,
+    marginBottom: 4,
+  },
+  readOnlyNoticeText: {
+    color: "#8A5A12",
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontWeight: "700",
+  },
+  readOnlyValue: {
+    minHeight: 48,
+    borderRadius: 13,
+    backgroundColor: "#F3EEE4",
+    borderWidth: 1,
+    borderColor: "rgba(20,20,18,.08)",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: "#4E514A",
+    fontSize: 15,
+  },
   fieldHelp: {
     fontSize: 12.5,
     lineHeight: 18,
