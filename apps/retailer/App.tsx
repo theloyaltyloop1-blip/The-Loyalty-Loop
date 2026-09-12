@@ -1603,12 +1603,6 @@ function BusinessSettings({
     [loyaltyType, setLoyaltyType] = useState<Business["loyalty_type"]>(
       business.loyalty_type || "stamp_card",
     ),
-    [threshold, setThreshold] = useState(
-      String(business.loyalty_config?.stamps_required || 10),
-    ),
-    [signupReward, setSignupReward] = useState(
-      business.loyalty_config?.signup_reward_title || "",
-    ),
     [saving, setSaving] = useState(false),
     [biometricEnabled, setBiometricEnabled] = useState(false),
     [analyticsEnabled, setAnalyticsEnabled] = useState(false);
@@ -1644,8 +1638,6 @@ function BusinessSettings({
     setPostcode(business.postcode || "");
     setPhone(business.phone || "");
     setLoyaltyType(business.loyalty_type || "stamp_card");
-    setThreshold(String(business.loyalty_config?.stamps_required || 10));
-    setSignupReward(business.loyalty_config?.signup_reward_title || "");
   }, [business.id]);
   useEffect(() => {
     biometricLockEnabled().then(setBiometricEnabled);
@@ -1676,8 +1668,7 @@ function BusinessSettings({
             ...business.loyalty_config,
             stamps_required: catalog?.length
               ? Math.max(...catalog.map((tier) => tier.stamp_threshold))
-              : Math.max(1, Number(threshold) || 10),
-            signup_reward_title: signupReward.trim(),
+              : business.loyalty_config?.stamps_required || 10,
           },
         })
         .eq("id", business.id);
@@ -1830,94 +1821,25 @@ function BusinessSettings({
           ))}
         </View>
         <Text style={styles.fieldHelp}>{modeHelp}</Text>
-        <Text style={styles.fieldLabel}>Rewards</Text>
-        {catalog === null ? (
-          <ActivityIndicator color={green} style={{ marginVertical: 12 }} />
-        ) : catalog.length ? (
-          <>
-            <View style={styles.tierList}>
-              {catalog.map((tier, index) => (
-                <View
-                  key={tier.id}
-                  style={[
-                    styles.tierRow,
-                    index === catalog.length - 1 && styles.tierRowLast,
-                  ]}
-                >
-                  <View style={styles.tierBadge}>
-                    <Text style={styles.tierBadgeText}>{tier.stamp_threshold}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.tierTitle}>{tier.title}</Text>
-                    <Text style={styles.tierMeta}>
-                      Unlocks at {tier.stamp_threshold} {unit}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-              <Pressable
-                onPress={() => onOpenPage("rewards")}
-                style={({ pressed }) => [styles.tierEdit, pressed && styles.pressed]}
-              >
-                <Text style={styles.tierEditText}>Edit rewards</Text>
-                <ChevronRight size={18} color="#2F8A4C" />
-              </Pressable>
-            </View>
-            <Text style={styles.fieldHelp}>
-              A reward is added to the customer's account automatically when
-              they reach each amount. Change the amounts or add more rewards in
-              the Rewards catalogue.
+        <Pressable
+          onPress={() => onOpenPage("rewards")}
+          style={({ pressed }) => [styles.catalogueLink, pressed && styles.pressed]}
+        >
+          <View style={styles.tierBadge}>
+            <Gift size={18} color="#2F8A4C" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.tierTitle}>Rewards catalogue</Text>
+            <Text style={styles.tierMeta}>
+              {catalog === null
+                ? "Loading…"
+                : catalog.length
+                  ? `${catalog.length} reward${catalog.length === 1 ? "" : "s"} · unlock at the ${unit} you set`
+                  : `Add what customers unlock and at how many ${unit}`}
             </Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.fieldHelp}>
-              No named rewards yet, so customers get a generic "Free reward"
-              once they reach this many {unit}:
-            </Text>
-            <View style={styles.stepper}>
-              <Pressable
-                onPress={() =>
-                  setThreshold(String(Math.max(1, (Number(threshold) || 1) - 1)))
-                }
-                style={styles.stepperButton}
-              >
-                <Text style={styles.stepperText}>−</Text>
-              </Pressable>
-              <TextInput
-                style={styles.stepperInput}
-                value={threshold}
-                onChangeText={setThreshold}
-                keyboardType="number-pad"
-              />
-              <Pressable
-                onPress={() => setThreshold(String((Number(threshold) || 0) + 1))}
-                style={styles.stepperButton}
-              >
-                <Text style={styles.stepperText}>+</Text>
-              </Pressable>
-            </View>
-            <Pressable
-              onPress={() => onOpenPage("rewards")}
-              style={({ pressed }) => [styles.tierEdit, pressed && styles.pressed]}
-            >
-              <Text style={styles.tierEditText}>Add a named reward instead</Text>
-              <ChevronRight size={18} color="#2F8A4C" />
-            </Pressable>
-          </>
-        )}
-        <Text style={styles.fieldLabel}>Sign-up reward</Text>
-        <TextInput
-          style={styles.settingsInput}
-          value={signupReward}
-          onChangeText={setSignupReward}
-          placeholder="e.g. Free coffee for joining"
-          placeholderTextColor="#6F726B"
-        />
-        <Text style={styles.fieldHelp}>
-          Offered to new customers the moment they join your card. Leave empty
-          for none.
-        </Text>
+          </View>
+          <ChevronRight size={18} color="#2F8A4C" />
+        </Pressable>
       </View>
       <Pressable
         onPress={save}
@@ -3526,24 +3448,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: 6,
   },
-  tierList: {
+  catalogueLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 4,
+    padding: 12,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(20,20,18,.08)",
     backgroundColor: "#F8F5EE",
-    overflow: "hidden",
-    marginBottom: 8,
   },
-  tierRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(20,20,18,.07)",
-  },
-  tierRowLast: {},
   tierBadge: {
     minWidth: 40,
     height: 40,
@@ -3556,14 +3471,6 @@ const styles = StyleSheet.create({
   tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
   tierTitle: { fontSize: 15, fontWeight: "800", color: "#1B1C19" },
   tierMeta: { fontSize: 12, color: "#72756D", marginTop: 2 },
-  tierEdit: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  tierEditText: { fontSize: 14, fontWeight: "800", color: "#2F8A4C" },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",

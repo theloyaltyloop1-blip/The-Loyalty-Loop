@@ -68,6 +68,11 @@ export interface NativeBusiness {
   cover_url?: string | null;
   brand_color?: string;
   loyalty_type?: "stamp_card" | "points" | "tiered";
+  loyalty_config?: {
+    stamps_required?: number;
+    signup_reward_title?: string;
+    stamp_icon?: string;
+  };
 }
 
 interface PageProps {
@@ -823,12 +828,21 @@ function BrandingPage({
   );
 }
 
-function RewardsPage({ business, onBack, preview = false }: PageProps) {
+function RewardsPage({
+  business,
+  onBack,
+  onBusinessChanged,
+  preview = false,
+}: PageProps) {
   const [items, setItems] = useState<RewardItem[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [threshold, setThreshold] = useState("10");
   const [busy, setBusy] = useState(false);
+  const [signupReward, setSignupReward] = useState(
+    business.loyalty_config?.signup_reward_title || "",
+  );
+  const [savingSignup, setSavingSignup] = useState(false);
   const unit =
     business.loyalty_type === "points"
       ? "points"
@@ -876,6 +890,29 @@ function RewardsPage({ business, onBack, preview = false }: PageProps) {
     setDescription("");
     setThreshold("10");
     void load();
+  }
+  // Stored on businesses.loyalty_config; the membership trigger hands it to a
+  // customer the moment they join the card.
+  async function saveSignupReward() {
+    setSavingSignup(true);
+    const { error } = await supabase
+      .from("businesses")
+      .update({
+        loyalty_config: {
+          ...(business.loyalty_config || {}),
+          signup_reward_title: signupReward.trim(),
+        },
+      })
+      .eq("id", business.id);
+    setSavingSignup(false);
+    if (error) return Alert.alert("Could not save", error.message);
+    await onBusinessChanged();
+    Alert.alert(
+      "Sign-up reward saved",
+      signupReward.trim()
+        ? "New customers will be offered it the moment they join."
+        : "New customers will not be offered a sign-up reward.",
+    );
   }
   function remove(item: RewardItem) {
     Alert.alert("Delete reward?", item.title, [
@@ -951,9 +988,30 @@ function RewardsPage({ business, onBack, preview = false }: PageProps) {
       ) : (
         <Text style={styles.empty}>
           No rewards yet. Until you add one, customers get a generic "Free
-          reward" at the target set in Settings.
+          reward" after {business.loyalty_config?.stamps_required || 10} {unit}.
         </Text>
       )}
+      <Section>
+        <View style={styles.iconHeading}>
+          <Sparkles size={20} color={orange} />
+          <Text style={styles.cardTitle}>Sign-up reward</Text>
+        </View>
+        <Text style={styles.muted}>
+          Given to new customers the moment they join your card, before their
+          first {unit === "points" ? "point" : unit.slice(0, -1)}. Leave empty
+          for none.
+        </Text>
+        <Field
+          value={signupReward}
+          onChangeText={setSignupReward}
+          placeholder="e.g. Free coffee for joining"
+        />
+        <PrimaryButton
+          label="Save sign-up reward"
+          onPress={() => void saveSignupReward()}
+          busy={savingSignup}
+        />
+      </Section>
     </View>
   );
 }
