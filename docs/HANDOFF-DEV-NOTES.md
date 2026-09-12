@@ -153,15 +153,19 @@ Claude can push Android builds to Google Play without the Play Console UI:
 - The JSON key lives **outside the repo** at
   `C:\Users\zahih\keys\play-eas-submit.json` (never commit it). Both apps'
   `eas.json` `submit.production.android` point at it with
-  `track: "internal"`, `releaseStatus: "completed"`.
+  `track: "production"`, `releaseStatus: "completed"`,
+  `changesNotSentForReview: false` — the user's instruction (2026-09-12) is
+  that every Android build goes **straight to production** and into Google's
+  review immediately. Say so before running it; it reaches every user.
 - Usage, from the app folder: `npx eas-cli submit --platform android --latest
-  --profile production --non-interactive` (or `--id <buildId>`); add
-  `--track production` to go straight to production. OTA is the default for
-  JS-only changes; only submit when there is a native build.
+  --profile production --non-interactive` (or `--id <buildId>`). Add
+  `--track internal` only if the user explicitly wants a test-only upload.
+  OTA is the default for JS-only changes; only submit when there is a
+  native build.
 - Play apps: `com.theloyaltyloop.retailer` is listed in Play as "The Loyalty
   Loop - Retailer"; an older "The Loyalty Loop for Business" app with package
-  `com.theloyaltyloop.business` also exists, which the current retailer
-  codebase does **not** build.
+  `com.theloyaltyloop.business` also exists — the user says it is **old and
+  unused**; ignore it. The retailer app is the real one.
 - Brave gotcha: Google Cloud's "Create private key" download sat as a
   `<guid>.tmp` (2.3 KB) in Downloads waiting on a Brave download bubble; that
   `.tmp` is the complete JSON key.

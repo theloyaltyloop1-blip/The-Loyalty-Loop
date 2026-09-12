@@ -39,8 +39,9 @@
       },
       "android": {
         "serviceAccountKeyPath": "C:/Users/zahih/keys/play-eas-submit.json",
-        "track": "internal",
-        "releaseStatus": "completed"
+        "track": "production",
+        "releaseStatus": "completed",
+        "changesNotSentForReview": false
       }
     }
   }
