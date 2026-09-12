@@ -19,18 +19,27 @@
     "production": {
       "autoIncrement": true,
       "channel": "production",
-      "android": { "credentialsSource": "local" }
+      "android": {
+        "credentialsSource": "local"
+      }
     },
     "store-upload": {
       "extends": "production",
       "channel": "store-upload",
-      "android": { "credentialsSource": "local" }
+      "android": {
+        "credentialsSource": "local"
+      }
     }
   },
   "submit": {
     "production": {
       "ios": {
         "appleTeamId": "9QSSA475TR"
+      },
+      "android": {
+        "serviceAccountKeyPath": "C:/Users/zahih/keys/play-eas-submit.json",
+        "track": "internal",
+        "releaseStatus": "completed"
       }
     }
   }

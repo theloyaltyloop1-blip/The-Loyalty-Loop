@@ -1,13 +1,34 @@
 {
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "local" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
   "build": {
-    "development": { "developmentClient": true, "distribution": "internal", "channel": "development" },
-    "preview": { "distribution": "internal", "android": { "buildType": "apk" }, "channel": "preview" },
-    "production": { "autoIncrement": true, "channel": "production", "android": { "credentialsSource": "local" } },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "preview"
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "android": {
+        "credentialsSource": "local"
+      }
+    },
     "store-upload": {
       "extends": "production",
       "channel": "store-upload",
-      "android": { "credentialsSource": "local" }
+      "android": {
+        "credentialsSource": "local"
+      }
     }
   },
   "submit": {
@@ -15,6 +36,11 @@
       "ios": {
         "ascAppId": "6809930346",
         "appleTeamId": "9QSSA475TR"
+      },
+      "android": {
+        "serviceAccountKeyPath": "C:/Users/zahih/keys/play-eas-submit.json",
+        "track": "internal",
+        "releaseStatus": "completed"
       }
     }
   }
