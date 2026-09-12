@@ -1702,6 +1702,10 @@ function FavouritesTab({
 // Bottom tab bar
 // ---------------------------------------------------------------------
 
+// Temporarily hidden (2026-09-12) at the owner's request. Flip to true to bring the
+// Discover tab back in the bottom bar; everything behind it is untouched.
+const SHOW_DISCOVER_TAB = false
+
 const TABS: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
   { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? primary : foreground} /> },
   { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? primary : foreground} filled={active} /> },
@@ -1714,7 +1718,7 @@ const TABS: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode
 function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   return (
     <View style={styles.tabs}>
-      {TABS.map(({ id, label, icon }) => {
+      {TABS.filter(({ id }) => id !== 'discover' || SHOW_DISCOVER_TAB).map(({ id, label, icon }) => {
         const active = tab === id
         return (
           <Pressable key={id} style={styles.tab} onPress={() => onChange(id)}>
@@ -1860,7 +1864,7 @@ function AppHome({ session }: { session: Session }) {
     )
   }
 
-  const discovering = tab === 'discover'
+  const discovering = tab === 'discover' && SHOW_DISCOVER_TAB
 
   return (
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
