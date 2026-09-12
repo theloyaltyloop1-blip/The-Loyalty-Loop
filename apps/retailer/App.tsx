@@ -2562,6 +2562,8 @@ function Dashboard({
         todayActions: todayActions.count || 0,
         members: nextStats.members,
         updatedAt: new Date().toISOString(),
+        brandColor: selected.brand_color || "",
+        logoUrl: selected.logo_url || "",
       }).catch(() => undefined);
     });
   }, [selected?.id, loading, widgetRefreshKey]);

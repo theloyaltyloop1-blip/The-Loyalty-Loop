@@ -11,6 +11,11 @@ export type RetailerWidgetState = {
   todayActions: number
   members: number
   updatedAt: string
+  /** Shop brand colour (#rrggbb) or '' — the widget falls back to Loyalty Loop
+   * orange. Strings only: the iOS app-group store rejects null/undefined. */
+  brandColor: string
+  /** Public https logo URL or '', shown as a round badge when present. */
+  logoUrl: string
 }
 
 export async function readRetailerWidgetState(): Promise<RetailerWidgetState | null> {
