@@ -27,6 +27,7 @@ import Svg, { Circle, Path } from 'react-native-svg'
 import { LinearGradient } from 'expo-linear-gradient'
 import Constants from 'expo-constants'
 import * as Updates from 'expo-updates'
+import * as Notifications from 'expo-notifications'
 import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
 import { colors } from '@loyalty-loop/design-tokens'
@@ -280,7 +281,7 @@ type Business = {
   loyalty_type?: string
   loyalty_config?: { stamps_required?: number }
 }
-type Membership = { business_id: string; stamp_count: number; points_balance: number }
+type Membership = { business_id: string; stamp_count: number; points_balance: number; promos_opted_out?: boolean | null }
 type Reward = {
   id: string
   title: string
@@ -827,6 +828,14 @@ function ShopDetail({
     business.youtube && { label: 'YouTube', value: business.youtube, url: externalUrl(business.youtube) },
   ].filter(Boolean) as { label: string; value: string; url: string }[]
 
+  // memberships.promos_opted_out: when true the shop's announcements are neither
+  // pushed nor added to this customer's inbox (deliver_shop_announcement trigger).
+  async function setShopNotifications(enabled: boolean) {
+    const { error } = await supabase.from('memberships').update({ promos_opted_out: !enabled }).eq('user_id', userId).eq('business_id', business.id)
+    if (error) return Alert.alert('Could not update notifications', error.message)
+    await refresh()
+  }
+
   useEffect(() => {
     let active = true
     setCatalogLoading(true)
@@ -1089,6 +1098,14 @@ function ShopDetail({
               <WalletIcon size={17} />
               <Text style={styles.walletButtonText}>{addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'}</Text>
             </Pressable>
+            <View style={styles.shopNotifyRow}>
+              <BellIcon color={primary} size={18} />
+              <View style={styles.settingsRowBody}>
+                <Text style={styles.shopNotifyTitle}>News & offers from {business.name}</Text>
+                <Text style={styles.shopNotifyCopy}>Get a notification when they post an announcement</Text>
+              </View>
+              <Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: primary }} />
+            </View>
           </View>
         ) : (
           <View style={styles.joinCard}>
@@ -1810,6 +1827,22 @@ function AppHome({ session }: { session: Session }) {
 
   useEffect(() => { void trackUsageEvent(userId, 'tab_viewed', tab) }, [tab, userId])
   useEffect(() => { if (selected) void trackUsageEvent(userId, 'shop_opened') }, [selected?.id, userId])
+  const coldStartPushHandled = useRef(false)
+  useEffect(() => {
+    if (!businesses.length) return
+    const open = (response: Notifications.NotificationResponse) => {
+      const data = (response.notification.request.content.data ?? {}) as { businessId?: string | null; announcementId?: string | null }
+      const business = data.businessId ? businesses.find((b) => b.id === data.businessId) : undefined
+      if (business) setSelected(business)
+      else if (data.announcementId) setTab('news')
+    }
+    if (!coldStartPushHandled.current) {
+      coldStartPushHandled.current = true
+      void Notifications.getLastNotificationResponseAsync().then((response) => { if (response) open(response) })
+    }
+    const subscription = Notifications.addNotificationResponseReceivedListener(open)
+    return () => subscription.remove()
+  }, [businesses])
 
   const load = async () => {
     setLoading(true)
@@ -2186,6 +2219,9 @@ const styles = StyleSheet.create({
   visitSection: { marginTop: 28 },
   mapEmbed: { height: 150, marginTop: 10, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#efe8db' },
   nativeMap: { flex: 1 },
+  shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
+  shopNotifyTitle: { fontSize: 14, fontWeight: '700', color: foreground },
+  shopNotifyCopy: { color: '#8a8378', fontSize: 12, marginTop: 1, lineHeight: 16 },
   settingsSheet: { paddingHorizontal: 18, maxHeight: '92%' },
   settingsSheetScroll: { paddingBottom: 20, gap: 20 },
   sheetBack: { flexDirection: 'row', alignItems: 'center', gap: 4 },
