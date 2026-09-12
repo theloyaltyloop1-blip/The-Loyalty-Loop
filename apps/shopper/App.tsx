@@ -961,12 +961,7 @@ function ShopDetail({
                 scrollEnabled
                 rotateEnabled={false}
               >
-                <Marker
-                  coordinate={{ latitude: business.lat!, longitude: business.lng! }}
-                  title={business.name}
-                  description={business.address || undefined}
-                  pinColor={business.brand_color || primary}
-                />
+                <ShopMarker business={business} description={business.address || undefined} />
               </MapView>
             </View>
           ) : null}
@@ -1209,11 +1204,59 @@ function HomeTab({
 // into the AndroidManifest at build time, so changing it needs a new build.
 // ---------------------------------------------------------------------
 
+function initialsOf(name: string) {
+  const letters = name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '')
+  return letters.join('') || '?'
+}
+
+// Brand-coloured map pin: white ring, shop logo (or initials) inside, brand tail,
+// soft halo and a ground shadow. Replaces the stock red Google marker.
+function ShopMarker({ business, description, onCalloutPress }: { business: Business; description?: string; onCalloutPress?: () => void }) {
+  const color = business.brand_color || primary
+  // Android snapshots custom markers to a bitmap; keep tracking view changes until the
+  // logo has painted (or a fallback timeout), then freeze it for map performance.
+  const [tracksViewChanges, setTracksViewChanges] = useState(true)
+  useEffect(() => {
+    const timer = setTimeout(() => setTracksViewChanges(false), business.logo_url ? 4000 : 800)
+    return () => clearTimeout(timer)
+  }, [business.logo_url])
+  if (business.lat == null || business.lng == null) return null
+  return (
+    <Marker
+      coordinate={{ latitude: business.lat, longitude: business.lng }}
+      title={business.name}
+      description={description}
+      anchor={{ x: 0.5, y: 0.9 }}
+      tracksViewChanges={tracksViewChanges}
+      onCalloutPress={onCalloutPress}
+    >
+      <View style={styles.pinWrap}>
+        <View style={[styles.pinHalo, { backgroundColor: color }]} />
+        <View style={[styles.pinBody, { backgroundColor: color }]}>
+          <View style={styles.pinInner}>
+            {business.logo_url ? (
+              <Image
+                source={{ uri: business.logo_url }}
+                style={styles.pinLogo}
+                onLoadEnd={() => setTimeout(() => setTracksViewChanges(false), 300)}
+              />
+            ) : (
+              <Text style={[styles.pinInitial, { color }]}>{initialsOf(business.name)}</Text>
+            )}
+          </View>
+        </View>
+        <View style={[styles.pinTail, { borderTopColor: color }]} />
+        <View style={styles.pinShadow} />
+      </View>
+    </Marker>
+  )
+}
+
 function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (business: Business) => void }) {
   const mapRef = useRef<MapView>(null)
   const pins = businesses
     .filter((b): b is Business & { lat: number; lng: number } => b.lat != null && b.lng != null)
-    .map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, name: b.name, color: b.brand_color || primary }))
+    .map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, business: b }))
   const initialRegion = pins.length
     ? { latitude: pins[0].lat, longitude: pins[0].lng, latitudeDelta: 0.07, longitudeDelta: 0.07 }
     : undefined
@@ -1233,16 +1276,7 @@ function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (b
         <View style={styles.mapWrap}>
           <MapView ref={mapRef} provider={PROVIDER_GOOGLE} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false} onMapReady={fitAllPins}>
             {pins.map((pin) => (
-              <Marker
-                key={pin.id}
-                coordinate={{ latitude: pin.lat, longitude: pin.lng }}
-                title={pin.name}
-                pinColor={pin.color}
-                onCalloutPress={() => {
-                  const business = businesses.find((item) => item.id === pin.id)
-                  if (business) onSelect(business)
-                }}
-              />
+              <ShopMarker key={pin.id} business={pin.business} onCalloutPress={() => onSelect(pin.business)} />
             ))}
           </MapView>
         </View>
@@ -1948,6 +1982,14 @@ const styles = StyleSheet.create({
   visitSection: { marginTop: 28 },
   mapEmbed: { height: 150, marginTop: 10, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#efe8db' },
   nativeMap: { flex: 1 },
+  pinWrap: { alignItems: 'center', width: 60, paddingTop: 6 },
+  pinHalo: { position: 'absolute', top: 0, width: 56, height: 56, borderRadius: 28, opacity: 0.22 },
+  pinBody: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
+  pinInner: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  pinLogo: { width: 32, height: 32 },
+  pinInitial: { fontWeight: '900', fontSize: 14, letterSpacing: -0.5 },
+  pinTail: { width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 11, borderLeftColor: 'transparent', borderRightColor: 'transparent', marginTop: -4 },
+  pinShadow: { width: 16, height: 5, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.2)', marginTop: 1 },
   mapAddress: { color: '#6b6459', fontSize: 13, lineHeight: 19, marginTop: 9 },
   directionsButton: { alignSelf: 'flex-start', marginTop: 11, borderRadius: 999, backgroundColor: 'rgba(79,100,56,0.12)', paddingHorizontal: 14, paddingVertical: 10 },
   directionsButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
