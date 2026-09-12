@@ -169,3 +169,11 @@ Claude can push Android builds to Google Play without the Play Console UI:
 - Brave gotcha: Google Cloud's "Create private key" download sat as a
   `<guid>.tmp` (2.3 KB) in Downloads waiting on a Brave download bubble; that
   `.tmp` is the complete JSON key.
+
+## Map pins on Android (fixed 2026-09-12)
+
+- Symptom: custom `<Marker>` children rendered as the top-left corner only (about a third of the pin) on Android. iOS was fine.
+- Root cause: react-native-maps 1.20 sizes custom marker views through `SizeReportingShadowNode.onCollectExtraUpdates` -> `MapMarker.update(width, height)`. That hook only exists on the old (Paper) architecture. Expo SDK 54 runs the New Architecture, so width/height stay 0 and `createDrawable()` falls back to a 100x100 px bitmap.
+- Fix: on Android the shopper app no longer renders a view inside the Marker. `ShopMarker` passes `image={{ uri }}` pointing at the Supabase Edge Function `map-pin` (`supabase/functions/map-pin/index.ts`), which rasterises the same pin design (halo, ring, logo or initials, tail, shadow) to a PNG with resvg-wasm at the device pixel ratio. iOS keeps the native view pin.
+- `map-pin` is public (`verify_jwt: false`) because the Android image loader cannot send headers. It fetches the logo server-side, falls back to initials, and sets `Cache-Control: max-age=86400`. Cold start about 1 s, warm about 0.4 s. Redeploy with the Supabase MCP `deploy_edge_function` (or `supabase functions deploy map-pin --no-verify-jwt`).
+- If react-native-maps ever fixes marker sizing under Fabric, delete the Android branch in `ShopMarker` and the function.

@@ -11,6 +11,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -19,16 +20,30 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import Svg, { Polyline } from "react-native-svg";
 import {
+  AtSign,
   BadgeCheck,
+  Bell,
+  BookOpen,
   ChartNoAxesCombined,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  FileText,
+  Fingerprint,
   Gift,
+  Globe,
+  Image as ImageIcon,
   LayoutDashboard,
+  LifeBuoy,
+  LogOut,
   Newspaper,
   Settings,
   Sparkles,
   Stamp,
   Star,
+  Trash2,
   Users,
+  type LucideIcon,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
 import { colors } from "@loyalty-loop/design-tokens";
@@ -1508,26 +1523,51 @@ function NewsPage({ business }: { business: Business }) {
   );
 }
 
+// Icon tile colours for settings rows: soft background + matching icon tint.
+const SETTINGS_TILES = {
+  blue: { bg: "#E3EDFB", fg: "#2F6FD6" },
+  purple: { bg: "#ECE6FA", fg: "#6F4FD0" },
+  amber: { bg: "#FDECCD", fg: "#C77C12" },
+  green: { bg: "#E0F2E4", fg: "#2F8A4C" },
+  teal: { bg: "#DCF1F1", fg: "#1F8A8A" },
+  slate: { bg: "#E8E7EC", fg: "#5B5F6C" },
+  orange: { bg: "#FDE6D9", fg: "#D9612F" },
+  red: { bg: "#F8DCD8", fg: "#B73B32" },
+} as const;
+type SettingsTile = keyof typeof SETTINGS_TILES;
+
 function SettingsRow({
-  icon,
+  icon: Icon,
+  tile = "slate",
   title,
   detail,
   onPress,
+  right,
   danger,
+  last,
 }: {
-  icon: string;
+  icon: LucideIcon;
+  tile?: SettingsTile;
   title: string;
   detail?: string;
-  onPress: () => void;
+  onPress?: () => void;
+  right?: ReactNode;
   danger?: boolean;
+  last?: boolean;
 }) {
+  const palette = SETTINGS_TILES[danger ? "red" : tile];
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        styles.settingsRow,
+        last && styles.settingsRowLast,
+        pressed && onPress && styles.pressed,
+      ]}
     >
-      <View style={[styles.settingsIcon, danger && styles.dangerIcon]}>
-        <Text style={styles.settingsIconText}>{icon}</Text>
+      <View style={[styles.settingsIcon, { backgroundColor: palette.bg }]}>
+        <Icon size={19} color={palette.fg} strokeWidth={2.2} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.settingsRowTitle, danger && styles.dangerText]}>
@@ -1535,7 +1575,10 @@ function SettingsRow({
         </Text>
         {detail ? <Text style={styles.settingsRowDetail}>{detail}</Text> : null}
       </View>
-      <Text style={[styles.chevron, danger && styles.dangerText]}>›</Text>
+      {right ??
+        (onPress ? (
+          <ChevronRight size={20} color={danger ? "#B73B32" : "#A2A49D"} />
+        ) : null)}
     </Pressable>
   );
 }
@@ -1811,75 +1854,135 @@ function BusinessSettings({
           {saving ? "Saving…" : "Save changes"}
         </Text>
       </Pressable>
-      <Text style={styles.groupLabel}>BUSINESS TOOLS</Text>
+      <Text style={styles.groupLabel}>SHOP TOOLS</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
-          icon="◉"
+          icon={ImageIcon}
+          tile="orange"
           title="Logo & cover images"
           detail="Update your storefront branding"
           onPress={() => onOpenPage("branding")}
         />
         <SettingsRow
-          icon="★"
+          icon={Gift}
+          tile="amber"
           title="Rewards catalogue"
           detail="Create and edit reward tiers"
           onPress={() => onOpenPage("rewards")}
         />
         <SettingsRow
-          icon="✦"
+          icon={Star}
+          tile="purple"
           title="Customer reviews"
           detail="Read feedback and reply as your shop"
           onPress={() => onOpenPage("reviews")}
         />
         <SettingsRow
-          icon="♟"
+          icon={Users}
+          tile="blue"
           title="Staff & permissions"
           detail="Invite, revoke and manage access"
           onPress={() => onOpenPage("staff")}
+          last
+        />
+      </View>
+      <Text style={styles.groupLabel}>SECURITY & PRIVACY</Text>
+      <View style={styles.settingsGroupNoPadding}>
+        <SettingsRow
+          icon={Fingerprint}
+          tile="blue"
+          title="App lock"
+          detail="Face ID, Touch ID or fingerprint to open this app"
+          right={
+            <Switch
+              value={biometricEnabled}
+              onValueChange={() => void toggleBiometricLock()}
+              trackColor={{ true: green }}
+            />
+          }
         />
         <SettingsRow
-          icon="?"
-          title="Help & support"
-          detail="Get help from The Loyalty Loop"
-          onPress={() => onOpenPage("support")}
+          icon={ChartNoAxesCombined}
+          tile="purple"
+          title="Anonymous analytics"
+          detail="Share feature-use insights to help improve the app"
+          right={
+            <Switch
+              value={analyticsEnabled}
+              onValueChange={() => void toggleUsageAnalytics()}
+              trackColor={{ true: green }}
+            />
+          }
+          last
         />
+      </View>
+      <Text style={styles.groupLabel}>HELP & LEARNING</Text>
+      <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
-          icon="•"
-          title="Face ID / fingerprint lock"
-          detail={biometricEnabled ? "Required when opening this app" : "Protect access to this app"}
-          onPress={() => void toggleBiometricLock()}
-        />
-        <SettingsRow
-          icon="◌"
-          title={analyticsEnabled ? "Anonymous analytics on" : "Anonymous analytics off"}
-          detail="Choose whether feature-use insights are shared"
-          onPress={() => void toggleUsageAnalytics()}
-        />
-        <SettingsRow
-          icon="i"
+          icon={BookOpen}
+          tile="green"
           title="How to use your loyalty programme"
           detail="A short step-by-step business guide"
           onPress={() => onOpenPage("tutorial")}
         />
         <SettingsRow
-          icon="↗"
+          icon={LifeBuoy}
+          tile="teal"
+          title="Help & support"
+          detail="Get help from The Loyalty Loop"
+          onPress={() => onOpenPage("support")}
+        />
+        <SettingsRow
+          icon={Bell}
+          tile="amber"
+          title="Notification settings"
+          detail="Manage this app's alerts in your phone settings"
+          onPress={() => void Linking.openSettings()}
+        />
+        <SettingsRow
+          icon={Globe}
+          tile="slate"
           title="Visit web dashboard"
           detail="Open the-loyalty-loop.com in your browser"
           onPress={() => Linking.openURL("https://www.the-loyalty-loop.com")}
+          last
+        />
+      </View>
+      <Text style={styles.groupLabel}>LEGAL</Text>
+      <View style={styles.settingsGroupNoPadding}>
+        <SettingsRow
+          icon={FileText}
+          tile="slate"
+          title="Privacy notice"
+          onPress={() =>
+            Linking.openURL(
+              "https://www.the-loyalty-loop.com/legal/privacy-notice.pdf",
+            )
+          }
+        />
+        <SettingsRow
+          icon={FileText}
+          tile="slate"
+          title="Terms of service"
+          onPress={() =>
+            Linking.openURL(
+              "https://www.the-loyalty-loop.com/legal/terms-of-service.pdf",
+            )
+          }
+          last
         />
       </View>
       <Text style={styles.groupLabel}>ACCOUNT</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
-          icon="@"
-          title="Signed in account"
+          icon={AtSign}
+          tile="teal"
+          title="Signed in as"
           detail={session.user.email || "Business account"}
-          onPress={() =>
-            Alert.alert("Business account", session.user.email || "Signed in")
-          }
         />
         <SettingsRow
-          icon="↗"
+          icon={business.is_active === false ? Eye : EyeOff}
+          tile="amber"
           title={
             business.is_active === false ? "Reactivate shop" : "Deactivate shop"
           }
@@ -1892,17 +1995,27 @@ function BusinessSettings({
           danger={business.is_active !== false}
         />
         <SettingsRow
-          icon="⇥"
+          icon={LogOut}
+          tile="orange"
           title="Sign out"
-          onPress={() => supabase.auth.signOut()}
-          danger
+          onPress={() =>
+            Alert.alert("Sign out?", "You can sign back in at any time.", [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Sign out",
+                style: "destructive",
+                onPress: () => void supabase.auth.signOut(),
+              },
+            ])
+          }
         />
         <SettingsRow
-          icon="✕"
+          icon={Trash2}
           title="Delete account"
           detail="Permanently delete your account and any shops you own"
           onPress={() => confirmDeleteAccount(session.user.id)}
           danger
+          last
         />
       </View>
       <Text style={styles.settingsFootnote}>
@@ -3400,16 +3513,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(20,20,18,.07)",
   },
+  settingsRowLast: { borderBottomWidth: 0 },
   settingsIcon: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#E9E2D5",
     alignItems: "center",
     justifyContent: "center",
   },
-  dangerIcon: { backgroundColor: "#F8DEDA" },
-  settingsIconText: { fontSize: 16, fontWeight: "900", color: "#20211E" },
   settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#1B1C19" },
   settingsRowDetail: {
     fontSize: 12,
@@ -3417,7 +3528,6 @@ const styles = StyleSheet.create({
     color: "#72756D",
     marginTop: 3,
   },
-  chevron: { fontSize: 28, color: "#A2A49D", fontWeight: "300" },
   dangerText: { color: "#B73B32" },
   settingsFootnote: {
     fontSize: 12,

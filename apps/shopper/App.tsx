@@ -7,6 +7,8 @@ import {
   FlatList,
   Image,
   Linking,
+  Modal,
+  PixelRatio,
   Platform,
   Pressable,
   RefreshControl,
@@ -568,10 +570,25 @@ function confirmDeleteAccount() {
 const WEB = 'https://www.the-loyalty-loop.com'
 const openUrl = (url: string) => void Linking.openURL(url)
 
-function SettingsRow({ icon, title, detail, onPress, right, danger, last }: { icon: ReactNode; title: string; detail?: string; onPress?: () => void; right?: ReactNode; danger?: boolean; last?: boolean }) {
+// Icon tile colours for settings rows: soft background + matching icon tint.
+const TILES = {
+  blue: { bg: '#e3edfb', fg: '#2f6fd6' },
+  purple: { bg: '#ece6fa', fg: '#6f4fd0' },
+  rose: { bg: '#fbe3e8', fg: '#c93b5e' },
+  amber: { bg: '#fdeccd', fg: '#c77c12' },
+  green: { bg: '#e0f2e4', fg: '#2f8a4c' },
+  teal: { bg: '#dcf1f1', fg: '#1f8a8a' },
+  slate: { bg: '#e8e7ec', fg: '#5b5f6c' },
+  orange: { bg: '#fde6d9', fg: primary },
+  red: { bg: '#f8dcd8', fg: '#b54439' },
+} as const
+type Tile = keyof typeof TILES
+
+function SettingsRow({ icon, tile = 'slate', title, detail, onPress, right, danger, last }: { icon: (color: string) => ReactNode; tile?: Tile; title: string; detail?: string; onPress?: () => void; right?: ReactNode; danger?: boolean; last?: boolean }) {
+  const palette = TILES[danger ? 'red' : tile]
   return (
     <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [styles.settingsRow, !last && styles.settingsRowBorder, pressed && onPress ? styles.settingsRowPressed : null]}>
-      <View style={[styles.settingsIcon, danger && styles.settingsIconDanger]}>{icon}</View>
+      <View style={[styles.settingsIcon, { backgroundColor: palette.bg }]}>{icon(palette.fg)}</View>
       <View style={styles.settingsRowBody}>
         <Text style={[styles.settingsRowTitle, danger && styles.settingsRowTitleDanger]}>{title}</Text>
         {detail ? <Text style={styles.settingsRowDetail} numberOfLines={2}>{detail}</Text> : null}
@@ -591,11 +608,12 @@ function SettingsGroup({ title, children }: { title?: string; children: ReactNod
 }
 
 type SettingsView = 'root' | 'card' | 'name' | 'blocked'
-const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Settings', card: 'Customer card', name: 'Your name', blocked: 'Blocked people' }
+const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Customer card', name: 'Your name', blocked: 'Blocked people' }
 
-/** Full-screen settings, grouped like a native settings app: profile → customer
- * card → security & privacy → notifications → support → legal → account. */
-function SettingsScreen({ session, userId, stampCode, onBack }: { session: Session; userId: string; stampCode: string | null; onBack: () => void }) {
+/** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
+ * grouped rows — security & privacy → notifications → support → legal → account.
+ * The card, the name editor and the blocked list open inside the same sheet. */
+function SettingsSheet({ session, userId, stampCode, onClose }: { session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
   const [view, setView] = useState<SettingsView>('root')
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
@@ -636,114 +654,125 @@ function SettingsScreen({ session, userId, stampCode, onBack }: { session: Sessi
       { text: 'Sign out', style: 'destructive', onPress: () => void supabase.auth.signOut() },
     ])
   }
+  const goBack = () => (view === 'root' ? onClose() : setView('root'))
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.settingsHeader}>
-        <Pressable onPress={() => (view === 'root' ? onBack() : setView('root'))} hitSlop={10} style={styles.settingsBack}>
-          <ChevronLeftIcon size={20} />
-          <Text style={styles.back}>{view === 'root' ? 'Back' : 'Settings'}</Text>
-        </Pressable>
-        <Text style={styles.settingsHeaderTitle}>{SETTINGS_TITLES[view]}</Text>
-        <View style={styles.settingsBack} />
-      </View>
-      <ScrollView contentContainerStyle={styles.settingsScreen} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {view === 'root' && (
-          <>
-            <Pressable onPress={() => setView('name')} style={styles.profileCard}>
-              <View style={styles.profileAvatar}><Text style={styles.profileAvatarText}>{initialsOf(firstName)}</Text></View>
-              <View style={styles.settingsRowBody}>
-                <Text style={styles.profileName}>{firstName}</Text>
-                <Text style={styles.profileEmail} numberOfLines={1}>{email}</Text>
-              </View>
-              <ChevronRightIcon color="#b3ab9d" size={18} />
+    <Modal animationType="slide" transparent onRequestClose={goBack}>
+      <Pressable style={styles.sheetBackdrop} onPress={onClose} />
+      <SafeAreaView style={[styles.sheet, styles.settingsSheet]} edges={['bottom']}>
+        <View style={styles.sheetHandle} />
+        <View style={styles.sheetHeaderRow}>
+          {view === 'root' ? (
+            <Text style={styles.sheetTitle}>{SETTINGS_TITLES.root}</Text>
+          ) : (
+            <Pressable onPress={() => setView('root')} hitSlop={10} style={styles.sheetBack}>
+              <ChevronLeftIcon size={18} color="#8a8378" />
+              <Text style={styles.sheetTitle}>{SETTINGS_TITLES[view]}</Text>
             </Pressable>
+          )}
+          <Pressable onPress={onClose} hitSlop={10}>
+            <CloseIcon />
+          </Pressable>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
+          {view === 'root' && (
+            <>
+              <LinearGradient colors={[primary, '#c9542a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
+                <Pressable onPress={() => setView('name')} style={styles.settingsHeroRow}>
+                  <View style={styles.settingsHeroAvatar}><Text style={styles.settingsHeroAvatarText}>{initialsOf(firstName)}</Text></View>
+                  <View style={styles.settingsRowBody}>
+                    <Text style={styles.settingsHeroName}>{firstName}</Text>
+                    <Text style={styles.settingsHeroEmail} numberOfLines={1}>{email}</Text>
+                  </View>
+                  <ChevronRightIcon color="rgba(255,255,255,0.85)" size={18} />
+                </Pressable>
+                <Pressable onPress={() => setView('card')} style={styles.settingsHeroButton}>
+                  <View style={styles.settingsHeroButtonIcon}><QrIcon color="#fff" size={20} /></View>
+                  <View style={styles.settingsRowBody}>
+                    <Text style={styles.settingsHeroButtonTitle}>Show my customer card</Text>
+                    <Text style={styles.settingsHeroButtonCopy}>Scan it at the counter to collect stamps</Text>
+                  </View>
+                  <ChevronRightIcon color={primary} size={18} />
+                </Pressable>
+              </LinearGradient>
 
-            <Pressable onPress={() => setView('card')} style={styles.customerCardButton}>
-              <View style={styles.customerCardIcon}><QrIcon color="#fff" size={22} /></View>
-              <View style={styles.settingsRowBody}>
-                <Text style={styles.customerCardTitle}>Show my customer card</Text>
-                <Text style={styles.customerCardCopy}>Scan it at the counter to collect stamps</Text>
+              <SettingsGroup title="Security & privacy">
+                <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: primary }} />} />
+                <SettingsRow tile="purple" icon={(c) => <ChartIcon color={c} size={18} />} title="Anonymous analytics" detail="Helps us improve the app. Never your email, code or messages" right={<Switch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: primary }} />} />
+                <SettingsRow tile="rose" icon={(c) => <BanIcon color={c} size={18} />} title="Blocked people" detail={blocks.length ? `${blocks.length} blocked` : 'Nobody blocked'} onPress={() => setView('blocked')} last />
+              </SettingsGroup>
+
+              <SettingsGroup title="Notifications">
+                <SettingsRow tile="amber" icon={(c) => <BellIcon color={c} size={18} />} title="Notification settings" detail="Shop news and reward alerts, managed in your phone settings" onPress={() => void Linking.openSettings()} last />
+              </SettingsGroup>
+
+              <SettingsGroup title="Support">
+                <SettingsRow tile="green" icon={(c) => <HelpIcon color={c} size={18} />} title="Help & FAQ" onPress={() => openUrl(`${WEB}/help`)} />
+                <SettingsRow tile="teal" icon={(c) => <MailIcon color={c} size={18} />} title="Contact us" detail="hello@the-loyalty-loop.com" onPress={() => openUrl('mailto:hello@the-loyalty-loop.com')} last />
+              </SettingsGroup>
+
+              <SettingsGroup title="Legal">
+                <SettingsRow tile="slate" icon={(c) => <DocIcon color={c} size={18} />} title="Privacy notice" onPress={() => openUrl(`${WEB}/legal/privacy-notice.pdf`)} />
+                <SettingsRow tile="slate" icon={(c) => <DocIcon color={c} size={18} />} title="Terms of service" onPress={() => openUrl(`${WEB}/legal/terms-of-service.pdf`)} last />
+              </SettingsGroup>
+
+              <SettingsGroup title="Account">
+                <SettingsRow tile="orange" icon={(c) => <LogOutIcon color={c} size={18} />} title="Sign out" onPress={confirmSignOut} />
+                <SettingsRow icon={(c) => <TrashIcon color={c} size={18} />} title="Delete account" detail="Permanently removes your login, cards, stamps and rewards" onPress={confirmDeleteAccount} danger last />
+              </SettingsGroup>
+
+              <Text style={styles.settingsFooter}>The Loyalty Loop v{version} · {updateLabel}</Text>
+            </>
+          )}
+
+          {view === 'card' && (
+            <View style={styles.cardScreen}>
+              <View style={styles.cardQr}>
+                <QRCode value={`loyaltyloop:customer:${userId}`} size={220} />
               </View>
-              <ChevronRightIcon color="rgba(255,255,255,0.85)" size={18} />
-            </Pressable>
-
-            <SettingsGroup title="Security & privacy">
-              <SettingsRow icon={<LockIcon />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: primary }} />} />
-              <SettingsRow icon={<ChartIcon />} title="Anonymous analytics" detail="Help us improve the app. Never includes your email, code or messages" right={<Switch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: primary }} />} />
-              <SettingsRow icon={<BanIcon />} title="Blocked people" detail={blocks.length ? `${blocks.length} blocked` : 'Nobody blocked'} onPress={() => setView('blocked')} last />
-            </SettingsGroup>
-
-            <SettingsGroup title="Notifications">
-              <SettingsRow icon={<BellIcon />} title="Notification settings" detail="Turn shop news and reward alerts on or off in your phone settings" onPress={() => void Linking.openSettings()} last />
-            </SettingsGroup>
-
-            <SettingsGroup title="Support">
-              <SettingsRow icon={<HelpIcon />} title="Help & FAQ" onPress={() => openUrl(`${WEB}/help`)} />
-              <SettingsRow icon={<MailIcon />} title="Contact us" detail="hello@the-loyalty-loop.com" onPress={() => openUrl('mailto:hello@the-loyalty-loop.com')} last />
-            </SettingsGroup>
-
-            <SettingsGroup title="Legal">
-              <SettingsRow icon={<DocIcon />} title="Privacy notice" onPress={() => openUrl(`${WEB}/legal/privacy-notice.pdf`)} />
-              <SettingsRow icon={<DocIcon />} title="Terms of service" onPress={() => openUrl(`${WEB}/legal/terms-of-service.pdf`)} last />
-            </SettingsGroup>
-
-            <SettingsGroup title="Account">
-              <SettingsRow icon={<LogOutIcon />} title="Sign out" onPress={confirmSignOut} />
-              <SettingsRow icon={<TrashIcon color="#b54439" />} title="Delete account" detail="Permanently removes your login, cards, stamps and rewards" onPress={confirmDeleteAccount} danger last />
-            </SettingsGroup>
-
-            <Text style={styles.settingsFooter}>The Loyalty Loop v{version} · {updateLabel}</Text>
-          </>
-        )}
-
-        {view === 'card' && (
-          <View style={styles.cardScreen}>
-            <View style={styles.cardQr}>
-              <QRCode value={`loyaltyloop:customer:${userId}`} size={220} />
+              <Text style={styles.cardName}>{firstName}</Text>
+              <Text style={styles.manualCodeLabel}>YOUR MANUAL CODE</Text>
+              <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
+              <Text style={styles.small}>Show this at a participating shop to collect stamps and rewards. If the scanner can’t read it, the shop can type your manual code instead.</Text>
             </View>
-            <Text style={styles.cardName}>{firstName}</Text>
-            <Text style={styles.manualCodeLabel}>YOUR MANUAL CODE</Text>
-            <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
-            <Text style={styles.small}>Show this at a participating shop to collect stamps and rewards. If the scanner can’t read it, the shop can type your manual code instead.</Text>
-          </View>
-        )}
+          )}
 
-        {view === 'name' && (
-          <>
+          {view === 'name' && (
+            <>
+              <View style={styles.settingsCard}>
+                <Text style={styles.settingsFieldLabel}>First name</Text>
+                <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#b3ab9d" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
+                <Text style={styles.settingsFieldHelp}>Shops see this name when you collect a stamp or leave a review.</Text>
+              </View>
+              <View style={styles.settingsCard}>
+                <SettingsRow tile="teal" icon={(c) => <MailIcon color={c} size={18} />} title="Email" detail={email} last />
+              </View>
+              <Button title={savingName ? 'Saving…' : 'Save'} onPress={() => void saveName()} disabled={savingName} />
+            </>
+          )}
+
+          {view === 'blocked' && (
             <View style={styles.settingsCard}>
-              <Text style={styles.settingsFieldLabel}>First name</Text>
-              <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#b3ab9d" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
-              <Text style={styles.settingsFieldHelp}>Shops see this name when you collect a stamp or leave a review.</Text>
+              {blocks.length === 0 ? (
+                <Text style={styles.settingsEmpty}>You haven’t blocked anyone. Blocking someone from a review hides everything they write from you.</Text>
+              ) : (
+                blocks.map((block, index) => (
+                  <SettingsRow
+                    key={block.blocked_id}
+                    tile="rose"
+                    icon={(c) => <BanIcon color={c} size={18} />}
+                    title="Blocked reviewer"
+                    detail={`Blocked on ${new Date(block.created_at).toLocaleDateString()}`}
+                    right={<Pressable onPress={() => void unblock(block.blocked_id)} hitSlop={8}><Text style={styles.blockRowUnblock}>Unblock</Text></Pressable>}
+                    last={index === blocks.length - 1}
+                  />
+                ))
+              )}
             </View>
-            <View style={styles.settingsCard}>
-              <SettingsRow icon={<MailIcon />} title="Email" detail={email} last />
-            </View>
-            <Button title={savingName ? 'Saving…' : 'Save'} onPress={() => void saveName()} disabled={savingName} />
-          </>
-        )}
-
-        {view === 'blocked' && (
-          <View style={styles.settingsCard}>
-            {blocks.length === 0 ? (
-              <Text style={styles.settingsEmpty}>You haven’t blocked anyone. Blocking someone from a review hides everything they write from you.</Text>
-            ) : (
-              blocks.map((block, index) => (
-                <SettingsRow
-                  key={block.blocked_id}
-                  icon={<BanIcon />}
-                  title="Blocked reviewer"
-                  detail={`Blocked on ${new Date(block.created_at).toLocaleDateString()}`}
-                  right={<Pressable onPress={() => void unblock(block.blocked_id)} hitSlop={8}><Text style={styles.blockRowUnblock}>Unblock</Text></Pressable>}
-                  last={index === blocks.length - 1}
-                />
-              ))
-            )}
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   )
 }
 
@@ -1349,6 +1378,19 @@ function initialsOf(name: string) {
   return letters.join('') || '?'
 }
 
+const PIN_ENDPOINT = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/map-pin`
+
+// Android + React Native's New Architecture never report a custom marker view's
+// size to react-native-maps, so view-based pins are snapshotted at 100×100 px and
+// come out cut off. On Android we therefore load a server-rendered PNG of the same
+// pin (supabase/functions/map-pin) through the Marker `image` prop instead.
+function pinImageUrl(business: Business, color: string) {
+  const scale = Math.min(4, Math.max(1, Math.round(PixelRatio.get() * 100) / 100))
+  const params = [`color=${encodeURIComponent(color)}`, `initials=${encodeURIComponent(initialsOf(business.name))}`, `scale=${scale}`]
+  if (business.logo_url) params.push(`logo=${encodeURIComponent(business.logo_url)}`)
+  return `${PIN_ENDPOINT}?${params.join('&')}`
+}
+
 // Brand-coloured map pin: white ring, shop logo (or initials) inside, brand tail,
 // soft halo and a ground shadow. Replaces the stock red Google marker.
 function ShopMarker({ business, description, onCalloutPress }: { business: Business; description?: string; onCalloutPress?: () => void }) {
@@ -1361,9 +1403,23 @@ function ShopMarker({ business, description, onCalloutPress }: { business: Busin
     return () => clearTimeout(timer)
   }, [business.logo_url])
   if (business.lat == null || business.lng == null) return null
+  const coordinate = { latitude: business.lat, longitude: business.lng }
+  if (Platform.OS === 'android') {
+    return (
+      <Marker
+        coordinate={coordinate}
+        title={business.name}
+        description={description}
+        anchor={{ x: 0.5, y: 0.9 }}
+        image={{ uri: pinImageUrl(business, color) }}
+        pinColor={color}
+        onCalloutPress={onCalloutPress}
+      />
+    )
+  }
   return (
     <Marker
-      coordinate={{ latitude: business.lat, longitude: business.lng }}
+      coordinate={coordinate}
       title={business.name}
       description={description}
       anchor={{ x: 0.5, y: 0.9 }}
@@ -1845,10 +1901,6 @@ function AppHome({ session }: { session: Session }) {
 
   const favouriteBusinesses = businesses.filter((b) => favouriteIds.has(b.id))
 
-  if (showProfile) {
-    return <SettingsScreen session={session} userId={userId} stampCode={stampCode} onBack={() => setShowProfile(false)} />
-  }
-
   if (selected) {
     return (
       <ShopDetail
@@ -1889,6 +1941,7 @@ function AppHome({ session }: { session: Session }) {
         </ScrollView>
       )}
       {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
+      {showProfile && <SettingsSheet session={session} userId={userId} stampCode={stampCode} onClose={() => setShowProfile(false)} />}
     </SafeAreaView>
   )
 }
@@ -2129,27 +2182,26 @@ const styles = StyleSheet.create({
   visitSection: { marginTop: 28 },
   mapEmbed: { height: 150, marginTop: 10, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#efe8db' },
   nativeMap: { flex: 1 },
-  settingsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10 },
-  settingsBack: { flexDirection: 'row', alignItems: 'center', gap: 2, minWidth: 90 },
-  settingsHeaderTitle: { fontSize: 17, fontWeight: '800', color: foreground },
-  settingsScreen: { padding: 20, paddingTop: 6, paddingBottom: 60, gap: 22 },
-  profileCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: card, borderRadius: 20, padding: 16 },
-  profileAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
-  profileAvatarText: { color: '#fff', fontWeight: '900', fontSize: 18 },
-  profileName: { fontSize: 18, fontWeight: '800', color: foreground },
-  profileEmail: { color: '#8a8378', fontSize: 13, marginTop: 2 },
-  customerCardButton: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: primary, borderRadius: 20, padding: 16, shadowColor: primary, shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 },
-  customerCardIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  customerCardTitle: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  customerCardCopy: { color: 'rgba(255,255,255,0.82)', fontSize: 13, marginTop: 2 },
+  settingsSheet: { paddingHorizontal: 18, maxHeight: '92%' },
+  settingsSheetScroll: { paddingBottom: 20, gap: 20 },
+  sheetBack: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  settingsHero: { borderRadius: 24, padding: 16, gap: 14, shadowColor: primary, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
+  settingsHeroRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  settingsHeroAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.75)', alignItems: 'center', justifyContent: 'center' },
+  settingsHeroAvatarText: { color: '#fff', fontWeight: '900', fontSize: 20 },
+  settingsHeroName: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  settingsHeroEmail: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 },
+  settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 11 },
+  settingsHeroButtonIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
+  settingsHeroButtonTitle: { color: foreground, fontWeight: '800', fontSize: 15 },
+  settingsHeroButtonCopy: { color: '#8a8378', fontSize: 12.5, marginTop: 1 },
   settingsGroup: { gap: 8 },
   settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#8a8378', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 6 },
   settingsCard: { backgroundColor: card, borderRadius: 18, overflow: 'hidden' },
   settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
   settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.12)' },
   settingsRowPressed: { backgroundColor: 'rgba(0,0,0,0.04)' },
-  settingsIcon: { width: 32, height: 32, borderRadius: 9, backgroundColor: '#efe9dc', alignItems: 'center', justifyContent: 'center' },
-  settingsIconDanger: { backgroundColor: '#f6deda' },
+  settingsIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   settingsRowBody: { flex: 1 },
   settingsRowTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
   settingsRowTitleDanger: { color: '#b54439' },
