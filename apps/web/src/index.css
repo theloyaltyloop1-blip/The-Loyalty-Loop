@@ -1,25 +1,54 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 @import 'tailwindcss';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --font-display: 'Libre Baskerville', Georgia, serif;
   --font-body: 'DM Sans', Arial, sans-serif;
+  --font-sans: var(--font-body);
 
   --color-background: #F7ECDC;
   --color-foreground: #1a1a1a;
   --color-card: #FBF6EC;
+  --color-card-foreground: var(--color-foreground);
   --color-primary: #E8703B;
+  --color-primary-foreground: #ffffff;
   --color-primary-hover: #C9622E;
   --color-primary-glow: #C9622E;
   --color-secondary: #ebe3d4;
+  --color-secondary-foreground: var(--color-foreground);
   --color-accent: #F6AF23;
+  --color-accent-foreground: var(--color-foreground);
   --color-ink: #40281C;
   --color-fun-green: #3FA34D;
   --color-fun-violet: #73856f;
   --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
   --color-border: #ded6c9;
 
+  /* shadcn/Radix components (popover, dropdown, dialog, focus rings) reuse the
+     same surfaces and accents as the rest of the app rather than introducing
+     a second, generic gray palette — this is what shadcn's own init would
+     have appended as new `oklch()` tokens if we hadn't remapped it here. */
+  --color-muted: var(--color-secondary);
+  --color-muted-foreground: #7a7266;
+  --color-popover: var(--color-card);
+  --color-popover-foreground: var(--color-foreground);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-primary);
+
   --radius-default: 0.875rem;
+  --radius: var(--radius-default);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 
   --shadow-sticker: 0 1px 2px rgb(26 26 26 / 0.06), 0 8px 24px rgb(26 26 26 / 0.05);
   --shadow-sticker-lifted: 0 4px 8px rgb(26 26 26 / 0.08), 0 16px 32px rgb(26 26 26 / 0.08);
@@ -31,6 +60,7 @@
 @layer base {
   * {
     border-color: var(--color-border);
+    @apply outline-ring/50;
   }
 
   body {
@@ -88,6 +118,8 @@ html.dark {
   --color-fun-violet: #a5b79d;
   --color-destructive: #ff756b;
   --color-border: #443a31;
+  --color-muted-foreground: #b3a999;
+  --color-input: #51453a;
   color-scheme: dark;
 }
 

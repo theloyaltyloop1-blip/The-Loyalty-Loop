@@ -4,6 +4,7 @@ import { Home, Clapperboard, Megaphone, Gift, Heart, User, Shield, LogOut, Histo
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },
@@ -65,16 +66,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </footer>
       </main>
 
-      <button data-press-feedback
-        title="Security"
-        className="fixed h-12 w-12 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.95] md:h-14 md:w-14"
-        style={{
-          bottom: 'calc(1rem + env(safe-area-inset-bottom))',
-          right: 'calc(1rem + env(safe-area-inset-right))',
-        }}
-      >
-        <Shield className="h-6 w-6" />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button data-press-feedback
+            aria-label="Security"
+            className="fixed h-12 w-12 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.95] md:h-14 md:w-14"
+            style={{
+              bottom: 'calc(1rem + env(safe-area-inset-bottom))',
+              right: 'calc(1rem + env(safe-area-inset-right))',
+            }}
+          >
+            <Shield className="h-6 w-6" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="left">Security</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

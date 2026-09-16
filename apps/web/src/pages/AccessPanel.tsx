@@ -1,6 +1,10 @@
 import * as React from 'react'
 import { Navigate, Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { CheckCircle2, Download, LockKeyhole, ShieldCheck, XCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
@@ -113,8 +117,43 @@ function Overview({ health, selected, onSelect, onRefresh, onOpenTab }: { health
     {selected && <section className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold">{selected.label}</p><p className="mt-1 text-sm text-white/60">{selected.detail}</p></div><button data-press-feedback onClick={() => onSelect(null)} className="rounded-lg px-2 py-1 text-sm text-white/60">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button data-press-feedback onClick={() => void onRefresh()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold">Run check again</button>{selected.targetTab && <button data-press-feedback onClick={() => onOpenTab(selected.targetTab!)} className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Open related queue</button>}{selected.label === 'Storage' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/storage/buckets" target="_blank" rel="noreferrer" className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Open Storage</a>}{selected.label === 'Platform health function' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/functions/platform-health" target="_blank" rel="noreferrer" className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Open function</a>}</div></section>}</>
 }
 
+function RejectListingDialog({ name, onReject }: { name: string; onReject: (reason: string) => Promise<void> }) {
+  const [open, setOpen] = React.useState(false)
+  const [reason, setReason] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  async function submit() {
+    if (!reason.trim()) return
+    setBusy(true)
+    try {
+      await onReject(reason.trim())
+      setOpen(false)
+      setReason('')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button data-press-feedback className="rounded-xl border border-red-400/50 px-4 py-2 text-sm font-bold text-red-300">Reject</button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reject {name}?</DialogTitle>
+          <DialogDescription>The owner will see this reason.</DialogDescription>
+        </DialogHeader>
+        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Rejection reason" autoFocus />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="destructive" disabled={!reason.trim() || busy} onClick={() => void submit()}>{busy ? 'Rejecting…' : 'Reject listing'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function VerificationQueue({ items, refresh }: { items: PendingVerification[]; refresh: () => Promise<void> }) {
-  return <div className="grid gap-4">{items.length ? items.map((item) => <article key={item.id} className="rounded-2xl bg-white/6 p-4 sm:p-5"><p className="font-bold">{item.name}</p><p className="break-all text-sm text-white/55">{item.owner_email}</p><div className="mt-3 flex flex-wrap gap-2"><button data-press-feedback onClick={async () => { await reviewBusinessVerification(item.id, true); void refresh() }} className="rounded-xl bg-fun-green px-4 py-2 text-sm font-bold">Approve</button><button data-press-feedback onClick={async () => { const reason = prompt('Rejection reason') || ''; if (reason) { await reviewBusinessVerification(item.id, false, reason); void refresh() } }} className="rounded-xl border border-red-400/50 px-4 py-2 text-sm font-bold text-red-300">Reject</button></div></article>) : <p className="text-white/55">No listings waiting.</p>}</div>
+  return <div className="grid gap-4">{items.length ? items.map((item) => <article key={item.id} className="rounded-2xl bg-white/6 p-4 sm:p-5"><p className="font-bold">{item.name}</p><p className="break-all text-sm text-white/55">{item.owner_email}</p><div className="mt-3 flex flex-wrap gap-2"><button data-press-feedback onClick={async () => { await reviewBusinessVerification(item.id, true); void refresh() }} className="rounded-xl bg-fun-green px-4 py-2 text-sm font-bold">Approve</button><RejectListingDialog name={item.name} onReject={async (reason) => { await reviewBusinessVerification(item.id, false, reason); void refresh() }} /></div></article>) : <p className="text-white/55">No listings waiting.</p>}</div>
 }
 
 function SupportQueue({ items, refresh }: { items: SupportRequest[]; refresh: () => Promise<void> }) {
@@ -126,7 +165,7 @@ function ReviewReportsQueue({ items, refresh }: { items: ReviewReport[]; refresh
   const [busyId, setBusyId] = React.useState<string | null>(null)
   async function act(fn: () => Promise<void>, id: string) {
     setBusyId(id)
-    try { await fn(); void refresh() } catch (error) { alert(error instanceof Error ? error.message : 'Something went wrong.') } finally { setBusyId(null) }
+    try { await fn(); void refresh() } catch (error) { toast.error(error instanceof Error ? error.message : 'Something went wrong.') } finally { setBusyId(null) }
   }
   return <div className="grid gap-4">
     <p className="text-sm text-white/50">Reviews a shopper flagged as objectionable. It’s already hidden from the person who reported it — decide within 24 hours whether to remove it for everyone.</p>

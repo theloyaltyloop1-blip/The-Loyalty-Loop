@@ -4,7 +4,9 @@ import { Users, Stamp, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, 
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useOwner } from '@/lib/owner-context'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   fetchPeriodStats,
   fetchTotalsStats,
@@ -50,39 +52,57 @@ function useCountUp(value: number) {
 
 function Delta({ current, prev }: { current: number; prev: number }) {
   const pct = pctChange(current, prev)
+  const compareLabel = 'Compared to the equal-length period right before this one'
   if (pct === null) {
     return (
-      <span className="flex items-center gap-1 text-xs font-bold text-fun-green">
-        <TrendingUp className="h-3.5 w-3.5" /> new
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="flex items-center gap-1 text-xs font-bold text-fun-green outline-none">
+            <TrendingUp className="h-3.5 w-3.5" /> new
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{compareLabel}</TooltipContent>
+      </Tooltip>
     )
   }
   if (pct === 0) {
     return (
-      <span className="flex items-center gap-1 text-xs font-bold text-foreground/40">
-        <Minus className="h-3.5 w-3.5" /> flat
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="flex items-center gap-1 text-xs font-bold text-foreground/40 outline-none">
+            <Minus className="h-3.5 w-3.5" /> flat
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{compareLabel}</TooltipContent>
+      </Tooltip>
     )
   }
   const up = pct > 0
   return (
-    <span className={'flex items-center gap-1 text-xs font-bold ' + (up ? 'text-fun-green' : 'text-red-500')}>
-      {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-      {up ? '+' : ''}
-      {pct}%
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className={'flex items-center gap-1 text-xs font-bold outline-none ' + (up ? 'text-fun-green' : 'text-red-500')}>
+          {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+          {up ? '+' : ''}
+          {pct}%
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{compareLabel}</TooltipContent>
+    </Tooltip>
   )
 }
 
 function StatTile({
   icon: Icon,
   label,
+  hint,
   value,
   prev,
   color,
 }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   label: string
+  hint?: string
   value: number
   prev: number
   color: string
@@ -97,7 +117,16 @@ function StatTile({
         <Delta current={value} prev={prev} />
       </div>
       <p className="text-3xl font-display font-extrabold text-foreground" aria-label={`${value} ${label}`}>{displayedValue}</p>
-      <p className="text-sm text-foreground/50 mt-0.5">{label}</p>
+      {hint ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <p tabIndex={0} className="text-sm text-foreground/50 mt-0.5 w-fit underline decoration-dotted decoration-foreground/30 underline-offset-2 outline-none">{label}</p>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{hint}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <p className="text-sm text-foreground/50 mt-0.5">{label}</p>
+      )}
     </div>
   )
 }
@@ -363,25 +392,13 @@ export function OwnerAnalytics() {
           <p className="text-foreground/40">Loading stats…</p>
         </div>
       ) : (
-        <>
-          <div className="flex gap-1 overflow-x-auto border-b border-black/10 mb-6">
-            {(['simplified', 'detailed'] as const).map((key) => (
-              <button data-press-feedback
-                key={key}
-                onClick={() => setView(key)}
-                className={
-                  'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px capitalize transition-colors duration-150 ease-out ' +
-                  (view === key
-                    ? 'border-foreground text-foreground'
-                    : 'border-transparent text-foreground/40 hover:text-foreground/70')
-                }
-              >
-                {key}
-              </button>
-            ))}
-          </div>
+        <Tabs value={view} onValueChange={(v) => setView(v as 'simplified' | 'detailed')}>
+          <TabsList variant="line" className="mb-6 border-b border-black/10">
+            <TabsTrigger value="simplified" className="capitalize">simplified</TabsTrigger>
+            <TabsTrigger value="detailed" className="capitalize">detailed</TabsTrigger>
+          </TabsList>
 
-          {view === 'simplified' ? (
+          <TabsContent value="simplified">
             <div className="flex flex-col gap-6">
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} color="#3B82C4" />
@@ -393,11 +410,13 @@ export function OwnerAnalytics() {
               <DeepBusinessReportCard businessId={business.id} report={webResearch} onReport={setWebResearch} />
               <BusinessCoach businessId={business.id} stats={{ period: stats, totals, web_research: webResearch?.report }} />
             </div>
-          ) : (
+          </TabsContent>
+
+          <TabsContent value="detailed">
             <div className="flex flex-col gap-6">
               <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} color="#3B82C4" />
-                <StatTile icon={Users} label="Active members" value={stats.active_members} prev={stats.active_members_prev} color="#1B3A4B" />
+                <StatTile icon={Users} label="Active members" hint="Members who collected a stamp, point, or visit in this period" value={stats.active_members} prev={stats.active_members_prev} color="#1B3A4B" />
                 <StatTile icon={Stamp} label="Stamps given" value={stats.stamps_given} prev={stats.stamps_given_prev} color="#E8703B" />
                 <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} color="#8E5FC2" />
                 <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} color="#3FA34D" />
@@ -447,8 +466,8 @@ export function OwnerAnalytics() {
               <DeepBusinessReportCard businessId={business.id} report={webResearch} onReport={setWebResearch} />
               <BusinessCoach businessId={business.id} stats={{ period: stats, totals, web_research: webResearch?.report }} />
             </div>
-          )}
-        </>
+          </TabsContent>
+        </Tabs>
       )}
     </OwnerLayout>
   )

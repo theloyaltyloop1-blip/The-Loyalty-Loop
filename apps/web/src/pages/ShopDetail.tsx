@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { ReviewsSection } from '@/components/reviews-section'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShopMap } from '@/components/shop-map'
 import {
   fetchBusinessBySlug,
@@ -277,16 +278,21 @@ export function ShopDetail() {
             : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
-        <button data-press-feedback
-          onClick={handleToggleFavourite}
-          aria-label={favourite ? `Remove ${business.name} from favourites` : `Add ${business.name} to favourites`}
-          className={
-            'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
-            (favourite ? 'bg-accent text-white' : 'bg-white/90 text-foreground')
-          }
-        >
-          <Heart className="h-5 w-5" fill={favourite ? 'currentColor' : 'none'} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button data-press-feedback
+              onClick={handleToggleFavourite}
+              aria-label={favourite ? `Remove ${business.name} from favourites` : `Add ${business.name} to favourites`}
+              className={
+                'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
+                (favourite ? 'bg-accent text-white' : 'bg-white/90 text-foreground')
+              }
+            >
+              <Heart className="h-5 w-5" fill={favourite ? 'currentColor' : 'none'} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left">{favourite ? 'Remove from favourites' : 'Add to favourites'}</TooltipContent>
+        </Tooltip>
 
         <div
           className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center font-display font-extrabold text-2xl mb-5 overflow-hidden"
@@ -302,7 +308,12 @@ export function ShopDetail() {
         <h1 className="text-4xl font-display font-extrabold mb-1 flex items-center gap-2">
           {business.name}
           {business.verification_status === 'verified' && (
-            <BadgeCheck className="h-7 w-7 text-white shrink-0" aria-label="Verified" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <BadgeCheck tabIndex={0} className="h-7 w-7 text-white shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-white rounded-full" aria-label="Verified — we've confirmed this is a real business" />
+              </TooltipTrigger>
+              <TooltipContent>Verified — we've confirmed this is a real business</TooltipContent>
+            </Tooltip>
           )}
         </h1>
         <p className="text-white/80 mb-2">{business.category}</p>
@@ -422,13 +433,18 @@ export function ShopDetail() {
 
           {isOwner && (
             <div className="border-t border-black/10 mt-6 pt-5">
-              <button data-press-feedback
-                onClick={handleSimulateStamp}
-                disabled={stamping}
-                className="flex items-center gap-2 rounded-full border border-dashed border-foreground/30 px-5 h-10 font-semibold text-sm text-foreground/70 disabled:opacity-50"
-              >
-                <Zap className="h-4 w-4" /> {stamping ? 'Adding…' : 'Simulate stamp (owner testing)'}
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button data-press-feedback
+                    onClick={handleSimulateStamp}
+                    disabled={stamping}
+                    className="flex items-center gap-2 rounded-full border border-dashed border-foreground/30 px-5 h-10 font-semibold text-sm text-foreground/70 disabled:opacity-50"
+                  >
+                    <Zap className="h-4 w-4" /> {stamping ? 'Adding…' : 'Simulate stamp (owner testing)'}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Adds one real stamp to your own account, so you can preview what customers see</TooltipContent>
+              </Tooltip>
             </div>
           )}
 

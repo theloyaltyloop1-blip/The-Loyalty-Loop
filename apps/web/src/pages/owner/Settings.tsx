@@ -33,6 +33,7 @@ import {
 } from '@/lib/businesses'
 import { canDeleteCurrentAccount, requestAccountDeletion } from '@/lib/engagement'
 import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 
@@ -240,12 +241,18 @@ function GalleryTab({ businessId }: { businessId: string }) {
           {photos.map((p) => (
             <div key={p.id} className="relative rounded-xl overflow-hidden aspect-square group">
               <img src={p.url} alt="" className="h-full w-full object-cover" />
-              <button data-press-feedback
-                onClick={() => handleDelete(p.id)}
-                className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button data-press-feedback
+                    onClick={() => handleDelete(p.id)}
+                    aria-label="Delete this photo"
+                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Delete this photo</TooltipContent>
+              </Tooltip>
             </div>
           ))}
           <button data-press-feedback
@@ -612,7 +619,12 @@ function LoyaltyTab() {
 
         <div className="grid sm:grid-cols-2 gap-8">
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">Brand color</p>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p tabIndex={0} className="text-sm font-semibold text-foreground mb-2 w-fit underline decoration-dotted decoration-foreground/30 underline-offset-2 outline-none">Brand color</p>
+              </TooltipTrigger>
+              <TooltipContent side="right">Shows on your loyalty card, QR code and shop page in the shopper app</TooltipContent>
+            </Tooltip>
             <div className="flex items-center gap-2 mb-3">
               <input
                 type="color"
@@ -624,12 +636,17 @@ function LoyaltyTab() {
             </div>
             <div className="flex flex-wrap gap-2 mb-6">
               {BRAND_COLORS.map((c) => (
-                <button data-press-feedback
-                  key={c}
-                  onClick={() => setBrandColor(c)}
-                  className="h-8 w-8 rounded-full border-2"
-                  style={{ backgroundColor: c, borderColor: c === brandColor ? '#1a1a1a' : 'transparent' }}
-                />
+                <Tooltip key={c}>
+                  <TooltipTrigger asChild>
+                    <button data-press-feedback
+                      onClick={() => setBrandColor(c)}
+                      aria-label={`Use ${c} as the brand color`}
+                      className="h-8 w-8 rounded-full border-2"
+                      style={{ backgroundColor: c, borderColor: c === brandColor ? '#1a1a1a' : 'transparent' }}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>{c}</TooltipContent>
+                </Tooltip>
               ))}
             </div>
 
@@ -727,9 +744,14 @@ function LoyaltyTab() {
                     {r.description} · {r.stamp_threshold} {unit.toLowerCase()}{r.stamp_threshold === 1 ? '' : 's'}
                   </p>
                 </div>
-                <button data-press-feedback onClick={() => handleDeleteReward(r.id)} className="text-foreground/40 hover:text-red-600">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button data-press-feedback onClick={() => handleDeleteReward(r.id)} aria-label={`Delete ${r.title}`} className="text-foreground/40 hover:text-red-600">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Delete this reward</TooltipContent>
+                </Tooltip>
               </div>
             ))}
           </div>

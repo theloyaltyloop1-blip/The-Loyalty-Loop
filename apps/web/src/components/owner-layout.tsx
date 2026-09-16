@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const OWNER_NAV_ITEMS = [
   { label: 'Analytics', to: '/owner', icon: LineChart, end: true },
@@ -25,80 +26,38 @@ const STAFF_NAV_ITEMS = [{ label: 'Scan', to: '/owner/scan', icon: ScanLine, end
 
 function BusinessSwitcher() {
   const { businesses, business, staffBusinesses, setBusinessId } = useOwner()
-  const [open, setOpen] = React.useState(false)
-  const [menuMounted, setMenuMounted] = React.useState(false)
-  const closeTimer = React.useRef<number | null>(null)
-
-  React.useEffect(() => () => {
-    if (closeTimer.current) window.clearTimeout(closeTimer.current)
-  }, [])
-
-  function closeMenu() {
-    setOpen(false)
-    if (closeTimer.current) window.clearTimeout(closeTimer.current)
-    closeTimer.current = window.setTimeout(() => setMenuMounted(false), 180)
-  }
-
-  function onMenuKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
-    if (event.key === 'Escape') closeMenu()
-  }
-
-  function toggleMenu() {
-    if (open) {
-      closeMenu()
-      return
-    }
-    if (closeTimer.current) window.clearTimeout(closeTimer.current)
-    setMenuMounted(true)
-    window.requestAnimationFrame(() => setOpen(true))
-  }
-
   const isOwner = businesses.length > 0
 
   if (isOwner) {
     if (!business) return null
-    return (
-      <div className="relative mb-6">
-        <button data-press-feedback
-          onClick={toggleMenu}
-          onKeyDown={onMenuKeyDown}
-          aria-expanded={open}
-          aria-haspopup="menu"
-          aria-controls="business-switcher-menu"
-          className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-card px-4 py-3 font-semibold text-foreground transition-[transform,border-color] duration-150 ease-out active:scale-[0.98] hover:border-black/20"
-        >
-          <span className="flex items-center gap-2 truncate">
-            <span
-              className="h-6 w-6 rounded-md shrink-0 flex items-center justify-center text-white text-xs font-bold"
-              style={{ backgroundColor: business.brand_color }}
-            >
-              {business.name.charAt(0).toUpperCase()}
-            </span>
-            <span className="truncate">{business.name}</span>
+    const trigger = (
+      <button data-press-feedback
+        className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-card px-4 py-3 font-semibold text-foreground transition-[transform,border-color] duration-150 ease-out active:scale-[0.98] hover:border-black/20"
+      >
+        <span className="flex items-center gap-2 truncate">
+          <span
+            className="h-6 w-6 rounded-md shrink-0 flex items-center justify-center text-white text-xs font-bold"
+            style={{ backgroundColor: business.brand_color }}
+          >
+            {business.name.charAt(0).toUpperCase()}
           </span>
-          {businesses.length > 1 && (
-            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-150 ease-out ${open ? 'rotate-180' : ''}`} />
-          )}
-        </button>
-
-        {menuMounted && businesses.length > 1 && (
-          <div id="business-switcher-menu" role="menu" aria-label="Choose a shop" data-state={open ? 'open' : 'closed'} className="business-switcher-menu absolute z-50 mt-1 w-full rounded-2xl border border-black/10 bg-card shadow-lg overflow-hidden">
-            {businesses.map((b) => (
-              <button data-press-feedback
-                key={b.id}
-                role="menuitem"
-                onClick={() => {
-                  setBusinessId(b.id)
-                  closeMenu()
-                }}
-                className="w-full text-left px-4 py-2.5 font-medium text-foreground transition-colors duration-100 ease-out hover:bg-black/5"
-              >
-                {b.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+          <span className="truncate">{business.name}</span>
+        </span>
+        {businesses.length > 1 && <ChevronDown className="h-4 w-4 shrink-0" />}
+      </button>
+    )
+    if (businesses.length <= 1) return <div className="mb-6">{trigger}</div>
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild className="mb-6 block">{trigger}</DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
+          {businesses.map((b) => (
+            <DropdownMenuItem key={b.id} onSelect={() => setBusinessId(b.id)} className="px-2.5 py-2">
+              {b.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
   }
 

@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, BadgeCheck } from 'lucide-react'
 import type { Business, Membership } from '@/lib/businesses'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Badge } from '@/components/ui/badge'
 
 function ShopLogo({ business, size = 56 }: { business: Business; size?: number }) {
   if (business.logo_url) {
@@ -33,9 +35,9 @@ export function ShopCard({ business, membership }: { business: Business; members
       className="w-full text-left rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5 relative hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-150 ease-out"
     >
       {joined && (
-        <span className="absolute top-4 right-4 rounded-full bg-[#EFE1C8] text-[#5a4a30] text-[0.6875rem] font-bold uppercase tracking-wide px-3 py-1">
+        <Badge variant="secondary" className="absolute top-4 right-4 uppercase tracking-wide">
           Joined
-        </span>
+        </Badge>
       )}
 
       <ShopLogo business={business} />
@@ -43,7 +45,14 @@ export function ShopCard({ business, membership }: { business: Business; members
       <h3 className="font-display font-bold text-xl text-foreground mt-4 flex items-center gap-1.5">
         {business.name}
         {business.verification_status === 'verified' && (
-          <BadgeCheck className="h-4 w-4 text-[#3B82C4] shrink-0" aria-label="Verified" />
+          // Not focusable: the whole card is already one button, so this stays a
+          // hover-only hint for mouse users rather than a second, nested tab stop.
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <BadgeCheck className="h-4 w-4 text-[#3B82C4] shrink-0" aria-label="Verified — we've confirmed this is a real business" />
+            </TooltipTrigger>
+            <TooltipContent>Verified — we've confirmed this is a real business</TooltipContent>
+          </Tooltip>
         )}
       </h3>
       <p className="text-xs font-semibold uppercase tracking-wide text-foreground/50 mt-1 mb-4">
