@@ -5,7 +5,7 @@ import { LoopMark } from '@/components/loop-mark'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { usePageMeta } from '@/lib/use-page-meta'
 
-const SUPPORT_EMAIL = 'hello@the-loyalty-loop.com'
+const SUPPORT_EMAIL = 'developer@the-loyalty-loop.com'
 
 type Item = { q: string; a: React.ReactNode }
 
