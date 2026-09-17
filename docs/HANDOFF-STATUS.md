@@ -1,4 +1,4 @@
-# Handoff: current state (as of 2026-09-11)
+# Handoff: current state (as of 2026-09-17)
 
 Read this first if you're a new Claude session picking up this project. Two
 other handoff docs sit alongside this one:
@@ -6,37 +6,75 @@ other handoff docs sit alongside this one:
   Apple maintenance tasks. Check this every session — some of these are
   silent-failure time bombs.
 - `HANDOFF-DEV-NOTES.md` — tooling gotchas (EAS/PowerShell, CSP, widget
-  deployment targets, RLS patterns) that will save you re-discovering the
-  same bugs.
+  deployment targets, RLS patterns, shadcn/ui setup) that will save you
+  re-discovering the same bugs.
 
-**Heads up:** another AI agent ("Codex") has been working concurrently on
-this same repo in past sessions (home-screen widgets were its work). Check
+**Heads up:** another AI agent ("Codex") has worked concurrently on this
+same repo in past sessions (home-screen widgets were its work). Check
 `git log` and `git status` before assuming you know the full state.
+
+**User's standing rules, worth knowing before you touch anything:**
+- **JS-only changes ship via `eas update` (OTA), never trigger a native
+  `eas build`** unless the change is genuinely native or the user explicitly
+  asks. The user has cancelled a build triggered for a pins-only change
+  before.
+- **Every Android build goes straight to production** and into Google's
+  review immediately — both apps' `eas.json` submit profiles target the
+  production track with full rollout. Say so before running `eas submit`;
+  it reaches every real user with no staged rollout.
+- The Play app "The Loyalty Loop for Business"
+  (`com.theloyaltyloop.business`) is old and unused — ignore it. The
+  retailer app (`com.theloyaltyloop.retailer`, "The Loyalty Loop - Retailer"
+  in Play) is the real one.
+- The user likes bottom-sheet pop-ups, gradient hero cards and colourful
+  icon tiles in the native apps — a flat grey "native settings list" look
+  was explicitly rejected once. Keep that in mind redesigning any screen.
 
 ## Apps in this repo
 - `apps/shopper` — customer-facing app, "The Loyalty Loop". iOS bundle
   `com.theloyaltyloop.shopper`, ASC App ID `6809930346`. EAS project
-  `localoop-rewards`.
-- `apps/retailer` — business owner app, "The Loyalty Loop for Business". iOS
-  bundle `com.theloyaltyloop.retailer`. EAS project `localoop-business`. **No
-  App Store Connect app record exists yet for this one.**
+  `localoop-rewards`. **Live in production on Google Play** (Android
+  versionCode 119) and **in App Store Connect, not yet submitted for
+  review** (see below).
+- `apps/retailer` — business owner app, "The Loyalty Loop for Business" in
+  EAS/code, "The Loyalty Loop - Retailer" in Play. iOS bundle
+  `com.theloyaltyloop.retailer`. EAS project `localoop-business`. **Live in
+  production on Google Play** (Android versionCode 116). **No App Store
+  Connect record exists yet — never built for iOS at all.**
 - `apps/web` — the marketing site + shopper/owner/admin web portal, deployed
-  to Vercel at `the-loyalty-loop.com`.
+  to Vercel (project `loyalty-loop`, team `loyalty-loop`) at
+  `the-loyalty-loop.com`.
 - `apps/admin` — scaffold, not a focus area recently.
 
 ## Shopper app — App Store submission state
-- iOS build **5** (`4aef8238-...`) is the current build — uploaded to App
-  Store Connect successfully (confirmed by Apple's own delivery email, even
-  though `eas submit` itself reported a false "something went wrong" — that
-  error string is not reliable, always verify in TestFlight/ASC directly).
-- **Known issue in build 5**: `ITMS-90683` warning — missing
-  `NSLocationWhenInUseUsageDescription` in Info.plist. Caused by
-  `react-native-maps` linking Apple's location framework even though the
-  shopper app's actual map is a WebView (Google Maps JS), never a native
-  map, and never requests location. It's a warning, not a rejection — build 5
-  is usable for review — but worth fixing before the *next* build: add
-  `ios.infoPlist.NSLocationWhenInUseUsageDescription` to
-  `apps/shopper/app.config.js`.
+- **iOS build 6** (`b636e918-3da9-4ce4-b5ee-4ca0fecd47b0`) is uploaded to App
+  Store Connect, `processingState` VALID — this is the build to submit. It
+  contains in-app account deletion, the current settings bottom-sheet, the
+  `NSLocationWhenInUseUsageDescription` string, iPhone-only
+  (`supportsTablet: false`), and the native Google map. Everything shipped
+  to this build's users since via `eas update` (map pins, settings redesign,
+  loyalty-programme wording, announcement push, widget redesign — see
+  "Recently shipped" below) is JS-only and already live on it; no new build
+  was needed for any of it.
+- **App Store Connect version 1.0 is in "Prepare for Submission"**, with:
+  - Build 6 attached.
+  - **Copyright field set**: `2026 Cotech Software Consultants` (the actual
+    Apple Developer Program legal entity — "The Loyalty Loop" is just a
+    product name, not a registered company, per the user).
+  - **A demo account for Apple's reviewer already exists and is verified
+    working**: email `applereview@the-loyalty-loop.com`, password
+    `AppReview2026!Loop`. It's already joined to "Loyalty Loop Demo Café"
+    with 6 of 10 stamps collected, so the reviewer sees a working loyalty
+    card immediately without any setup. These credentials are also already
+    filled into App Store Connect's App Review Information (Sign-In
+    Information) via the API, along with a note telling the reviewer there's
+    nothing else to configure. If this demo account is ever deleted, recreate
+    it the same way (see `HANDOFF-DEV-NOTES.md` → "Creating a demo account
+    directly in Postgres").
+  - Screenshots: the user was mid-upload, last checked 4 of 10 in place for
+    the 6.5" display slot. Not finished.
+  - Review contact fields (name/phone/email) in App Review Information were
+    still empty as of 2026-09-16.
 - **App Privacy questionnaire**: published. Declared: Name, Email Address,
   User ID, Product Interaction — all "App Functionality"/"Analytics", all
   linked to identity, none used for tracking. Email is also declared
@@ -46,116 +84,160 @@ this same repo in past sessions (home-screen widgets were its work). Check
   Yes (shop reviews), everything else No.
 - **Review moderation** (report a review / block a user) shipped so the
   User-Generated-Content=Yes answer is actually backed by Apple's required
-  Guideline 1.2 features (report, block, moderation queue). See
-  `supabase/migrations/20260910120000_review_moderation.sql` and the
-  `reportReview`/`blockAuthor` functions in `apps/shopper/App.tsx`.
+  Guideline 1.2 features. See `supabase/migrations/20260910120000_review_moderation.sql`
+  and the `reportReview`/`blockAuthor` functions in `apps/shopper/App.tsx`.
 - **Still blocking submission** (needs a human with Apple login — Claude
   cannot do these, no password/2FA entry):
-  1. Screenshots — App Store needs *exactly* 1290×2796 or 1320×2868 (or the
-     landscape equivalents). Any Play-Store-style 1080×1920 image will be
-     rejected by the uploader.
-  2. App Review demo account (email + password) in App Review Information →
-     Sign-In Information — the app requires login so Apple will reject
-     without one.
+  1. Finish uploading screenshots — App Store needs *exactly* 1290×2796 or
+     1320×2868 (or the landscape equivalents). Any Play-Store-style
+     1080×1920 image will be rejected by the uploader.
+  2. Fill in the App Review contact name/phone/email.
   3. Digital Services Act trader info (App Information page) — required for
      EU sale, not for review itself.
-  4. Select build 5 on the "Prepare for Submission" version page, then
-     actually hit Submit for Review.
+  4. Hit **Submit for Review** on the version page. Its release setting is
+     `AFTER_APPROVAL` (automatic release the moment Apple approves it, no
+     extra click needed) — confirmed via the ASC API, so make sure the user
+     actually wants that before submitting, or change `releaseType` first.
 
-## Retailer app — needs its App Store Connect record created
-No ASC app exists for `com.theloyaltyloop.retailer` yet. Two ways to fix,
-both need a human:
-- Manually: App Store Connect → **+ App** → iOS → name "The Loyalty Loop for
-  Business" → bundle `com.theloyaltyloop.retailer` → pick a SKU.
+## Retailer app — needs its first iOS build and its App Store Connect record
+No ASC app exists for `com.theloyaltyloop.retailer` and no iOS build has
+ever been produced. Prep work that **is** done, ready for whenever the build
+happens:
+- `apps/retailer/app.json` → `ios.infoPlist` now has
+  `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` (both were
+  missing — the app would have crashed on first camera/photo-library access
+  with no build-time warning) and `ITSAppUsesNonExemptEncryption: false`.
+- `apps/retailer/eas.json` already has an iOS submit profile, and
+  `apps/retailer/store.config.json` is written and `eas metadata:lint`-clean.
+- The retailer widget (`targets/RetailerScanWidget`) was redesigned
+  2026-09-15/16 (brand-gradient card, logo badge, visit count, white scan
+  button) — see `HANDOFF-DEV-NOTES.md`. It will ship correctly the moment
+  the first iOS build happens; no extra step needed.
+- The app uses plain email/password auth (no Google/Facebook sign-in), so
+  Apple's Sign in with Apple requirement (guideline 4.8) does not apply to
+  it.
+
+Two ways to create the first build, both need a human (interactive Apple ID
++ 2FA, Claude cannot do this):
+- Manually in ASC: **+ App** → iOS → name "The Loyalty Loop for Business" →
+  bundle `com.theloyaltyloop.retailer` → pick a SKU.
 - Or: `cd apps/retailer && npx eas-cli build --platform ios --profile
-  production` (interactive — first-time credential setup, same dance as the
+  production` (interactive — first-time credential setup, same dance the
   shopper app needed) then `npx eas-cli submit --platform ios` (first submit
   auto-creates the ASC record).
 
-Once the record exists: `apps/retailer/eas.json` already has an iOS submit
-profile, and `apps/retailer/store.config.json` is written and
-`eas metadata:lint`-clean — ready for `eas metadata:push`.
+## Google Play — both apps live, Claude can publish Android builds directly
+Set up 2026-09-12, see `HANDOFF-DEV-NOTES.md` → "Google Play uploads via EAS
+Submit" for the full mechanics. Summary: a service account with Release
+permissions on both real Play apps, key at
+`C:\Users\zahih\keys\play-eas-submit.json` (outside the repo), both apps'
+`eas.json` default to the production track with immediate release and
+review submission. Current versionCodes: shopper 119 (Android), retailer
+116 (Android).
 
 ## Google Maps
 - **Web owner portal** (`apps/web`, `@react-google-maps/api`, used in Owner
-  Settings/Onboarding "Pin location"): was broken because the site's CSP
-  (`vercel.json`) blocked what Google Maps JS needs — `'unsafe-eval'` and a
-  `blob:` web worker. Fixed in commit `ffce3ef`, confirmed deployed. The key
-  itself (`VITE_GOOGLE_MAPS_API_KEY`, baked into the Vercel build) was never
-  the problem — verified directly against Google's Geocoding API.
-- **Native retailer app** (Android/iOS): has **no map at all** — no
+  Settings/Onboarding "Pin location"): CSP fixed in commit `ffce3ef`
+  (`vercel.json` needed `'unsafe-eval'` + `blob:` for Maps JS). Confirmed
+  deployed and working.
+- **Native retailer app** (Android/iOS): still has **no map at all** — no
   `react-native-maps`, no WebView, no Maps API key anywhere in
-  `apps/retailer/`. This was never built, not a regression. If the business
-  owner expects a map inside the native app (not just the web portal), that's
-  new work: either (a) route the location step to the now-fixed web page via
-  `Linking`, or (b) add `react-native-maps` + a **separate Google Maps
-  Android/iOS SDK key** (different product from the JS API key) and a fresh
-  native build. Ask the user which before building — it's a real scope
-  decision.
-- The **shopper app**'s map (the "Map" tab + the shop page "Find your way
-  there" embed) is a **native** `react-native-maps` Google map. Android
-  builds up to 116 were blank because the key baked in was the *website's*
-  referrer-restricted key. **Fixed 2026-09-12:** a dedicated Android key
-  ("The Loyalty Loop - Google Maps for Android", GCP project
-  `the-loyalty-loop`) is set as the project-scoped EAS env var
-  `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` and baked into Android build 118 (live
-  on Play). Its Android restriction lists `com.theloyaltyloop.shopper` with
-  **both** certificates — upload key
-  `47:A4:36:09:CA:6C:83:11:5E:F1:C8:BB:83:73:01:29:DD:22:D3:09` and the Play
-  App Signing key `D7:7D:A3:6B:89:1B:15:AB:14:4D:6C:73:75:8F:39:DF:12:46:05:65`
-  (Play re-signs everything it distributes, so the upload SHA-1 alone shows
-  a grey map with just the Google logo). Gotcha: saving that key in the
-  Cloud console pops a "type UPDATE to confirm" dialog because the key also
-  sees Static Maps traffic; the save silently does nothing until confirmed.
-  A separate iOS key (`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS`) exists for
-  shopper iOS builds — check its bundle-ID restriction before shipping.
+  `apps/retailer/`. Never built, not a regression. If the business owner
+  ever wants a map inside the native app rather than just the web portal,
+  that's new scope — ask the user before building it.
+- **Shopper app**'s map (the "Map" tab + the shop page location embed) is a
+  native `react-native-maps` Google map, working on both platforms.
+  - **Android**: a dedicated Android-restricted key
+    (`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, GCP project `the-loyalty-loop`) is
+    baked into Android builds ≥118, restricted to
+    `com.theloyaltyloop.shopper` with **both** the upload cert SHA-1 and the
+    Play App Signing SHA-1 (Play re-signs everything it distributes, so the
+    upload SHA-1 alone shows a grey map with just the Google logo).
+  - **Android custom pins**: fixed 2026-09-12 — see `HANDOFF-DEV-NOTES.md` →
+    "Map pins on Android". Custom marker views are snapshotted at 100×100 px
+    under the New Architecture, so Android now loads a server-rendered PNG
+    from the public `map-pin` Supabase Edge Function instead of a view-based
+    marker. iOS keeps the native view pin — the two platforms render the
+    same visual design through different code paths, so any future pin
+    redesign has to be made in both places.
+  - A separate iOS key (`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS`) exists for
+    shopper iOS builds — check its bundle-ID restriction before shipping.
 
-- **Android pins fixed 2026-09-12.** Custom marker views are snapshotted at 100x100 px under the New Architecture (react-native-maps only learns the view size through a Paper-only shadow node), so on Android `ShopMarker` now loads a PNG from the public `map-pin` Supabase Edge Function (`supabase/functions/map-pin`). iOS keeps the view-based pin. Details in HANDOFF-DEV-NOTES.md, "Map pins on Android".
+## Security review (2026-09-15)
+A full pass was run across RLS/security-definer functions, CDN caching,
+DNS, GitHub Actions (none exist — no CI in this repo, EAS/Vercel run the
+builds), webhook replay protection, source maps, and third-party script
+integrity. One real finding, fixed: `request_announcement_push()` was
+callable by the `anon` role with no reason to be (see
+`supabase/migrations/20260915180000_revoke_public_request_announcement_push.sql`
+and the Postgres `PUBLIC`-grant gotcha it uncovered in
+`HANDOFF-DEV-NOTES.md`). Everything else came back clean — see that
+migration's comment and the dev-notes entry for exactly what was checked.
 
-## Recently shipped (this session), all committed + pushed to `main`
-- Apple Wallet passes for iOS shopper app (signed `.pkpass` via a new
-  `create-apple-wallet-pass` edge function).
-- Sign in with Apple across iOS (native), Android (web-OAuth), and the
-  website.
-- Public `/help` page on the website + in-app "Help & FAQ" links in both
-  mobile apps.
-- Home-screen widgets (iOS WidgetKit + Android) for both apps.
-- Review moderation (report/block) in the shopper app + an admin "Reported
-  reviews" tab in the Access Panel (`apps/web/src/pages/AccessPanel.tsx`).
-- First-time loyalty-programme setup wizard in the retailer app — shown once
-  per shop when its owner has no `reward_catalog` row yet; walks through
-  Stamps/Points/Visits, the threshold, and the reward.
-- **Mandatory business setup on account creation (2026-09-11)**, both
-  surfaces:
-  - Retailer app: `Auth` now has a "Create a business account" mode
-    (`signUp` with `intent: 'business_owner'`, confirmation email links to
-    the website's `/auth/callback`). An owner with no shop is forced into
-    `BusinessSetup` (name/category/address) and then straight into
-    `LoyaltyProgramSetup`, which now accepts multiple rewards. Gated by
-    `canCreateBusiness` (= has `business_owner` role) so staff-only accounts
-    still see "No business found" rather than an insert that RLS would reject.
-  - Web: `OwnerLayout` redirects to `/owner/onboarding` when an owner has no
-    shop *or* the active shop has no `reward_catalog` row
-    (`needsRewardSetup` in `owner-context.tsx`). Onboarding gained a 4th
-    "Rewards" step (≥1 reward required, "Go live" inserts them) and a resume
-    mode that jumps existing reward-less shops straight to that step.
-  - **Follow-up needed before store review**: the retailer app now creates
-    accounts in-app, so both Google Play (account-deletion policy) and Apple
-    (Guideline 5.1.1(v)) require an in-app "Delete account" option. The
-    retailer app has none yet — the shopper app's implementation is the
-    template.
-- CSP fix for Google Maps on the web (see above).
+## Web app: shadcn/ui adopted (2026-09-16)
+`apps/web` now uses shadcn/ui's Tooltip, Dialog, AlertDialog, DropdownMenu,
+Tabs, Badge, Switch, Select, Textarea and Sonner (toasts) alongside the
+existing hand-rolled Button/Card/Input, which are now the real shadcn
+versions too. Real usages were migrated, not just installed: every tooltip,
+the owner sidebar's shop-switcher dropdown, `window.confirm()`/`prompt()`/
+`alert()` calls (review deletion, admin listing rejection, admin error
+messages), and the Analytics page's view toggle. Full details, including
+two real bugs the setup process itself introduced and how they were fixed
+(a CSS token collision that would have silently replaced the brand palette,
+and a shadcn CLI bug that writes files into a literal `apps/web/@/` folder
+instead of resolving the path alias), are in `HANDOFF-DEV-NOTES.md` →
+"shadcn/ui on this project". Verified with a clean `tsc` + production build
+and live in the browser (both themes, the new tooltip, the dropdown).
 
-All of the above JS-only changes have already been pushed via `eas update`
-to the `production` channel for both apps (see
-`HANDOFF-DEV-NOTES.md` for exactly how — there's a tool gotcha).
+## Recently shipped (this session and the ones just before it), all
+committed + pushed to `main`
+- Apple Wallet passes, Sign in with Apple (iOS native/Android web-OAuth/web),
+  public Help page + in-app links, home-screen widgets for both apps, review
+  moderation, mandatory business setup on retailer account creation,
+  first-time loyalty-programme setup wizard — all from earlier sessions,
+  still in place, see git log for exact commits if needed.
+- **Android map pins fixed**, server-rendered PNG (see above).
+- **Shopper settings** rebuilt as a bottom-sheet pop-up (gradient hero card,
+  coloured icon-tile rows) after a full-screen version was tried and
+  rejected as "boring" — the user's preference is now noted for future
+  screens too.
+- **Retailer settings restructured**: loyalty-programme section now shows
+  real reward-catalogue tiers in the shop's actual unit (stamps/points/
+  visits) instead of a single generic "target" number that didn't match
+  what a Points or named-reward shop actually did; the sign-up reward field
+  moved into the Rewards catalogue page, out of Settings.
+- **Retailer camera-scan bug fixed**: the stamp/reward screen used to reopen
+  the camera after *any* award or redeem, even when the customer had been
+  found by typing a short code. It now tracks whether the customer was found
+  by camera scan or by typed code, and only auto-reopens the camera after a
+  scan.
+- **Retailer home-screen widget redesigned**: brand-gradient card, shop
+  logo/initial badge, live visit count, member count, white scan button.
+  Android renders from JS and ships via OTA; the SwiftUI (iOS) version has
+  the same design ready for whenever the first iOS build happens.
+- **Announcement push notifications**: publishing a shop or team
+  announcement now triggers a real push, not just an inbox row — see
+  `HANDOFF-DEV-NOTES.md` for the mechanism. Shopper app has a per-shop
+  "News & offers" opt-out switch.
+- **Discover tab hidden** in the shopper app behind `SHOW_DISCOVER_TAB =
+  false` in `apps/shopper/App.tsx` — a deliberate, temporary, one-flag hide
+  at the user's request. Flip it back to `true` (and re-add it to the
+  filtered `TABS` list) to restore it; nothing was deleted.
+- Tooltips added across the web app's shopper-facing and owner pages (now
+  shadcn's Tooltip, see above).
+- Security review + one fix (see above).
+- shadcn/ui adoption on the web app (see above).
+
+All JS-only changes have already been pushed via `eas update` to the
+`production` channel for both native apps (see `HANDOFF-DEV-NOTES.md` for
+exactly how — there's a tool gotcha: use PowerShell, not Bash).
 
 ## Immediate next steps (roughly in priority order)
-1. Decide the native-map question above and act on it.
-2. Get the user to run the one interactive `eas build`/`eas submit` step for
-   the retailer app so its ASC record exists.
-3. Add `NSLocationWhenInUseUsageDescription` before the next shopper build.
-4. Once the user has uploaded screenshots + demo account + DSA info, submit
-   the shopper app for review.
-5. Push the retailer app's App Store/Play Store metadata once its ASC app
-   exists (`store.config.json` is ready).
+1. Get the user to run the one interactive `eas build`/`eas submit` step for
+   the retailer app's first iOS build (needs their Apple ID + 2FA).
+2. Once the user finishes screenshots + review contact info + DSA trader
+   info for the shopper app, submit it for review.
+3. Push the retailer app's App Store metadata once its ASC app exists
+   (`store.config.json` is ready).
+4. Nothing else is currently blocking — Android is live in production for
+   both apps and receiving OTA updates normally.
