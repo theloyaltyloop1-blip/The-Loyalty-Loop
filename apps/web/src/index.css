@@ -63,12 +63,33 @@
     @apply outline-ring/50;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-body);
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+
+  input, textarea, select {
+    font-size: 16px;
+  }
+
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  button, [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   h1, h2, h3, h4, h5, h6 {

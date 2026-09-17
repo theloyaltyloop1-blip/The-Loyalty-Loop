@@ -152,7 +152,7 @@ export function Help() {
   })
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
         <div className="flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 font-display text-lg font-extrabold">

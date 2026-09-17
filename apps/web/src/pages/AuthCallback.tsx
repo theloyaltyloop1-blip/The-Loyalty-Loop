@@ -46,10 +46,10 @@ export function AuthCallback() {
   }, [session?.user, whatsAppToken])
 
   if (loading || rolesLoading || applyingIntent || linkingWhatsApp || (!!session?.user && !!whatsAppToken && !whatsAppLinked && !whatsAppError)) {
-    return <main className="grid min-h-screen place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-extrabold">Finishing your sign-in…</p><p className="mt-2 text-sm text-foreground/55">Just a moment while we prepare your account.</p></div></main>
+    return <main className="grid min-h-dvh place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-extrabold">Finishing your sign-in…</p><p className="mt-2 text-sm text-foreground/55">Just a moment while we prepare your account.</p></div></main>
   }
   if (!session) return <Navigate to="/login" replace />
-  if (whatsAppError) return <main className="grid min-h-screen place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-extrabold">We could not link WhatsApp</p><p className="mt-2 text-sm text-red-600">{whatsAppError}</p><a className="mt-5 inline-block font-bold text-primary" href="/dashboard">Open your dashboard</a></div></main>
+  if (whatsAppError) return <main className="grid min-h-dvh place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-extrabold">We could not link WhatsApp</p><p className="mt-2 text-sm text-red-600">{whatsAppError}</p><a className="mt-5 inline-block font-bold text-primary" href="/dashboard">Open your dashboard</a></div></main>
   if (primaryRole === 'admin') return <Navigate to="/access" replace />
   if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />
   if (primaryRole === 'business_owner') return <Navigate to="/owner" replace />

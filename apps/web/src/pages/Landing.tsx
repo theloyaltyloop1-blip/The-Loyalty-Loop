@@ -160,7 +160,7 @@ export function Landing() {
     path: '/',
   })
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-dvh overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-4 py-4 sticky top-0 z-30">
         <header className="flex items-center justify-between gap-4 rounded-2xl border border-border/80 bg-card px-4 py-3 shadow-sticker">
           <Link to="/" className="flex items-center gap-2 font-display font-extrabold text-lg">

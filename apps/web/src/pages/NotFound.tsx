@@ -11,7 +11,7 @@ export function NotFound() {
     robots: 'noindex,nofollow,noarchive',
   })
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center bg-background">
+    <div className="min-h-dvh flex flex-col items-center justify-center gap-6 px-4 text-center bg-background">
       <LoopMark className="h-14 w-14" />
       <div>
         <h1 className="font-display text-3xl font-extrabold text-foreground">Page not found</h1>
