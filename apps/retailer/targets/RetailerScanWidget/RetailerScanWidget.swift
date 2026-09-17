@@ -36,11 +36,13 @@ struct RetailerWidgetProvider: TimelineProvider {
       completion(Timeline(entries: [entry], policy: policy))
       return
     }
-    URLSession.shared.dataTask(with: logoUrl) { data, _, _ in
+    Task {
       var withLogo = entry
-      withLogo.logo = data.flatMap { UIImage(data: $0) }
+      if let (data, _) = try? await URLSession.shared.data(from: logoUrl) {
+        withLogo.logo = UIImage(data: data)
+      }
       completion(Timeline(entries: [withLogo], policy: policy))
-    }.resume()
+    }
   }
 
   private var example: RetailerWidgetEntry {

@@ -7,7 +7,6 @@ import {
   FlatList,
   Image,
   Linking,
-  Modal,
   PixelRatio,
   Platform,
   Pressable,
@@ -22,6 +21,8 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -41,6 +42,7 @@ import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
 import { syncShopperWidget } from './src/widgets/state'
+import { Sheet } from './src/components/Sheet'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
@@ -614,7 +616,7 @@ const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', ca
 /** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
  * grouped rows — security & privacy → notifications → support → legal → account.
  * The card, the name editor and the blocked list open inside the same sheet. */
-function SettingsSheet({ session, userId, stampCode, onClose }: { session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
+function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
   const [view, setView] = useState<SettingsView>('root')
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
@@ -627,7 +629,16 @@ function SettingsSheet({ session, userId, stampCode, onClose }: { session: Sessi
   const updateLabel = Updates.updateId ? `update ${Updates.updateId.slice(0, 8)}` : 'store build'
 
   const loadBlocks = () => supabase.from('user_blocks').select('blocked_id,created_at').eq('blocker_id', userId).order('created_at', { ascending: false }).then(({ data }) => setBlocks(data || []))
-  useEffect(() => { biometricLockEnabled().then(setBiometricEnabled); getUsageAnalyticsConsent().then(setAnalyticsEnabled); void loadBlocks() }, [])
+  // The sheet now stays mounted between opens (Sheet owns the show/hide animation),
+  // so refresh its data and reset to the root view each time it opens instead of on mount.
+  useEffect(() => {
+    if (!visible) return
+    setView('root')
+    biometricLockEnabled().then(setBiometricEnabled)
+    getUsageAnalyticsConsent().then(setAnalyticsEnabled)
+    void loadBlocks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible])
 
   async function unblock(blockedId: string) {
     const { error } = await supabase.from('user_blocks').delete().eq('blocker_id', userId).eq('blocked_id', blockedId)
@@ -655,12 +666,9 @@ function SettingsSheet({ session, userId, stampCode, onClose }: { session: Sessi
       { text: 'Sign out', style: 'destructive', onPress: () => void supabase.auth.signOut() },
     ])
   }
-  const goBack = () => (view === 'root' ? onClose() : setView('root'))
-
   return (
-    <Modal animationType="slide" transparent onRequestClose={goBack}>
-      <Pressable style={styles.sheetBackdrop} onPress={onClose} />
-      <SafeAreaView style={[styles.sheet, styles.settingsSheet]} edges={['bottom']}>
+    <Sheet visible={visible} onClose={onClose} sheetStyle={[styles.sheet, styles.settingsSheet]} dragArea="handle" dragAreaHeight={26}>
+      <SafeAreaView edges={['bottom']}>
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeaderRow}>
           {view === 'root' ? (
@@ -773,13 +781,39 @@ function SettingsSheet({ session, userId, stampCode, onClose }: { session: Sessi
           )}
         </ScrollView>
       </SafeAreaView>
-    </Modal>
+    </Sheet>
   )
 }
 
 // ---------------------------------------------------------------------
 // Shop detail
 // ---------------------------------------------------------------------
+
+/** The stamp/points progress bar: width eases to the new percentage, and the
+ * whole pill gets a quick scale pulse the moment it reaches 100% (a reward or
+ * tier threshold crossed). The stamp count text next to it stays un-animated. */
+function LoyaltyProgressBar({ pct, color }: { pct: number; color: string }) {
+  const width = useSharedValue(pct)
+  const scale = useSharedValue(1)
+  const prevPct = useRef(pct)
+
+  useEffect(() => {
+    width.set(withTiming(pct, { duration: 400, easing: Easing.out(Easing.cubic) }))
+    if (pct >= 100 && prevPct.current < 100) {
+      scale.set(withSequence(withTiming(1.05, { duration: 120 }), withTiming(1, { duration: 160 })))
+    }
+    prevPct.current = pct
+  }, [pct, width, scale])
+
+  const containerStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }))
+  const fillStyle = useAnimatedStyle(() => ({ width: `${width.get()}%` }))
+
+  return (
+    <Animated.View style={[styles.bar, containerStyle]}>
+      <Animated.View style={[styles.barFill, { backgroundColor: color }, fillStyle]} />
+    </Animated.View>
+  )
+}
 
 function ShopDetail({
   business,
@@ -1085,9 +1119,7 @@ function ShopDetail({
               <Text style={styles.sectionTitle}>{business.loyalty_type === 'points' ? 'Your points' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
               <Text style={styles.loyaltyCardCount}>{value} / {threshold}</Text>
             </View>
-            <View style={styles.bar}>
-              <View style={[styles.barFill, { width: `${Math.min(100, (value / threshold) * 100)}%`, backgroundColor: business.brand_color || primary }]} />
-            </View>
+            <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
             <View style={styles.qrWrap}>
               <QRCode value={`loyaltyloop:customer:${userId}`} size={150} />
               <Text style={styles.qrText}>Show this QR code when you pay</Text>
@@ -1978,7 +2010,7 @@ function AppHome({ session }: { session: Session }) {
         </ScrollView>
       )}
       {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
-      {showProfile && <SettingsSheet session={session} userId={userId} stampCode={stampCode} onClose={() => setShowProfile(false)} />}
+      <SettingsSheet visible={showProfile} session={session} userId={userId} stampCode={stampCode} onClose={() => setShowProfile(false)} />
     </SafeAreaView>
   )
 }
@@ -1989,9 +2021,11 @@ function AppHome({ session }: { session: Session }) {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AppRoot />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AppRoot />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }
 

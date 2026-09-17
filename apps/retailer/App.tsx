@@ -5,7 +5,6 @@ import {
   Alert,
   Image,
   Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +16,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import Svg, { Polyline } from "react-native-svg";
 import {
@@ -57,6 +58,7 @@ import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from "./
 import { registerPushToken } from "./src/push";
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
 import { syncRetailerWidget } from "./src/widgets/state";
+import { Sheet } from "./src/components/Sheet";
 
 function BusinessLanding({ onContinue }: { onContinue: () => void }) {
   return (
@@ -527,6 +529,22 @@ function ShopPicker({
   );
 }
 
+/** Entrance for the scan-match card: fades and rises in when a match appears.
+ * No exit animation — the card is simply replaced by the next scan. */
+function ScanMatchCard({ children }: { children: ReactNode }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(8);
+  useEffect(() => {
+    opacity.set(withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) }));
+    translateY.set(withTiming(0, { duration: 220, easing: Easing.out(Easing.quad) }));
+  }, [opacity, translateY]);
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.get(),
+    transform: [{ translateY: translateY.get() }],
+  }));
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
 function StampsScreen({
   business,
   mode,
@@ -866,27 +884,25 @@ function StampsScreen({
           >
             <Text style={styles.cameraStartText}>Scan customer QR</Text>
           </Pressable>
-          {camera && (
-            <Modal animationType="slide" onRequestClose={() => setCamera(false)}>
-              <SafeAreaView style={styles.cameraWrap}>
-                <Text style={styles.cameraTitle}>{mode === "reward" ? "Scan reward QR code" : "Scan customer card"}</Text>
-                <CameraView
-                  style={styles.camera}
-                  facing="back"
-                  barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-                  onBarcodeScanned={({ data }) => {
-                    lookupVia.current = "camera";
-                    void parse(data);
-                  }}
-                />
-                <Button
-                  title="Cancel scan"
-                  secondary
-                  onPress={() => setCamera(false)}
-                />
-              </SafeAreaView>
-            </Modal>
-          )}
+          <Sheet visible={camera} onClose={() => setCamera(false)} backdrop={false} dragArea="full" sheetStyle={styles.cameraSheet}>
+            <SafeAreaView style={styles.cameraWrap}>
+              <Text style={styles.cameraTitle}>{mode === "reward" ? "Scan reward QR code" : "Scan customer card"}</Text>
+              <CameraView
+                style={styles.camera}
+                facing="back"
+                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                onBarcodeScanned={({ data }) => {
+                  lookupVia.current = "camera";
+                  void parse(data);
+                }}
+              />
+              <Button
+                title="Cancel scan"
+                secondary
+                onPress={() => setCamera(false)}
+              />
+            </SafeAreaView>
+          </Sheet>
           <View style={styles.card}>
             <Text style={styles.section}>{mode === "reward" ? "Or enter their reward or customer code" : "Or enter their code"}</Text>
             <TextInput
@@ -904,6 +920,7 @@ function StampsScreen({
             />
           </View>
           {matched && (
+            <ScanMatchCard key={matched.id}>
             <View style={styles.card}>
               {mode === "stamps" ? (
                 <Pressable
@@ -968,6 +985,7 @@ function StampsScreen({
                 </Text>
               </View>
             </View>
+            </ScanMatchCard>
           )}
         </>
       )}
@@ -2805,9 +2823,11 @@ function Dashboard({
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AppRoot />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AppRoot />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -3106,6 +3126,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   matchTitle: { fontSize: 17, fontWeight: "800", color: green },
+  cameraSheet: { flex: 1 },
   cameraWrap: { flex: 1, padding: 20, backgroundColor: "#111" },
   cameraTitle: {
     color: "#fff",
