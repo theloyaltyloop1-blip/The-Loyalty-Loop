@@ -19,6 +19,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Haptics from "expo-haptics";
 import Svg, { Polyline } from "react-native-svg";
 import {
   AtSign,
@@ -49,6 +50,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { colors } from "@loyalty-loop/design-tokens";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
+import { SuccessCheck } from "./src/components/SuccessCheck";
 import {
   NativeOwnerPageView,
   type NativeOnboardingDestination,
@@ -318,9 +320,10 @@ function Button({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
-      style={[
+      style={({ pressed }) => [
         styles.button,
         secondary && styles.secondary,
+        pressed && !disabled && styles.pressed,
         disabled && styles.disabled,
       ]}
     >
@@ -502,11 +505,12 @@ function ShopPicker({
         <Pressable
           key={shop.id}
           onPress={() => onSelect(shop)}
-          style={[
+          style={({ pressed }) => [
             styles.shopChip,
             selected?.id === shop.id && {
               backgroundColor: shop.brand_color || green,
             },
+            pressed && styles.pressed,
           ]}
         >
           {shop.logo_url ? (
@@ -578,6 +582,7 @@ function StampsScreen({
   } | null>(null);
   const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   // How the current customer was found. Only camera scans return to the camera
   // afterwards; a typed short code stays on the code entry (otherwise awarding
   // after a code lookup unexpectedly opened the camera).
@@ -624,6 +629,15 @@ function StampsScreen({
     setActiveReward(null);
     setCode("");
     setAmount(1);
+  }
+
+  // After a successful award/redeem, show the checkmark confirmation first;
+  // the screen only resets once that animation has finished fading out.
+  function finishAfterSuccess() {
+    setShowSuccess(false);
+    reset();
+    setCamera(lookupVia.current === "camera");
+    onDone();
   }
 
   async function loadMemberDetails(userId: string) {
@@ -765,12 +779,12 @@ function StampsScreen({
       void supabase.functions.invoke("update-wallet-pass", {
         body: { business_id: business.id, user_id: matched.id },
       });
-      reset();
-      // After a camera scan, go straight back to the camera for the next person
-      // in the queue; after a typed code, stay on code entry.
-      setCamera(lookupVia.current === "camera");
-      onDone();
+      // Show the success checkmark; reset() (and returning to the camera for
+      // the next person in the queue, if this came from a camera scan) fires
+      // once that confirmation has finished.
+      setShowSuccess(true);
     } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
         "Could not award",
         e instanceof Error
@@ -796,10 +810,9 @@ function StampsScreen({
       void supabase.functions.invoke("update-wallet-pass", {
         body: { business_id: business.id, user_id: matched.id },
       });
-      reset();
-      setCamera(lookupVia.current === "camera");
-      onDone();
+      setShowSuccess(true);
     } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
         "Could not redeem",
         e instanceof Error ? e.message : "Please try again.",
@@ -989,6 +1002,7 @@ function StampsScreen({
           )}
         </>
       )}
+      <SuccessCheck visible={showSuccess} onFinished={finishAfterSuccess} />
     </View>
   );
 }
@@ -3152,6 +3166,7 @@ const styles = StyleSheet.create({
     color: "#171815",
     fontWeight: "900",
     marginTop: 12,
+    letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 12,

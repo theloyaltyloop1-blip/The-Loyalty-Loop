@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { BlurView } from 'expo-blur'
 import { Dimensions, Modal, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   Extrapolation,
   interpolate,
+  useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -12,6 +14,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
+
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
+const BACKDROP_INTENSITY = 40
 
 /** Gesture-driven bottom sheet: drag-to-dismiss with 1:1 finger tracking, spring
  * settle, velocity-based dismissal and rubber-banding past the open position.
@@ -33,7 +38,7 @@ export function Sheet({
   sheetStyle,
   backdrop = true,
   dragArea = 'handle',
-  dragAreaHeight = 32,
+  dragAreaHeight = 44,
 }: {
   visible: boolean
   onClose: () => void
@@ -105,8 +110,11 @@ export function Sheet({
     })
 
   const sheetAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.get() }] }))
-  const backdropAnimStyle = useAnimatedStyle(() => ({
+  const backdropProgress = useAnimatedStyle(() => ({
     opacity: interpolate(translateY.get(), [0, travel.get()], [1, 0], Extrapolation.CLAMP),
+  }))
+  const backdropAnimProps = useAnimatedProps(() => ({
+    intensity: interpolate(translateY.get(), [0, travel.get()], [BACKDROP_INTENSITY, 0], Extrapolation.CLAMP),
   }))
 
   if (!mounted) return null
@@ -125,11 +133,19 @@ export function Sheet({
   return (
     <Modal transparent visible={mounted} animationType="none" onRequestClose={animateClosed}>
       {backdrop && (
-        <Animated.View style={[StyleSheet.absoluteFill, backdropAnimStyle]}>
+        <AnimatedBlurView
+          tint="dark"
+          animatedProps={backdropAnimProps}
+          style={[StyleSheet.absoluteFill, backdropProgress, styles.backdropTint]}
+        >
           <Pressable style={StyleSheet.absoluteFill} onPress={animateClosed} />
-        </Animated.View>
+        </AnimatedBlurView>
       )}
       {dragArea === 'full' ? <GestureDetector gesture={pan}>{sheetContent}</GestureDetector> : sheetContent}
     </Modal>
   )
 }
+
+const styles = StyleSheet.create({
+  backdropTint: { backgroundColor: 'rgba(0,0,0,0.25)' },
+})

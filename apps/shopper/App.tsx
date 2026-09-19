@@ -43,6 +43,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
+import { SuccessCheck } from './src/components/SuccessCheck'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
@@ -340,7 +341,7 @@ function containsBlockedLanguage(text: string) {
 
 function Button({ title, onPress, secondary, disabled }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean }) {
   return (
-    <Pressable disabled={disabled} onPress={onPress} style={[styles.button, secondary && styles.buttonSecondary, disabled && styles.disabled]}>
+    <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.buttonSecondary, disabled && styles.disabled, pressed && styles.pressed]}>
       <Text style={[styles.buttonText, secondary && styles.buttonTextSecondary]}>{title}</Text>
     </Pressable>
   )
@@ -667,7 +668,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visib
     ])
   }
   return (
-    <Sheet visible={visible} onClose={onClose} sheetStyle={[styles.sheet, styles.settingsSheet]} dragArea="handle" dragAreaHeight={26}>
+    <Sheet visible={visible} onClose={onClose} sheetStyle={[styles.sheet, styles.settingsSheet]} dragArea="handle" dragAreaHeight={44}>
       <SafeAreaView edges={['bottom']}>
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeaderRow}>
@@ -717,7 +718,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visib
 
               <SettingsGroup title="Support">
                 <SettingsRow tile="green" icon={(c) => <HelpIcon color={c} size={18} />} title="Help & FAQ" onPress={() => openUrl(`${WEB}/help`)} />
-                <SettingsRow tile="teal" icon={(c) => <MailIcon color={c} size={18} />} title="Contact us" detail="hello@the-loyalty-loop.com" onPress={() => openUrl('mailto:hello@the-loyalty-loop.com')} last />
+                <SettingsRow tile="teal" icon={(c) => <MailIcon color={c} size={18} />} title="Contact us" detail="developer@the-loyalty-loop.com" onPress={() => openUrl('mailto:developer@the-loyalty-loop.com')} last />
               </SettingsGroup>
 
               <SettingsGroup title="Legal">
@@ -815,6 +816,14 @@ function LoyaltyProgressBar({ pct, color }: { pct: number; color: string }) {
   )
 }
 
+// Last stamp/points value this session has observed per business, so
+// ShopDetail can tell "the count just went up" apart from "this is the
+// first time we've loaded this shop". Module-level (not a ref) because
+// ShopDetail fully unmounts when the shopper backs out of a shop — a
+// component-local ref would forget the baseline on the next visit. Resets
+// on app restart, which is fine: no AsyncStorage persistence is needed here.
+const lastObservedStampValues: Record<string, number> = {}
+
 function ShopDetail({
   business,
   userId,
@@ -846,6 +855,19 @@ function ShopDetail({
   const [savingReview, setSavingReview] = useState(false)
   const [hiddenReviewIds, setHiddenReviewIds] = useState<Set<string>>(new Set())
   const value = business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
+  const [showStampSuccess, setShowStampSuccess] = useState(false)
+
+  // Celebrate a stamp/points increase picked up on mount or refresh — the
+  // shopper app has no realtime subscription, so this is the only "it
+  // worked" beat they get after a scan at the counter. Skipped on the very
+  // first load of a shop (no prior value yet, which would false-positive
+  // on every fresh visit).
+  useEffect(() => {
+    const previous = lastObservedStampValues[business.id]
+    if (previous !== undefined && value > previous) setShowStampSuccess(true)
+    lastObservedStampValues[business.id] = value
+  }, [business.id, value])
+
   // Rewards unlock at the catalogue tiers (transactions trigger, migration 0011);
   // stamps_required is only the fallback for shops with no catalogue. Progress is
   // therefore shown towards the next tier.
@@ -1102,7 +1124,7 @@ function ShopDetail({
 
         <View style={[styles.detailCover, { backgroundColor: business.brand_color || primary }]}>
           {business.cover_url && <Image source={{ uri: business.cover_url }} style={StyleSheet.absoluteFill} />}
-          <Pressable onPress={onToggleFavourite} style={styles.favouriteButton}>
+          <Pressable onPress={onToggleFavourite} style={({ pressed }) => [styles.favouriteButton, pressed && styles.pressed]}>
             <HeartIcon color={favourite ? primary : foreground} filled={favourite} size={18} />
           </Pressable>
         </View>
@@ -1126,7 +1148,7 @@ function ShopDetail({
             </View>
             <Text style={styles.manualCodeLabel}>OR ENTER THIS CODE</Text>
             <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
-            <Pressable onPress={addToWallet} disabled={addingToWallet} style={[styles.walletButton, addingToWallet && styles.disabled]}>
+            <Pressable onPress={addToWallet} disabled={addingToWallet} style={({ pressed }) => [styles.walletButton, addingToWallet && styles.disabled, pressed && styles.pressed]}>
               <WalletIcon size={17} />
               <Text style={styles.walletButtonText}>{addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'}</Text>
             </Pressable>
@@ -1188,7 +1210,7 @@ function ShopDetail({
             </View>
           ) : null}
           <Text style={styles.mapAddress}>{business.address || 'Open Google Maps for directions'}</Text>
-          <Pressable onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`)} style={styles.directionsButton}>
+          <Pressable onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`)} style={({ pressed }) => [styles.directionsButton, pressed && styles.pressed]}>
             <Text style={styles.directionsButtonText}>Get directions in Google Maps →</Text>
           </Pressable>
         </View>}
@@ -1275,6 +1297,7 @@ function ShopDetail({
           )}
         </View>
       </ScrollView>
+      <SuccessCheck visible={showStampSuccess} onFinished={() => setShowStampSuccess(false)} />
     </SafeAreaView>
   )
 }
@@ -1334,7 +1357,7 @@ function AnnouncementCard({ announcement }: { announcement: Announcement }) {
 
 function TrendingCard({ business, onPress }: { business: Business; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={styles.trendingCard}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.trendingCard, pressed && styles.pressed]}>
       <View style={[styles.trendingCover, { backgroundColor: business.brand_color || primary }]}>
         {business.cover_url && <Image source={{ uri: business.cover_url }} style={StyleSheet.absoluteFill} />}
       </View>
@@ -1348,7 +1371,7 @@ function TrendingCard({ business, onPress }: { business: Business; onPress: () =
 
 function NearbyRow({ business, onPress }: { business: Business; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={styles.nearbyRow}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.nearbyRow, pressed && styles.pressed]}>
       {business.logo_url ? (
         <Image source={{ uri: business.logo_url }} style={styles.nearbyLogo} />
       ) : (
@@ -1603,20 +1626,20 @@ function DiscoverCard({
         style={styles.discoverGradient}
       />
       <View style={styles.discoverActionRail}>
-        <Pressable onPress={onToggleFavourite} style={styles.discoverActionButton} hitSlop={10}>
+        <Pressable onPress={onToggleFavourite} style={({ pressed }) => [styles.discoverActionButton, pressed && styles.pressed]} hitSlop={10}>
           <HeartIcon color={favourite ? primary : '#fff'} filled={favourite} size={27} />
         </Pressable>
         <Pressable
           onPress={() => {
             void Share.share({ message: `Check out ${photo.business.name} on The Loyalty Loop!` })
           }}
-          style={styles.discoverActionButton}
+          style={({ pressed }) => [styles.discoverActionButton, pressed && styles.pressed]}
           hitSlop={10}
         >
           <ShareIcon size={25} />
         </Pressable>
       </View>
-      <Pressable style={styles.discoverInfo} onPress={onOpenShop}>
+      <Pressable style={({ pressed }) => [styles.discoverInfo, pressed && styles.pressed]} onPress={onOpenShop}>
         <View style={styles.discoverShopRow}>
           {photo.business.logo_url ? (
             <Image source={{ uri: photo.business.logo_url }} style={styles.discoverLogo} />
@@ -1830,7 +1853,7 @@ function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => voi
       {TABS.filter(({ id }) => id !== 'discover' || SHOW_DISCOVER_TAB).map(({ id, label, icon }) => {
         const active = tab === id
         return (
-          <Pressable key={id} style={styles.tab} onPress={() => onChange(id)}>
+          <Pressable key={id} style={({ pressed }) => [styles.tab, pressed && styles.pressed]} onPress={() => onChange(id)}>
             {icon(active)}
             <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
           </Pressable>
@@ -2156,6 +2179,7 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   buttonTextSecondary: { color: foreground },
   disabled: { opacity: 0.55 },
+  pressed: { opacity: 0.6 },
   link: { color: primary, textAlign: 'center', fontWeight: '700', marginTop: 8 },
   small: { color: '#8a8378', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 22 },
   authHelpLink: { alignSelf: 'center', marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
@@ -2233,7 +2257,7 @@ const styles = StyleSheet.create({
 
   loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  loyaltyCardCount: { fontSize: 13, fontWeight: '700', color: '#6b6459' },
+  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#6b6459' },
   bar: { height: 9, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.07)', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },

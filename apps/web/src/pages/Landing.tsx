@@ -189,7 +189,7 @@ export function Landing() {
             <span className="inline-flex items-center gap-2 rounded-full bg-[#eee4d0] px-4 py-1.5 font-semibold text-sm text-foreground mb-6">
               <Sparkles className="h-4 w-4" /> SW17 · SW12 · now live
             </span>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl leading-[1.05] mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl leading-[1.05] tracking-[-0.045em] mb-6">
               Your high street,{' '}
               <em className="text-primary not-italic font-display italic underline decoration-4 decoration-foreground/20 underline-offset-8">
                 in your
