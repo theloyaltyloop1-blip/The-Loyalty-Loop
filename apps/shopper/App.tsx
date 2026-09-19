@@ -35,8 +35,7 @@ import { colors } from '@loyalty-loop/design-tokens'
 import { hasSupabaseConfig, supabase } from './src/supabase'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
-import { File, Paths } from 'expo-file-system'
-import * as Sharing from 'expo-sharing'
+import { addPassFromBase64 } from './modules/expo-wallet-pass'
 import { signInWithGoogle } from './src/google-auth'
 import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
 import * as AppleAuthentication from 'expo-apple-authentication'
@@ -1059,7 +1058,8 @@ function ShopDetail({
     setBusy(true)
     try {
       const { error } = await supabase.from('memberships').upsert({ user_id: userId, business_id: business.id }, { onConflict: 'user_id,business_id' })
-      if (error) throw error
+      // Already a member (e.g. stale UI after joining elsewhere) — not a real failure.
+      if (error && error.code !== '23505') throw error
       await refresh()
     } catch (e) {
       Alert.alert('Could not join', e instanceof Error ? e.message : 'Please try again.')
@@ -1073,10 +1073,9 @@ function ShopDetail({
     try {
       if (Platform.OS === 'ios') {
         // Apple Wallet passes are a signed .pkpass file we build ourselves
-        // (see supabase/functions/create-apple-wallet-pass), not a save link
-        // Apple's servers resolve — so this fetches the binary directly,
-        // writes it to a temp file, then hands it to the share sheet, which
-        // iOS recognises as a Wallet pass and offers "Add to Apple Wallet".
+        // (see supabase/functions/create-apple-wallet-pass). Presented via a
+        // native PassKit module (modules/expo-wallet-pass) so iOS shows the
+        // real full-screen "Add to Apple Wallet" UI, not a share sheet.
         const { data: sessionData } = await supabase.auth.getSession()
         const accessToken = sessionData.session?.access_token
         if (!accessToken) throw new Error('Please sign in again.')
@@ -1094,11 +1093,12 @@ function ShopDetail({
           throw new Error((message as { error?: string } | null)?.error || 'Could not create the pass')
         }
         const bytes = new Uint8Array(await res.arrayBuffer())
-        const file = new File(Paths.cache, `${business.name.replace(/[^a-z0-9]+/gi, '-')}.pkpass`)
-        if (file.exists) file.delete()
-        file.write(bytes)
-        if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.')
-        await Sharing.shareAsync(file.uri, { mimeType: 'application/vnd.apple.pkpass', UTI: 'com.apple.pkpass' })
+        let binary = ''
+        const chunkSize = 0x8000
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+        }
+        await addPassFromBase64(btoa(binary))
       } else {
         const { data, error } = await supabase.functions.invoke<{ saveUrl?: string; error?: string }>('create-wallet-pass', {
           body: { business_id: business.id },
@@ -1983,7 +1983,8 @@ function AppHome({ session }: { session: Session }) {
   async function quickJoin(business: Business) {
     try {
       const { error } = await supabase.from('memberships').upsert({ user_id: userId, business_id: business.id }, { onConflict: 'user_id,business_id' })
-      if (error) throw error
+      // Already a member (e.g. stale UI after joining elsewhere) — not a real failure.
+      if (error && error.code !== '23505') throw error
       await load()
       void trackUsageEvent(userId, 'loyalty_card_joined')
     } catch (e) {

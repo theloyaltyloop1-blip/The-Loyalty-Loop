@@ -11,7 +11,9 @@ Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('o
 
   // Storage refuses Auth deletion while an account owns a file. Remove these
   // with the Storage API (not SQL) so the actual object is removed too.
-  const { data: storageFiles, error: storageLookupError } = await admin.schema('storage').from('objects').select('bucket_id,name').eq('owner', user.id);
+  // Looked up via RPC (not a schema-scoped REST call) since 'storage' isn't
+  // in this project's exposed-schemas list for PostgREST.
+  const { data: storageFiles, error: storageLookupError } = await admin.rpc('list_storage_objects_by_owner', { p_owner: user.id });
   if (storageLookupError) throw storageLookupError;
   const filesByBucket = new Map<string, string[]>();
   for (const file of storageFiles ?? []) filesByBucket.set(file.bucket_id, [...(filesByBucket.get(file.bucket_id) ?? []), file.name]);

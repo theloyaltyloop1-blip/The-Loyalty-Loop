@@ -1,0 +1,12 @@
+{
+  "name": "expo-wallet-pass",
+  "version": "1.0.0",
+  "description": "Presents the native Add to Apple Wallet screen for a .pkpass file",
+  "main": "index.ts",
+  "keywords": ["react-native", "expo"],
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

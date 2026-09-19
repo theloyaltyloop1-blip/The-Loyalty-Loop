@@ -177,17 +177,105 @@ function signManifest(manifestBytes: Uint8Array): Uint8Array {
   return bytes;
 }
 
+async function buildPass(businessId: string, userId: string): Promise<Response> {
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const business_id = businessId;
+  const user = { id: userId };
+
+  const { data: business, error: bizErr } = await admin
+    .from("businesses")
+    .select("id,name,brand_color,loyalty_type,loyalty_config")
+    .eq("id", business_id)
+    .maybeSingle();
+  if (bizErr) throw bizErr;
+  if (!business) {
+    return new Response(JSON.stringify({ error: "shop not found" }), { status: 404, headers: jsonHeaders });
+  }
+
+  const { data: membership, error: memErr } = await admin
+    .from("memberships")
+    .select("stamp_count,points_balance")
+    .eq("user_id", user.id)
+    .eq("business_id", business_id)
+    .maybeSingle();
+  if (memErr) throw memErr;
+  if (!membership) {
+    return new Response(JSON.stringify({ error: "join this shop's loyalty card first" }), { status: 400, headers: jsonHeaders });
+  }
+
+  const stampsRequired = (business.loyalty_config as { stamps_required?: number } | null)?.stamps_required ?? 10;
+  const unitLabel = loyaltyUnitLabel(business.loyalty_type);
+  const value = business.loyalty_type === "points" ? membership.points_balance : membership.stamp_count;
+
+  const passJson = {
+    formatVersion: 1,
+    passTypeIdentifier: PASS_TYPE_ID,
+    teamIdentifier: TEAM_ID,
+    serialNumber: `${business.id}-${user.id}`,
+    description: `${business.name} loyalty card`,
+    organizationName: "The Loyalty Loop",
+    logoText: business.name,
+    backgroundColor: hexToRgb(business.brand_color || "#E8703B"),
+    foregroundColor: "rgb(255, 255, 255)",
+    labelColor: "rgb(255, 255, 255)",
+    storeCard: {
+      primaryFields: [{ key: "balance", label: unitLabel, value: String(value) }],
+      secondaryFields: [
+        { key: "goal", label: "Goal", value: `${stampsRequired} ${unitLabel.toLowerCase()} to unlock your reward` },
+      ],
+      backFields: [
+        { key: "about", label: "About", value: `Show this pass's QR code at ${business.name} to collect ${unitLabel.toLowerCase()}.` },
+      ],
+    },
+    barcodes: [
+      { message: `loyaltyloop:customer:${user.id}`, format: "PKBarcodeFormatQR", messageEncoding: "iso-8859-1" },
+    ],
+  };
+
+  const encoder = new TextEncoder();
+  const files: Record<string, Uint8Array> = {
+    "pass.json": encoder.encode(JSON.stringify(passJson)),
+    "icon.png": base64ToBytes(ICON_1X),
+    "icon@2x.png": base64ToBytes(ICON_2X),
+    "icon@3x.png": base64ToBytes(ICON_3X),
+    "logo.png": base64ToBytes(LOGO_1X),
+    "logo@2x.png": base64ToBytes(LOGO_2X),
+    "logo@3x.png": base64ToBytes(LOGO_3X),
+  };
+
+  const manifest: Record<string, string> = {};
+  for (const [name, data] of Object.entries(files)) manifest[name] = sha1Hex(data);
+  const manifestBytes = encoder.encode(JSON.stringify(manifest));
+
+  const signatureBytes = signManifest(manifestBytes);
+
+  const zipBytes = buildZip([
+    ...Object.entries(files).map(([name, data]) => ({ name, data })),
+    { name: "manifest.json", data: manifestBytes },
+    { name: "signature", data: signatureBytes },
+  ]);
+
+  return new Response(zipBytes, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/vnd.apple.pkpass",
+      "Content-Disposition": `attachment; filename="${business.name.replace(/[^a-z0-9]+/gi, "-")}.pkpass"`,
+    },
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
-  }
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405, headers: jsonHeaders });
   }
 
   try {
     if (!PASS_TYPE_ID || !TEAM_ID || !CERT_PEM || !KEY_PEM || !WWDR_PEM) {
       return new Response(JSON.stringify({ error: "Apple Wallet is not configured" }), { status: 500, headers: jsonHeaders });
+    }
+
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405, headers: jsonHeaders });
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -211,88 +299,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "invalid session" }), { status: 401, headers: jsonHeaders });
     }
 
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-    const { data: business, error: bizErr } = await admin
-      .from("businesses")
-      .select("id,name,brand_color,loyalty_type,loyalty_config")
-      .eq("id", business_id)
-      .maybeSingle();
-    if (bizErr) throw bizErr;
-    if (!business) {
-      return new Response(JSON.stringify({ error: "shop not found" }), { status: 404, headers: jsonHeaders });
-    }
-
-    const { data: membership, error: memErr } = await admin
-      .from("memberships")
-      .select("stamp_count,points_balance")
-      .eq("user_id", user.id)
-      .eq("business_id", business_id)
-      .maybeSingle();
-    if (memErr) throw memErr;
-    if (!membership) {
-      return new Response(JSON.stringify({ error: "join this shop's loyalty card first" }), { status: 400, headers: jsonHeaders });
-    }
-
-    const stampsRequired = (business.loyalty_config as { stamps_required?: number } | null)?.stamps_required ?? 10;
-    const unitLabel = loyaltyUnitLabel(business.loyalty_type);
-    const value = business.loyalty_type === "points" ? membership.points_balance : membership.stamp_count;
-
-    const passJson = {
-      formatVersion: 1,
-      passTypeIdentifier: PASS_TYPE_ID,
-      teamIdentifier: TEAM_ID,
-      serialNumber: `${business.id}-${user.id}`,
-      description: `${business.name} loyalty card`,
-      organizationName: "The Loyalty Loop",
-      logoText: business.name,
-      backgroundColor: hexToRgb(business.brand_color || "#E8703B"),
-      foregroundColor: "rgb(255, 255, 255)",
-      labelColor: "rgb(255, 255, 255)",
-      storeCard: {
-        primaryFields: [{ key: "balance", label: unitLabel, value: String(value) }],
-        secondaryFields: [
-          { key: "goal", label: "Goal", value: `${stampsRequired} ${unitLabel.toLowerCase()} to unlock your reward` },
-        ],
-        backFields: [
-          { key: "about", label: "About", value: `Show this pass's QR code at ${business.name} to collect ${unitLabel.toLowerCase()}.` },
-        ],
-      },
-      barcodes: [
-        { message: `loyaltyloop:customer:${user.id}`, format: "PKBarcodeFormatQR", messageEncoding: "iso-8859-1" },
-      ],
-    };
-
-    const encoder = new TextEncoder();
-    const files: Record<string, Uint8Array> = {
-      "pass.json": encoder.encode(JSON.stringify(passJson)),
-      "icon.png": base64ToBytes(ICON_1X),
-      "icon@2x.png": base64ToBytes(ICON_2X),
-      "icon@3x.png": base64ToBytes(ICON_3X),
-      "logo.png": base64ToBytes(LOGO_1X),
-      "logo@2x.png": base64ToBytes(LOGO_2X),
-      "logo@3x.png": base64ToBytes(LOGO_3X),
-    };
-
-    const manifest: Record<string, string> = {};
-    for (const [name, data] of Object.entries(files)) manifest[name] = sha1Hex(data);
-    const manifestBytes = encoder.encode(JSON.stringify(manifest));
-
-    const signatureBytes = signManifest(manifestBytes);
-
-    const zipBytes = buildZip([
-      ...Object.entries(files).map(([name, data]) => ({ name, data })),
-      { name: "manifest.json", data: manifestBytes },
-      { name: "signature", data: signatureBytes },
-    ]);
-
-    return new Response(zipBytes, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/vnd.apple.pkpass",
-        "Content-Disposition": `attachment; filename="${business.name.replace(/[^a-z0-9]+/gi, "-")}.pkpass"`,
-      },
-    });
+    return await buildPass(business_id, user.id);
   } catch (e) {
     console.error(e);
     return new Response(JSON.stringify({ error: "internal error" }), { status: 500, headers: jsonHeaders });
