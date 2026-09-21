@@ -502,11 +502,23 @@ export async function fetchMyRewards(userId: string): Promise<CustomerReward[]> 
   })) as CustomerReward[]
 }
 
-export async function fetchAnnouncements(): Promise<Announcement[]> {
+// Only shops the shopper has actually joined — and hasn't opted out of
+// promos from — otherwise every shop on the platform shows up here and the
+// feed gets too busy to be useful.
+export async function fetchAnnouncements(userId: string): Promise<Announcement[]> {
+  const { data: memberships, error: membershipError } = await supabase
+    .from('memberships')
+    .select('business_id')
+    .eq('user_id', userId)
+    .not('promos_opted_out', 'is', true)
+  if (membershipError) throw membershipError
+  const businessIds = (memberships ?? []).map((row) => row.business_id)
+  if (businessIds.length === 0) return []
   const { data, error } = await supabase
     .from('announcements')
     .select('id,business_id,title,body,is_active,created_at,updated_at,business:businesses(name,brand_color,logo_url)')
     .eq('is_active', true)
+    .in('business_id', businessIds)
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []).map((row) => ({
