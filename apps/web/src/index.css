@@ -10,31 +10,31 @@
   --font-body: 'DM Sans', Arial, sans-serif;
   --font-sans: var(--font-body);
 
-  --color-background: #F7ECDC;
-  --color-foreground: #1a1a1a;
-  --color-card: #FBF6EC;
+  --color-background: #FAF9F6;
+  --color-foreground: #263C32;
+  --color-card: #FFFFFF;
   --color-card-foreground: var(--color-foreground);
   --color-primary: #E8703B;
   --color-primary-foreground: #ffffff;
   --color-primary-hover: #C9622E;
   --color-primary-glow: #C9622E;
-  --color-secondary: #ebe3d4;
+  --color-secondary: #F0EFEA;
   --color-secondary-foreground: var(--color-foreground);
   --color-accent: #F6AF23;
   --color-accent-foreground: var(--color-foreground);
-  --color-ink: #40281C;
+  --color-ink: #263C32;
   --color-fun-green: #3FA34D;
   --color-fun-violet: #73856f;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
-  --color-border: #ded6c9;
+  --color-border: #E0E2DC;
 
   /* shadcn/Radix components (popover, dropdown, dialog, focus rings) reuse the
      same surfaces and accents as the rest of the app rather than introducing
      a second, generic gray palette — this is what shadcn's own init would
      have appended as new `oklch()` tokens if we hadn't remapped it here. */
   --color-muted: var(--color-secondary);
-  --color-muted-foreground: #7a7266;
+  --color-muted-foreground: #667168;
   --color-popover: var(--color-card);
   --color-popover-foreground: var(--color-foreground);
   --color-input: var(--color-border);
@@ -126,21 +126,21 @@
 }
 
 html.dark {
-  --color-background: #171411;
-  --color-foreground: #f8eee1;
-  --color-card: #231e19;
+  --color-background: #152A21;
+  --color-foreground: #F4F6F0;
+  --color-card: #1D382D;
   --color-primary: #ff8751;
   --color-primary-hover: #ffad7f;
   --color-primary-glow: #ff8751;
-  --color-secondary: #302820;
+  --color-secondary: #284536;
   --color-accent: #f8ba3d;
-  --color-ink: #f8eee1;
+  --color-ink: #F4F6F0;
   --color-fun-green: #69c878;
-  --color-fun-violet: #a5b79d;
+  --color-fun-violet: #B5C5AE;
   --color-destructive: #ff756b;
-  --color-border: #443a31;
-  --color-muted-foreground: #b3a999;
-  --color-input: #51453a;
+  --color-border: #3B5A4A;
+  --color-muted-foreground: #B9C5BA;
+  --color-input: #345442;
   color-scheme: dark;
 }
 
@@ -150,14 +150,14 @@ html.dark {
 html.dark input:not([type='checkbox']):not([type='radio']),
 html.dark textarea,
 html.dark select {
-  background-color: #2c251f;
+  background-color: #1D382D;
   color: var(--color-foreground);
-  border-color: #51453a;
+  border-color: #3B5A4A;
 }
 
 html.dark input::placeholder,
-html.dark textarea::placeholder { color: rgb(248 238 225 / 0.46); }
-html.dark option { background-color: #2c251f; color: var(--color-foreground); }
+html.dark textarea::placeholder { color: rgb(244 246 240 / 0.46); }
+html.dark option { background-color: #1D382D; color: var(--color-foreground); }
 html.dark .bg-white { background-color: var(--color-card); }
 html.dark [class*='border-black'] { border-color: rgb(248 238 225 / 0.14); }
 html.dark [class*='divide-black'] > :not(:last-child) { border-color: rgb(248 238 225 / 0.10); }
