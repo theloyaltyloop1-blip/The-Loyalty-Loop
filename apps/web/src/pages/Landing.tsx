@@ -42,8 +42,7 @@ export function Landing() {
       <main id="main-content">
         <section className="ll-hero ll-wrap">
           <div className="ll-hero-copy">
-            <p className="ll-eyebrow">Independent shops. Familiar faces.</p>
-            <h1>Good places.<br />Worth coming<br /><em>back to.</em></h1>
+            <h1>Your high street,<br /><em>in your pocket.</em></h1>
             <p className="ll-intro">The morning coffee. The usual haircut. The little shop round the corner. Keep their loyalty cards in one place, and make every visit count.</p>
             <div className="ll-actions"><Link className="ll-action" to="/signup">Start collecting <ArrowUpRight size={19} aria-hidden="true" /></Link><a className="ll-text-link" href="#how-it-works">Take a look below <span aria-hidden="true">↓</span></a></div>
             <p className="ll-small">Free for shoppers. Made for the high street.</p>
