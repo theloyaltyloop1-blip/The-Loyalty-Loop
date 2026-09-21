@@ -1329,11 +1329,11 @@ function DangerTab() {
         </button>
       </section>
 
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
+      <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
         <h3 className="font-display text-lg font-bold text-red-800">Delete shop permanently</h3>
         <p className="mt-2 text-sm text-red-800/75">This permanently removes the shop, its members’ loyalty activity, rewards, reviews and related shop data. This cannot be undone.</p>
         {!confirmingDelete ? (
-          <button data-press-feedback onClick={() => setConfirmingDelete(true)} className="mt-4 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700">Delete shop…</button>
+          <button data-press-feedback onClick={() => setConfirmingDelete(true)} className="mt-4 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 dark:text-red-300">Delete shop…</button>
         ) : (
           <div className="mt-4 max-w-md">
             <label className="block text-sm font-semibold text-red-900">Type <span className="font-bold">{business.name}</span> to confirm</label>
@@ -1341,20 +1341,20 @@ function DangerTab() {
             <div className="mt-3 flex gap-2"><button data-press-feedback onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-xl px-4 py-2 text-sm font-bold text-red-800">Cancel</button></div>
           </div>
         )}
-        {error && <p className="mt-3 text-sm font-medium text-red-700">{error}</p>}
+        {error && <p className="mt-3 text-sm font-medium text-red-700 dark:text-red-300">{error}</p>}
       </section>
 
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
+      <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
         <h3 className="font-display text-lg font-bold text-red-800">Transfer shop, then delete account</h3>
         <p className="mt-2 text-sm text-red-800/75">You cannot delete an owner account while it owns a shop. Transfer this shop to an existing Loyalty Loop account, or delete the shop and its customer data above.</p>
         <label className="mt-4 block text-sm font-semibold text-red-900" htmlFor="new-owner-email">New owner’s account email</label>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <input id="new-owner-email" type="email" value={newOwnerEmail} onChange={(event) => setNewOwnerEmail(event.target.value)} placeholder="owner@example.com" className="h-11 flex-1 rounded-xl border border-red-300 bg-white px-3 outline-none focus:border-red-600" />
-          <button data-press-feedback onClick={transferShop} disabled={transferring || !newOwnerEmail.trim()} className="rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 disabled:opacity-40">{transferring ? 'Transferring…' : 'Transfer shop'}</button>
+          <button data-press-feedback onClick={transferShop} disabled={transferring || !newOwnerEmail.trim()} className="rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 dark:text-red-300 disabled:opacity-40">{transferring ? 'Transferring…' : 'Transfer shop'}</button>
         </div>
       </section>
 
-      {businesses.length === 0 && <section className="rounded-2xl border border-red-300 bg-red-50 p-6">
+      {businesses.length === 0 && <section className="rounded-2xl border border-red-300 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
         <h3 className="font-display text-lg font-bold text-red-800">Delete account permanently</h3>
         <p className="mt-2 text-sm text-red-800/75">All shops have been resolved. This permanently deletes your login and personal account data.</p>
         <button data-press-feedback onClick={deleteAccount} disabled={deletingAccount} className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
@@ -1421,7 +1421,7 @@ export function OwnerSettings() {
       </div>
 
       {ownerLoading ? null : !business ? (
-        <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
+        <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
           <h2 className="font-display text-xl font-bold text-red-800">Delete account</h2>
           <p className="mt-2 text-sm text-red-800/75">You have no shops assigned to this account. Deleting it permanently removes your login and personal data.</p>
           <button data-press-feedback onClick={async () => {

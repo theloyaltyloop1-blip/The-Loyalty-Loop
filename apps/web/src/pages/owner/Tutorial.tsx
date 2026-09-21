@@ -34,7 +34,7 @@ export function OwnerTutorial() {
         ))}
       </section>
 
-      <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ac89c] bg-[#ecf8ed] p-5 text-sm text-[#24542b]">
+      <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ac89c] bg-[#ecf8ed] p-5 text-sm text-[#24542b] dark:border-[#3a5a3d] dark:bg-[#1E4A29] dark:text-[#8de39a]">
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
         <p><strong>Ready to go?</strong> Give one test stamp to your own shopper account, then scan a real customer card at the till.</p>
       </div>
