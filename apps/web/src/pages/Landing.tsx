@@ -3,7 +3,13 @@ import { ArrowUpRight, Check } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { usePageMeta } from '@/lib/use-page-meta'
+import { Button } from '@/components/ui/button'
 import './landing.css'
+
+const NAV_LINKS = [
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'For business', href: '#business' },
+]
 
 const questions = [
   ['How do I collect a stamp?', 'Join a participating shop’s loyalty card, then show your QR code or short code when you pay. The shop adds your stamps or points to your account.'],
@@ -17,11 +23,22 @@ export function Landing() {
   return (
     <div className="ll-home">
       <a className="ll-skip" href="#main-content">Skip to content</a>
-      <header className="ll-header ll-wrap">
-        <Link to="/" className="ll-brand" aria-label="The Loyalty Loop home"><LoopMark className="h-8 w-8" /><span>The Loyalty Loop</span></Link>
-        <nav aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="#business">For business</a><Link to="/help">Help</Link></nav>
-        <Link to="/login" className="ll-login">Log in <ArrowUpRight size={16} aria-hidden="true" /></Link>
-      </header>
+      <div className="ll-header-dock ll-wrap">
+        <header className="ll-header-bar">
+          <Link to="/" className="ll-brand" aria-label="The Loyalty Loop home"><LoopMark className="h-9 w-9" /><span>The Loyalty Loop</span></Link>
+          <nav aria-label="Main navigation" className="ll-header-nav">
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href}>{link.label}</a>
+            ))}
+            <Link to="/help">Help</Link>
+          </nav>
+          <Link to="/login" className="shrink-0">
+            <Button size="sm" className="bg-foreground text-background border-foreground">
+              <span className="hidden sm:inline">Sign up or log in</span><span className="sm:hidden">Sign in</span>
+            </Button>
+          </Link>
+        </header>
+      </div>
       <main id="main-content">
         <section className="ll-hero ll-wrap">
           <div className="ll-hero-copy">
