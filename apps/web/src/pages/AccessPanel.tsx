@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CheckCircle2, Download, LockKeyhole, ShieldCheck, XCircle } from 'lucide-react'
+import { CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -12,13 +12,31 @@ import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
 
-type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups'
+type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features'
 type Health = { label: string; detail: string; ok: boolean; targetTab?: Tab }
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups',
+  overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features',
 }
+
+// Features that were built and shipped, then deliberately switched off at
+// the owner's request — kept here so it's obvious what still exists and how
+// to bring each one back, rather than that knowledge only living in git log.
+const PAUSED_FEATURES = [
+  {
+    name: 'Dark mode toggle',
+    where: 'Site-wide (every page)',
+    detail: 'The floating sun/moon button that let visitors switch themes was removed. Dark mode itself — the theme provider, localStorage persistence and every .dark CSS rule — is untouched and still fully working, there\'s just no UI control to switch it anymore.',
+    toBringBack: 'Re-add <ThemeToggle compact /> in App.tsx (see git history for the exact spot).',
+  },
+  {
+    name: 'WhatsApp QR onboarding',
+    where: 'Every shop\'s Growth Tools page',
+    detail: 'The card that let a shop owner route their printed poster through a WhatsApp join flow (scan → WhatsApp chat → joined) instead of the standard QR join was removed from the Growth Tools page for every shop. The underlying capability — the database flag, the poster\'s conditional QR routing and the /whatsapp/* pages — is untouched, so any shop that had already turned it on keeps working exactly as before.',
+    toBringBack: 'Re-add the WhatsApp QR onboarding card in apps/web/src/pages/owner/Tools.tsx (see git history for the removed block).',
+  },
+] as const
 
 const REASON_LABELS: Record<ReviewReport['reason'], string> = {
   spam: 'Spam or fake', offensive: 'Offensive or hateful', harassment: 'Harassment or bullying', off_topic: 'Not about this shop', other: 'Other',
@@ -101,7 +119,7 @@ export function AccessPanel() {
     </aside>
     <main className="w-full flex-1 p-4 sm:p-6 lg:max-w-6xl lg:p-10">
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs uppercase tracking-wide text-white/40">Platform operations</p><h1 className="font-display text-3xl font-extrabold sm:text-4xl">{tabLabels[tab]}</h1></div><button data-press-feedback onClick={() => void load()} className="w-fit rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Refresh</button></div>
-      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : <LaptopBackups />}
+      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : tab === 'backups' ? <LaptopBackups /> : <PausedFeatures />}
     </main>
   </div>
 }
@@ -230,6 +248,19 @@ function formatBytes(value: number) {
   if (value < 1024) return `${value} B`
   if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`
   return `${(value / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function PausedFeatures() {
+  return <div className="grid gap-4"><p className="text-sm text-white/50">Built, shipped, then deliberately switched off — nothing here was removed by accident, and none of it needs to be rebuilt to come back.</p>
+    {PAUSED_FEATURES.map((feature) => <article key={feature.name} className="rounded-2xl border border-white/10 bg-white/6 p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><p className="font-bold">{feature.name}</p><p className="mt-1 text-sm text-white/45">{feature.where}</p></div>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white/70"><PauseCircle className="h-3.5 w-3.5" />Paused</span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-white/65">{feature.detail}</p>
+      <p className="mt-3 text-sm text-white/45">To bring it back: {feature.toBringBack}</p>
+    </article>)}
+  </div>
 }
 
 function LaptopBackups() {
