@@ -7,6 +7,7 @@ import { Landing } from '@/pages/Landing'
 import { CookieConsent } from '@/components/cookie-consent'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { UsageTracker } from '@/components/usage-tracker'
+import { PlatformAnnouncementBanner } from '@/components/platform-announcement-banner'
 import { ThemeProvider } from '@/components/theme-toggle'
 import { usePageMeta } from '@/lib/use-page-meta'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -84,6 +85,7 @@ function App() {
               {/* Theme toggle intentionally hidden for now — dark mode still
                   works via ThemeProvider/localStorage, just no UI to switch it.
                   Re-add <ThemeToggle compact /> here (see git history) to bring it back. */}
+              <PlatformAnnouncementBanner />
               <Toaster position="top-center" richColors closeButton />
               <Suspense fallback={<BarePageSkeleton />}>
                 <UsageTracker />
