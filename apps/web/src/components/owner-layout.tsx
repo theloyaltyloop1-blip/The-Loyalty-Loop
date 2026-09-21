@@ -107,7 +107,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               end={end}
               className={({ isActive }) =>
                 'flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97] md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-base ' +
-                (isActive ? 'bg-foreground text-white shadow-sm' : 'text-foreground/70 hover:bg-foreground/5')
+                (isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground/70 hover:bg-foreground/5')
               }
             >
               <Icon className="h-5 w-5" />
