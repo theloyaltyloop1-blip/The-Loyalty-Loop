@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { BlurView } from 'expo-blur'
-import { Dimensions, Modal, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
+import { Dimensions, Modal, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
@@ -131,21 +131,31 @@ export function Sheet({
   )
 
   return (
-    <Modal transparent visible={mounted} animationType="none" onRequestClose={animateClosed}>
-      {backdrop && (
-        <AnimatedBlurView
-          tint="dark"
-          animatedProps={backdropAnimProps}
-          style={[StyleSheet.absoluteFill, backdropProgress, styles.backdropTint]}
-        >
-          <Pressable style={StyleSheet.absoluteFill} onPress={animateClosed} />
-        </AnimatedBlurView>
-      )}
-      {dragArea === 'full' ? <GestureDetector gesture={pan}>{sheetContent}</GestureDetector> : sheetContent}
+    <Modal
+      transparent
+      visible={mounted}
+      animationType="none"
+      onRequestClose={animateClosed}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <View style={styles.host}>
+        {backdrop && (
+          <AnimatedBlurView
+            tint="dark"
+            animatedProps={backdropAnimProps}
+            style={[StyleSheet.absoluteFill, backdropProgress, styles.backdropTint]}
+          >
+            <Pressable style={StyleSheet.absoluteFill} onPress={animateClosed} />
+          </AnimatedBlurView>
+        )}
+        {dragArea === 'full' ? <GestureDetector gesture={pan}>{sheetContent}</GestureDetector> : sheetContent}
+      </View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
+  host: { flex: 1, justifyContent: 'flex-end' },
   backdropTint: { backgroundColor: 'rgba(0,0,0,0.25)' },
 })

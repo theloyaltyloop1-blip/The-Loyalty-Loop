@@ -34,7 +34,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleTeamId": "9QSSA475TR"
+        "appleTeamId": "9QSSA475TR",
+        "ascAppId": "6813259329"
       },
       "android": {
         "serviceAccountKeyPath": "C:/Users/zahih/keys/play-eas-submit.json",

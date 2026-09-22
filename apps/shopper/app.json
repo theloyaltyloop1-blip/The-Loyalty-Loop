@@ -14,7 +14,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "6"
+      "buildNumber": "9"
     },
     "android": {
       "package": "com.theloyaltyloop.shopper",

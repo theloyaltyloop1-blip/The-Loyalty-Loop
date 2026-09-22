@@ -45,6 +45,7 @@ import {
   Star,
   Trash2,
   Users,
+  X,
   type LucideIcon,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
@@ -2527,6 +2528,19 @@ function Dashboard({
     [loading, setLoading] = useState(!preview);
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
   const [needsLoyaltySetup, setNeedsLoyaltySetup] = useState<boolean | null>(null);
+  const [platformNotices, setPlatformNotices] = useState<{ id: string; title: string; body: string | null }[]>([]);
+  const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (preview) return;
+    const targetColumn = Platform.OS === "ios" ? "target_retailer_ios" : "target_retailer_android";
+    void supabase
+      .from("platform_announcements")
+      .select("id,title,body")
+      .eq("is_active", true)
+      .eq(targetColumn, true)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setPlatformNotices(data || []));
+  }, [preview]);
   const navigateOnboarding = (destination: NativeOnboardingDestination) => {
     setOwnerPage(null);
     if (destination === "branding" || destination === "rewards") {
@@ -2725,6 +2739,17 @@ function Dashboard({
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
+      {platformNotices.filter((notice) => !dismissedNoticeIds.has(notice.id)).map((notice) => (
+        <View key={notice.id} style={styles.platformBanner}>
+          <Text style={styles.platformBannerText}>
+            {notice.title}
+            {notice.body ? <Text style={styles.platformBannerBody}> — {notice.body}</Text> : null}
+          </Text>
+          <Pressable onPress={() => setDismissedNoticeIds((prev) => new Set(prev).add(notice.id))} hitSlop={8}>
+            <X size={16} color="#fff" />
+          </Pressable>
+        </View>
+      ))}
       <ScrollView
         contentContainerStyle={styles.screen}
         keyboardShouldPersistTaps="handled"
@@ -2978,6 +3003,9 @@ function AppRoot() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: cream },
+  platformBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: orange, paddingHorizontal: 16, paddingVertical: 10 },
+  platformBannerText: { flex: 1, color: "#fff", fontSize: 13, fontWeight: "700" },
+  platformBannerBody: { fontWeight: "400", opacity: 0.9 },
   auth: { flexGrow: 1, padding: 28, justifyContent: "center" },
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },

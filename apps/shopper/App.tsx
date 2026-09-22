@@ -321,6 +321,7 @@ type Announcement = {
   business: { name: string; brand_color?: string; logo_url?: string | null } | null
 }
 type Tab = 'home' | 'discover' | 'map' | 'news' | 'rewards' | 'favourites'
+type PlatformNotice = { id: string; title: string; body: string | null }
 
 const isShopper = (roles: string[]) =>
   roles.includes('consumer') && !roles.some((role) => ['business_owner', 'staff', 'brand_head'].includes(role))
@@ -1566,6 +1567,33 @@ function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (b
 }
 
 // ---------------------------------------------------------------------
+// Admin-authored banner — dismissed for the current app session only
+// (resets on next launch, same as everything else fetched in load()).
+// ---------------------------------------------------------------------
+
+function PlatformBanner({ notices, dismissedIds, onDismiss }: { notices: PlatformNotice[]; dismissedIds: Set<string>; onDismiss: (id: string) => void }) {
+  const visible = notices.filter((notice) => !dismissedIds.has(notice.id))
+  if (!visible.length) return null
+  return (
+    <View>
+      {visible.map((notice) => (
+        <View key={notice.id} style={styles.platformBanner}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.platformBannerText}>
+              {notice.title}
+              {notice.body ? <Text style={styles.platformBannerBody}> — {notice.body}</Text> : null}
+            </Text>
+          </View>
+          <Pressable onPress={() => onDismiss(notice.id)} hitSlop={8}>
+            <CloseIcon size={16} color="#fff" />
+          </Pressable>
+        </View>
+      ))}
+    </View>
+  )
+}
+
+// ---------------------------------------------------------------------
 // News tab
 // ---------------------------------------------------------------------
 
@@ -1873,6 +1901,8 @@ function AppHome({ session }: { session: Session }) {
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [rewards, setRewards] = useState<Reward[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [platformNotices, setPlatformNotices] = useState<PlatformNotice[]>([])
+  const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set())
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Business | null>(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -1902,7 +1932,8 @@ function AppHome({ session }: { session: Session }) {
   const load = async () => {
     setLoading(true)
     try {
-      const [shops, memberRows, earned, news, favs, profile] = await Promise.all([
+      const platformTargetColumn = Platform.OS === 'ios' ? 'target_shopper_ios' : 'target_shopper_android'
+      const [shops, memberRows, earned, news, favs, profile, notices] = await Promise.all([
         supabase.from('businesses').select('*').eq('is_active', true).order('created_at'),
         supabase.from('memberships').select('*').eq('user_id', userId),
         supabase
@@ -1917,16 +1948,32 @@ function AppHome({ session }: { session: Session }) {
           .order('created_at', { ascending: false }),
         supabase.from('favourites').select('business_id').eq('user_id', userId),
         supabase.from('profiles').select('stamp_code').eq('id', userId).single(),
+        supabase
+          .from('platform_announcements')
+          .select('id,title,body')
+          .eq('is_active', true)
+          .eq(platformTargetColumn, true)
+          .order('created_at', { ascending: false }),
       ])
       if (shops.error) throw shops.error
       if (memberRows.error) throw memberRows.error
       if (earned.error) throw earned.error
       if (news.error) throw news.error
       if (favs.error) throw favs.error
+      setPlatformNotices(notices.error ? [] : ((notices.data || []) as PlatformNotice[]))
       setBusinesses(shops.data || [])
       setMemberships(memberRows.data || [])
       setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business })))
-      setAnnouncements((news.data || []).map((a: any) => ({ ...a, business: Array.isArray(a.business) ? a.business[0] : a.business })))
+      // Only shops this customer has actually joined (and hasn't opted out of
+      // promos from) — otherwise every shop on the platform shows up here.
+      const newsMemberBusinessIds = new Set(
+        (memberRows.data || []).filter((m: any) => !m.promos_opted_out).map((m: any) => m.business_id as string)
+      )
+      setAnnouncements(
+        (news.data || [])
+          .filter((a: any) => newsMemberBusinessIds.has(a.business_id))
+          .map((a: any) => ({ ...a, business: Array.isArray(a.business) ? a.business[0] : a.business }))
+      )
       setFavouriteIds(new Set((favs.data || []).map((row: any) => row.business_id as string)))
       setStampCode(profile.data?.stamp_code || null)
       void syncShopperWidget(shops.data || [], memberRows.data || []).catch(() => undefined)
@@ -2015,6 +2062,13 @@ function AppHome({ session }: { session: Session }) {
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
       <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
       {!discovering && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
+      {!discovering && (
+        <PlatformBanner
+          notices={platformNotices}
+          dismissedIds={dismissedNoticeIds}
+          onDismiss={(id) => setDismissedNoticeIds((prev) => new Set(prev).add(id))}
+        />
+      )}
       {discovering ? (
         <DiscoverTab
           favouriteIds={favouriteIds}
@@ -2140,6 +2194,9 @@ function AppRoot() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: background },
+  platformBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: primary, paddingHorizontal: 16, paddingVertical: 10 },
+  platformBannerText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  platformBannerBody: { fontWeight: '400', opacity: 0.9 },
   auth: { flexGrow: 1, padding: 28, justifyContent: 'center' },
   screen: { padding: 20, paddingBottom: 130 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -2281,7 +2338,7 @@ const styles = StyleSheet.create({
   shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
   shopNotifyTitle: { fontSize: 14, fontWeight: '700', color: foreground },
   shopNotifyCopy: { color: '#8a8378', fontSize: 12, marginTop: 1, lineHeight: 16 },
-  settingsSheet: { paddingHorizontal: 18, maxHeight: '92%' },
+  settingsSheet: { paddingHorizontal: 18, maxHeight: '80%' },
   settingsSheetScroll: { paddingBottom: 20, gap: 20 },
   sheetBack: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   settingsHero: { borderRadius: 24, padding: 16, gap: 14, shadowColor: primary, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
