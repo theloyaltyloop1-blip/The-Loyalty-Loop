@@ -1,0 +1,49 @@
+{
+  "name": "@loyalty-loop/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "lint": "eslint .",
+    "test": "tsx --test test/*.test.ts",
+    "test:integration": "tsx --test test/integration/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate deploy",
+    "mock:webhook": "tsx scripts/mock-webhook.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "dotenv": "18.0.2",
+    "express": "5.2.1",
+    "lossless-json": "4.3.1",
+    "pg": "8.23.0",
+    "zod": "4.6.5"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "mysql2": "3.24.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "@types/supertest": "7.2.1",
+    "embedded-postgres": "18.4.0-beta.17",
+    "eslint": "9.39.5",
+    "prisma": "7.10.0",
+    "supertest": "7.2.2",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.1"
+  }
+}

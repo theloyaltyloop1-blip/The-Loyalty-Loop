@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["card_linked"]
+}
+
+model User {
+  id        String       @id @default(uuid()) @db.Uuid
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  cards     LinkedCard[]
+  balances  StampBalance[]
+
+  @@schema("card_linked")
+}
+
+model Merchant {
+  id                  String             @id @default(uuid()) @db.Uuid
+  stampThresholdMinor BigInt
+  currency            String             @default("GBP") @db.VarChar(3)
+  createdAt           DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime           @updatedAt @db.Timestamptz(3)
+  locations           MerchantLocation[]
+  balances            StampBalance[]
+
+  @@schema("card_linked")
+}
+
+model MerchantLocation {
+  id                 String        @id @default(uuid()) @db.Uuid
+  provider           String        @default("fidel")
+  programId          String        @db.Uuid
+  externalLocationId String        @db.Uuid
+  merchantId         String        @db.Uuid
+  merchant           Merchant      @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  transactions       Transaction[]
+
+  @@unique([provider, programId, externalLocationId])
+  @@index([merchantId])
+  @@schema("card_linked")
+}
+
+model LinkedCard {
+  id             String        @id @default(uuid()) @db.Uuid
+  provider       String        @default("fidel")
+  programId      String        @db.Uuid
+  externalCardId String        @db.Uuid
+  userId         String        @db.Uuid
+  user           User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  transactions   Transaction[]
+
+  @@unique([provider, programId, externalCardId])
+  @@index([userId])
+  @@schema("card_linked")
+}
+
+model Transaction {
+  id                  String           @id @default(uuid()) @db.Uuid
+  provider            String
+  externalId          String           @db.Uuid
+  fingerprint         String           @db.Char(64)
+  linkedCardId        String           @db.Uuid
+  linkedCard          LinkedCard       @relation(fields: [linkedCardId], references: [id], onDelete: Restrict)
+  merchantLocationId  String           @db.Uuid
+  merchantLocation    MerchantLocation @relation(fields: [merchantLocationId], references: [id], onDelete: Restrict)
+  amountMinor         BigInt
+  currency            String           @db.VarChar(3)
+  stampThresholdMinor BigInt
+  status              String           @default("PROVISIONAL")
+  receivedAt          DateTime         @default(now()) @db.Timestamptz(3)
+  ledger              StampLedger?
+
+  @@unique([provider, externalId])
+  @@index([linkedCardId, receivedAt])
+  @@index([merchantLocationId, receivedAt])
+  @@schema("card_linked")
+}
+
+model StampBalance {
+  userId      String        @db.Uuid
+  merchantId  String        @db.Uuid
+  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  merchant    Merchant      @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  provisional BigInt        @default(0)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+  ledger      StampLedger[]
+
+  @@id([userId, merchantId])
+  @@index([merchantId])
+  @@schema("card_linked")
+}
+
+model StampLedger {
+  id            String       @id @default(uuid()) @db.Uuid
+  transactionId String       @unique @db.Uuid
+  transaction   Transaction  @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  userId        String       @db.Uuid
+  merchantId    String       @db.Uuid
+  balance       StampBalance @relation(fields: [userId, merchantId], references: [userId, merchantId], onDelete: Restrict)
+  stamps        BigInt
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, merchantId, createdAt])
+  @@schema("card_linked")
+}
