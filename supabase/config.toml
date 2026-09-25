@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.whatsapp-handoff]
 verify_jwt = false
+
+[functions.fidel-webhook]
+verify_jwt = false

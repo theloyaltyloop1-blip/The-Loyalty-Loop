@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { deleteAllFidelCardsForUser } from "../_shared/fidel-cards.ts";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('ok',{headers:cors}); try {
   const auth=req.headers.get('Authorization'); if(!auth) throw new Error('Missing authorization');
@@ -20,6 +21,20 @@ Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('o
   for (const [bucket, paths] of filesByBucket) {
     const { error: storageDeleteError } = await admin.storage.from(bucket).remove(paths);
     if (storageDeleteError) throw storageDeleteError;
+  }
+
+  // Linked cards (CARD_LINKING_PLAN.md §3.4, P4). Delete every card Fidel still
+  // holds first; if any delete fails, stop and keep the account rather than
+  // leave cards at Fidel that can no longer be traced to anyone. Then remove
+  // the Fidel purchase records before the cards they reference.
+  const { data: linkedCards, error: linkedCardsError } = await admin.from('linked_cards').select('fidel_card_id, fidel_deleted_at').eq('user_id', user.id);
+  if (linkedCardsError) throw linkedCardsError;
+  if (!(await deleteAllFidelCardsForUser({ env: (name) => Deno.env.get(name), fetch }, linkedCards ?? []))) {
+    throw new Error("We couldn't finish removing your linked cards. Please try again in a few minutes.");
+  }
+  for (const table of ['fidel_transactions', 'linked_cards']) {
+    const { error: cardDeleteError } = await admin.from(table).delete().eq('user_id', user.id);
+    if (cardDeleteError) throw cardDeleteError;
   }
 
   // Remove the customer’s personal records in dependency order. Analytics is
