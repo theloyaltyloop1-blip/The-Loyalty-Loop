@@ -1020,8 +1020,7 @@ silently award meaningless stamps.
 **Applied 2026-09-25** as `20260925190000_spend_switchover.sql`, after the retailer and
 shopper OTA updates. As built, progress is reset only at shops that were on stamps; a shop
 already on spend (Pure Elegant) keeps its customers' £ progress. Equal stamp counts get
-distinct £ amounts (+£1 each). The website update is built but not yet deployed (GitHub
-`main` diverged; awaiting the product owner's OK to merge and push).
+distinct £ amounts (+£1 each). The website update was deployed the same day (merge commit `85b79e6`).
 
 ## 6z. Analytics: a new capability this plan enables but doesn't wire up (added 2026-09-22)
 

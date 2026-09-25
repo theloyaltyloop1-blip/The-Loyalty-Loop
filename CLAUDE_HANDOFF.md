@@ -3358,7 +3358,7 @@ Checks actually performed:
 Prototype vs production: the switchover and functions are production changes; the apps are live via OTA. No on-device check of the new screens yet, and no wallet pass was regenerated to look at.
 
 Remaining issues:
-1. **Website not deployed.** It deploys from GitHub `main` via the Vercel Git integration; local `main` is 9 ahead / 17 behind `origin/main`. The live website still has the old stamp Settings/Scan — its Scan page will now be refused (`shop_uses_spend_rewards`) if an owner tries to award a stamp there. Needs a merge of `origin/main`, a build, and a push — **awaiting product-owner OK to push**.
+1. **(Resolved — see next entry.) Website not deployed.** It deploys from GitHub `main` via the Vercel Git integration; local `main` is 9 ahead / 17 behind `origin/main`. The live website still has the old stamp Settings/Scan — its Scan page will now be refused (`shop_uses_spend_rewards`) if an owner tries to award a stamp there. Needs a merge of `origin/main`, a build, and a push — **awaiting product-owner OK to push**.
 2. Codex review findings R1–R9 (`docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md`) are still open and untouched by this work.
 3. Owner-side "simulate stamp" on the website is removed; there is no equivalent test-purchase shortcut (owners can record a small manual purchase on their own account).
 4. `brand_rollup.stamps_30d` still counts stamps (will read 0).
@@ -3366,6 +3366,12 @@ Remaining issues:
 Next actions:
 - Product owner: approve merging `origin/main` into local and pushing to deploy the website; smoke-test retailer setup, a £ purchase and the shopper shop screen on a device.
 - Claude: after approval, merge/build/push and verify the live site; then the R1–R9 design review below.
+
+## Website deployed with spend rewards (2026-09-25) — Claude, product owner asked
+
+Product owner said "do the next step". Merged `origin/main` (17 commits) into local `main`; 3 conflicts (`Activity.tsx`, `Landing.tsx`, `owner/Tools.tsx`) resolved by taking GitHub's redesigned versions and re-applying the £ wording (landing FAQ/hero card now "Spend £20. One coffee on the house", Activity shows purchases in £, member directory shows £ towards next reward). GitHub's removal of the Growth-tools WhatsApp toggle was kept. `tsc -b` + `vite build` clean; outgoing diff scanned — only synthetic test keys. Merge commit `85b79e6` pushed to GitHub `main` (fast-forward from `e07e648`). Vercel production deployment `dpl_EWJhEkyhZrWEHkaGaSb7ppHxe2rJ` READY; www.the-loyalty-loop.com returned 200 and its bundle contains the new landing text. Owner pages were not clicked through in a browser.
+
+Remaining: device/browser smoke test of owner Settings → Rewards, Scan → record £ purchase, and a customer shop page. Remaining issue 1 in the previous entry is resolved.
 
 ## Copy-ready prompt for Claude Code
 
