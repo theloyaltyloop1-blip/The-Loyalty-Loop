@@ -2,7 +2,7 @@ import { verifyFidelSignature } from "./signature.ts";
 import { parseFidelTransaction, type FidelEventType } from "./transaction.ts";
 
 export type FidelRpcClient = {
-  rpc: (functionName: string, args: Record<string, unknown>) => Promise<{
+  rpc: (functionName: string, args: Record<string, unknown>) => PromiseLike<{
     data: { status?: unknown } | null;
     error: { code?: string; message?: string } | null;
   }>;
@@ -17,6 +17,9 @@ export type FidelWebhookRoute = {
 export type FidelWebhookDependencies = {
   routeFor: (requestUrl: string) => FidelWebhookRoute | null;
   admin: FidelRpcClient;
+  // Called after a purchase is credited, e.g. to send the customer's push
+  // notification. It must not block or fail the response to Fidel.
+  onProcessed?: (event: { eventType: FidelEventType; fidelTransactionId: string }) => void;
 };
 
 function response(body: Record<string, unknown>, status = 200): Response {
@@ -87,6 +90,13 @@ export async function handleFidelWebhook(
     }
     if (outcome === "invalid_refund") {
       return response({ status: outcome }, 400);
+    }
+    if (outcome === "processed" && dependencies.onProcessed) {
+      try {
+        dependencies.onProcessed({ eventType: route.eventType, fidelTransactionId: transaction.id });
+      } catch (error) {
+        console.error("fidel-webhook after-processing hook failed", error instanceof Error ? error.name : "unknown");
+      }
     }
     return response({ status: outcome });
   } catch (error) {

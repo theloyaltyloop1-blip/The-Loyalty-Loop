@@ -64,7 +64,7 @@ function RouteMeta() {
     '/dashboard/favourites': { title: 'Favourite shops | The Loyalty Loop', description: 'Your saved local businesses.' },
     '/dashboard/profile': { title: 'Your profile | The Loyalty Loop', description: 'Manage your Loyalty Loop account.' },
     '/owner': { title: 'Business dashboard | The Loyalty Loop', description: 'Manage your business loyalty programme.' },
-    '/owner/scan': { title: 'Scan customer card | The Loyalty Loop for Business', description: 'Award stamps and redeem rewards.' },
+    '/owner/scan': { title: 'Scan customer card | The Loyalty Loop for Business', description: 'Record purchases and redeem rewards.' },
     '/owner/analytics': { title: 'Business analytics | The Loyalty Loop', description: 'Customer and loyalty insights for your business.' },
     '/owner/settings': { title: 'Shop settings | The Loyalty Loop', description: 'Manage your business profile and loyalty programme.' },
   }

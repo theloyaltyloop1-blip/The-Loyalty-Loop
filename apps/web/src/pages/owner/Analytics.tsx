@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
-import { Users, Stamp, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink } from 'lucide-react'
+import { Users, ShoppingBag, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
@@ -402,7 +402,7 @@ export function OwnerAnalytics() {
             <div className="flex flex-col gap-6">
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} color="#3B82C4" />
-                <StatTile icon={Stamp} label="Stamps given" value={stats.stamps_given} prev={stats.stamps_given_prev} color="#E8703B" />
+                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} color="#E8703B" />
                 <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} color="#8E5FC2" />
                 <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} color="#3FA34D" />
               </div>
@@ -416,8 +416,8 @@ export function OwnerAnalytics() {
             <div className="flex flex-col gap-6">
               <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} color="#3B82C4" />
-                <StatTile icon={Users} label="Active members" hint="Members who collected a stamp, point, or visit in this period" value={stats.active_members} prev={stats.active_members_prev} color="#1B3A4B" />
-                <StatTile icon={Stamp} label="Stamps given" value={stats.stamps_given} prev={stats.stamps_given_prev} color="#E8703B" />
+                <StatTile icon={Users} label="Active members" hint="Members who made a purchase in this period" value={stats.active_members} prev={stats.active_members_prev} color="#1B3A4B" />
+                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} color="#E8703B" />
                 <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} color="#8E5FC2" />
                 <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} color="#3FA34D" />
               </div>
@@ -427,7 +427,7 @@ export function OwnerAnalytics() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
                     ['Members', totals.total_members],
-                    ['Stamps given', totals.total_stamps],
+                    ['Purchases recorded', totals.total_stamps],
                     ['Rewards earned', totals.total_rewards_earned],
                     ['Rewards redeemed', totals.total_rewards_redeemed],
                   ].map(([label, value]) => (
@@ -445,7 +445,7 @@ export function OwnerAnalytics() {
                   {[
                     ['New members', stats.new_members, stats.new_members_prev],
                     ['Active members', stats.active_members, stats.active_members_prev],
-                    ['Stamps given', stats.stamps_given, stats.stamps_given_prev],
+                    ['Purchases recorded', stats.stamps_given, stats.stamps_given_prev],
                     ['Rewards earned', stats.rewards_earned, stats.rewards_earned_prev],
                     ['Rewards redeemed', stats.rewards_redeemed, stats.rewards_redeemed_prev],
                   ].map(([label, cur, prev]) => (

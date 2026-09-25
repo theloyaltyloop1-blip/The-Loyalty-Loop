@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { SignJWT, importPKCS8 } from "npm:jose@5";
+import { loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
 
 // Pushes a customer's current stamp/points balance to their already-saved
 // Google Wallet pass. create-wallet-pass only writes the loyalty object once,
@@ -23,12 +24,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
-
-function loyaltyUnitLabel(loyaltyType: string | null | undefined) {
-  if (loyaltyType === "points") return "Points";
-  if (loyaltyType === "tiered") return "Visits";
-  return "Stamps";
-}
 
 async function getAccessToken(key: { client_email: string; private_key: string }): Promise<string> {
   const privateKey = await importPKCS8(key.private_key, "RS256");
@@ -89,7 +84,7 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     const [{ data: business }, { data: staff }] = await Promise.all([
-      admin.from("businesses").select("owner_id,loyalty_type,loyalty_config").eq("id", businessId).maybeSingle(),
+      admin.from("businesses").select("owner_id,name,loyalty_type,loyalty_config,reward_model,reward_threshold_pence").eq("id", businessId).maybeSingle(),
       admin.from("staff_members").select("id").eq("business_id", businessId).eq("user_id", caller.id).eq("status", "active").maybeSingle(),
     ]);
     if (!business || (business.owner_id !== caller.id && !staff)) {
@@ -98,7 +93,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: membership } = await admin
       .from("memberships")
-      .select("stamp_count,points_balance")
+      .select("stamp_count,points_balance,reward_progress_pence")
       .eq("user_id", userId)
       .eq("business_id", businessId)
       .maybeSingle();
@@ -106,9 +101,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ updated: false, reason: "no membership" }), { headers: jsonHeaders });
     }
 
-    const stampsRequired = (business.loyalty_config as { stamps_required?: number } | null)?.stamps_required ?? 10;
-    const unitLabel = loyaltyUnitLabel(business.loyalty_type);
-    const value = business.loyalty_type === "points" ? membership.points_balance : membership.stamp_count;
+    const progress = walletProgress(business, membership, await loadWalletTiers(admin, businessId), business.name);
 
     const objectId = `${ISSUER_ID}.mem_${businessId.replace(/-/g, "")}_${userId.replace(/-/g, "")}`;
 
@@ -119,9 +112,9 @@ Deno.serve(async (req: Request) => {
       method: "PATCH",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        loyaltyPoints: { label: unitLabel, balance: { string: String(value) } },
+        loyaltyPoints: { label: progress.label, balance: { string: progress.value } },
         textModulesData: [
-          { header: "Goal", body: `${stampsRequired} ${unitLabel.toLowerCase()} to unlock your reward`, id: "goal" },
+          { header: "Goal", body: progress.goal, id: "goal" },
         ],
       }),
     });

@@ -104,7 +104,7 @@ function BusinessOnboarding({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
   const slides = [
     { eyebrow: "WELCOME", title: "Loyalty made\nsimple.", copy: "Everything your team needs to reward regular customers in seconds." },
-    { eyebrow: "SCAN", title: "Reward every\nvisit.", copy: "Scan a customer QR code or enter their code to award stamps, visits or points." },
+    { eyebrow: "SCAN", title: "Reward every\nvisit.", copy: "Scan a customer QR code or enter their code, then add what they spent in £." },
     { eyebrow: "GROW", title: "See what\nbrings them back.", copy: "Use your dashboard to understand loyalty activity, rewards and customer trends." },
   ];
   const current = slides[step];
@@ -166,6 +166,7 @@ type MemberRow = {
   visit_count: number;
   last_activity_at?: string | null;
   joined_at: string;
+  reward_progress_pence?: number | null;
 };
 type ScannedMemberDetails = MemberRow & { id: string; email?: string | null };
 type Announcement = {
@@ -234,7 +235,7 @@ function buildDailySeries(
       else oldCustomers++;
     });
     return {
-      stamps: rowsToday.reduce((sum, r) => sum + (r.value || 0), 0),
+      stamps: rowsToday.length,
       visits: visitors.size,
       newCustomers,
       oldCustomers,
@@ -1429,7 +1430,7 @@ function DashboardHome({
         </Pressable>
       </View>
       <View style={styles.statsGrid}>
-        <StatTile icon={tileIcon(Stamp)} value={stats.stamps} label="Stamps" />
+        <StatTile icon={tileIcon(Stamp)} value={stats.stamps} label="Purchases" />
         <StatTile
           icon={tileIcon(Users)}
           value={stats.members}
@@ -1457,7 +1458,7 @@ function DashboardHome({
           style={({ pressed }) => [styles.pillButton, pressed && styles.pressed]}
         >
           <Stamp size={18} strokeWidth={2.2} color="#fff" />
-          <Text style={styles.pillButtonText}>Issue Stamp</Text>
+          <Text style={styles.pillButtonText}>Record purchase</Text>
         </Pressable>
         <Pressable
           onPress={onRedeemReward}
@@ -1523,8 +1524,10 @@ function MembersPage({ business }: { business: Business }) {
           const name =
             [member.first_name, member.last_name].filter(Boolean).join(" ") ||
             "Customer";
-          const progress =
-            business.loyalty_type === "points"
+          const spendShop = business.reward_model === "spend_threshold";
+          const progress = spendShop
+            ? poundsWhole(Math.max(0, member.reward_progress_pence ?? 0))
+            : business.loyalty_type === "points"
               ? member.points_balance
               : business.loyalty_type === "tiered"
                 ? member.visit_count
@@ -1548,11 +1551,13 @@ function MembersPage({ business }: { business: Business }) {
               <View>
                 <Text style={styles.memberProgress}>{progress}</Text>
                 <Text style={styles.memberUnit}>
-                  {business.loyalty_type === "points"
-                    ? "points"
-                    : business.loyalty_type === "tiered"
-                      ? "visits"
-                      : "stamps"}
+                  {spendShop
+                    ? "spent"
+                    : business.loyalty_type === "points"
+                      ? "points"
+                      : business.loyalty_type === "tiered"
+                        ? "visits"
+                        : "stamps"}
                 </Text>
               </View>
             </View>
@@ -1624,7 +1629,8 @@ function AnalyticsPage({
         .from("transactions")
         .select("created_at,value,user_id")
         .eq("business_id", business.id)
-        .eq("type", "stamp")
+        .eq("type", "spend")
+        .is("voided_at", null)
         .gte("created_at", since),
       supabase
         .from("memberships")
@@ -1720,13 +1726,13 @@ function AnalyticsPage({
         The last {period} days visualised:
       </Text>
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Activity — stamps & visits</Text>
+        <Text style={styles.chartTitle}>Activity — purchases & visitors</Text>
         <MiniLineChart
           data={dailySeries}
           aKey="stamps"
           bKey="visits"
-          aLabel="Stamps"
-          bLabel="Visits"
+          aLabel="Purchases"
+          bLabel="Visitors"
           aColor={orange}
           bColor="#8B7FD6"
         />
@@ -1982,22 +1988,19 @@ function BusinessSettings({
     [address, setAddress] = useState(business.address || ""),
     [postcode, setPostcode] = useState(business.postcode || ""),
     [phone, setPhone] = useState(business.phone || ""),
-    [loyaltyType, setLoyaltyType] = useState<Business["loyalty_type"]>(
-      business.loyalty_type || "stamp_card",
-    ),
     [saving, setSaving] = useState(false),
     [biometricEnabled, setBiometricEnabled] = useState(false),
     [analyticsEnabled, setAnalyticsEnabled] = useState(false);
-  // Rewards unlock at the catalogue tiers (transactions trigger, migration 0011);
-  // loyalty_config.stamps_required is only the fallback for shops with no catalogue.
-  const [catalog, setCatalog] = useState<{ id: string; title: string; stamp_threshold: number }[] | null>(null);
+  // Rewards unlock at £ amounts (ARCH_PLAN.md §4.11). The highest amount starts
+  // a new cycle of rewards.
+  const [catalog, setCatalog] = useState<{ id: string; title: string; spend_threshold_pence: number | null }[] | null>(null);
   useEffect(() => {
     let active = true;
     void supabase
       .from("reward_catalog")
-      .select("id,title,stamp_threshold")
+      .select("id,title,spend_threshold_pence")
       .eq("business_id", business.id)
-      .order("stamp_threshold")
+      .order("spend_threshold_pence")
       .then(({ data }) => {
         if (active) setCatalog(data || []);
       });
@@ -2005,13 +2008,10 @@ function BusinessSettings({
       active = false;
     };
   }, [business.id]);
-  const unit = LOYALTY_TYPE_OPTIONS.find((option) => option.type === loyaltyType)?.unit ?? "stamps";
-  const modeHelp =
-    loyaltyType === "points"
-      ? "Staff choose how many points to add at each scan, for example 1 point per £1 spent."
-      : loyaltyType === "tiered"
-        ? "Each scan counts as one visit."
-        : "Each scan adds a stamp (staff can add more than one at once).";
+  const rewardSummary = (catalog ?? [])
+    .filter((tier) => tier.spend_threshold_pence)
+    .map((tier) => `${tier.title} ${poundsWhole(tier.spend_threshold_pence!)}`)
+    .join(" · ");
   useEffect(() => {
     setName(business.name);
     setCategory(business.category || "");
@@ -2019,7 +2019,6 @@ function BusinessSettings({
     setAddress(business.address || "");
     setPostcode(business.postcode || "");
     setPhone(business.phone || "");
-    setLoyaltyType(business.loyalty_type || "stamp_card");
   }, [business.id]);
   useEffect(() => {
     biometricLockEnabled().then(setBiometricEnabled);
@@ -2049,13 +2048,6 @@ function BusinessSettings({
           address: address.trim() || null,
           postcode: postcode.trim() || null,
           phone: phone.trim() || null,
-          loyalty_type: loyaltyType,
-          loyalty_config: {
-            ...business.loyalty_config,
-            stamps_required: catalog?.length
-              ? Math.max(...catalog.map((tier) => tier.stamp_threshold))
-              : business.loyalty_config?.stamps_required || 10,
-          },
         })
         .eq("id", business.id)
         .select("id");
@@ -2193,28 +2185,7 @@ function BusinessSettings({
                 <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
                 <View style={styles.settingsGroup}>
                   <Text style={styles.fieldLabel}>How customers collect</Text>
-                  <View style={styles.segment}>
-                    {LOYALTY_TYPE_OPTIONS.map((option) => (
-                      <Pressable
-                        key={option.type}
-                        onPress={() => setLoyaltyType(option.type)}
-                        style={[
-                          styles.segmentButton,
-                          loyaltyType === option.type && styles.segmentActive,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.segmentText,
-                            loyaltyType === option.type && styles.segmentTextActive,
-                          ]}
-                        >
-                          {option.title}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                  <Text style={styles.fieldHelp}>{modeHelp}</Text>
+                  <Text style={styles.fieldHelp}>{SPEND_REWARDS_HELP}</Text>
                   <Pressable
                     onPress={() => onOpenPage("rewards")}
                     style={({ pressed }) => [styles.catalogueLink, pressed && styles.pressed]}
@@ -2227,9 +2198,7 @@ function BusinessSettings({
                       <Text style={styles.tierMeta}>
                         {catalog === null
                           ? "Loading…"
-                          : catalog.length
-                            ? `${catalog.length} reward${catalog.length === 1 ? "" : "s"} · unlock at the ${unit} you set`
-                            : `Add what customers unlock and at how many ${unit}`}
+                          : rewardSummary || "Add what customers unlock and how much they spend to get it"}
                       </Text>
                     </View>
                     <ChevronRight size={18} color="#2F8A4C" />
@@ -2282,16 +2251,9 @@ function BusinessSettings({
           <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
           <View style={styles.settingsGroup}>
             <Text style={styles.fieldLabel}>How customers collect</Text>
-            <Text style={styles.readOnlyValue}>
-              {LOYALTY_TYPE_OPTIONS.find((option) => option.type === loyaltyType)?.title ?? "Stamps"}
-            </Text>
-            <Text style={styles.fieldHelp}>{modeHelp}</Text>
+            <Text style={styles.fieldHelp}>{SPEND_REWARDS_HELP}</Text>
             <Text style={styles.fieldHelp}>
-              {catalog === null
-                ? "Loading rewards…"
-                : catalog.length
-                  ? `${catalog.length} reward${catalog.length === 1 ? "" : "s"} set, unlocking at the ${unit} the owner chose.`
-                  : "No rewards set up yet."}
+              {catalog === null ? "Loading rewards…" : rewardSummary || "No rewards set up yet."}
             </Text>
           </View>
         </>
@@ -2523,24 +2485,28 @@ function confirmDeleteAccount(userId: string) {
   );
 }
 
-const LOYALTY_TYPE_OPTIONS: {
-  type: NonNullable<Business["loyalty_type"]>;
-  icon: typeof Stamp;
-  title: string;
-  blurb: string;
-  unit: string;
-}[] = [
-  { type: "stamp_card", icon: Stamp, title: "Stamps", blurb: "A stamp for every visit or purchase.", unit: "stamps" },
-  { type: "points", icon: Star, title: "Points", blurb: "Points for spend or specific actions.", unit: "points" },
-  { type: "tiered", icon: BadgeCheck, title: "Visits", blurb: "Count how many times they visit.", unit: "visits" },
-];
+const SPEND_REWARDS_HELP =
+  "Customers earn by spending. Staff scan the customer's QR and enter what they spent, and linked cards count automatically where available. Each reward unlocks at the £ amount you set; the biggest one starts a new round.";
+
+// £ amounts are stored in pence. Whole pounds show without pence.
+function poundsWhole(pence: number): string {
+  return pence % 100 === 0 ? `£${pence / 100}` : `£${(pence / 100).toFixed(2)}`;
+}
+
+// Parses what an owner typed ("20", "£20", "20.50") into pence, or null.
+function parsePoundsToPence(value: string): number | null {
+  const cleaned = value.replace(/[£,\s]/g, "");
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  const pence = Math.round(Number(cleaned) * 100);
+  return pence >= 100 && pence <= 1_000_000 ? pence : null;
+}
 
 /** Shown once, the first time an owner opens the app with no reward set up
  * yet (checked via reward_catalog being empty for their shop — see the
- * `needsLoyaltySetup` effect in Dashboard). Walks them through the three
- * decisions a loyalty programme actually needs: how progress is tracked,
- * how much is needed, and what the reward is — then writes both
- * businesses.loyalty_type/loyalty_config and the first reward_catalog row. */
+ * `needsLoyaltySetup` effect in Dashboard). Customers earn by spending, so the
+ * owner only decides what they unlock and at which £ amounts (ARCH_PLAN.md
+ * §4.11). Writes the reward_catalog rows; the database keeps the shop's
+ * reward_threshold_pence equal to the biggest amount. */
 function LoyaltyProgramSetup({
   business,
   onDone,
@@ -2549,14 +2515,10 @@ function LoyaltyProgramSetup({
   onDone: () => void;
 }) {
   const [step, setStep] = useState(0);
-  const [loyaltyType, setLoyaltyType] = useState<NonNullable<Business["loyalty_type"]>>(business.loyalty_type || "stamp_card");
-  const [threshold, setThreshold] = useState(String(business.loyalty_config?.stamps_required || 10));
-  const [rewards, setRewards] = useState<{ title: string; description: string; threshold: string }[]>([
-    { title: "", description: "", threshold: "" },
+  const [rewards, setRewards] = useState<{ title: string; description: string; amount: string }[]>([
+    { title: "", description: "", amount: "20" },
   ]);
   const [saving, setSaving] = useState(false);
-  const unit = LOYALTY_TYPE_OPTIONS.find((option) => option.type === loyaltyType)!.unit;
-  const thresholdNumber = Math.max(1, Number(threshold) || 10);
   const updateReward = (index: number, patch: Partial<(typeof rewards)[number]>) =>
     setRewards((list) => list.map((reward, i) => (i === index ? { ...reward, ...patch } : reward)));
 
@@ -2565,21 +2527,27 @@ function LoyaltyProgramSetup({
       business_id: business.id,
       title: reward.title.trim(),
       description: reward.description.trim() || null,
-      stamp_threshold: Math.max(1, Number(reward.threshold) || thresholdNumber),
+      spend_threshold_pence: parsePoundsToPence(reward.amount),
+      stamp_threshold: 10,
       sort_order: index,
     }));
     if (rows.some((row) => !row.title)) {
       Alert.alert("Add a reward", "Every reward needs a name — for example: Free coffee.");
       return;
     }
+    if (rows.some((row) => row.spend_threshold_pence === null)) {
+      Alert.alert("Check the amounts", "Enter how much customers spend for each reward, between £1 and £10,000.");
+      return;
+    }
+    if (new Set(rows.map((row) => row.spend_threshold_pence)).size !== rows.length) {
+      Alert.alert("Check the amounts", "Each reward needs a different amount.");
+      return;
+    }
     setSaving(true);
     try {
       const { error: bizError } = await supabase
         .from("businesses")
-        .update({
-          loyalty_type: loyaltyType,
-          loyalty_config: { ...business.loyalty_config, stamps_required: thresholdNumber },
-        })
+        .update({ reward_model: "spend_threshold" })
         .eq("id", business.id);
       if (bizError) throw bizError;
       const { error: rewardError } = await supabase.from("reward_catalog").insert(rows);
@@ -2601,55 +2569,24 @@ function LoyaltyProgramSetup({
         <Text style={styles.eyebrow}>SET UP YOUR LOYALTY PROGRAMME</Text>
         {step === 0 && (
           <>
-            <Text style={styles.hero}>How do customers{"\n"}earn a reward?</Text>
-            <Text style={styles.copy}>Pick how {business.name} tracks loyalty. You can change this later in Settings.</Text>
-            <View style={{ marginTop: 22, gap: 12 }}>
-              {LOYALTY_TYPE_OPTIONS.map((option) => {
-                const active = loyaltyType === option.type;
-                return (
-                  <Pressable
-                    key={option.type}
-                    onPress={() => setLoyaltyType(option.type)}
-                    style={[styles.setupOptionCard, active && styles.setupOptionCardActive]}
-                  >
-                    <option.icon size={22} color={active ? "#fff" : orange} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.setupOptionTitle, active && styles.setupOptionTitleActive]}>{option.title}</Text>
-                      <Text style={[styles.setupOptionBlurb, active && styles.setupOptionBlurbActive]}>{option.blurb}</Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Text style={styles.hero}>Customers earn{"\n"}by spending</Text>
+            <Text style={styles.copy}>
+              Every £ a customer spends at {business.name} counts towards a reward. Staff scan their QR and
+              enter the amount, and linked cards count automatically where available.
+            </Text>
+            <Text style={styles.copy}>
+              You choose what customers unlock and how much they spend to get it — for example, a free
+              coffee at £20 and a free lunch at £50.
+            </Text>
             <Button title="Continue" onPress={() => setStep(1)} />
           </>
         )}
         {step === 1 && (
           <>
-            <Text style={styles.hero}>How many {unit}{"\n"}for a reward?</Text>
-            <Text style={styles.copy}>Customers unlock their reward once they reach this number.</Text>
-            <View style={styles.card}>
-              <Text style={styles.fieldLabel}>Number of {unit}</Text>
-              <TextInput
-                style={styles.input}
-                value={threshold}
-                onChangeText={(value) => setThreshold(value.replace(/[^0-9]/g, ""))}
-                keyboardType="number-pad"
-                placeholder="10"
-                placeholderTextColor="#111111"
-              />
-            </View>
-            <Button title="Continue" onPress={() => setStep(2)} />
-            <Pressable onPress={() => setStep(0)} style={styles.onboardingSkip}>
-              <Text style={styles.onboardingSkipText}>Back</Text>
-            </Pressable>
-          </>
-        )}
-        {step === 2 && (
-          <>
             <Text style={styles.hero}>What can customers{"\n"}unlock?</Text>
             <Text style={styles.copy}>
-              Add at least one reward. Bigger rewards can unlock at a higher number of {unit} — you can add more later in Settings.
+              Add at least one reward. Bigger rewards can unlock at higher amounts; the biggest one starts a
+              new round. You can change these any time in Settings.
             </Text>
             {rewards.map((reward, index) => (
               <View key={index} style={styles.card}>
@@ -2670,13 +2607,13 @@ function LoyaltyProgramSetup({
                   placeholderTextColor="#111111"
                   multiline
                 />
-                <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks at ({unit})</Text>
+                <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks after spending (£)</Text>
                 <TextInput
                   style={styles.input}
-                  value={reward.threshold}
-                  onChangeText={(value) => updateReward(index, { threshold: value.replace(/[^0-9]/g, "") })}
-                  keyboardType="number-pad"
-                  placeholder={String(thresholdNumber)}
+                  value={reward.amount}
+                  onChangeText={(value) => updateReward(index, { amount: value.replace(/[^0-9.]/g, "") })}
+                  keyboardType="decimal-pad"
+                  placeholder="20"
                   placeholderTextColor="#111111"
                 />
                 {rewards.length > 1 && (
@@ -2689,16 +2626,16 @@ function LoyaltyProgramSetup({
             <Button
               title="Add another reward"
               secondary
-              onPress={() => setRewards((list) => [...list, { title: "", description: "", threshold: "" }])}
+              onPress={() => setRewards((list) => [...list, { title: "", description: "", amount: "" }])}
             />
             <Button title={saving ? "Saving…" : "Finish setup"} onPress={finish} disabled={saving} />
-            <Pressable onPress={() => setStep(1)} style={styles.onboardingSkip}>
+            <Pressable onPress={() => setStep(0)} style={styles.onboardingSkip}>
               <Text style={styles.onboardingSkipText}>Back</Text>
             </Pressable>
           </>
         )}
         <View style={styles.onboardingDots}>
-          {[0, 1, 2].map((index) => (
+          {[0, 1].map((index) => (
             <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />
           ))}
         </View>
@@ -2970,7 +2907,8 @@ function Dashboard({
         .from("transactions")
         .select("id", { count: "exact", head: true })
         .eq("business_id", selected.id)
-        .eq("type", "stamp"),
+        .eq("type", "spend")
+        .is("voided_at", null),
       supabase
         .from("transactions")
         .select("id", { count: "exact", head: true })
@@ -3035,7 +2973,7 @@ function Dashboard({
   }, []);
   const nav = [
     { id: "home", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "scan", icon: Stamp, label: "Stamps" },
+    { id: "scan", icon: Stamp, label: "Scan" },
     { id: "members", icon: Users, label: "Members" },
     { id: "analytics", icon: ChartNoAxesCombined, label: "Analytics" },
     { id: "news", icon: Newspaper, label: "News" },

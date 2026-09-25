@@ -217,6 +217,12 @@ Enrollment becomes a release criterion, not a runtime gate.
 
 ## 2. Fidel API facts this plan relies on
 
+**Current evidence, 2026-09-25:** signed Test-mode auth and positive clearing have
+been verified against their own registered URLs/secrets, and the first automatic
+test-account credits are recorded. No genuine refund or negative-clearing delivery
+has been verified. Missing delivery is unexplained; do not assert that Test mode
+cannot emit refunds. See the latest handoff and independent implementation review.
+
 **Read-only sandbox observation (2026-09-22):** an existing authorization in the
 account's Demo Program displayed a bare transaction object with GBP amount in
 major units, separate accountId and card.id, and location.id. The Loyalty Loop
@@ -465,6 +471,16 @@ the PostgreSQL integer range. Do not use `Math.round(amount * 100)` as a fallbac
 that would reintroduce floating-point monetary arithmetic.
 
 ### 4.2 Idempotency + resolution (single DB transaction from here on)
+
+**2026-09-25 review correction required:** steps 7–9 below describe the original
+implementation, not a complete lifecycle contract. Requiring an active card for
+every event loses clearing/refund correlation after unlink/relink; new Location
+status is also not enforced by the award RPC. R1–R4 in
+`docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md` require a reviewed distinction
+between eligibility for new awards and historical purchase adjustments. Claude
+must specify that repair before implementation; do not weaken historical ownership
+checks or claim the current code is safe merely because the original suites pass.
+
 6. Insert into `fidel_webhook_events (fidel_message_id, fidel_transaction_id, event_type)`.
    On unique-violation (`23505`) on `(fidel_transaction_id, event_type)`: this exact
    event was already processed — return 200 immediately, do nothing else. This is the
@@ -951,6 +967,61 @@ Retailer and shopper: TypeScript and bundle checks, then a device test on the te
 3. Owner cap setting and 7-day undo list.
 4. Shopper £ progress.
 5. Device test on the dedicated test shop and account.
+
+## 4.11 Tiered £ rewards, push dispatch and the switchover (designed 2026-09-25)
+
+**Product owner decisions (2026-09-25):**
+- **T1:** each shop can have **several rewards at different £ amounts**, e.g. "£20 = free
+  coffee, £50 = free lunch".
+- **T2:** shops without an amount default to **£20**.
+- **T3:** at the switchover everyone's progress starts at **£0**; earned but unredeemed
+  rewards stay valid, and stamp counts are kept but hidden.
+- **T4:** the switchover goes ahead **without** the Fidel-submission requirement (§0b
+  item 4 is relaxed). Fidel stays built and is enabled per shop by an Active Location.
+- **T5:** the stamps/points/visits setup is removed from the retailer app, website and
+  onboarding.
+
+**How tiers work (mirrors the old stamp-tier semantics):**
+- `reward_catalog.spend_threshold_pence` holds each reward's £ amount.
+- Progress climbs through the tiers in order; crossing a tier issues **that tier's
+  reward** (title plus `catalog_id`).
+- Crossing the **highest** tier completes a cycle: progress restarts at £0 and any excess
+  carries over.
+- `businesses.reward_threshold_pence` is kept equal to the highest tier (the cycle
+  length) by a trigger on `reward_catalog`.
+- A shop with no tiers falls back to a single "Free reward" at `reward_threshold_pence`.
+- Negative progress (after a refund or undo) must first be covered before the first tier
+  is reached again.
+- The "next reward" shown to customers and staff is the lowest tier above current
+  progress.
+
+**Stamps after the switchover:** a `BEFORE INSERT` guard refuses `type='stamp'` at
+spend-threshold shops with `shop_uses_spend_rewards`, so an out-of-date app or page can't
+silently award meaningless stamps.
+
+**Push dispatch:**
+- A shared `_shared/push.ts` sends **all** of a customer's unsent notifications for a
+  shop from the last 30 minutes, respects `user_settings`, and marks them sent.
+- `send-user-push` (staff-triggered) uses it.
+- `fidel-webhook` calls it in the background after a `processed` event, looking the
+  customer up from `fidel_transactions`.
+- A retry sweep for failed sends is deferred (ARCH_PLAN §4.6).
+
+**Switchover migration (run after the apps and website are updated):**
+- every business → `spend_threshold`; the column default → `spend_threshold`;
+  `reward_threshold_pence` defaults to 2000;
+- catalog rewards converted: the first (lowest) tier becomes £20, and any others are
+  scaled proportionally, rounded to whole pounds;
+- a shop already on spend rewards (Pure Elegant) keeps its amount;
+- a shop with no rewards gets a "Free reward" tier at £20;
+- every membership's `reward_progress_pence` → 0 and the redemption block is cleared;
+- existing `rewards` rows are untouched.
+
+**Applied 2026-09-25** as `20260925190000_spend_switchover.sql`, after the retailer and
+shopper OTA updates. As built, progress is reset only at shops that were on stamps; a shop
+already on spend (Pure Elegant) keeps its customers' £ progress. Equal stamp counts get
+distinct £ amounts (+£1 each). The website update is built but not yet deployed (GitHub
+`main` diverged; awaiting the product owner's OK to merge and push).
 
 ## 6z. Analytics: a new capability this plan enables but doesn't wire up (added 2026-09-22)
 

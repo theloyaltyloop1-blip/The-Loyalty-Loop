@@ -105,6 +105,16 @@ export const fixtureSql = String.raw`
     redeemed_at timestamptz,
     created_at timestamptz not null default now()
   );
+  create table public.reward_catalog (
+    id uuid primary key default gen_random_uuid(),
+    business_id uuid not null references public.businesses(id),
+    title text not null,
+    description text,
+    stamp_threshold integer not null default 10,
+    sort_order integer not null default 0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+  );
   create table public.notifications (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null references auth.users(id),
@@ -114,6 +124,10 @@ export const fixtureSql = String.raw`
     body text,
     created_at timestamptz not null default now()
   );
+  create table public.profiles (id uuid primary key, first_name text, last_name text);
+  -- Stand-in for the live function, which a Fidel migration drops and recreates.
+  create function public.get_business_members(_business_id uuid) returns integer
+    language sql stable as $$ select 1 $$;
 `;
 
 
@@ -141,6 +155,21 @@ export async function startFidelDatabase(prefix) {
     extra.push(c);
     return c;
   };
+  const stop = async () => {
+    for (const c of extra) await c.end().catch(() => {});
+    await client.end();
+    await postgres.stop();
+  };
+  try {
+    return { client, newClient, migrations: await setUp(client), stop };
+  } catch (error) {
+    // Without this a setup failure leaves the database running and the test hangs.
+    await stop().catch(() => {});
+    throw error;
+  }
+}
+
+async function setUp(client) {
   await client.query(fixtureSql);
   const dir = new URL('../../../../supabase/migrations/', import.meta.url);
   const migrations = (await readdir(dir)).filter(n => /^\d+_fidel_.*\.sql$/.test(n)).sort();
@@ -160,10 +189,5 @@ export async function startFidelDatabase(prefix) {
     grant select on public.memberships, public.businesses to authenticated;
     grant select, insert, update, delete on all tables in schema public to service_role;
   `);
-  const stop = async () => {
-    for (const c of extra) await c.end().catch(() => {});
-    await client.end();
-    await postgres.stop();
-  };
-  return { client, newClient, migrations, stop };
+  return migrations;
 }

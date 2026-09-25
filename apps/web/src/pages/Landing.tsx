@@ -40,7 +40,7 @@ const STEPS = [
     color: 'bg-fun-green',
     step: 'STEP 2',
     title: 'Collect',
-    description: 'Tap to add a stamp or earn points every time you visit.',
+    description: 'Show your QR when you pay and what you spend counts towards rewards.',
     textLight: true,
   },
   {
@@ -200,7 +200,7 @@ export function Landing() {
             </h1>
             <p className="text-lg text-foreground/70 mb-8 max-w-md">
               One little app for every coffee, croissant and haircut from Tooting Bec to Balham Hill.
-              Collect stamps. Unlock rewards. Keep it local.
+              Shop local. Earn as you spend. Unlock rewards.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to="/signup">
@@ -350,13 +350,13 @@ export function Landing() {
               A loyalty programme that fits in your apron pocket.
             </h2>
             <p className="max-w-lg text-white/90 mb-6">
-              Set up your stamp card in five minutes. Send promos straight to regulars without shouting on
+              Set up your rewards in five minutes. Send promos straight to regulars without shouting on
               social media. Live now in Tooting & Balham.
             </p>
 
             <div className="grid md:grid-cols-[1fr_auto] gap-4 items-start mb-6">
               <div className="rounded-xl bg-white/95 text-foreground px-4 py-3 font-semibold text-sm max-w-md">
-                ⚡ Sign up, set up your stamp card, and you're live to neighbours straight away — no waiting.
+                ⚡ Sign up, set up your rewards, and you're live to neighbours straight away — no waiting.
               </div>
               <Link to="/signup/owner">
                 <Button variant="accent" size="lg" className="whitespace-nowrap">

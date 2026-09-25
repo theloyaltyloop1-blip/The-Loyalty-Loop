@@ -73,8 +73,8 @@ export async function fetchPeriodStats(businessId: string, period: Period): Prom
       .gte('joined_at', prevStart)
       .lt('joined_at', periodStart)
       .then((r) => r.count ?? 0),
-    countRows('transactions', businessId, (q) => q.eq('type', 'stamp'), periodStart, now),
-    countRows('transactions', businessId, (q) => q.eq('type', 'stamp'), prevStart, periodStart),
+    countRows('transactions', businessId, (q) => q.eq('type', 'spend').is('voided_at', null), periodStart, now),
+    countRows('transactions', businessId, (q) => q.eq('type', 'spend').is('voided_at', null), prevStart, periodStart),
     countRows('rewards', businessId, (q) => q, periodStart, now),
     countRows('rewards', businessId, (q) => q, prevStart, periodStart),
     supabase
@@ -131,7 +131,8 @@ export async function fetchTotalsStats(businessId: string): Promise<TotalsStats>
       .from('transactions')
       .select('id', { count: 'exact', head: true })
       .eq('business_id', businessId)
-      .eq('type', 'stamp')
+      .eq('type', 'spend')
+      .is('voided_at', null)
       .then((r) => r.count ?? 0),
     supabase
       .from('rewards')

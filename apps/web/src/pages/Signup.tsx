@@ -133,7 +133,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       <AuthLinks>
         <AuthLinkLine prompt="Already registered? –" linkText="Log in" to="/login" />
         {asOwner ? (
-          <AuthLinkLine prompt="Just here to collect stamps? –" linkText="Sign up as a customer" to="/signup" />
+          <AuthLinkLine prompt="Just here to earn rewards? –" linkText="Sign up as a customer" to="/signup" />
         ) : (
           <AuthLinkLine
             prompt="Signing up as business? –"

@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { Check, Store, MapPin, Palette, Gift, ArrowRight, ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
-import { createBusiness, addRewardCatalogItem, type Business } from '@/lib/businesses'
+import { createBusiness, addRewardCatalogItem, parsePoundsToPence, type Business } from '@/lib/businesses'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
@@ -15,13 +15,14 @@ const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D
 const STEPS = [
   { key: 'basics', label: 'Basics', icon: Store },
   { key: 'location', label: 'Location', icon: MapPin },
-  { key: 'brand', label: 'Brand & loyalty', icon: Palette },
+  { key: 'brand', label: 'Brand', icon: Palette },
   { key: 'rewards', label: 'Rewards', icon: Gift },
 ] as const
 
-type RewardDraft = { title: string; description: string; stamp_threshold: number }
+// Customers earn by spending; each reward unlocks at a £ amount (ARCH_PLAN.md §4.11).
+type RewardDraft = { title: string; description: string; amount: string }
 
-const EMPTY_REWARD: RewardDraft = { title: '', description: '', stamp_threshold: 10 }
+const EMPTY_REWARD: RewardDraft = { title: '', description: '', amount: '20' }
 
 const inputClass =
   'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-foreground placeholder:text-foreground/35 outline-none focus:border-primary'
@@ -55,8 +56,6 @@ export function OwnerOnboarding() {
     lat: number | null
     lng: number | null
     brand_color: string
-    loyalty_type: Business['loyalty_type']
-    stamps_required: number
   }>({
     name: '',
     category: CATEGORIES[0],
@@ -66,8 +65,6 @@ export function OwnerOnboarding() {
     lat: null,
     lng: null,
     brand_color: BRAND_COLORS[0],
-    loyalty_type: 'stamp_card',
-    stamps_required: 10,
   })
   const [geocoding, setGeocoding] = React.useState(false)
   const [pinTouched, setPinTouched] = React.useState(false)
@@ -96,35 +93,25 @@ export function OwnerOnboarding() {
   const resumeBusiness = businesses.length > 0 && business && needsRewardSetup ? business : null
   const step = resumeBusiness ? STEPS.length - 1 : stepState
 
-  React.useEffect(() => {
-    if (!resumeBusiness) return
-    const threshold = resumeBusiness.loyalty_config?.stamps_required ?? 10
-    setRewards((list) => list.map((r, i) => (i === 0 ? { ...r, stamp_threshold: threshold } : r)))
-  }, [resumeBusiness?.id])
-
   if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (!roles.includes('business_owner')) return <Navigate to="/dashboard" replace />
   if (businesses.length > 0 && !resumeBusiness) return <Navigate to="/owner" replace />
 
-  const rewardValid = (r: RewardDraft) =>
-    r.title.trim().length > 0 && Number.isInteger(r.stamp_threshold) && r.stamp_threshold >= 1 && r.stamp_threshold <= 100
+  const rewardValid = (r: RewardDraft) => r.title.trim().length > 0 && parsePoundsToPence(r.amount) !== null
+  const amountsDistinct = new Set(rewards.map((r) => parsePoundsToPence(r.amount))).size === rewards.length
   const canContinue =
     step === 0
       ? form.name.trim().length > 0 && Boolean(form.category)
-      : step === 2
-        ? Number.isInteger(form.stamps_required) && form.stamps_required >= 1 && form.stamps_required <= 100
-        : step === 3
-          ? rewards.length > 0 && rewards.every(rewardValid)
-          : true
+      : step === 3
+        ? rewards.length > 0 && rewards.every(rewardValid) && amountsDistinct
+        : true
 
   function updateReward(index: number, patch: Partial<RewardDraft>) {
     setRewards((list) => list.map((r, i) => (i === index ? { ...r, ...patch } : r)))
   }
 
   function goNext() {
-    // The first reward unlocks at the programme threshold unless edited later.
-    if (step === 2) setRewards((list) => list.map((r, i) => (i === 0 ? { ...r, stamp_threshold: form.stamps_required } : r)))
     setStep((s) => s + 1)
   }
 
@@ -138,7 +125,7 @@ export function OwnerOnboarding() {
           addRewardCatalogItem(target.id, {
             title: r.title.trim(),
             description: r.description.trim() || null,
-            stamp_threshold: r.stamp_threshold,
+            spend_threshold_pence: parsePoundsToPence(r.amount)!,
             sort_order: i,
           })
         )
@@ -194,8 +181,8 @@ export function OwnerOnboarding() {
           <p className="text-sm text-foreground/50 mb-6">
             {step === 0 && 'The basics — you can change all of this later.'}
             {step === 1 && "Shown to customers on your shop page. It's fine to skip this and add it later."}
-            {step === 2 && 'Pick a brand color and how customers will earn rewards.'}
-            {step === 3 && 'Add at least one reward — this is what customers are collecting for. You can add more from Settings later.'}
+            {step === 2 && 'Pick a brand color for your shop page and loyalty card.'}
+            {step === 3 && 'Customers earn by spending. Add at least one reward and how much they spend to unlock it — bigger rewards can unlock at higher amounts, and the biggest starts a new round. You can change these in Settings later.'}
           </p>
 
           {step === 0 && (
@@ -295,39 +282,10 @@ export function OwnerOnboarding() {
                 ))}
               </div>
 
-              <p className="text-sm font-semibold text-foreground mb-1">Loyalty program type</p>
-              <p className="text-xs text-foreground/40 mb-3">You can change this any time.</p>
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                {[
-                  { value: 'stamp_card' as const, title: 'Stamps' },
-                  { value: 'points' as const, title: 'Points' },
-                  { value: 'tiered' as const, title: 'Visits' },
-                ].map((opt) => (
-                  <button data-press-feedback
-                    key={opt.value}
-                    onClick={() => setForm({ ...form, loyalty_type: opt.value })}
-                    className={
-                      'rounded-xl border-2 py-3 font-bold text-sm ' +
-                      (form.loyalty_type === opt.value
-                        ? 'border-primary bg-white text-foreground'
-                        : 'border-black/10 bg-white/40 text-foreground/60')
-                    }
-                  >
-                    {opt.title}
-                  </button>
-                ))}
-              </div>
-
-              <Field label="How many to unlock a reward?">
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  className={inputClass}
-                  value={form.stamps_required}
-                  onChange={(e) => setForm({ ...form, stamps_required: Number(e.target.value) })}
-                />
-              </Field>
+              <p className="text-sm text-foreground/60 mb-2">
+                Customers earn rewards by spending: staff scan their QR and enter what they spent, and linked
+                cards count automatically where available. You'll choose the rewards and amounts next.
+              </p>
             </>
           )}
 
@@ -363,21 +321,20 @@ export function OwnerOnboarding() {
                       placeholder="Anything customers should know"
                     />
                   </Field>
-                  <Field label={`Unlocks at (${form.loyalty_type === 'points' ? 'points' : form.loyalty_type === 'tiered' ? 'visits' : 'stamps'}) *`}>
+                  <Field label="Unlocks after spending (£) *">
                     <input
-                      type="number"
-                      min={1}
-                      max={100}
+                      inputMode="decimal"
                       className={inputClass}
-                      value={reward.stamp_threshold}
-                      onChange={(e) => updateReward(index, { stamp_threshold: Number(e.target.value) })}
+                      value={reward.amount}
+                      onChange={(e) => updateReward(index, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
+                      placeholder="20"
                     />
                   </Field>
                 </div>
               ))}
               <button data-press-feedback
                 type="button"
-                onClick={() => setRewards((list) => [...list, { ...EMPTY_REWARD, stamp_threshold: form.stamps_required }])}
+                onClick={() => setRewards((list) => [...list, { ...EMPTY_REWARD, amount: '' }])}
                 className="flex items-center gap-1.5 text-sm font-semibold text-primary mb-2"
               >
                 <Plus className="h-4 w-4" /> Add another reward
@@ -385,6 +342,9 @@ export function OwnerOnboarding() {
             </>
           )}
 
+          {step === 3 && !amountsDistinct && (
+            <p className="text-sm text-red-600 mb-4">Each reward needs a different amount.</p>
+          )}
           {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">

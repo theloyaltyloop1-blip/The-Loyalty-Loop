@@ -55,7 +55,7 @@ test('manual spend: callers, cap, membership, idempotency, rewards, P5 and undo 
       'select public.record_manual_spend($1, $2, 500, null, $3)', [shop, alice, randomUUID()]), /permission denied/);
     const first = await record(staff, alice, 450);
     assert.deepEqual({ ...first, transactionId: undefined },
-      { status: 'recorded', transactionId: undefined, amountPence: 450, progressPence: 450, thresholdPence: 3000, rewardsEarned: 0 });
+      { status: 'recorded', transactionId: undefined, amountPence: 450, progressPence: 450, thresholdPence: 3000, nextRewardTitle: 'Free reward', rewardsEarned: 0 });
     assert.equal((await record(owner, alice, 100)).status, 'recorded');
     assert.equal((await record(admin, alice, 100)).status, 'recorded');
     assert.equal((await progress(alice)).p, 650);

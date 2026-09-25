@@ -315,6 +315,7 @@ type RewardCatalogItem = {
   title: string
   description?: string | null
   stamp_threshold: number
+  spend_threshold_pence?: number | null
 }
 type ShopReview = {
   id: string
@@ -396,7 +397,7 @@ function ShopperLanding({ onContinue }: { onContinue: () => void }) {
           <Text style={styles.landingTitle}>01  Join a loyalty card</Text>
           <Text style={styles.landingCopy}>Find a local business and join in seconds.</Text>
           <Text style={styles.landingTitle}>02  Collect as you visit</Text>
-          <Text style={styles.landingCopy}>Show your QR code to earn stamps, visits or points.</Text>
+          <Text style={styles.landingCopy}>Show your QR code when you pay and earn rewards as you spend.</Text>
           <Text style={styles.landingTitle}>03  Enjoy your reward</Text>
           <Text style={styles.landingCopy}>Unlocked rewards are ready in the app.</Text>
         </View>
@@ -411,7 +412,7 @@ function ShopperOnboarding({ onComplete }: { onComplete: (analyticsAllowed: bool
   const [step, setStep] = useState(0)
   const slides = [
     { eyebrow: 'WELCOME', title: 'Local rewards,\nin your pocket.', copy: 'Discover independent shops nearby and keep every loyalty card together.' },
-    { eyebrow: 'COLLECT', title: 'One code.\nEvery visit.', copy: 'Show your personal QR code at the counter and watch your stamps build up.' },
+    { eyebrow: 'COLLECT', title: 'One code.\nEvery visit.', copy: 'Show your personal QR code when you pay and watch your rewards build up.' },
     { eyebrow: 'REWARDS', title: 'Never miss\na reward.', copy: 'Your rewards, shop news and loyalty history are ready whenever you are.' },
   ]
   const current = slides[step]
@@ -736,7 +737,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   <View style={styles.settingsHeroButtonIcon}><QrIcon color="#fff" size={20} /></View>
                   <View style={styles.settingsRowBody}>
                     <Text style={styles.settingsHeroButtonTitle}>Show my customer card</Text>
-                    <Text style={styles.settingsHeroButtonCopy}>Scan it at the counter to collect stamps</Text>
+                    <Text style={styles.settingsHeroButtonCopy}>Show it when you pay to earn rewards</Text>
                   </View>
                   <ChevronRightIcon color={primary} size={18} />
                 </Pressable>
@@ -792,7 +793,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               <Text style={styles.cardName}>{firstName}</Text>
               <Text style={styles.manualCodeLabel}>YOUR MANUAL CODE</Text>
               <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
-              <Text style={styles.small}>Show this at a participating shop to collect stamps and rewards. If the scanner can’t read it, the shop can type your manual code instead.</Text>
+              <Text style={styles.small}>Show this when you pay at a participating shop to earn rewards. If the scanner can’t read it, the shop can type your manual code instead.</Text>
             </View>
           )}
 
@@ -801,7 +802,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               <View style={styles.settingsCard}>
                 <Text style={styles.settingsFieldLabel}>First name</Text>
                 <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#b3ab9d" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
-                <Text style={styles.settingsFieldHelp}>Shops see this name when you collect a stamp or leave a review.</Text>
+                <Text style={styles.settingsFieldHelp}>Shops see this name when they record a purchase or you leave a review.</Text>
               </View>
               <View style={styles.settingsCard}>
                 <SettingsRow tile="teal" icon={(c) => <MailIcon color={c} size={18} />} title="Email" detail={email} last />
@@ -956,9 +957,9 @@ function ShopDetail({
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
   const [hiddenReviewIds, setHiddenReviewIds] = useState<Set<string>>(new Set())
-  // Spend-threshold shops (ARCH_PLAN.md §0a) count pence towards one threshold.
+  // Spend shops (ARCH_PLAN.md §4.11) count pence towards £ reward tiers.
   // Negative progress (after a refund or a corrected entry) displays as £0.00.
-  const spendShop = business.reward_model === 'spend_threshold' && (business.reward_threshold_pence ?? 0) > 0
+  const spendShop = business.reward_model === 'spend_threshold'
   const value = spendShop
     ? Math.max(0, membership?.reward_progress_pence ?? 0)
     : business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
@@ -975,12 +976,17 @@ function ShopDetail({
     lastObservedStampValues[business.id] = value
   }, [business.id, value])
 
-  // Rewards unlock at the catalogue tiers (transactions trigger, migration 0011);
-  // stamps_required is only the fallback for shops with no catalogue. Progress is
-  // therefore shown towards the next tier.
-  const nextTier = catalog.find((reward) => reward.stamp_threshold > value) ?? catalog[catalog.length - 1]
+  // Rewards unlock at the catalogue tiers, so progress is shown towards the next
+  // one: the lowest tier above the customer's progress, or the top tier (where a
+  // new round starts). Mirrors spend_next_tier in the database.
+  const spendTiers = catalog
+    .filter((reward) => (reward.spend_threshold_pence ?? 0) > 0)
+    .sort((a, b) => (a.spend_threshold_pence as number) - (b.spend_threshold_pence as number))
+  const nextTier = spendShop
+    ? spendTiers.find((reward) => (reward.spend_threshold_pence as number) > value) ?? spendTiers[spendTiers.length - 1]
+    : catalog.find((reward) => reward.stamp_threshold > value) ?? catalog[catalog.length - 1]
   const threshold = spendShop
-    ? business.reward_threshold_pence as number
+    ? nextTier?.spend_threshold_pence || business.reward_threshold_pence || 2000
     : nextTier?.stamp_threshold || business.loyalty_config?.stamps_required || 10
   const label = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
   const hasMapCoordinates = typeof business.lat === 'number' && typeof business.lng === 'number'
@@ -1006,8 +1012,9 @@ function ShopDetail({
     setCatalogLoading(true)
     supabase
       .from('reward_catalog')
-      .select('id,title,description,stamp_threshold')
+      .select('id,title,description,stamp_threshold,spend_threshold_pence')
       .eq('business_id', business.id)
+      .order('spend_threshold_pence')
       .order('stamp_threshold')
       .then(({ data, error }) => {
         if (!active) return
@@ -1279,7 +1286,7 @@ function ShopDetail({
               <Text style={styles.spendHint}>
                 {membership.redemption_blocked_reason
                   ? 'Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.'
-                  : `Spend ${pounds(Math.max(0, threshold - value))} more here to earn your next reward.`}
+                  : `Spend ${pounds(Math.max(0, threshold - value))} more here to unlock ${nextTier?.title ?? 'your next reward'}.`}
               </Text>
             ) : null}
             <View style={styles.qrWrap}>
@@ -1313,7 +1320,7 @@ function ShopDetail({
               <View style={styles.rewardTierList}>
                 {catalog.slice(0, 3).map((reward) => (
                   <View key={reward.id} style={styles.rewardTier}>
-                    <Text style={styles.rewardTierThreshold}>{reward.stamp_threshold} {label}</Text>
+                    <Text style={styles.rewardTierThreshold}>{spendShop && reward.spend_threshold_pence ? `Spend ${pounds(reward.spend_threshold_pence).replace('.00', '')}` : `${reward.stamp_threshold} ${label}`}</Text>
                     <Text style={styles.rewardTierTitle}>{reward.title}</Text>
                   </View>
                 ))}

@@ -124,6 +124,13 @@ test('Focused Fidel migrations with a public-schema fixture enforce JSON-claims 
         redeemed_at timestamptz,
         created_at timestamptz not null default now()
       );
+      create table public.reward_catalog (
+        id uuid primary key default gen_random_uuid(),
+        business_id uuid not null references public.businesses(id),
+        title text not null,
+        stamp_threshold integer not null default 10,
+        sort_order integer not null default 0
+      );
       create table public.notifications (
         id uuid primary key default gen_random_uuid(),
         user_id uuid not null references auth.users(id),
@@ -133,6 +140,10 @@ test('Focused Fidel migrations with a public-schema fixture enforce JSON-claims 
         body text,
         created_at timestamptz not null default now()
       );
+      create table public.profiles (id uuid primary key, first_name text, last_name text);
+      -- Stand-in for the live function, which a Fidel migration drops and recreates.
+      create function public.get_business_members(_business_id uuid) returns integer
+        language sql stable as $$ select 1 $$;
     `);
     // This focused fixture exercises every Fidel migration, not the full app history.
     const migrationsDirectory = new URL('../../../../supabase/migrations/', import.meta.url);
@@ -269,7 +280,7 @@ test('Focused Fidel migrations with a public-schema fixture enforce JSON-claims 
     }
     await assert.rejects(
       client.query("insert into public.transactions(user_id,business_id,membership_id,type,value) values ($1,$2,$3,'stamp',51)", [customer,business,membership]),
-      /transactions_value_check/
+      /shop_uses_spend_rewards/ // stamps are refused outright at a spend shop (20260925164755); the 1–50 stamp range is covered in fidel-spend-tiers
     );
 
     await client.query('insert into public.linked_cards(user_id,fidel_card_id) values ($1,$2),($3,$4)', [

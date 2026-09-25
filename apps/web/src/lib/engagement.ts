@@ -1,10 +1,10 @@
 import { supabase } from './supabase'
 
-export type ActivityItem = { id: string; type: 'stamp' | 'redeem' | 'points_earn' | 'points_spend'; value: number; note: string | null; created_at: string; business: { name: string; brand_color: string } | null }
+export type ActivityItem = { id: string; type: 'stamp' | 'redeem' | 'points_earn' | 'points_spend' | 'spend'; value: number; note: string | null; created_at: string; voided_at?: string | null; business: { name: string; brand_color: string } | null }
 export type InboxItem = { id: string; title: string; body: string | null; link: string | null; kind: string; read_at: string | null; created_at: string; business: { name: string } | null }
 
 export async function fetchActivity(userId: string) {
-  const { data, error } = await supabase.from('transactions').select('id,type,value,note,created_at,business:businesses(name,brand_color)').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
+  const { data, error } = await supabase.from('transactions').select('id,type,value,note,created_at,voided_at,business:businesses(name,brand_color)').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
   if (error) throw error
   return (data ?? []).map((row: any) => ({ ...row, business: Array.isArray(row.business) ? row.business[0] ?? null : row.business })) as ActivityItem[]
 }

@@ -12,11 +12,11 @@ type Item = { q: string; a: React.ReactNode }
 const SHOPPER_ITEMS: Item[] = [
   {
     q: 'What is The Loyalty Loop?',
-    a: 'It replaces the paper stamp cards from your favourite independent shops with one app. Collect stamps or points when you visit, and unlock a reward once you hit the shop’s goal.',
+    a: 'It replaces the paper loyalty cards from your favourite independent shops with one app. What you spend at each shop counts towards its rewards, and a reward unlocks once you’ve spent the shop’s amount.',
   },
   {
-    q: 'How do I collect a stamp?',
-    a: 'Open the shop’s loyalty card in the app and show the QR code (or read out the 6‑character code) when you pay. The shop scans it and your stamp is added straight away.',
+    q: 'How do my purchases count?',
+    a: 'Open the shop’s loyalty card in the app and show the QR code (or read out the 6‑character code) when you pay. The shop scans it and adds what you spent, and your progress updates straight away. Where the shop supports it, a linked card counts automatically.',
   },
   {
     q: 'How do I claim a reward?',
@@ -51,7 +51,7 @@ const BUSINESS_ITEMS: Item[] = [
   },
   {
     q: 'What kinds of loyalty programme can I run?',
-    a: 'Stamp cards (“collect 8, get a free coffee”), points, or visit‑based rewards. You set the goal and the reward, and can change them whenever you like.',
+    a: 'Spend-based rewards: “spend £20, get a free coffee”. You choose each reward and how much customers spend to unlock it, can add bigger rewards at higher amounts, and can change them whenever you like.',
   },
   {
     q: 'How does the AI business coaching work?',
@@ -93,10 +93,10 @@ const ACCOUNT_ITEMS: Item[] = [
     ),
   },
   {
-    q: 'The app isn’t working / a stamp didn’t appear',
+    q: 'The app isn’t working / a purchase didn’t appear',
     a: (
       <>
-        First, close and reopen the app to refresh. If a stamp or reward still looks wrong, ask the shop to check their side, then email us at{' '}
+        First, close and reopen the app to refresh. If a purchase or reward still looks wrong, ask the shop to check their side, then email us at{' '}
         <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline">
           {SUPPORT_EMAIL}
         </a>{' '}
@@ -147,7 +147,7 @@ export function Help() {
   usePageMeta({
     title: 'Help & FAQ | The Loyalty Loop',
     description:
-      'Answers for shoppers and businesses using The Loyalty Loop — collecting stamps, claiming rewards, setting up your shop, accounts, privacy and troubleshooting.',
+      'Answers for shoppers and businesses using The Loyalty Loop — earning rewards, claiming them, setting up your shop, accounts, privacy and troubleshooting.',
     path: '/help',
   })
 

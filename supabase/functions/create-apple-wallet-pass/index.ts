@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import forge from "npm:node-forge@1";
 import { ICON_1X, ICON_2X, ICON_3X, LOGO_1X, LOGO_2X, LOGO_3X } from "./pass-images.ts";
+import { loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
 
 // Generates a signed Apple Wallet (.pkpass) file for a customer's loyalty
 // card at a given business. Unlike Google Wallet (a signed JWT Google's own
@@ -29,12 +30,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
-
-function loyaltyUnitLabel(loyaltyType: string | null | undefined) {
-  if (loyaltyType === "points") return "Points";
-  if (loyaltyType === "tiered") return "Visits";
-  return "Stamps";
-}
 
 function hexToRgb(hex: string): string {
   const clean = hex.replace("#", "");
@@ -184,7 +179,7 @@ async function buildPass(businessId: string, userId: string): Promise<Response> 
 
   const { data: business, error: bizErr } = await admin
     .from("businesses")
-    .select("id,name,brand_color,loyalty_type,loyalty_config")
+    .select("id,name,brand_color,loyalty_type,loyalty_config,reward_model,reward_threshold_pence")
     .eq("id", business_id)
     .maybeSingle();
   if (bizErr) throw bizErr;
@@ -194,7 +189,7 @@ async function buildPass(businessId: string, userId: string): Promise<Response> 
 
   const { data: membership, error: memErr } = await admin
     .from("memberships")
-    .select("stamp_count,points_balance")
+    .select("stamp_count,points_balance,reward_progress_pence")
     .eq("user_id", user.id)
     .eq("business_id", business_id)
     .maybeSingle();
@@ -203,9 +198,7 @@ async function buildPass(businessId: string, userId: string): Promise<Response> 
     return new Response(JSON.stringify({ error: "join this shop's loyalty card first" }), { status: 400, headers: jsonHeaders });
   }
 
-  const stampsRequired = (business.loyalty_config as { stamps_required?: number } | null)?.stamps_required ?? 10;
-  const unitLabel = loyaltyUnitLabel(business.loyalty_type);
-  const value = business.loyalty_type === "points" ? membership.points_balance : membership.stamp_count;
+  const progress = walletProgress(business, membership, await loadWalletTiers(admin, business.id), business.name);
 
   const passJson = {
     formatVersion: 1,
@@ -219,12 +212,12 @@ async function buildPass(businessId: string, userId: string): Promise<Response> 
     foregroundColor: "rgb(255, 255, 255)",
     labelColor: "rgb(255, 255, 255)",
     storeCard: {
-      primaryFields: [{ key: "balance", label: unitLabel, value: String(value) }],
+      primaryFields: [{ key: "balance", label: progress.label, value: progress.value }],
       secondaryFields: [
-        { key: "goal", label: "Goal", value: `${stampsRequired} ${unitLabel.toLowerCase()} to unlock your reward` },
+        { key: "goal", label: "Goal", value: progress.goal },
       ],
       backFields: [
-        { key: "about", label: "About", value: `Show this pass's QR code at ${business.name} to collect ${unitLabel.toLowerCase()}.` },
+        { key: "about", label: "About", value: progress.about },
       ],
     },
     barcodes: [

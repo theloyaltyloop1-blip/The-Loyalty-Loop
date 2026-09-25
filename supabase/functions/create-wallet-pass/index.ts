@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { SignJWT, importPKCS8 } from "npm:jose@5";
+import { loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
 
 // Generates a "Save to Google Wallet" link for a customer's loyalty card at
 // a given business. The loyalty class is created/updated via a real,
@@ -24,12 +25,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
-
-function loyaltyUnitLabel(loyaltyType: string | null | undefined) {
-  if (loyaltyType === "points") return "Points";
-  if (loyaltyType === "tiered") return "Visits";
-  return "Stamps";
-}
 
 // Google Wallet masks programLogo into a circle and requires it to be
 // roughly square (min 660x660, 1:1) — a wide wordmark-style logo (which
@@ -170,7 +165,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: business, error: bizErr } = await admin
       .from("businesses")
-      .select("id,name,brand_color,logo_url,loyalty_type,loyalty_config")
+      .select("id,name,brand_color,logo_url,loyalty_type,loyalty_config,reward_model,reward_threshold_pence")
       .eq("id", business_id)
       .maybeSingle();
     if (bizErr) throw bizErr;
@@ -180,7 +175,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: membership, error: memErr } = await admin
       .from("memberships")
-      .select("stamp_count,points_balance")
+      .select("stamp_count,points_balance,reward_progress_pence")
       .eq("user_id", user.id)
       .eq("business_id", business_id)
       .maybeSingle();
@@ -189,9 +184,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "join this shop's loyalty card first" }), { status: 400, headers: jsonHeaders });
     }
 
-    const stampsRequired = (business.loyalty_config as { stamps_required?: number } | null)?.stamps_required ?? 10;
-    const unitLabel = loyaltyUnitLabel(business.loyalty_type);
-    const value = business.loyalty_type === "points" ? membership.points_balance : membership.stamp_count;
+    const progress = walletProgress(business, membership, await loadWalletTiers(admin, business.id), business.name);
 
     const classId = `${ISSUER_ID}.biz_${business.id.replace(/-/g, "")}`;
     const objectId = `${ISSUER_ID}.mem_${business.id.replace(/-/g, "")}_${user.id.replace(/-/g, "")}`;
@@ -228,7 +221,7 @@ Deno.serve(async (req: Request) => {
     const loyaltyClass = {
       id: classId,
       issuerName: business.name,
-      programName: `${unitLabel === "Points" ? "Points" : unitLabel === "Visits" ? "Visits" : "Stamp"} Card`,
+      programName: progress.programName,
       reviewStatus: "UNDER_REVIEW",
       hexBackgroundColor: business.brand_color || "#E8703B",
       programLogo: { sourceUri: { uri: programLogoUri }, contentDescription: { defaultValue: { language: "en", value: `${business.name} logo` } } },
@@ -244,11 +237,11 @@ Deno.serve(async (req: Request) => {
       accountId: user.id,
       accountName: firstName || "Loyalty Loop member",
       loyaltyPoints: {
-        label: unitLabel,
-        balance: { string: String(value) },
+        label: progress.label,
+        balance: { string: progress.value },
       },
       textModulesData: [
-        { header: "Goal", body: `${stampsRequired} ${unitLabel.toLowerCase()} to unlock your reward`, id: "goal" },
+        { header: "Goal", body: progress.goal, id: "goal" },
       ],
       barcode: {
         type: "QR_CODE",

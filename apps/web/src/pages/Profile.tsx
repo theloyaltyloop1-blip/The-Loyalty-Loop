@@ -124,7 +124,7 @@ export function ProfilePage() {
     <DashboardLayout>
       <h1 className="text-3xl font-display font-extrabold text-foreground mb-6">Your account</h1>
 
-      <SectionCard title="Your stamp card code">
+      <SectionCard title="Your loyalty card code">
         <p className="text-sm text-foreground/50 mb-4">
           Show this QR code or manual code to staff at any shop if they can't scan it directly.
         </p>
@@ -192,7 +192,7 @@ export function ProfilePage() {
           </div>
           {(
             [
-              ['notify_stamps', 'Stamps & progress', 'When you earn a stamp, point or visit'],
+              ['notify_stamps', 'Progress', 'When a purchase counts towards a reward'],
               ['notify_rewards', 'Rewards', 'When a reward is ready to redeem'],
               ['notify_offers', 'Offers & promos', 'Occasional deals from shops you’ve joined'],
             ] as const

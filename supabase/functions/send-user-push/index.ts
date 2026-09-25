@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { sendPendingPushes } from "../_shared/push.ts";
+import { supabasePushStore } from "../_shared/push-store.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,45 +35,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });
     }
 
-    const { data: notification } = await admin
-      .from("notifications")
-      .select("id,kind,title,body,push_sent_at")
-      .eq("user_id", recipientId)
-      .eq("business_id", businessId)
-      .is("push_sent_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!notification) return new Response(JSON.stringify({ sent: false, reason: "no pending notification" }), { headers: jsonHeaders });
-
-    const { data: settings } = await admin
-      .from("user_settings")
-      .select("notify_stamps,notify_rewards,notify_offers")
-      .eq("user_id", recipientId)
-      .maybeSingle();
-    const enabled = notification.kind === "stamp" ? settings?.notify_stamps !== false
-      : notification.kind === "reward" ? settings?.notify_rewards !== false
-      : notification.kind === "promo" ? settings?.notify_offers !== false
-      : true;
-    if (!enabled) return new Response(JSON.stringify({ sent: false, reason: "recipient opted out" }), { headers: jsonHeaders });
-
-    const { data: tokens } = await admin.from("push_tokens").select("token").eq("user_id", recipientId);
-    if (!tokens?.length) return new Response(JSON.stringify({ sent: false, reason: "no registered device" }), { headers: jsonHeaders });
-
-    const expoResponse = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(tokens.map(({ token }) => ({ to: token, sound: "default", title: notification.title, body: notification.body ?? "", data: { notificationId: notification.id, businessId } }))),
-    });
-    if (!expoResponse.ok) {
-      await admin.from("notifications").update({ push_error: "Expo Push Service rejected the request" }).eq("id", notification.id);
-      return new Response(JSON.stringify({ error: "push provider rejected the request" }), { status: 502, headers: jsonHeaders });
-    }
-
-    const payload = await expoResponse.json() as { data?: Array<{ status?: string; details?: { error?: string } }> };
-    const errors = payload.data?.filter((item) => item.status !== "ok").map((item) => item.details?.error).filter(Boolean) ?? [];
-    await admin.from("notifications").update({ push_sent_at: new Date().toISOString(), push_error: errors.join(", ") || null }).eq("id", notification.id);
-    return new Response(JSON.stringify({ sent: true, deliveryErrors: errors.length }), { headers: jsonHeaders });
+    // Sends every recent unsent notification for this customer at this shop
+    // (e.g. a reward and a progress update from one purchase), not just the latest.
+    const result = await sendPendingPushes(supabasePushStore(admin), fetch, recipientId, businessId);
+    return new Response(JSON.stringify({ ...result, sent: result.sent > 0, sentCount: result.sent }), { headers: jsonHeaders });
   } catch (error) {
     console.error(error);
     return new Response(JSON.stringify({ error: "internal error" }), { status: 500, headers: jsonHeaders });

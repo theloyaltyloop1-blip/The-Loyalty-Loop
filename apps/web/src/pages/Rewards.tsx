@@ -61,7 +61,7 @@ export function RewardsPage() {
         <div className="rounded-2xl bg-card p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <Ticket className="h-9 w-9 mx-auto text-primary mb-3" />
           <h2 className="font-display text-xl font-bold text-foreground">No rewards yet</h2>
-          <p className="text-sm text-foreground/55 mt-2">Keep collecting stamps or points at your favourite shops — your reward will appear here automatically.</p>
+          <p className="text-sm text-foreground/55 mt-2">Keep shopping at your favourite shops — your reward will appear here automatically.</p>
         </div>
       ) : <div className="grid gap-5 md:grid-cols-2">{available.map((reward, index) => <div key={reward.id} className="stagger-card" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><RewardCard reward={reward} /></div>)}</div>}
       {past.length > 0 && <><h2 className="font-display text-xl font-bold text-foreground mt-10 mb-4">Past rewards</h2><div className="grid gap-4 md:grid-cols-2">{past.map((reward, index) => <div key={reward.id} className="stagger-card" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><RewardCard reward={reward} /></div>)}</div></>}

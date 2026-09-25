@@ -24,6 +24,7 @@ import {
   uploadGalleryPhoto,
   deleteBusinessPhoto,
   transferOwnedBusinessOwnership,
+  parsePoundsToPence,
   type RewardCatalogItem,
   type WinbackLogEntry,
   type StaffMember,
@@ -38,8 +39,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
-
-const STAMP_ICON_PRESETS = ['⭐', '🍩', '✂️', '🍕', '☕', '🧁', '🍰', '🍞', '🍔', '🍟', '🌮', '💅', '🎁', '❤️']
 
 const TABS = [
   { key: 'profile', label: 'Profile', icon: Store },
@@ -381,7 +380,7 @@ function ProfileTab() {
 
       <SectionCard title="Brand images">
         <p className="text-sm text-foreground/50 mb-4">
-          A logo is shown as your shop's image across The Loyalty Loop (home feed, stamp card, announcements).
+          A logo is shown as your shop's image across The Loyalty Loop (home feed, loyalty card, announcements).
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           <BrandImageUpload
@@ -515,31 +514,22 @@ function ProfileTab() {
   )
 }
 
-const UNIT_LABEL: Record<'stamp_card' | 'points' | 'tiered', string> = {
-  stamp_card: 'Stamp',
-  points: 'Point',
-  tiered: 'Visit',
-}
+const poundsLabel = (pence: number) => `£${pence % 100 === 0 ? pence / 100 : (pence / 100).toFixed(2)}`
 
 function LoyaltyTab() {
   const { business, updateLocalBusiness } = useOwner()
-  const [loyaltyType, setLoyaltyType] = React.useState(business?.loyalty_type ?? 'stamp_card')
-  const unit = UNIT_LABEL[loyaltyType]
   const [brandColor, setBrandColor] = React.useState(business?.brand_color ?? BRAND_COLORS[0])
-  const [stampsRequired, setStampsRequired] = React.useState(business?.loyalty_config.stamps_required ?? 10)
-  const [stampIcon, setStampIcon] = React.useState(business?.loyalty_config.stamp_icon ?? '⭐')
   const [signupReward, setSignupReward] = React.useState(business?.loyalty_config.signup_reward_title ?? '')
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
-  const [newReward, setNewReward] = React.useState({ title: '', description: '', stamp_threshold: 10 })
+  // Customers earn by spending; each reward unlocks at a £ amount (ARCH_PLAN.md §4.11).
+  const [newReward, setNewReward] = React.useState({ title: '', description: '', amount: '20' })
+  const [rewardError, setRewardError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
 
   React.useEffect(() => {
     if (!business) return
-    setLoyaltyType(business.loyalty_type)
     setBrandColor(business.brand_color)
-    setStampsRequired(business.loyalty_config.stamps_required ?? 10)
-    setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
     fetchRewardCatalog(business.id).then(setCatalog)
   }, [business?.id])
@@ -550,11 +540,10 @@ function LoyaltyTab() {
     setSaving(true)
     try {
       await updateBusiness(business!.id, {
-        loyalty_type: loyaltyType,
         brand_color: brandColor,
-        loyalty_config: { stamps_required: stampsRequired, stamp_icon: stampIcon, signup_reward_title: signupReward },
+        loyalty_config: { ...business!.loyalty_config, signup_reward_title: signupReward },
       })
-      updateLocalBusiness({ loyalty_type: loyaltyType, brand_color: brandColor })
+      updateLocalBusiness({ brand_color: brandColor })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } finally {
@@ -563,15 +552,27 @@ function LoyaltyTab() {
   }
 
   async function handleAddReward() {
-    if (!newReward.title.trim()) return
-    const created = await addRewardCatalogItem(business!.id, {
-      title: newReward.title,
-      description: newReward.description || null,
-      stamp_threshold: newReward.stamp_threshold,
-      sort_order: catalog.length,
-    })
-    setCatalog([...catalog, created])
-    setNewReward({ title: '', description: '', stamp_threshold: 10 })
+    setRewardError(null)
+    if (!newReward.title.trim()) return setRewardError('Give the reward a name.')
+    const pence = parsePoundsToPence(newReward.amount)
+    if (pence === null) return setRewardError('Enter an amount between £1 and £10,000.')
+    if (catalog.some((r) => r.spend_threshold_pence === pence)) {
+      return setRewardError(`You already have a reward at ${poundsLabel(pence)}. Pick a different amount.`)
+    }
+    try {
+      const created = await addRewardCatalogItem(business!.id, {
+        title: newReward.title.trim(),
+        description: newReward.description.trim() || null,
+        spend_threshold_pence: pence,
+        sort_order: catalog.length,
+      })
+      setCatalog(
+        [...catalog, created].sort((a, b) => (a.spend_threshold_pence ?? 0) - (b.spend_threshold_pence ?? 0))
+      )
+      setNewReward({ title: '', description: '', amount: '' })
+    } catch {
+      setRewardError('Could not add that reward. Please try again.')
+    }
   }
 
   async function handleDeleteReward(id: string) {
@@ -594,29 +595,7 @@ function LoyaltyTab() {
         />
       </SectionCard>
 
-      <SectionCard title="Brand & loyalty">
-        <p className="text-sm font-semibold text-foreground mb-1">Loyalty program type</p>
-        <p className="text-sm text-foreground/50 mb-3">How will customers earn rewards? You can change this any time.</p>
-        <div className="grid sm:grid-cols-3 gap-3 mb-6">
-          {[
-            { value: 'stamp_card' as const, title: 'Stamps', desc: 'Classic punch card. One stamp per visit, fills a grid.' },
-            { value: 'points' as const, title: 'Points', desc: 'Award points per visit or spend. Best for variable rewards.' },
-            { value: 'tiered' as const, title: 'Visits', desc: 'Just count visits. Simple and clean.' },
-          ].map((opt) => (
-            <button data-press-feedback
-              key={opt.value}
-              onClick={() => setLoyaltyType(opt.value)}
-              className={
-                'text-left rounded-xl border-2 p-4 transition-colors duration-150 ease-out ' +
-                (loyaltyType === opt.value ? 'border-primary bg-white' : 'border-black/10 bg-white/40')
-              }
-            >
-              <p className="font-bold text-foreground mb-1">{opt.title}</p>
-              <p className="text-xs text-foreground/50">{opt.desc}</p>
-            </button>
-          ))}
-        </div>
-
+      <SectionCard title="Brand">
         <div className="grid sm:grid-cols-2 gap-8">
           <div>
             <Tooltip>
@@ -670,65 +649,22 @@ function LoyaltyTab() {
           </div>
 
           <div>
-            <Field label={`${unit}s required for reward`}>
-              <input
-                type="number"
-                min={1}
-                className={inputClass}
-                value={stampsRequired}
-                onChange={(e) => setStampsRequired(Number(e.target.value))}
-              />
-              <span className="text-xs text-foreground/40 mt-1 block">
-                Used for shops without a reward catalogue. If you add catalogue tiers below, customers earn
-                each tier's reward instead.
-              </span>
-            </Field>
-
-            <p className="text-sm font-semibold text-foreground mb-1.5">{unit} icon</p>
-            <p className="text-xs text-foreground/40 mb-2">
-              Pick a preset or type your own emoji — this is what fills each slot on the card.
+            <p className="text-sm font-semibold text-foreground mb-1">How customers earn</p>
+            <p className="text-sm text-foreground/60">
+              Customers earn by spending. Staff scan their QR code and enter what they spent, and linked cards
+              count automatically where available. When they reach a reward's amount it's added to their
+              wallet; after your biggest reward their progress starts a new round, carrying over anything extra.
             </p>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {STAMP_ICON_PRESETS.map((icon) => (
-                <button data-press-feedback
-                  key={icon}
-                  onClick={() => setStampIcon(icon)}
-                  className={
-                    'h-9 w-9 rounded-lg border-2 flex items-center justify-center text-lg ' +
-                    (icon === stampIcon ? 'border-primary' : 'border-black/10')
-                  }
-                >
-                  {icon}
-                </button>
-              ))}
-            </div>
-            <input
-              className={inputClass + ' mb-3'}
-              value={stampIcon}
-              onChange={(e) => setStampIcon(e.target.value)}
-            />
-
-            <p className="text-xs font-bold uppercase tracking-wide text-foreground/40 mb-2">Card preview</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {Array.from({ length: Math.min(stampsRequired, 5) }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-9 w-9 rounded-full flex items-center justify-center text-base"
-                  style={{ backgroundColor: i < 3 ? brandColor : 'transparent', border: i < 3 ? 'none' : '1px solid rgba(0,0,0,0.15)' }}
-                >
-                  {stampIcon}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </SectionCard>
 
       <SectionCard>
-        <h3 className="font-display font-bold text-foreground mb-1">Reward catalogue *</h3>
+        <h3 className="font-display font-bold text-foreground mb-1">Rewards *</h3>
         <p className="text-sm text-foreground/50 mb-4">
-          Tell customers what they can earn — shown on your shop page before they join. Required: add at
-          least one reward here to unlock scanning.
+          What customers earn and how much they spend to unlock it — shown on your shop page before they
+          join. Add a bigger reward at a higher amount if you like. Required: add at least one reward to
+          unlock scanning.
         </p>
 
         {catalog.length > 0 && (
@@ -741,7 +677,10 @@ function LoyaltyTab() {
                 <div>
                   <p className="font-semibold text-foreground">{r.title}</p>
                   <p className="text-xs text-foreground/50">
-                    {r.description} · {r.stamp_threshold} {unit.toLowerCase()}{r.stamp_threshold === 1 ? '' : 's'}
+                    {r.description ? `${r.description} · ` : ''}
+                    {r.spend_threshold_pence != null
+                      ? `Unlocks after spending ${poundsLabel(r.spend_threshold_pence)}`
+                      : 'No amount set yet'}
                   </p>
                 </div>
                 <Tooltip>
@@ -774,13 +713,13 @@ function LoyaltyTab() {
               onChange={(e) => setNewReward({ ...newReward, description: e.target.value })}
             />
           </Field>
-          <Field label={`${unit}s`}>
+          <Field label="Spend (£)">
             <input
-              type="number"
-              min={1}
+              inputMode="decimal"
               className={inputClass + ' w-24'}
-              value={newReward.stamp_threshold}
-              onChange={(e) => setNewReward({ ...newReward, stamp_threshold: Number(e.target.value) })}
+              placeholder="20"
+              value={newReward.amount}
+              onChange={(e) => setNewReward({ ...newReward, amount: e.target.value.replace(/[^0-9.]/g, '') })}
             />
           </Field>
           <button data-press-feedback
@@ -790,6 +729,7 @@ function LoyaltyTab() {
             <Plus className="h-4 w-4" /> Add
           </button>
         </div>
+        {rewardError && <p className="text-sm text-red-600 mt-3">{rewardError}</p>}
       </SectionCard>
 
       <button data-press-feedback
@@ -1107,7 +1047,7 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
       <div className="flex flex-wrap gap-2 mb-5">
         <PermissionToggle
           icon={ScanLine}
-          label="Scan stamps"
+          label="Record purchases"
           active={perms.can_scan_stamps}
           onToggle={() => setPerms({ ...perms, can_scan_stamps: !perms.can_scan_stamps })}
         />
@@ -1179,7 +1119,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
         <div className="flex flex-wrap gap-2">
           <PermissionToggle
             icon={ScanLine}
-            label="Scan stamps"
+            label="Record purchases"
             active={staff.can_scan_stamps}
             onToggle={() => togglePermission('can_scan_stamps')}
           />
@@ -1247,8 +1187,8 @@ function HelpTab() {
       </SectionCard>
       <SectionCard title="Quick answers">
         <div className="grid gap-3 text-sm text-foreground/65">
-          <p><strong className="text-foreground">Award a stamp:</strong> open Scan & award from the owner menu, then scan the customer QR code or enter their code.</p>
-          <p><strong className="text-foreground">Update your card:</strong> use Loyalty & rewards to change your reward threshold and rewards.</p>
+          <p><strong className="text-foreground">Record a purchase:</strong> open Scan from the owner menu, scan the customer QR code or enter their code, then enter what they spent.</p>
+          <p><strong className="text-foreground">Update your card:</strong> use Loyalty & rewards to change your rewards and how much customers spend to unlock them.</p>
           <p><strong className="text-foreground">Your shop:</strong> {business?.is_active ? 'Your shop is live for customers.' : 'Your shop is currently deactivated and hidden from customers.'}</p>
         </div>
       </SectionCard>

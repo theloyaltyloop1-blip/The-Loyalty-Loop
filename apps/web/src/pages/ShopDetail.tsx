@@ -2,7 +2,7 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -15,7 +15,6 @@ import {
   fetchMembership,
   fetchRewardCatalog,
   joinBusiness,
-  simulateStamp,
   fetchFavouriteIds,
   addFavourite,
   removeFavourite,
@@ -27,17 +26,7 @@ import {
 } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
 
-const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Café: Coffee,
-  Restaurant: Coffee,
-  Barber: Scissors,
-}
-
-const UNIT_LABEL: Record<string, string> = {
-  stamp_card: 'stamp',
-  points: 'point',
-  tiered: 'visit',
-}
+const poundsLabel = (pence: number) => `£${pence % 100 === 0 ? pence / 100 : (pence / 100).toFixed(2)}`
 
 const DAY_ORDER: { key: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'; label: string }[] = [
   { key: 'mon', label: 'Monday' },
@@ -81,7 +70,6 @@ export function ShopDetail() {
   const [joining, setJoining] = React.useState(false)
   const [joinError, setJoinError] = React.useState<string | null>(null)
   const [justJoined, setJustJoined] = React.useState(false)
-  const [stamping, setStamping] = React.useState(false)
 
   // Supabase fires onAuthStateChange multiple times in quick succession after
   // login/navigation (INITIAL_SESSION, token refresh, etc.), each producing a
@@ -208,13 +196,18 @@ export function ShopDetail() {
   if (!session) return <Navigate to="/login" replace />
   if (!business) return <Navigate to="/dashboard" replace />
 
-  const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
-  const isOwner = session.user.id === business.owner_id
-  const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
-  const rewardTitle = catalog[0]?.title ?? 'Free reward'
-  const rewardSubtitle = catalog[0]?.description ?? ''
-  const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
-  const progress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
+  // Customers earn by spending; each reward unlocks at a £ amount (ARCH_PLAN.md §4.11).
+  // The next reward is the lowest tier above their progress; after the top tier a new round starts.
+  const tiers = catalog
+    .filter((r) => r.spend_threshold_pence != null)
+    .sort((a, b) => a.spend_threshold_pence! - b.spend_threshold_pence!)
+  const progress = Math.max(0, membership?.reward_progress_pence ?? 0)
+  const nextTier = tiers.find((r) => r.spend_threshold_pence! > progress) ?? tiers[tiers.length - 1]
+  const firstTier = tiers[0]
+  const targetPence = nextTier?.spend_threshold_pence ?? business.reward_threshold_pence ?? 2000
+  const rewardTitle = nextTier?.title ?? 'Free reward'
+  const rewardSubtitle = (membership ? nextTier : firstTier)?.description ?? ''
+  const remainingPence = Math.max(0, targetPence - progress)
 
   async function handleJoin() {
     if (!session?.user || !business) return
@@ -241,17 +234,6 @@ export function ShopDetail() {
       .update({ promos_opted_out: !next })
       .eq('user_id', session.user.id)
       .eq('business_id', business.id)
-  }
-
-  async function handleSimulateStamp() {
-    if (!session?.user || !business) return
-    setStamping(true)
-    try {
-      await simulateStamp(session.user.id, business.id)
-      await refetch()
-    } finally {
-      setStamping(false)
-    }
   }
 
   return (
@@ -328,11 +310,10 @@ export function ShopDetail() {
           <span className="inline-block rounded-full bg-black/5 text-foreground/70 text-xs font-semibold px-3 py-1 mb-3">
             Your reward
           </span>
-          <p className="text-xl font-display font-bold text-foreground">{rewardTitle}</p>
+          <p className="text-xl font-display font-bold text-foreground">{firstTier?.title ?? 'Free reward'}</p>
           <p className="text-sm text-foreground/50 mb-1">{rewardSubtitle}</p>
           <p className="text-sm text-foreground/50 mb-6">
-            Collect {stampsRequired} {unit}
-            {stampsRequired === 1 ? '' : 's'} to unlock it.
+            Spend {poundsLabel(firstTier?.spend_threshold_pence ?? targetPence)} here to unlock it.
           </p>
           <button data-press-feedback
             onClick={handleJoin}
@@ -347,74 +328,26 @@ export function ShopDetail() {
       ) : (
         <div className="loyalty-card-panel rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6" style={{ viewTransitionName: 'loyalty-card' }}>
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-display font-bold text-foreground">
-              {business.loyalty_type === 'points'
-                ? 'Your points'
-                : business.loyalty_type === 'tiered'
-                  ? 'Your visits'
-                  : 'Your stamp card'}
-            </h2>
+            <h2 className="text-xl font-display font-bold text-foreground">Your progress</h2>
             <p className="text-sm font-semibold text-foreground/60">
-              {progress} / {stampsRequired} · {rewardTitle}
+              {poundsLabel(progress)} / {poundsLabel(targetPence)} · {rewardTitle}
             </p>
           </div>
 
-          {business.loyalty_type === 'points' ? (
-            <div className="mb-8">
-              <div className="h-4 rounded-full bg-black/5 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-[width] duration-300 ease-in-out"
-                  style={{
-                    width: `${Math.min(100, (progress / stampsRequired) * 100)}%`,
-                    backgroundColor: business.brand_color,
-                  }}
-                />
-              </div>
-              <p className="text-sm text-foreground/50 mt-2">
-                {Math.max(0, stampsRequired - progress)} more point{stampsRequired - progress === 1 ? '' : 's'} to{' '}
-                {rewardTitle.toLowerCase()}.
-              </p>
+          <div className="mb-8">
+            <div className="h-4 rounded-full bg-black/5 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-[width] duration-300 ease-in-out"
+                style={{
+                  width: `${Math.min(100, (progress / targetPence) * 100)}%`,
+                  backgroundColor: business.brand_color,
+                }}
+              />
             </div>
-          ) : (
-          <div className="flex flex-wrap gap-3 mb-8">
-            {Array.from({ length: stampsRequired }).map((_, i) => {
-              const isLast = i === stampsRequired - 1
-              const filled = i < progress
-              if (isLast) {
-                return (
-                  <div key={i} className="flex flex-col items-center gap-1">
-                    <div
-                      className="h-16 w-16 rounded-full border-2 border-dashed flex items-center justify-center"
-                      style={{ borderColor: business.brand_color, color: business.brand_color }}
-                    >
-                      <Gift className="h-5 w-5" />
-                    </div>
-                    <span
-                      className="text-[0.5625rem] font-extrabold uppercase tracking-wide"
-                      style={{ color: business.brand_color }}
-                    >
-                      Free {rewardTitle.replace(/^free\s+/i, '')}
-                    </span>
-                  </div>
-                )
-              }
-              return (
-                <div
-                  key={i}
-                  data-filled={filled}
-                  className="loyalty-stamp h-16 w-16 rounded-full border flex items-center justify-center"
-                  style={
-                    filled
-                      ? { backgroundColor: business.brand_color, borderColor: business.brand_color }
-                      : { borderColor: 'rgba(0,0,0,0.12)' }
-                  }
-                >
-                  <StampIcon className={'h-5 w-5 transition-[color,transform] duration-200 ease-in-out ' + (filled ? 'text-white scale-100' : 'text-foreground/20 scale-90')} />
-                </div>
-              )
-            })}
+            <p className="text-sm text-foreground/50 mt-2">
+              Spend {poundsLabel(remainingPence)} more to unlock {rewardTitle}.
+            </p>
           </div>
-          )}
 
           <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6">
             <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
@@ -425,28 +358,11 @@ export function ShopDetail() {
               </p>
               <p className="font-semibold text-foreground mb-1">Show this to staff</p>
               <p className="text-sm text-foreground/50 max-w-sm">
-                They scan the code to add a {unit}, or type the manual code above. {Math.max(0, stampsRequired - progress)} {unit}
-                {Math.max(0, stampsRequired - progress) === 1 ? '' : 's'} to your next reward.
+                They scan the code, or type the manual code above, and add what you spent. Rewards are
+                added to your wallet automatically.
               </p>
             </div>
           </div>
-
-          {isOwner && (
-            <div className="border-t border-black/10 mt-6 pt-5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button data-press-feedback
-                    onClick={handleSimulateStamp}
-                    disabled={stamping}
-                    className="flex items-center gap-2 rounded-full border border-dashed border-foreground/30 px-5 h-10 font-semibold text-sm text-foreground/70 disabled:opacity-50"
-                  >
-                    <Zap className="h-4 w-4" /> {stamping ? 'Adding…' : 'Simulate stamp (owner testing)'}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Adds one real stamp to your own account, so you can preview what customers see</TooltipContent>
-              </Tooltip>
-            </div>
-          )}
 
           <div className="border-t border-black/10 mt-6 pt-5 flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -471,15 +387,21 @@ export function ShopDetail() {
         <p className="flex items-center gap-2 font-display font-bold text-foreground mb-4">
           <Gift className="h-5 w-5 text-primary" /> What you can earn
         </p>
-        <div className="rounded-xl bg-black/5 flex items-center gap-4 p-4">
-          <span className="h-10 w-10 rounded-full bg-[#EFE1C8] flex items-center justify-center shrink-0">
-            <Lock className="h-4 w-4 text-foreground/60" />
-          </span>
-          <div>
-            <p className="font-semibold text-foreground">{rewardTitle}</p>
-            <p className="text-sm text-foreground/50">{rewardSubtitle}</p>
-            <p className="text-xs text-foreground/40 mt-0.5">{stampsRequired} stamps</p>
-          </div>
+        <div className="flex flex-col gap-2">
+          {(tiers.length ? tiers : [null]).map((tier) => (
+            <div key={tier?.id ?? 'default'} className="rounded-xl bg-black/5 flex items-center gap-4 p-4">
+              <span className="h-10 w-10 rounded-full bg-[#EFE1C8] flex items-center justify-center shrink-0">
+                <Lock className="h-4 w-4 text-foreground/60" />
+              </span>
+              <div>
+                <p className="font-semibold text-foreground">{tier?.title ?? 'Free reward'}</p>
+                {tier?.description && <p className="text-sm text-foreground/50">{tier.description}</p>}
+                <p className="text-xs text-foreground/40 mt-0.5">
+                  Unlocks after spending {poundsLabel(tier?.spend_threshold_pence ?? targetPence)}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

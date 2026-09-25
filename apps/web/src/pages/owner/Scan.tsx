@@ -7,7 +7,6 @@ import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import {
-  awardProgress,
   sendUserPush,
   updateWalletPass,
   findRewardByCode,
@@ -15,16 +14,17 @@ import {
   lookupUserByStampCode,
   fetchScannedMemberDetails,
   redeemReward,
-  sendVisitThankYou,
+  fetchSpendSummary,
+  recordManualSpend,
+  undoManualSpend,
+  fetchMyRecentSpend,
+  spendErrorMessage,
+  formatPounds,
   type RewardLookup,
   type ScannedMemberDetails,
+  type SpendSummary,
+  type RecentSpend,
 } from '@/lib/businesses'
-
-const UNIT_LABEL: Record<string, string> = {
-  stamp_card: 'stamp',
-  points: 'point',
-  tiered: 'visit',
-}
 
 type ScanMode = 'award' | 'redeem'
 
@@ -96,22 +96,65 @@ function CameraScanner({ onResult, active, scanCycle = 0 }: { onResult: (value: 
   )
 }
 
-function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) {
+/** Records a purchase in £ for the scanned customer (ARCH_PLAN.md §4.10–4.11).
+ * The server enforces the shop's cap, the linked-card payment question and
+ * the daily limits; clientRef makes a retry after a dropped connection safe. */
+function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUserId: string }) {
   const [cameraOn, setCameraOn] = React.useState(true)
   const [scanCycle, setScanCycle] = React.useState(0)
   const [code, setCode] = React.useState('')
   const [match, setMatch] = React.useState<ScannedMemberDetails | null>(null)
   const [matchedUserId, setMatchedUserId] = React.useState<string | null>(null)
-  const [amount, setAmount] = React.useState(1)
+  const [summary, setSummary] = React.useState<SpendSummary | null>(null)
+  const [amount, setAmount] = React.useState('')
+  const [askPayment, setAskPayment] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState<string | null>(null)
+  const [recent, setRecent] = React.useState<RecentSpend[]>([])
+  const [now, setNow] = React.useState(Date.now())
+  const clientRef = React.useRef<string | null>(null)
+
+  const loadRecent = React.useCallback(async () => {
+    try {
+      setRecent(await fetchMyRecentSpend(businessId, staffUserId))
+    } catch {
+      setRecent([])
+    }
+  }, [businessId, staffUserId])
+  React.useEffect(() => { void loadRecent() }, [loadRecent])
+  React.useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 15000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const cleaned = amount.replace(/[£,\s]/g, '')
+  const amountPence = /^\d+(\.\d{1,2})?$/.test(cleaned) ? Math.round(Number(cleaned) * 100) : 0
+  const cap = summary?.manualMaxPence ?? 20000
 
   function reset() {
     setCode('')
     setMatch(null)
     setMatchedUserId(null)
+    setSummary(null)
+    setAmount('')
+    setAskPayment(false)
     setError(null)
+    clientRef.current = null
+  }
+
+  async function identify(userId: string) {
+    const details = await fetchScannedMemberDetails(businessId, userId)
+    if (!details) {
+      setMatch(null)
+      setMatchedUserId(null)
+      setError('This customer has not joined this shop yet.')
+      return false
+    }
+    setMatch(details)
+    setMatchedUserId(userId)
+    setSummary(await fetchSpendSummary(businessId, userId))
+    return true
   }
 
   async function handleLookup() {
@@ -128,15 +171,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
         setMatchedUserId(null)
         return
       }
-      const details = await fetchScannedMemberDetails(businessId, result.id)
-      if (!details) {
-        setError('This customer has not joined this shop yet.')
-        setMatch(null)
-        setMatchedUserId(null)
-        return
-      }
-      setMatch(details)
-      setMatchedUserId(result.id)
+      await identify(result.id)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Lookup failed')
     } finally {
@@ -155,43 +190,73 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
     setSuccess(null)
     setBusy(true)
     try {
-      const details = await fetchScannedMemberDetails(businessId, m[1])
-      if (!details) {
-        setMatchedUserId(null)
-        setError('This customer has not joined this shop yet.')
-        setScanCycle((cycle) => cycle + 1)
-        return
-      }
-      setMatch(details)
-      setMatchedUserId(m[1])
-      // Stop the preview once a customer has been identified so the award
-      // controls and their details stay clearly visible. It reopens after a
-      // successful award for the next person in the queue.
-      setCameraOn(false)
+      if (await identify(m[1])) setCameraOn(false)
+      else setScanCycle((cycle) => cycle + 1)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load customer details')
       setScanCycle((cycle) => cycle + 1)
-    }
-    finally { setBusy(false) }
-  }
-
-  async function handleAward() {
-    if (!matchedUserId) return
-    setBusy(true)
-    setError(null)
-    try {
-      await awardProgress(businessId, matchedUserId, amount)
-      void sendVisitThankYou(businessId, matchedUserId, amount)
-      void sendUserPush(businessId, matchedUserId)
-      void updateWalletPass(businessId, matchedUserId)
-      setSuccess(`Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`)
-      reset()
-      setScanCycle((cycle) => cycle + 1)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not award — is this customer a member of your shop?')
     } finally {
       setBusy(false)
     }
+  }
+
+  async function handleAdd(paymentMethod?: 'cash' | 'unlinked_card') {
+    if (!matchedUserId || amountPence < 1) return
+    if (amountPence > cap) {
+      setError(`Each entry can be at most ${formatPounds(cap)}.`)
+      return
+    }
+    if (summary?.linked && !paymentMethod) {
+      setAskPayment(true)
+      return
+    }
+    setAskPayment(false)
+    const name = match?.first_name || 'this customer'
+    const big = amountPence * 2 >= cap
+    if (!window.confirm(big
+      ? `${formatPounds(amountPence)} is a large amount for one purchase. Add it for ${name}?`
+      : `Add ${formatPounds(amountPence)} for ${name}?`)) return
+    clientRef.current = clientRef.current ?? crypto.randomUUID()
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await recordManualSpend(businessId, matchedUserId, amountPence, paymentMethod ?? null, clientRef.current)
+      clientRef.current = null
+      const left = Math.max(0, (result.thresholdPence ?? 0) - result.progressPence)
+      setSuccess(result.rewardsEarned
+        ? `${formatPounds(amountPence)} added. ${name} earned ${result.rewardsEarned === 1 ? 'a reward' : `${result.rewardsEarned} rewards`}!`
+        : `${formatPounds(amountPence)} added. ${name} is ${formatPounds(left)} from ${result.nextRewardTitle ?? 'their next reward'}.`)
+      void sendUserPush(businessId, matchedUserId)
+      void updateWalletPass(businessId, matchedUserId)
+      void loadRecent()
+      reset()
+      setCameraOn(true)
+      setScanCycle((cycle) => cycle + 1)
+    } catch (e) {
+      const message = spendErrorMessage(e)
+      // A server refusal is final, so the next attempt is a new entry. Any other
+      // failure (e.g. the connection dropped) keeps clientRef, so retrying can
+      // never credit the purchase twice.
+      const raw = (e as { message?: string } | null)?.message ?? ''
+      if (/amount_out_of_range|not_a_member|shop_not_spend_based|linked_customer_payment_method_required|manual_daily_limit_reached|manual_too_soon|not_allowed|invalid_/.test(raw)) {
+        clientRef.current = null
+      }
+      setError(message)
+      if (matchedUserId) void fetchSpendSummary(businessId, matchedUserId).then(setSummary).catch(() => undefined)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleUndo(entry: RecentSpend) {
+    if (!window.confirm(`Undo ${formatPounds(entry.value)}? This takes it back off the customer's progress.`)) return
+    try {
+      await undoManualSpend(entry.id, 'Undone by staff')
+      setSuccess(`${formatPounds(entry.value)} undone.`)
+    } catch (e) {
+      setError(spendErrorMessage(e))
+    }
+    void loadRecent()
   }
 
   return (
@@ -239,7 +304,13 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           </p>
           <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-sm text-foreground/70">
             <span>Email: {match.email ?? 'Not available'}</span><span>Joined: {new Date(match.joined_at).toLocaleDateString()}</span>
-            <span>Last visit: {match.last_activity_at ? new Date(match.last_activity_at).toLocaleDateString() : 'Not yet'}</span><span>{match.stamp_count} stamps · {match.points_balance} points · {match.visit_count} visits</span>
+            <span>Last visit: {match.last_activity_at ? new Date(match.last_activity_at).toLocaleDateString() : 'Not yet'}</span>
+            <span>
+              {summary?.thresholdPence
+                ? `${formatPounds(Math.max(0, summary.progressPence ?? 0))} of ${formatPounds(summary.thresholdPence)} towards ${summary.nextRewardTitle ?? 'the next reward'}`
+                : 'Loading progress…'}
+              {summary?.redemptionBlocked ? ' · reward paused' : ''}
+            </span>
           </div>
         </aside>
       )}
@@ -247,26 +318,40 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
       {matchedUserId && (
         <>
           <div>
-            <p className="text-sm font-semibold text-foreground mb-1.5">Amount to award</p>
+            <p className="text-sm font-semibold text-foreground mb-1.5">Amount spent</p>
             <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-foreground/60">£</span>
               <input
-                type="number"
-                min={1}
-                max={50}
-                className="h-12 w-24 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-primary"
+                inputMode="decimal"
+                className="h-12 w-36 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-primary"
+                placeholder="0.00"
                 value={amount}
-                onChange={(e) => setAmount(Math.max(1, Math.min(50, Number(e.target.value))))}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               />
-              <span className="text-sm text-foreground/50">{unit}{amount === 1 ? '' : 's'}</span>
+              <span className="text-sm text-foreground/50">up to {formatPounds(cap)} per entry</span>
             </div>
           </div>
-          <button data-press-feedback
-            onClick={handleAward}
-            disabled={busy}
-            className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <Check className="h-4 w-4" /> {busy ? 'Awarding…' : `Award ${amount} ${unit}${amount === 1 ? '' : 's'}`}
-          </button>
+          {askPayment ? (
+            <div className="rounded-2xl border border-black/10 bg-white p-4 flex flex-col gap-2">
+              <p className="font-semibold text-foreground">This customer has a linked card</p>
+              <p className="text-sm text-foreground/60">If they paid with it, their reward updates automatically, so there's nothing to do. How did they pay?</p>
+              <button data-press-feedback onClick={() => handleAdd('cash')} disabled={busy} className="h-11 rounded-full bg-primary text-white font-bold disabled:opacity-50">Cash</button>
+              <button data-press-feedback onClick={() => handleAdd('unlinked_card')} disabled={busy} className="h-11 rounded-full bg-primary text-white font-bold disabled:opacity-50">A different card</button>
+              <button data-press-feedback onClick={() => setAskPayment(false)} className="h-11 rounded-full border border-black/15 font-bold text-foreground">They used their linked card</button>
+              {summary && summary.manualToday > 0 && (
+                <p className="text-xs text-foreground/50 text-center">{summary.manualToday} of 3 manual entries used today for this customer.</p>
+              )}
+            </div>
+          ) : (
+            <button data-press-feedback
+              onClick={() => handleAdd()}
+              disabled={busy || amountPence < 1}
+              className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Check className="h-4 w-4" /> {busy ? 'Adding…' : amountPence ? `Add ${formatPounds(amountPence)}` : 'Type the amount'}
+            </button>
+          )}
           <button data-press-feedback onClick={reset} className="text-sm font-semibold text-foreground/50 self-center">
             Cancel
           </button>
@@ -275,6 +360,28 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       {error && <p className="text-sm text-red-600 text-center">{error}</p>}
       {success && <p className="text-sm text-fun-green font-semibold text-center">{success}</p>}
+
+      {recent.length > 0 && (
+        <div className="rounded-2xl border border-black/10 bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-foreground/45 mb-2">Your recent entries</p>
+          {recent.map((entry) => {
+            const minutesLeft = Math.max(0, Math.ceil((10 * 60 * 1000 - (now - new Date(entry.created_at).getTime())) / 60000))
+            return (
+              <div key={entry.id} className="flex items-center gap-3 py-2 border-t border-black/5 first:border-t-0">
+                <span className="font-bold text-foreground w-20">{formatPounds(entry.value)}</span>
+                <span className="flex-1 text-sm text-foreground/50">
+                  {new Date(entry.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {minutesLeft > 0 && (
+                  <button data-press-feedback onClick={() => handleUndo(entry)} className="text-sm font-bold text-primary">
+                    Undo · {minutesLeft} min
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -431,8 +538,6 @@ export function OwnerScan() {
   const isOwner = Boolean(business)
   const activeStaff = !isOwner ? staffBusinesses.find((s) => s.business_id === staffBizId) ?? staffBusinesses[0] : null
   const activeBusinessId = isOwner ? business!.id : activeStaff?.business_id
-  const loyaltyType = isOwner ? business!.loyalty_type : activeStaff?.business.loyalty_type
-  const unit = UNIT_LABEL[loyaltyType ?? 'stamp_card'] ?? 'stamp'
   const canScan = isOwner || Boolean(activeStaff?.can_scan_stamps)
   const canRedeem = isOwner || Boolean(activeStaff?.can_redeem_rewards)
 
@@ -449,7 +554,7 @@ export function OwnerScan() {
     <OwnerLayout>
       <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Scan</p>
       <h1 className="text-3xl font-display font-extrabold text-foreground mb-6 flex items-center gap-3">
-        <ScanLine className="h-7 w-7 text-primary" /> Award & redeem
+        <ScanLine className="h-7 w-7 text-primary" /> Purchases & rewards
       </h1>
 
       {!activeBusinessId ? (
@@ -493,13 +598,13 @@ export function OwnerScan() {
                       }
                     >
                       {key === 'award' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      {key === 'award' ? `Add ${unit}` : 'Redeem reward'}
+                      {key === 'award' ? 'Add purchase' : 'Redeem reward'}
                     </button>
                   ))}
               </div>
 
               <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
-                {mode === 'award' && canScan && <AwardPanel businessId={activeBusinessId} unit={unit} />}
+                {mode === 'award' && canScan && session && <SpendPanel businessId={activeBusinessId} staffUserId={session.user.id} />}
                 {mode === 'redeem' && canRedeem && <RedeemPanel businessId={activeBusinessId} />}
               </div>
             </>

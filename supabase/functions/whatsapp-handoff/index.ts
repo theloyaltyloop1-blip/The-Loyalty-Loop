@@ -68,7 +68,7 @@ Deno.serve(async (request: Request) => {
 
     const [{ data: profile }, { data: memberships, error: membershipsError }] = await Promise.all([
       admin.from("profiles").select("first_name,stamp_code").eq("id", link.user_id!).single(),
-      admin.from("memberships").select("stamp_count,points_balance,visit_count,business:businesses(name,slug,loyalty_type)").eq("user_id", link.user_id!),
+      admin.from("memberships").select("stamp_count,points_balance,visit_count,reward_progress_pence,business:businesses(name,slug,loyalty_type)").eq("user_id", link.user_id!),
     ]);
     if (membershipsError) throw membershipsError;
     return new Response(JSON.stringify({

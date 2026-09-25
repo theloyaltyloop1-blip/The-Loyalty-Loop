@@ -11,9 +11,13 @@ need Claude's sign-off before the next one starts.
 
 ---
 
-## Status (2026-09-23): Webhook routing approved (version 3). Genuine Test-mode **auth and clearing** are verified: each signed over its own URL and key, HTTP 200, `unknown_merchant`, clearing reuses the auth id, nothing awarded. Test mode sent **no refund webhook** for a negative test transaction, most likely a Test-mode limitation. Refund delivery and correlation are unverified and now gated on one genuine live refund before any real shopper links a card. Next: the product owner sets up a dedicated test shop and account (steps A–C), then Codex runs the fixture stage (auth → spend → reward, clearing). Checkpoint 6 (notifications) is still not built; CL-1 is queued.
+## Status (2026-09-25): Independent implementation review complete — changes requested
 
-The five Fidel migrations remain live and reviewed. `fidel-webhook` version 3 is ACTIVE with `verify_jwt: false`; the reviewed selector routing passes 16/16 local tests and all six unsigned probes. The owner's genuine Test-mode auth delivery succeeded with HTTP 200, one auth ledger row (transaction suffix `ecb9`) and the expected `unknown_merchant` handler outcome. The delivery's redacted schema matches `transaction.ts`. No fixtures, purchase records or refunds; secrets and Fidel configuration unchanged. Claude reviews the implementation and first-delivery evidence next. Clearing/refund signatures and correlation remain unverified. Checkpoint 6 (notifications) is still not built; CL-1 is queued.
+Card linking, manual spend/undo and Test-mode automatic credit are implemented, deployed and partly device-tested. The original signed auth/clearing verification is retained below. Current read-only metadata reports `fidel-webhook` **version 6**, ACTIVE, `verify_jwt: false`, with source matching the reviewed selector implementation. Refund delivery/signature/correlation remain unverified; the missing Test-mode delivery has no established cause. Do not call it a proven Test-mode limitation.
+
+Existing tests pass: **33/33** pure helper/webhook tests, **3/3** focused disposable database suites, and shopper/retailer TypeScript. Additional tests reproduce lifecycle, refund correlation, activation and manual-entry defects. See `docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md` (R1–R9). Next: Claude reviews the repair contracts, then Codex makes additive local fixes before another payment test. No product-owner input is needed for that review. The old zero-balance fixture prompts are historical: the test shop now has purchases and manual/undo activity. Checkpoint 6 notification dispatch, refund/reconciliation evidence and other release gates remain open.
+
+The completed provider research is in `docs/PAYMENT_PROVIDER_RESEARCH_2026-09-25.md`. Square is the leading additional technical pilot candidate, conditional on contract permission and device evidence. SumUp/Solo and Zettle transaction feeds do not establish safe repeat-shopper identity. Keep spend-based rewards with manual spend where automatic coverage is unavailable; no provider-wide Fidel exclusion or new integration has been approved.
 
 See [IMPLEMENTATION_TIMELINE.md](IMPLEMENTATION_TIMELINE.md) for responsibilities, milestone order and the next messages for each agent. Read the latest project files directly from disk; the user should not need to attach them to chat. Both agents update this handoff after every completed item. Preserve the history below while reconciling conflicting assumptions.
 
@@ -490,7 +494,7 @@ product-owner decision (see below), not a guess.
 
 ## Next action
 
-**Current, 2026-09-23:** Claude reviews "Route-selection implementation (2026-09-23)" and "Genuine auth payload schema" below, using the single copy-ready prompt at the end. No product-owner input remains for this review. Stop before fixtures, refunds or dependent implementation. Older entries below are historical context.
+**Current, 2026-09-25:** Claude reviews R1–R9 in `docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md`, corrects lifecycle/eligibility assumptions in the plans and defines additive local repairs, beginning with R1–R3. Use the single copy-ready Claude prompt at the end. No product-owner input is required for this design review. Production changes, fixtures and further device/provider actions are outside this review. Older entries and fixture instructions below are historical context.
 
 **2026-09-22 Codex sandbox inspection:** In read-only Fidel test mode, the
 Loyalty Loop Program still has zero locations and zero signed deliveries. Its
@@ -1377,6 +1381,66 @@ restrict` foreign keys on `fidel_transactions` are kept on purpose. The fix live
 block this push. Two consequences for now: test fixtures must use a dedicated test
 account, never a real shopper; and that fix must ship before any real shopper can link a
 card.
+
+## Tiered £ rewards migration (2026-09-25) — Claude implementing: applied live
+
+- **Product owner decisions T1–T5** are recorded in ARCH_PLAN §4.11:
+  - several £ rewards per shop;
+  - a £20 default;
+  - progress starts at £0 at the switchover, and unredeemed rewards stay;
+  - the switchover goes ahead without Fidel;
+  - the stamps/points/visits setup is removed.
+- **Migration `20260925164755_fidel_spend_tiers.sql`:**
+  - `reward_catalog.spend_threshold_pence` (unique per shop, 1..100,000,000);
+  - a sync trigger keeps `businesses.reward_threshold_pence` equal to the highest tier;
+  - `spend_next_tier()`: the next reward, or the highest tier if every tier was lowered;
+  - `handle_spend_transaction` rewritten to walk the tiers: each tier issues its own
+    titled reward with `catalog_id`; the top tier restarts the cycle and carries the
+    excess; negative progress must be covered first; the single-threshold fallback
+    remains;
+  - progress notifications now say "£X away from <reward>";
+  - `record_manual_spend` and `scanned_member_spend_summary` return the next reward's
+    `thresholdPence` and `nextRewardTitle`;
+  - a new `refuse_stamps_at_spend_shops` BEFORE INSERT guard (`shop_uses_spend_rewards`).
+- **Tests:** new `fidel-spend-tiers.test.mjs`, 1/1 pass (one tier, two tiers,
+  multi-crossing, carry, negative progress, lowered tiers, fallback, sync on
+  insert/delete, RPC next-reward fields, duplicate and zero tiers refused, the stamp
+  guard, the legacy 1–50 stamp range at stamp shops, and privileges).
+  - The fixture gained `reward_catalog`.
+  - `fidel-supabase-spend` now expects `shop_uses_spend_rewards` for its stamp-at-spend-
+    shop insert, and `fidel-manual-spend` expects `nextRewardTitle`.
+  - All 4 suites pass (4/4).
+  - **Mutation check:** dropping the carry makes the test fail (0 vs 137); restored.
+- **Applied:** `db push`. Live: latest `20260925164755`; both triggers present; Pure
+  Elegant's next reward is £10 "Free reward" until the switchover gives its catalogue
+  tier a £ amount.
+
+## Push notifications for spend (2026-09-25) — Claude implementing: deployed
+
+- **New `_shared/push.ts` plus `_shared/push-store.ts`:**
+  - sends **every** unsent notification for a customer at a shop from the last 30
+    minutes (e.g. a reward and a progress update), to every registered device, in Expo
+    batches of 100;
+  - respects `user_settings` (stamps, rewards, offers);
+  - opted-out and no-device rows are marked handled (never retried); a rejected Expo
+    request records the error but leaves the row unsent for a later retry.
+- **`send-user-push`:** same sign-in and permission checks as before, now using the
+  shared sender. Before, it sent only the single latest notification.
+- **`fidel-webhook`:** a new `onProcessed` hook. After an auth is `processed`, the
+  function finds the customer from `fidel_transactions` and sends their pushes in the
+  background (`EdgeRuntime.waitUntil`, accessed defensively). A hook failure never
+  changes the response to Fidel.
+  - Also fixed the pre-existing type-only error (`FidelRpcClient.rpc` now returns
+    `PromiseLike`).
+- **Tests:** `node --test supabase/functions/_shared/*.test.mjs
+  supabase/functions/fidel-webhook/*.test.mjs` passes 39/39, including a new
+  `push.test.mjs` (4 tests) and 2 new handler hook tests. `deno check` is clean for
+  both functions.
+- **Deployed** `fidel-webhook` and `send-user-push`. Smoke tests: webhook unsigned → 401
+  `invalid_signature`; send-user-push with the anon key → 401.
+- **Not yet verified:** a real push on a phone. The next card payment or manual entry at
+  a test shop will show it.
+- **Deferred:** a retry sweep for failed pushes.
 
 ## Copy-ready prompt for Codex
 
@@ -3115,7 +3179,7 @@ Linked cards with "Visa •••• 4104", the SuccessCheck, and Fidel's own na
   folder; every branch, including `origin/main`, still has them, and no commit deleted
   them. `git checkout -- docs/` restores them.
 
-## Copy-ready prompt for Codex (run only after the product owner completes steps A–C above)
+## Historical copy-ready prompt for Codex — superseded by the 2026-09-25 review; do not run
 
 > Read `CLAUDE_HANDOFF.md` ("Clearing/refund contract review (2026-09-23, 17:40 UTC)"), `ARCH_PLAN.md` §4.2–§4.4a, and `IMPLEMENTATION_TIMELINE.md`. Goal: the **fixture stage**. Prove that genuine Fidel Test-mode auth and clearing deliveries credit a **dedicated test account** at a **dedicated test shop** correctly. No refund leg: Test mode doesn't deliver refunds. Never print, log or write secrets, raw bodies, header values, card numbers or auth codes. Write ids and UUIDs as their last 4 characters only. Don't change secrets, Fidel webhook settings or function code, and don't replay deliveries or send requests to the webhook yourself. Touch no real customer's or real shop's data.
 >
@@ -3237,6 +3301,72 @@ Documentation-only review: later entries supersede stale opening summaries. Andr
 
 Remaining: implementation review; device tests of manual spend/undo; isolated Fidel earning-to-reward test using current mappings; remaining card-linking cases (iOS, cancel, Amex, account deletion), deletion-sweep scheduling; refund delivery/correlation investigation and reconciliation backstop; notification dispatch/recovery; merchant enrollment/status and cutover; spend-aware Home/Favourites/widgets/wallet passes/analytics; full migration replay, concurrency and pilot checks; consent recording and legal release items. The unused acceptLegal helper does not record signup consent. Refund configuration was subsequently inspected, but missing delivery remains unexplained; do not assume Test mode cannot emit refunds. Plans must respect the recorded constraint that the owner cannot contact Fidel. No code, provider settings, secrets or database changes.
 
+## 2026-09-25 Codex independent review and provider research — complete; fixes required
+
+User requested independent review of all Claude implementation while Codex was unavailable. Scope includes CL-2/3/4/5, card deletion, manual-spend database and app work, deployments and recorded device evidence through the first automatic credit. Review and tests only; no live mutations are implied. Current files contain later work than the earlier status summary. The Supabase changelog reader again rejected its markdown content type; current Edge Function authentication documentation was accessible.
+
+At the user's explicit request, started a separate ChatGPT cloud research task covering UK SumUp/Solo, Square and Zettle/PayPal integrations, identity, webhooks/refunds, permissions/terms, pricing, testing and coexistence with Fidel. Official sources only; no registrations, messages, provider actions or code changes. Queued task reference: local-chatgpt:f20340d7-3b7a-4cd0-9fa6-54da694c4521. No findings returned yet.
+
+### Review item: existing tests
+
+Existing pure card/webhook suites completed; three focused disposable-PostgreSQL suites passed (card linking, manual spend, spend/refund/redemption). The first database attempt could not start under the Windows sandbox (`uv_os_get_passwd` ENOMEM); the approved local-only rerun passed 3/3. These are minimal-schema fixture suites, not a full migration-history replay. Source review and targeted missing-case reproductions continue; passing existing tests is not yet approval.
+
+### Review item: targeted local reproductions — defects confirmed
+
+`tmp/claude-review/regressions.test.mjs` ran against disposable PostgreSQL with synthetic card/provider data only. It reproduces six gaps: (1) refund after unlink returns `unknown_card`; after re-link, clearing/refund cannot resolve the original purchase; (2) recovery reactivates a deliberately removed card when Fidel deletion failed; (3) failed over-cap provider deletion creates no durable retry record and is missed by account deletion; (4) manual-spend idempotency accepts a changed customer/amount under an old reference; (5) concurrent identical retry at an active linked-card shop is rejected by P5 as `manual_too_soon`; (6) webhook still credits a mapped `syncing` Location while P5/badges consider it inactive. Assertions describe observed defects, not fixes. Shopper and retailer TypeScript checks passed. No live mutation occurred. Final severity, remediation and integration review follow.
+
+### Review item: additional lifecycle and retry checks
+
+Extended the same disposable local reproducer to nine observed scenarios. It also confirms recovery can race a successful provider deletion, leaving an active local card whose provider card was deleted; the concurrent manual-spend duplicate branch returns a different caller/customer's entry without the ordinary ownership/request checks; and deleting the recording staff account clears `recorded_by`, preventing an otherwise eligible owner undo. The one aggregate reproducer test passed all nine observed-defect assertions. These are review evidence, not repaired behavior or genuine provider tests. No deployed code or database data changed.
+
+### Review item: deployed sources, access boundary and current data
+
+Read-only Supabase checks: `fidel-webhook` reports version **6**, ACTIVE, `verify_jwt: false` (historical version 3 remains delivery evidence, not current metadata). Its six source modules match local files after newline normalization. Card session reports v5; claim/unlink/sweep v4; account deletion v18, all JWT-enabled. Their entrypoints/active helper logic match local code; bundled older helpers differ only in an unused session tester-allowlist branch. Reviewed live claim, unlink, pending-delete, manual-spend and webhook SQL bodies match the migrations. Service-only card identity/claim/deletion RPCs remain inaccessible to ordinary clients; manual-spend RPCs require authenticated permission, and direct client spend inserts remain denied. This validates the intended boundary, not lifecycle correctness.
+
+Final read-only snapshot on 2026-09-25: auth events **3**, clearing **1**, refund **0**; purchases **2**, suffixes `3c7c` and `450b`, each authorized/637p originally and credited, no refunded pence; active cards **1**, pending deletes **0**. The purchase membership currently has **-726p**, 3 visits, 3 rewards and a redemption hold; threshold 1000p. These totals include prior manual/undo activity and do not establish a clean threshold-crossing test. Do not reuse the historical zero-balance fixture prompt. `pg_cron` is not installed; no scheduled deletion retry was verified. No provider dashboard or payment action was taken. These observations do not explain the still-missing refund delivery.
+
+### Research item: provider comparison complete
+
+Cloud task **Payment Integration Comparison** (`6ab64010-51d0-83eb-9779-7b5010a9639c`) finished. Saved its report and official-source appendix to `docs/PAYMENT_PROVIDER_RESEARCH_2026-09-25.md`; corrected its Fidel `cardId` wording to this project's verified nested `card.id`, and labelled its product proposal as a recommendation. Square is the strongest additional pilot candidate because it documents POS payment webhooks and a card fingerprint; scope, wallets, first-link ownership, refunds and contractual permission still require verification. SumUp/Solo and Zettle have merchant transaction access, but the reviewed fields do not establish safe repeat-shopper recognition. No blanket exclusion of SumUp merchants from Fidel follows from this research. Keep the confirmed spend model, with manual spend where automatic coverage is unavailable; one earning source per merchant unless non-overlap is proven. No provider actions or production changes were made.
+
+### Research item: independent pricing/terms corrections
+
+Updated the report after independent official-source checks. Square UK advertises free APIs/SDKs and Zettle's FAQ explicitly says APIs are free (processing/optional products are separate). Square UK Developer Terms §2.2 restrict services substantially the same as a Square service, and §3 requires seller consent for retained seller content; whether The Loyalty Loop is permitted remains a material unresolved contract question. Zettle's registration names its Developer Platform Agreement, but its substantive permission was not verified. SumUp integration pricing/permission remains unverified. Added official Zettle partial-refund evidence while preserving uncertainty about passive Purchase/Pusher correlation. Recommendation is a conditional Square technical pilot, not launch approval, and initially one earning source per merchant. No company was contacted or account registered.
+
+### Review item: independent review complete — changes requested
+
+Saved `docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md` with nine prioritized findings R1–R9, source locations, acceptance criteria, deployed evidence and scope limits. R1–R4 block the next automatic-payment stage: recovery/removal races, historical clearing/refund correlation, provider-only cleanup, and missing activation enforcement. R5–R7 cover manual command binding/concurrent retries/undo after staff deletion; R8–R9 cover misleading shopper states. Existing checks pass: 33/33 pure helper tests, 3/3 disposable database suites and both app TypeScript checks. Nine additional local scenarios demonstrate defects. This is approval of the tested routing/access boundary only, not overall launch approval. Next: Claude design review, then additive local repairs before another device/payment test. No production implementation was changed.
+
+## Stamps removed and spend switchover (2026-09-25) — Claude implementing, product owner asked
+
+Request: "owners set the reward amount … get rid of the stamp/points/visits setup in the apps and website and onboarding, and do the switchover". Product-owner decisions (ARCH_PLAN §4.11 T1–T5): several rewards at different £ amounts; £20 default; progress restarts at £0 at stamp shops; earned rewards stay valid; switch without Fidel registration.
+
+What changed:
+- **Retailer app** (`apps/retailer/App.tsx`, `src/owner-pages.tsx`): the loyalty-type/stamps setup is gone. Setup wizard and Rewards page take a £ amount per reward (default £20, distinct amounts, £1–£10,000); members list shows £ progress; dashboard counts purchases (`type='spend'`, not voided). OTA published: production android `400fe57a-db44-4fdd-b8e6-254d7a6e42c1`, ios `53332904-1713-4b11-bd85-457bd6629acc`.
+- **Shopper app** (`apps/shopper/App.tsx`, `src/widgets/state.ts`, `src/widgets/android.tsx`): shop screen shows £ progress towards the next tier (mirrors `spend_next_tier`), join card lists "Spend £X" per reward, copy no longer mentions stamps. Widget shows whole pounds at spend shops (iOS widget prints "12 / 20 pounds" with no native change; Android renders "£12 of £20"). OTA published: production android `6eb61dcb-…`, ios `66f2547b-…`; preview android `b9168a17-…`, ios `ad994198-…`.
+- **Website** (`apps/web`): owner Settings "Loyalty & rewards" is now brand colour + sign-up reward + £ rewards; onboarding rewards step takes £ amounts; Scan page records £ purchases (`SpendPanel`, with undo); customer shop page shows £ progress and every tier; analytics count purchases; member directory shows £ towards the next reward; WhatsApp card, Activity, Help, Landing, Profile, Tutorial copy updated. `simulateStamp` removed. **Not deployed** — see remaining issues.
+- **Edge Functions deployed**: `create-wallet-pass`, `update-wallet-pass`, `create-apple-wallet-pass` use new `_shared/wallet-progress.ts` (Google/Apple passes show "Spent £X" and "Spend £Y more for <reward>"); `whatsapp-handoff` also returns `reward_progress_pence`.
+- **Migration `20260925190000_spend_switchover.sql` — APPLIED LIVE.** Prices every reward (lowest → £20, others proportional in whole pounds, a shop already on spend keeps its amount), gives rewardless shops "Free reward" at £20, moves every shop to `spend_threshold`, resets progress to £0 at shops that were on stamps, and defaults new shops to spend at £20. Acts as service role only inside its own transaction (the membership guard otherwise blocks progress changes).
+
+Checks actually performed:
+- New `apps/api/test/integration/spend-switchover.test.mjs` (spend shop kept, lowest £20, proportional + distinct amounts, empty shop gets £20, block cleared, rewards untouched, new-shop default, stamps refused) — pass. New `_shared/wallet-progress.test.mjs` — 3/3 pass.
+- Fixed the shared test fixture and `fidel-supabase-spend.test.mjs`: `20260925172000_fidel_member_spend_progress.sql` drops `get_business_members`, which neither fixture had, so every database suite failed at setup and then hung (the database was never stopped). Added a stand-in function/`profiles` table and made the fixture stop the database on setup failure.
+- Full run: 48/49 pass; `fidel-spend-tiers.test.mjs` passed its test but its process did not exit within the run's time limit when all database suites ran in parallel; run alone it passes and exits in 4 s. Treat as a parallel-shutdown flake to watch, not a logic failure.
+- `tsc -b` + `vite build` for web, `tsc --noEmit` for retailer and shopper, `expo export --platform android` for both apps — clean. `deno check` for the three wallet functions + `whatsapp-handoff`: only error is the pre-existing `Response(zipBytes)` TS2345 in `create-apple-wallet-pass` (present at HEAD, runtime unaffected).
+- Live read after the push: all 10 shops `spend_threshold`; Pure Elegant £10 "£5 Off" (progress kept), all others one tier at £20; no stamp-shop membership has non-zero progress; unredeemed rewards 27 + 5 + 3 = 35, unchanged.
+
+Prototype vs production: the switchover and functions are production changes; the apps are live via OTA. No on-device check of the new screens yet, and no wallet pass was regenerated to look at.
+
+Remaining issues:
+1. **Website not deployed.** It deploys from GitHub `main` via the Vercel Git integration; local `main` is 9 ahead / 17 behind `origin/main`. The live website still has the old stamp Settings/Scan — its Scan page will now be refused (`shop_uses_spend_rewards`) if an owner tries to award a stamp there. Needs a merge of `origin/main`, a build, and a push — **awaiting product-owner OK to push**.
+2. Codex review findings R1–R9 (`docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md`) are still open and untouched by this work.
+3. Owner-side "simulate stamp" on the website is removed; there is no equivalent test-purchase shortcut (owners can record a small manual purchase on their own account).
+4. `brand_rollup.stamps_30d` still counts stamps (will read 0).
+
+Next actions:
+- Product owner: approve merging `origin/main` into local and pushing to deploy the website; smoke-test retailer setup, a £ purchase and the shopper shop screen on a device.
+- Claude: after approval, merge/build/push and verify the live site; then the R1–R9 design review below.
+
 ## Copy-ready prompt for Claude Code
 
-Review the latest card-linking and manual-spend work in CLAUDE_HANDOFF.md against ARCH_PLAN.md and IMPLEMENTATION_TIMELINE.md. Prepare the next isolated test-account verification task using current state, replacing stale fixture assumptions. Include unresolved refunds, remaining spend displays and actual consent recording in release gates. Preserve the verified policy deployment. Product-owner participation remains necessary for device tests and any further Fidel Dashboard action; this review must not change provider settings or database data.
+Read CLAUDE_HANDOFF.md, ARCH_PLAN.md §2/§4.2, CARD_LINKING_PLAN.md, IMPLEMENTATION_TIMELINE.md and docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md. Review and disposition R1–R9; design additive fixes and give Codex the exact first local implementation task for R1–R3. Acceptance: recovery cannot undo removal; claim/unlink/sweep/account deletion cannot race; historical clearing/refunds retain purchase ownership after unlink/relink; rejected provider cards have durable cleanup. Address activation, manual retry/undo and UI findings in subsequent tasks. Review docs/PAYMENT_PROVIDER_RESEARCH_2026-09-25.md as a conditional proposal, not approval to integrate. Update the handoff after each item. No product-owner input is required for this review. Do not deploy, change secrets/settings/live data, create fixtures, contact providers or trigger/replay transactions.

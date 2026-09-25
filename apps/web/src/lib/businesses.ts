@@ -36,6 +36,9 @@ export interface Business {
   opening_hours: OpeningHours | null
   loyalty_type: 'stamp_card' | 'points' | 'tiered'
   loyalty_config: LoyaltyConfig
+  reward_model: 'stamp_legacy' | 'spend_threshold'
+  reward_threshold_pence: number | null
+  manual_spend_max_pence: number
   verification_status: 'unverified' | 'pending' | 'verified' | 'rejected'
   verification_document_path: string | null
   verification_document_label: string | null
@@ -51,6 +54,7 @@ export interface RewardCatalogItem {
   title: string
   description: string | null
   stamp_threshold: number
+  spend_threshold_pence: number | null
   sort_order: number
 }
 
@@ -60,6 +64,7 @@ export interface Membership {
   business_id: string
   stamp_count: number
   points_balance: number
+  reward_progress_pence: number
   promos_opted_out: boolean
 }
 
@@ -145,8 +150,6 @@ export async function createBusiness(
     lat?: number | null
     lng?: number | null
     brand_color: string
-    loyalty_type: Business['loyalty_type']
-    stamps_required: number
   }
 ): Promise<Business> {
   const { data, error } = await supabase
@@ -162,8 +165,8 @@ export async function createBusiness(
       lat: values.lat ?? null,
       lng: values.lng ?? null,
       brand_color: values.brand_color,
-      loyalty_type: values.loyalty_type,
-      loyalty_config: { stamps_required: values.stamps_required },
+      // Every shop earns by spend (ARCH_PLAN.md §4.11); rewards unlock at £ amounts.
+      reward_model: 'spend_threshold',
     })
     .select()
     .single()
@@ -277,18 +280,18 @@ export async function fetchRewardCatalog(businessId: string): Promise<RewardCata
     .from('reward_catalog')
     .select('*')
     .eq('business_id', businessId)
-    .order('sort_order')
+    .order('spend_threshold_pence', { nullsFirst: false })
   if (error) throw error
   return data as RewardCatalogItem[]
 }
 
 export async function addRewardCatalogItem(
   businessId: string,
-  item: { title: string; description: string | null; stamp_threshold: number; sort_order: number }
+  item: { title: string; description: string | null; spend_threshold_pence: number; sort_order: number }
 ): Promise<RewardCatalogItem> {
   const { data, error } = await supabase
     .from('reward_catalog')
-    .insert({ business_id: businessId, ...item })
+    .insert({ business_id: businessId, stamp_threshold: 10, ...item })
     .select()
     .single()
   if (error) throw error
@@ -336,13 +339,6 @@ export async function triggerWinbackEmails(businessId: string, daysInactiveThres
  * policy, not by this function. Real staff/customer scanning UI lands
  * separately; this is what lets us prove handle_stamp_transaction() works
  * end-to-end before that UI exists. */
-export async function simulateStamp(userId: string, businessId: string) {
-  const { error } = await supabase
-    .from('transactions')
-    .insert({ user_id: userId, business_id: businessId, type: 'stamp', value: 1 })
-  if (error) throw error
-}
-
 export interface StampCodeMatch {
   id: string
   first_name: string | null
@@ -369,6 +365,122 @@ export async function awardProgress(businessId: string, userId: string, value = 
     .from('transactions')
     .insert({ user_id: userId, business_id: businessId, type: 'stamp', value })
   if (error) throw error
+}
+
+// ---------------------------------------------------------------------
+// Spend (£) entry by staff (ARCH_PLAN.md §4.10–4.11)
+// ---------------------------------------------------------------------
+
+export interface SpendSummary {
+  rewardModel: string
+  member: boolean
+  progressPence: number | null
+  redemptionBlocked: boolean
+  thresholdPence: number | null
+  nextRewardTitle: string | null
+  manualMaxPence: number
+  linked: boolean
+  manualToday: number
+  nextAllowedAt: string | null
+}
+
+export interface SpendResult {
+  status: 'recorded' | 'duplicate'
+  transactionId: string
+  amountPence: number
+  progressPence: number
+  thresholdPence: number | null
+  nextRewardTitle: string | null
+  rewardsEarned: number | null
+}
+
+export interface RecentSpend {
+  id: string
+  value: number
+  created_at: string
+}
+
+export const formatPounds = (pence: number) => `£${(pence / 100).toFixed(2)}`
+
+/** Parses what an owner typed ("20", "£20", "20.50") into pence (£1–£10,000), or null. */
+export function parsePoundsToPence(value: string): number | null {
+  const cleaned = value.replace(/[£,\s]/g, '')
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null
+  const pence = Math.round(Number(cleaned) * 100)
+  return pence >= 100 && pence <= 1_000_000 ? pence : null
+}
+
+/** Plain-English copy for the database's refusal codes. */
+export function spendErrorMessage(error: unknown): string {
+  const e = error as { message?: string; details?: string } | null
+  const message = e?.message ?? ''
+  if (message.includes('amount_out_of_range')) {
+    const cap = Number(e?.details)
+    return Number.isFinite(cap) && cap > 0
+      ? `Each entry can be at most ${formatPounds(cap)}. The shop owner can change this limit.`
+      : "That amount is outside this shop's limit."
+  }
+  if (message.includes('not_a_member')) return "This customer hasn't joined your shop yet."
+  if (message.includes('shop_not_spend_based')) return "This shop isn't using spend rewards yet."
+  if (message.includes('linked_customer_payment_method_required')) return 'Choose how the customer paid.'
+  if (message.includes('manual_daily_limit_reached')) return 'This customer has had 3 manual entries here today.'
+  if (message.includes('manual_too_soon')) {
+    const at = e?.details ? new Date(e.details) : null
+    return at && !Number.isNaN(at.getTime())
+      ? `The next manual entry for this customer is allowed at ${at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })}.`
+      : 'Manual entries for this customer must be at least 30 minutes apart.'
+  }
+  if (message.includes('too_late')) return "It's too late to undo this entry. The shop owner can undo entries for 7 days."
+  if (message.includes('already_undone')) return 'This entry has already been undone.'
+  if (message.includes('not_allowed')) return "You don't have permission to do this."
+  return message || 'Something went wrong. Please try again.'
+}
+
+export async function fetchSpendSummary(businessId: string, userId: string): Promise<SpendSummary> {
+  const { data, error } = await supabase.rpc('scanned_member_spend_summary', { _customer_id: userId, _business_id: businessId })
+  if (error) throw error
+  return data as SpendSummary
+}
+
+/** clientRef makes a retry after a dropped connection safe: the server never
+ * credits the same purchase twice. */
+export async function recordManualSpend(
+  businessId: string,
+  userId: string,
+  amountPence: number,
+  paymentMethod: 'cash' | 'unlinked_card' | null,
+  clientRef: string,
+): Promise<SpendResult> {
+  const { data, error } = await supabase.rpc('record_manual_spend', {
+    _business_id: businessId,
+    _customer_id: userId,
+    _amount_pence: amountPence,
+    _payment_method: paymentMethod,
+    _client_ref: clientRef,
+  })
+  if (error) throw error
+  return data as SpendResult
+}
+
+export async function undoManualSpend(transactionId: string, reason: string) {
+  const { error } = await supabase.rpc('undo_manual_spend', { _transaction_id: transactionId, _reason: reason })
+  if (error) throw error
+}
+
+/** The signed-in staff member's own entries from the last 10 minutes. */
+export async function fetchMyRecentSpend(businessId: string, userId: string): Promise<RecentSpend[]> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('id,value,created_at')
+    .eq('business_id', businessId)
+    .eq('type', 'spend')
+    .eq('recorded_by', userId)
+    .is('voided_at', null)
+    .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+    .order('created_at', { ascending: false })
+    .limit(10)
+  if (error) throw error
+  return (data ?? []) as RecentSpend[]
 }
 
 /** Best-effort receipt email after a staff award. It never blocks awarding a stamp. */

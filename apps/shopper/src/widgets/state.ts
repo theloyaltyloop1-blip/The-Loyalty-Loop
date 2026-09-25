@@ -10,14 +10,16 @@ export type ShopperWidgetState = {
   shopName: string
   current: number
   target: number
-  unit: 'stamps' | 'points' | 'visits'
+  // Whole pounds at spend shops (ARCH_PLAN.md §4.11). The iOS widget prints
+  // "current / target unit", so 'pounds' reads correctly without a native change.
+  unit: 'stamps' | 'points' | 'visits' | 'pounds'
   remaining: number
   brandColor: string
   updatedAt: string
 }
 
-type MembershipLike = { business_id: string; stamp_count?: number | null; points_balance?: number | null; visit_count?: number | null }
-type BusinessLike = { id: string; name: string; brand_color?: string | null; loyalty_type?: string | null; loyalty_config?: { stamps_required?: number } | null }
+type MembershipLike = { business_id: string; stamp_count?: number | null; points_balance?: number | null; visit_count?: number | null; reward_progress_pence?: number | null }
+type BusinessLike = { id: string; name: string; brand_color?: string | null; loyalty_type?: string | null; loyalty_config?: { stamps_required?: number } | null; reward_model?: string | null; reward_threshold_pence?: number | null }
 
 export async function readShopperWidgetState(): Promise<ShopperWidgetState | null> {
   const raw = await Storage.getItem(SHOPPER_WIDGET_STORAGE_KEY)
@@ -35,6 +37,20 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
     .map((business) => {
       const membership = membershipByBusiness.get(business.id)
       if (!membership) return null
+      if (business.reward_model === 'spend_threshold') {
+        // reward_threshold_pence is the shop's biggest reward, where a new round starts.
+        const progress = Math.max(0, membership.reward_progress_pence || 0)
+        const targetPence = Math.max(100, business.reward_threshold_pence || 2000)
+        return {
+          shopName: business.name,
+          current: Math.floor(progress / 100),
+          target: Math.ceil(targetPence / 100),
+          unit: 'pounds',
+          remaining: Math.ceil(Math.max(0, targetPence - progress) / 100),
+          brandColor: business.brand_color || '#EF7136',
+          updatedAt: new Date().toISOString(),
+        } satisfies ShopperWidgetState
+      }
       const unit = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
       const current = unit === 'points' ? membership.points_balance || 0 : unit === 'visits' ? membership.visit_count || 0 : membership.stamp_count || 0
       const target = Math.max(1, business.loyalty_config?.stamps_required || 10)
@@ -54,9 +70,9 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
   const state = candidates[0] || {
     shopName: 'The Loyalty Loop',
     current: 0,
-    target: 10,
-    unit: 'stamps' as const,
-    remaining: 10,
+    target: 20,
+    unit: 'pounds' as const,
+    remaining: 20,
     brandColor: '#EF7136',
     updatedAt: new Date().toISOString(),
   }

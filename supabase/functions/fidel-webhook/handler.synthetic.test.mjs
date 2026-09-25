@@ -145,3 +145,39 @@ test("synthetic requests for an unconfigured route do not read or process payloa
   });
   assert.equal(response.status, 404);
 });
+
+test("synthetic credited purchase triggers the after-processing hook once; other outcomes do not", async () => {
+  for (const [outcome, expected] of [["processed", 1], ["duplicate", 0], ["unknown_merchant", 0]]) {
+    const hooks = [];
+    const request = await signedSyntheticRequest(authPayload(), {
+      headers: { "fidel-message-id": `synthetic-hook-${outcome}` },
+    });
+    const response = await handleFidelWebhook(request, {
+      routeFor: () => route,
+      admin: { rpc: async () => ({ data: { status: outcome }, error: null }) },
+      onProcessed: (event) => hooks.push(event),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(hooks.length, expected, outcome);
+    if (expected) assert.deepEqual(hooks[0], { eventType: "transaction.auth", fidelTransactionId: "synthetic-auth-1" });
+  }
+});
+
+test("synthetic after-processing hook failure never changes the response to Fidel", async () => {
+  const request = await signedSyntheticRequest(authPayload(), {
+    headers: { "fidel-message-id": "synthetic-hook-throws" },
+  });
+  const original = console.error;
+  console.error = () => {};
+  try {
+    const response = await handleFidelWebhook(request, {
+      routeFor: () => route,
+      admin: { rpc: async () => ({ data: { status: "processed" }, error: null }) },
+      onProcessed: () => { throw new Error("push down"); },
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { status: "processed" });
+  } finally {
+    console.error = original;
+  }
+});
