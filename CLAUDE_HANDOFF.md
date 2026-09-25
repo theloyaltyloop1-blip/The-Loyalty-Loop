@@ -3091,6 +3091,30 @@ Linked cards with "Visa •••• 4104", the SuccessCheck, and Fidel's own na
     built, so no push was sent;
   - iOS card linking.
 
+## Work committed to git (2026-09-25) — Claude, product owner asked
+
+- **Local branch `main`, not pushed:**
+  - `cc3359f`: Supabase (the migration reconciliation, all Fidel migrations and Edge
+    Functions, delete-my-account);
+  - `7008e94`: shopper and retailer apps;
+  - `ccd7ea5`: `apps/api` and the integration tests;
+  - `bbd1daf`: Codex's legal PDFs, generator and web copy;
+  - `6de360d`: plans, handoff, timeline and agent instructions.
+- **Secret scan** of the 126 committed text files for API, SDK and webhook keys, JWTs,
+  private keys and `sb_secret_`: no hits.
+- **Deliberately left out:**
+  - `.codex-homepage-release/` and `.codex-policy-release/`: these are git
+    **worktrees** for branches `codex/homepage-refresh` and `codex/fidel-policy-release`;
+  - `timeline-site/`: its own git repository. It was first added as a gitlink by
+    mistake; I removed it and amended the unpushed commit;
+  - `tmp/`: Codex scratch (rendered PDFs, a verify script);
+  - `remote_schema_dump.sql` (0 bytes) and `timeline-site.tar.gz` (an artifact).
+- **Left uncommitted pending the product owner:** the 8 deleted `docs/*.md` files
+  (HANDOFF-CREDENTIALS-AND-MAINTENANCE, HANDOFF-DEV-NOTES, HANDOFF-STATUS, the
+  LOYALTY-LOOP-* specs and NEW-SESSION-PROMPT). They are missing only from this working
+  folder; every branch, including `origin/main`, still has them, and no commit deleted
+  them. `git checkout -- docs/` restores them.
+
 ## Copy-ready prompt for Codex (run only after the product owner completes steps A–C above)
 
 > Read `CLAUDE_HANDOFF.md` ("Clearing/refund contract review (2026-09-23, 17:40 UTC)"), `ARCH_PLAN.md` §4.2–§4.4a, and `IMPLEMENTATION_TIMELINE.md`. Goal: the **fixture stage**. Prove that genuine Fidel Test-mode auth and clearing deliveries credit a **dedicated test account** at a **dedicated test shop** correctly. No refund leg: Test mode doesn't deliver refunds. Never print, log or write secrets, raw bodies, header values, card numbers or auth codes. Write ids and UUIDs as their last 4 characters only. Don't change secrets, Fidel webhook settings or function code, and don't replay deliveries or send requests to the webhook yourself. Touch no real customer's or real shop's data.
