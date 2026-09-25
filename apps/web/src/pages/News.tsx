@@ -10,7 +10,7 @@ export function NewsPage() {
   const { session, loading } = useAuth()
   const [items, setItems] = React.useState<Announcement[]>([])
   const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { if (session) fetchAnnouncements().then(setItems).finally(() => setReady(true)) }, [session])
+  React.useEffect(() => { if (session) fetchAnnouncements(session.user.id).then(setItems).finally(() => setReady(true)) }, [session])
   if (loading || !ready) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   return <DashboardLayout>

@@ -1,11 +1,24 @@
 import * as React from 'react'
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
+import type { Business } from '@/lib/businesses'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
+const PIN_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL as string | undefined}/functions/v1/map-pin`
 
 /** Balham, London — used as a sane default map center before an owner has
  * entered/confirmed a real address. */
 export const DEFAULT_MAP_CENTER = { lat: 51.4514, lng: -0.1447 }
+
+function initialsOf(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '').join('') || '?'
+}
+
+/** Uses the same server-rendered Loyalty Loop pin artwork as the shopper apps. */
+function businessPinIcon(business: Business) {
+  const params = [`color=${encodeURIComponent(business.brand_color || '#E8703B')}`, `initials=${encodeURIComponent(initialsOf(business.name))}`, 'scale=2']
+  if (business.logo_url) params.push(`logo=${encodeURIComponent(business.logo_url)}`)
+  return { url: `${PIN_ENDPOINT}?${params.join('&')}`, scaledSize: new google.maps.Size(60, 66), anchor: new google.maps.Point(30, 60) }
+}
 
 /** Shared loader — every ShopMap instance on a page uses the same script-load
  * state (via the same `id`), so the Maps JS API is only ever injected once. */
@@ -109,4 +122,18 @@ export function ShopMap({
       </GoogleMap>
     </div>
   )
+}
+
+/** A browseable map of every shop with a confirmed location. */
+export function BusinessesMap({ businesses, onSelect, height = 560 }: { businesses: Business[]; onSelect: (business: Business) => void; height?: number }) {
+  const { isLoaded, loadError } = useGoogleMapsLoader()
+  const locatedBusinesses = businesses.filter((business) => business.lat != null && business.lng != null)
+  if (!GOOGLE_MAPS_API_KEY) return <MapUnavailable height={height} message="Map unavailable — no Google Maps API key configured." />
+  if (loadError) return <MapUnavailable height={height} message="Could not load the map." />
+  if (!isLoaded) return <div style={{ height }} className="rounded-2xl bg-black/5 animate-pulse" />
+  return <div style={{ height, borderRadius: 16, overflow: 'hidden' }} className="border border-black/10"><GoogleMap mapContainerStyle={{ height: '100%', width: '100%' }} center={DEFAULT_MAP_CENTER} zoom={13} options={{ clickableIcons: false, gestureHandling: 'greedy', streetViewControl: false, mapTypeControl: false }} onLoad={(map) => { if (!locatedBusinesses.length) return; if (locatedBusinesses.length === 1) { map.setCenter({ lat: locatedBusinesses[0].lat!, lng: locatedBusinesses[0].lng! }); map.setZoom(15); return }; const bounds = new google.maps.LatLngBounds(); locatedBusinesses.forEach((business) => bounds.extend({ lat: business.lat!, lng: business.lng! })); map.fitBounds(bounds, 56) }}>{locatedBusinesses.map((business) => <Marker key={business.id} position={{ lat: business.lat!, lng: business.lng! }} icon={businessPinIcon(business)} title={business.name} onClick={() => onSelect(business)} />)}</GoogleMap></div>
+}
+
+function MapUnavailable({ height, message }: { height: number; message: string }) {
+  return <div style={{ height }} className="rounded-2xl border border-black/10 bg-black/5 flex items-center justify-center px-6 text-center text-sm text-foreground/40">{message}</div>
 }

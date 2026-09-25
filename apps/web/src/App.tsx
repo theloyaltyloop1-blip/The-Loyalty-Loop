@@ -7,8 +7,8 @@ import { Landing } from '@/pages/Landing'
 import { CookieConsent } from '@/components/cookie-consent'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { UsageTracker } from '@/components/usage-tracker'
+import { PlatformAnnouncementBanner } from '@/components/platform-announcement-banner'
 import { ThemeProvider } from '@/components/theme-toggle'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { usePageMeta } from '@/lib/use-page-meta'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
@@ -82,9 +82,10 @@ function App() {
         <AuthProvider>
           <OwnerProvider>
             <BrowserRouter>
-              <div className="fixed right-3 top-3 z-[70] rounded-xl border border-foreground/10 bg-card/90 p-0.5 shadow-sm backdrop-blur-md sm:right-5 sm:top-5">
-                <ThemeToggle compact />
-              </div>
+              {/* Theme toggle intentionally hidden for now — dark mode still
+                  works via ThemeProvider/localStorage, just no UI to switch it.
+                  Re-add <ThemeToggle compact /> here (see git history) to bring it back. */}
+              <PlatformAnnouncementBanner />
               <Toaster position="top-center" richColors closeButton />
               <Suspense fallback={<BarePageSkeleton />}>
                 <UsageTracker />

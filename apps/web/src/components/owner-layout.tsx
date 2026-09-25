@@ -91,7 +91,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background md:flex">
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      <aside className="border-b border-foreground/10 bg-card/80 backdrop-blur-xl p-3 md:flex md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r md:p-5">
+      <aside className="border-b border-foreground/10 bg-card/80 backdrop-blur-xl p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto md:border-b-0 md:border-r md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-6">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
           <span className="font-display text-base text-foreground">The Loyalty Loop</span>
@@ -107,7 +107,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               end={end}
               className={({ isActive }) =>
                 'flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97] md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-base ' +
-                (isActive ? 'bg-foreground text-white shadow-sm' : 'text-foreground/70 hover:bg-foreground/5')
+                (isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground/70 hover:bg-foreground/5')
               }
             >
               <Icon className="h-5 w-5" />
