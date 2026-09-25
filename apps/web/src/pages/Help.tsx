@@ -78,13 +78,13 @@ const ACCOUNT_ITEMS: Item[] = [
   },
   {
     q: 'How do I delete my account?',
-    a: 'In the app, go to your profile or settings and choose “Delete my account”. This permanently removes your account and personal data. You can also email us and we’ll do it for you.',
+    a: 'In the app, go to your profile or settings and choose “Delete my account”. For linked cards, provider removal must complete before account deletion can finish. If deletion fails, contact support so we can help complete the request. The Privacy Notice explains how retained records are handled.',
   },
   {
     q: 'What data do you collect?',
     a: (
       <>
-        Only what’s needed to run your loyalty cards — never your card numbers, and we don’t sell your data. Full detail is in our{' '}
+        We use account and loyalty activity to run your rewards. If you choose Fidel card linking when available, Fidel handles card entry; we receive a card identifier, limited card details and matched purchase or refund information. We do not receive your full card number or security code, and we do not sell your data. Full detail is in our{' '}
         <a href="/legal/privacy-notice.pdf" target="_blank" rel="noreferrer" className="text-primary underline">
           Privacy Notice
         </a>

@@ -49,3 +49,10 @@ project's source files (excluding `node_modules`/build output) and dumps the
 Supabase database schema. Git/GitHub is the primary backup for source code;
 this script exists for local point-in-time snapshots and the database dump
 Git doesn't cover.
+
+## Card-linked backend foundation
+
+[`apps/api`](apps/api/README.md) is a standalone Express/Prisma service for signed
+Fidel transaction webhooks and provisional, per-merchant stamp balances. It uses a
+dedicated PostgreSQL database; setup, limitations and verification commands are
+documented in its README.
