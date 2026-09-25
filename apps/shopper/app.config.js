@@ -40,6 +40,9 @@ module.exports = {
     ...(app.expo.plugins || []),
     'expo-sqlite',
     '@bacons/apple-targets',
+    // Fidel's Android card-linking SDK (fidel-react-native) is published on
+    // JitPack, which the library's own Gradle file doesn't declare.
+    ['expo-build-properties', { android: { extraMavenRepos: ['https://jitpack.io'] } }],
     [
       'react-native-android-widget',
       {

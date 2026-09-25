@@ -43,6 +43,7 @@ import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, se
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { SuccessCheck } from './src/components/SuccessCheck'
+import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
@@ -193,6 +194,12 @@ function LogOutIcon({ color = foreground, size = 18 }: IconProps) {
 function TrashIcon({ color = foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
+function CardIcon({ color = foreground, size = 18 }: IconProps) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M3 6h18v12H3zM3 10h18M7 15h3" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+}
+function BoltIcon({ color = foreground, size = 14 }: IconProps) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12L13 2z" fill={color} /></Svg>
+}
 
 function GoogleIcon({ size = 20 }: { size?: number }) {
   return (
@@ -282,8 +289,18 @@ type Business = {
   cover_url?: string | null
   loyalty_type?: string
   loyalty_config?: { stamps_required?: number }
+  reward_model?: 'stamp_legacy' | 'spend_threshold'
+  reward_threshold_pence?: number | null
 }
-type Membership = { business_id: string; stamp_count: number; points_balance: number; promos_opted_out?: boolean | null }
+type Membership = {
+  business_id: string
+  stamp_count: number
+  points_balance: number
+  promos_opted_out?: boolean | null
+  reward_progress_pence?: number | null
+  redemption_blocked_reason?: string | null
+}
+const pounds = (pence: number) => `£${(pence / 100).toFixed(2)}`
 type Reward = {
   id: string
   title: string
@@ -555,7 +572,7 @@ function confirmDeleteAccount() {
   }
   Alert.alert(
     'Delete your account?',
-    'This permanently deletes your login, loyalty cards, stamps, rewards and reviews. This cannot be undone.',
+    'This permanently deletes your login, loyalty cards, linked payment cards, stamps, rewards and reviews. This cannot be undone.',
     [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -611,13 +628,13 @@ function SettingsGroup({ title, children }: { title?: string; children: ReactNod
   )
 }
 
-type SettingsView = 'root' | 'card' | 'name' | 'blocked'
-const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Customer card', name: 'Your name', blocked: 'Blocked people' }
+type SettingsView = 'root' | 'card' | 'name' | 'blocked' | 'cards'
+const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Customer card', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards' }
 
 /** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
  * grouped rows — security & privacy → notifications → support → legal → account.
  * The card, the name editor and the blocked list open inside the same sheet. */
-function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void }) {
+function SettingsSheet({ visible, session, userId, stampCode, onClose, initialView = 'root', cardLinking, onLinkCard }: { visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void; initialView?: SettingsView; cardLinking: CardLinking; onLinkCard: () => void }) {
   const [view, setView] = useState<SettingsView>('root')
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
@@ -634,12 +651,31 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visib
   // so refresh its data and reset to the root view each time it opens instead of on mount.
   useEffect(() => {
     if (!visible) return
-    setView('root')
+    setView(initialView)
     biometricLockEnabled().then(setBiometricEnabled)
     getUsageAnalyticsConsent().then(setAnalyticsEnabled)
     void loadBlocks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
+
+  // Opening Linked cards also stores any card Fidel enrolled that we never saved.
+  useEffect(() => {
+    if (visible && view === 'cards') void cardLinking.recover()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, view])
+
+  function confirmRemoveCard(linkedCard: LinkedCard) {
+    Alert.alert(`Remove ${cardLabel(linkedCard)}?`, 'You’ll stop earning automatically when you pay with this card. Progress you’ve already earned stays.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => void cardLinking.remove(linkedCard.linkedCardId).then((ok) => {
+          if (!ok) Alert.alert('Couldn’t remove this card', 'Please try again.')
+        }),
+      },
+    ])
+  }
 
   async function unblock(blockedId: string) {
     const { error } = await supabase.from('user_blocks').delete().eq('blocker_id', userId).eq('blocked_id', blockedId)
@@ -706,6 +742,19 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visib
                 </Pressable>
               </LinearGradient>
 
+              {cardLinking.enabled && (
+                <SettingsGroup title="Payment cards">
+                  <SettingsRow
+                    tile="green"
+                    icon={(c) => <CardIcon color={c} size={18} />}
+                    title="Linked cards"
+                    detail={cardLinking.cards.length ? `${cardLinking.cards.length} ${cardLinking.cards.length === 1 ? 'card' : 'cards'} linked` : 'Earn automatically when you pay'}
+                    onPress={() => setView('cards')}
+                    last
+                  />
+                </SettingsGroup>
+              )}
+
               <SettingsGroup title="Security & privacy">
                 <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: primary }} />} />
                 <SettingsRow tile="purple" icon={(c) => <ChartIcon color={c} size={18} />} title="Anonymous analytics" detail="Helps us improve the app. Never your email, code or messages" right={<Switch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: primary }} />} />
@@ -728,7 +777,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visib
 
               <SettingsGroup title="Account">
                 <SettingsRow tile="orange" icon={(c) => <LogOutIcon color={c} size={18} />} title="Sign out" onPress={confirmSignOut} />
-                <SettingsRow icon={(c) => <TrashIcon color={c} size={18} />} title="Delete account" detail="Permanently removes your login, cards, stamps and rewards" onPress={confirmDeleteAccount} danger last />
+                <SettingsRow icon={(c) => <TrashIcon color={c} size={18} />} title="Delete account" detail="Permanently removes your login, linked cards, stamps and rewards" onPress={confirmDeleteAccount} danger last />
               </SettingsGroup>
 
               <Text style={styles.settingsFooter}>The Loyalty Loop v{version} · {updateLabel}</Text>
@@ -760,6 +809,55 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose }: { visib
               <Button title={savingName ? 'Saving…' : 'Save'} onPress={() => void saveName()} disabled={savingName} />
             </>
           )}
+
+          {view === 'cards' && (() => {
+            const atLimit = cardLinking.cards.length >= cardLinking.limit
+            const remaining = cardLinking.limit - cardLinking.cards.length
+            return (
+              <>
+                <View style={styles.cardsExplainer}>
+                  <Text style={styles.cardsExplainerTitle}>Earn without scanning</Text>
+                  <Text style={styles.cardsExplainerLine}>• Pay with a linked card at shops marked ⚡</Text>
+                  <Text style={styles.cardsExplainerLine}>• Your progress updates within seconds</Text>
+                  <Text style={styles.cardsExplainerLine}>• We never see your full card number</Text>
+                </View>
+                <View style={styles.settingsCard}>
+                  {cardLinking.cards.length === 0 ? (
+                    <Text style={styles.settingsEmpty}>No cards linked yet.</Text>
+                  ) : (
+                    cardLinking.cards.map((linkedCard, index) => (
+                      <SettingsRow
+                        key={linkedCard.linkedCardId}
+                        tile="green"
+                        icon={(c) => <CardIcon color={c} size={18} />}
+                        title={cardLabel(linkedCard)}
+                        detail={`Linked ${new Date(linkedCard.linkedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                        right={
+                          <Pressable onPress={() => confirmRemoveCard(linkedCard)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Remove ${cardLabel(linkedCard)}`}>
+                            <Text style={styles.blockRowUnblock}>Remove</Text>
+                          </Pressable>
+                        }
+                        last={index === cardLinking.cards.length - 1}
+                      />
+                    ))
+                  )}
+                </View>
+                <Button
+                  title={cardLinking.stage === 'preparing' ? 'Preparing…' : cardLinking.stage === 'verifying' ? 'Checking your card…' : 'Link a card'}
+                  onPress={onLinkCard}
+                  disabled={atLimit || cardLinking.stage !== 'idle'}
+                />
+                <Text style={styles.cardsHelp}>
+                  {atLimit
+                    ? `You’ve linked the maximum of ${cardLinking.limit} cards. Remove one to add another.`
+                    : `You can link up to ${cardLinking.limit} cards. ${remaining} left.`}
+                </Text>
+                <Text style={styles.cardsHelp}>
+                  Use the long number on the front of your physical card, not a virtual card number, so Apple Pay and Google Pay payments count too. Card details are collected securely by our partner Fidel API.
+                </Text>
+              </>
+            )
+          })()}
 
           {view === 'blocked' && (
             <View style={styles.settingsCard}>
@@ -833,6 +931,8 @@ function ShopDetail({
   onBack,
   onToggleFavourite,
   refresh,
+  cardLinking,
+  onLinkCard,
 }: {
   business: Business
   userId: string
@@ -842,6 +942,8 @@ function ShopDetail({
   onBack: () => void
   onToggleFavourite: () => void
   refresh: () => Promise<void>
+  cardLinking: CardLinking
+  onLinkCard: () => void
 }) {
   const [busy, setBusy] = useState(false)
   const [addingToWallet, setAddingToWallet] = useState(false)
@@ -854,7 +956,12 @@ function ShopDetail({
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
   const [hiddenReviewIds, setHiddenReviewIds] = useState<Set<string>>(new Set())
-  const value = business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
+  // Spend-threshold shops (ARCH_PLAN.md §0a) count pence towards one threshold.
+  // Negative progress (after a refund or a corrected entry) displays as £0.00.
+  const spendShop = business.reward_model === 'spend_threshold' && (business.reward_threshold_pence ?? 0) > 0
+  const value = spendShop
+    ? Math.max(0, membership?.reward_progress_pence ?? 0)
+    : business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
   const [showStampSuccess, setShowStampSuccess] = useState(false)
 
   // Celebrate a stamp/points increase picked up on mount or refresh — the
@@ -872,7 +979,9 @@ function ShopDetail({
   // stamps_required is only the fallback for shops with no catalogue. Progress is
   // therefore shown towards the next tier.
   const nextTier = catalog.find((reward) => reward.stamp_threshold > value) ?? catalog[catalog.length - 1]
-  const threshold = nextTier?.stamp_threshold || business.loyalty_config?.stamps_required || 10
+  const threshold = spendShop
+    ? business.reward_threshold_pence as number
+    : nextTier?.stamp_threshold || business.loyalty_config?.stamps_required || 10
   const label = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
   const hasMapCoordinates = typeof business.lat === 'number' && typeof business.lng === 'number'
   const mapDestination = hasMapCoordinates ? `${business.lat},${business.lng}` : business.address || ''
@@ -1136,13 +1245,43 @@ function ShopDetail({
           {business.address ? ` · ${business.address}` : ''}
         </Text>
 
+        {cardLinking.enabled && cardLinking.linkedShopIds.has(business.id) ? (
+          cardLinking.cards.length === 0 ? (
+            <View style={styles.autoEarnCard}>
+              <View style={styles.autoEarnRow}>
+                <BoltIcon color="#c77c12" size={16} />
+                <Text style={styles.autoEarnTitle}>Earn automatically here</Text>
+              </View>
+              <Text style={styles.autoEarnCopy}>Link the card you pay with. When you use it here, your progress updates by itself.</Text>
+              <Button
+                secondary
+                title={cardLinking.stage === 'preparing' ? 'Preparing…' : cardLinking.stage === 'verifying' ? 'Checking your card…' : 'Link a card'}
+                onPress={onLinkCard}
+                disabled={cardLinking.stage !== 'idle'}
+              />
+            </View>
+          ) : (
+            <View style={styles.autoEarnChip}>
+              <BoltIcon color="#c77c12" size={14} />
+              <Text style={styles.autoEarnChipText}>Pay with a linked card to earn automatically</Text>
+            </View>
+          )
+        ) : null}
+
         {membership ? (
           <View style={styles.loyaltyCard}>
             <View style={styles.loyaltyCardHeaderRow}>
-              <Text style={styles.sectionTitle}>{business.loyalty_type === 'points' ? 'Your points' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
-              <Text style={styles.loyaltyCardCount}>{value} / {threshold}</Text>
+              <Text style={styles.sectionTitle}>{spendShop ? 'Your spend' : business.loyalty_type === 'points' ? 'Your points' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
+              <Text style={styles.loyaltyCardCount}>{spendShop ? `${pounds(value)} of ${pounds(threshold)}` : `${value} / ${threshold}`}</Text>
             </View>
             <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
+            {spendShop ? (
+              <Text style={styles.spendHint}>
+                {membership.redemption_blocked_reason
+                  ? 'Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.'
+                  : `Spend ${pounds(Math.max(0, threshold - value))} more here to earn your next reward.`}
+              </Text>
+            ) : null}
             <View style={styles.qrWrap}>
               <QRCode value={`loyaltyloop:customer:${userId}`} size={150} />
               <Text style={styles.qrText}>Show this QR code when you pay</Text>
@@ -1909,6 +2048,54 @@ function AppHome({ session }: { session: Session }) {
   const [stampCode, setStampCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const userId = session.user.id
+  const cardLinking = useCardLinking(userId)
+  const [settingsView, setSettingsView] = useState<SettingsView>('root')
+  const [cardLinked, setCardLinked] = useState(false)
+  const linkedMessage = useRef('')
+
+  function showLinkOutcome(outcome: LinkOutcome) {
+    if (outcome.kind === 'linked') {
+      linkedMessage.current = `${outcome.card ? cardLabel(outcome.card) : 'Your card'} is linked. You’ll earn automatically at shops marked ⚡.`
+      setCardLinked(true)
+    } else if (outcome.kind === 'pending') {
+      Alert.alert('Almost done', 'We’re finishing linking your card. It will appear in Linked cards shortly.')
+    } else if (outcome.kind === 'error') {
+      Alert.alert(outcome.title, outcome.message)
+    }
+  }
+
+  /** On iOS, Fidel's card screen can't appear above an open sheet, so the
+   * account sheet closes first and reopens on Linked cards afterwards. */
+  async function linkCardFromSettings() {
+    let closedSheet = false
+    const outcome = await cardLinking.link(Platform.OS === 'ios' ? async () => {
+      closedSheet = true
+      setShowProfile(false)
+      await new Promise((resolve) => setTimeout(resolve, 650))
+    } : undefined)
+    if (closedSheet) {
+      setSettingsView('cards')
+      setShowProfile(true)
+      // Let the sheet finish presenting before the success check (itself a
+      // modal) or an alert tries to present on top of it.
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+    showLinkOutcome(outcome)
+  }
+
+  async function linkCardFromShop() {
+    showLinkOutcome(await cardLinking.link())
+  }
+
+  const cardLinkedCheck = (
+    <SuccessCheck
+      visible={cardLinked}
+      onFinished={() => {
+        setCardLinked(false)
+        Alert.alert('Card linked', linkedMessage.current)
+      }}
+    />
+  )
 
   useEffect(() => { void trackUsageEvent(userId, 'tab_viewed', tab) }, [tab, userId])
   useEffect(() => { if (selected) void trackUsageEvent(userId, 'shop_opened') }, [selected?.id, userId])
@@ -2043,6 +2230,8 @@ function AppHome({ session }: { session: Session }) {
 
   if (selected) {
     return (
+      <>
+      {cardLinkedCheck}
       <ShopDetail
         business={selected}
         userId={userId}
@@ -2052,7 +2241,10 @@ function AppHome({ session }: { session: Session }) {
         onBack={() => setSelected(null)}
         onToggleFavourite={() => toggleFavourite(selected)}
         refresh={load}
+        cardLinking={cardLinking}
+        onLinkCard={() => void linkCardFromShop()}
       />
+      </>
     )
   }
 
@@ -2088,7 +2280,20 @@ function AppHome({ session }: { session: Session }) {
         </ScrollView>
       )}
       {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
-      <SettingsSheet visible={showProfile} session={session} userId={userId} stampCode={stampCode} onClose={() => setShowProfile(false)} />
+      <SettingsSheet
+        visible={showProfile}
+        session={session}
+        userId={userId}
+        stampCode={stampCode}
+        initialView={settingsView}
+        cardLinking={cardLinking}
+        onLinkCard={() => void linkCardFromSettings()}
+        onClose={() => {
+          setShowProfile(false)
+          setSettingsView('root')
+        }}
+      />
+      {cardLinkedCheck}
     </SafeAreaView>
   )
 }
@@ -2422,6 +2627,17 @@ const styles = StyleSheet.create({
   blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   blockRowText: { color: '#5c564c', fontSize: 13 },
   blockRowUnblock: { color: primary, fontSize: 13, fontWeight: '700' },
+  spendHint: { color: '#8a8378', fontSize: 12.5, lineHeight: 17, marginTop: 8 },
+  cardsExplainer: { backgroundColor: '#e0f2e4', borderRadius: 18, padding: 16, gap: 4 },
+  cardsExplainerTitle: { fontSize: 15, fontWeight: '800', color: '#1f5c33', marginBottom: 2 },
+  cardsExplainerLine: { fontSize: 13.5, color: '#2f5a3b', lineHeight: 19 },
+  cardsHelp: { color: '#8a8378', fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
+  autoEarnCard: { backgroundColor: '#fdeccd', borderRadius: 18, padding: 16, marginTop: 14, gap: 8 },
+  autoEarnRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  autoEarnTitle: { fontSize: 15, fontWeight: '800', color: '#7a4a0c' },
+  autoEarnCopy: { fontSize: 13.5, color: '#6b4a1c', lineHeight: 19 },
+  autoEarnChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: '#fdeccd', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: 12 },
+  autoEarnChipText: { fontSize: 12.5, fontWeight: '700', color: '#7a4a0c' },
 
   // Rewards
   reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },

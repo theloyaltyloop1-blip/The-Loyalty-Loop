@@ -73,6 +73,9 @@ export interface NativeBusiness {
     signup_reward_title?: string;
     stamp_icon?: string;
   };
+  reward_model?: "stamp_legacy" | "spend_threshold";
+  reward_threshold_pence?: number | null;
+  manual_spend_max_pence?: number;
 }
 
 interface PageProps {
@@ -828,6 +831,131 @@ function BrandingPage({
   );
 }
 
+type ManualSpendEntry = { id: string; value: number; created_at: string };
+const pounds = (pence: number) => `£${(pence / 100).toFixed(2)}`;
+
+// Spend-threshold shops only (ARCH_PLAN.md §4.10, M1 and M2): the per-entry
+// limit for staff, and the owner's 7-day undo list for manual entries.
+function ManualSpendSettings({
+  business,
+  onBusinessChanged,
+}: {
+  business: NativeBusiness;
+  onBusinessChanged: () => Promise<void>;
+}) {
+  const [cap, setCap] = useState(
+    ((business.manual_spend_max_pence ?? 20000) / 100).toString(),
+  );
+  const [saving, setSaving] = useState(false);
+  const [entries, setEntries] = useState<ManualSpendEntry[]>([]);
+  const loadEntries = useCallback(async () => {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from("transactions")
+      .select("id,value,created_at")
+      .eq("business_id", business.id)
+      .eq("type", "spend")
+      .not("recorded_by", "is", null)
+      .is("voided_at", null)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setEntries((data || []) as ManualSpendEntry[]);
+  }, [business.id]);
+  useEffect(() => {
+    void loadEntries();
+  }, [loadEntries]);
+
+  async function saveCap() {
+    const value = Number(cap.replace("£", "").trim());
+    if (!Number.isFinite(value) || value < 1 || value > 1000) {
+      return Alert.alert("Choose an amount between £1 and £1,000");
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("businesses")
+      .update({ manual_spend_max_pence: Math.round(value * 100) })
+      .eq("id", business.id);
+    setSaving(false);
+    if (error) return Alert.alert("Could not save", error.message);
+    await onBusinessChanged();
+    Alert.alert("Limit saved", `Staff can now enter up to ${pounds(Math.round(value * 100))} per purchase.`);
+  }
+
+  function undo(entry: ManualSpendEntry) {
+    Alert.alert(
+      `Undo ${pounds(entry.value)}?`,
+      "This takes the amount back off the customer's progress. If it already earned them a reward, redeeming is paused until they spend enough again.",
+      [
+        { text: "Keep it", style: "cancel" },
+        {
+          text: "Undo",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase.rpc("undo_manual_spend", {
+              _transaction_id: entry.id,
+              _reason: "Undone by the shop owner",
+            });
+            if (error) {
+              Alert.alert(
+                "Could not undo",
+                error.message.includes("too_late")
+                  ? "Entries can only be undone within 7 days."
+                  : error.message.includes("already_undone")
+                    ? "This entry has already been undone."
+                    : "Please try again.",
+              );
+            }
+            void loadEntries();
+          },
+        },
+      ],
+    );
+  }
+
+  return (
+    <>
+      <Section>
+        <Text style={styles.cardTitle}>Purchase entry limit</Text>
+        <Text style={styles.muted}>
+          The most a staff member can enter for one purchase. It catches typos
+          like £450 instead of £4.50. Between £1 and £1,000.
+        </Text>
+        <Field value={cap} onChangeText={setCap} placeholder="e.g. 200" keyboardType="number-pad" />
+        <PrimaryButton label="Save limit" onPress={() => void saveCap()} busy={saving} />
+      </Section>
+      <Text style={styles.sectionTitle}>Manual entries, last 7 days</Text>
+      {entries.length ? (
+        entries.map((entry) => (
+          <View key={entry.id} style={styles.listCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.listTitle}>{pounds(entry.value)}</Text>
+              <Text style={styles.muted}>
+                {new Date(entry.created_at).toLocaleString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Undo ${pounds(entry.value)}`}
+              onPress={() => undo(entry)}
+              style={styles.iconButton}
+            >
+              <Text style={{ color: orange, fontWeight: "800" }}>Undo</Text>
+            </Pressable>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.empty}>No manual entries in the last 7 days.</Text>
+      )}
+    </>
+  );
+}
+
 function RewardsPage({
   business,
   onBack,
@@ -1012,6 +1140,9 @@ function RewardsPage({
           busy={savingSignup}
         />
       </Section>
+      {business.reward_model === "spend_threshold" && !preview ? (
+        <ManualSpendSettings business={business} onBusinessChanged={onBusinessChanged} />
+      ) : null}
     </View>
   );
 }

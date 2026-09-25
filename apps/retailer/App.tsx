@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -138,6 +138,9 @@ type Business = {
     signup_reward_title?: string;
     stamp_icon?: string;
   };
+  reward_model?: "stamp_legacy" | "spend_threshold";
+  reward_threshold_pence?: number | null;
+  manual_spend_max_pence?: number;
 };
 type StaffBusiness = {
   business_id: string;
@@ -336,6 +339,68 @@ function Button({
 }
 
 const WEB_ORIGIN = "https://www.the-loyalty-loop.com";
+
+type CardLinkStatus = { linked: boolean; manualToday: number; nextAllowedAt: string | null };
+
+type SpendSummary = CardLinkStatus & {
+  rewardModel: string;
+  member: boolean;
+  progressPence: number | null;
+  redemptionBlocked: boolean;
+  thresholdPence: number | null;
+  manualMaxPence: number;
+};
+type RecentSpend = { id: string; value: number; created_at: string };
+
+const pounds = (pence: number) => `£${(pence / 100).toFixed(2)}`;
+
+// Idempotency key for one purchase entry: a retry after a dropped connection
+// reuses it, so the server never credits the same purchase twice. Not a secret.
+function newClientRef(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+// Refusals from record_manual_spend / undo_manual_spend (ARCH_PLAN.md §4.10).
+function spendRefusal(error: { message?: string; details?: string } | null): string | null {
+  const message = error?.message ?? "";
+  if (message.includes("amount_out_of_range")) {
+    const cap = Number(error?.details);
+    return Number.isFinite(cap) && cap > 0
+      ? `Each entry can be at most ${pounds(cap)}. The shop owner can change this limit.`
+      : "That amount is outside this shop's limit.";
+  }
+  if (message.includes("not_a_member")) return "This customer hasn't joined your shop yet. Ask them to join it in the app first.";
+  if (message.includes("shop_not_spend_based")) return "This shop isn't using spend rewards yet.";
+  if (message.includes("too_late")) return "It's too late to undo this entry. Ask the shop owner, who can undo entries for 7 days.";
+  if (message.includes("already_undone")) return "This entry has already been undone.";
+  if (message.includes("not_allowed")) return "You don't have permission to do this.";
+  return manualEntryRefusal(error);
+}
+
+// The database refuses some manual entries for customers with a linked card
+// (CARD_LINKING_PLAN.md §3.6). Turn its error codes into staff-friendly copy.
+function manualEntryRefusal(error: { message?: string; details?: string } | null): string | null {
+  const message = error?.message ?? "";
+  if (message.includes("manual_daily_limit_reached")) {
+    return "This customer has had 3 manual entries here today.";
+  }
+  if (message.includes("manual_too_soon")) {
+    const at = error?.details ? new Date(error.details) : null;
+    const time = at && !Number.isNaN(at.getTime())
+      ? at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" })
+      : null;
+    return time
+      ? `The next manual entry for this customer is allowed at ${time}.`
+      : "Manual entries for this customer must be at least 30 minutes apart.";
+  }
+  if (message.includes("linked_customer_payment_method_required")) {
+    return "Choose how the customer paid.";
+  }
+  return null;
+}
 
 function Auth({ onSession }: { onSession: (session: Session) => void }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -584,6 +649,23 @@ function StampsScreen({
   const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Whether the scanned customer has a linked card that earns automatically at
+  // this shop. If so, staff are asked how they paid before a manual entry.
+  const [linkStatus, setLinkStatus] = useState<CardLinkStatus | null>(null);
+  const [askPayment, setAskPayment] = useState(false);
+  // Spend-threshold shops record a £ amount instead of stamps (ARCH_PLAN.md §4.10).
+  const spendShop = business.reward_model === "spend_threshold";
+  const [amountPence, setAmountPence] = useState(0);
+  const [spendSummary, setSpendSummary] = useState<SpendSummary | null>(null);
+  const [recentSpend, setRecentSpend] = useState<RecentSpend[]>([]);
+  const [lastSpendMessage, setLastSpendMessage] = useState<string | null>(null);
+  const spendRef = useRef<string | null>(null);
+  const [nowTick, setNowTick] = useState(Date.now());
+  useEffect(() => {
+    if (!spendShop) return;
+    const timer = setInterval(() => setNowTick(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, [spendShop]);
   // How the current customer was found. Only camera scans return to the camera
   // afterwards; a typed short code stays on the code entry (otherwise awarding
   // after a code lookup unexpectedly opened the camera).
@@ -630,6 +712,148 @@ function StampsScreen({
     setActiveReward(null);
     setCode("");
     setAmount(1);
+    setLinkStatus(null);
+    setAskPayment(false);
+    setAmountPence(0);
+    setSpendSummary(null);
+    spendRef.current = null;
+  }
+
+  async function loadSpendSummary(userId: string) {
+    const { data, error } = await supabase.rpc("scanned_member_spend_summary", {
+      _customer_id: userId,
+      _business_id: business.id,
+    });
+    if (error || !data) {
+      setSpendSummary(null);
+      setLinkStatus(null);
+      return;
+    }
+    const summary = data as SpendSummary;
+    setSpendSummary(summary);
+    setLinkStatus({ linked: summary.linked, manualToday: summary.manualToday, nextAllowedAt: summary.nextAllowedAt });
+  }
+
+  // This staff member's own entries from the last 10 minutes, which they can undo.
+  const loadRecentSpend = useCallback(async () => {
+    if (!spendShop) return;
+    const { data: auth } = await supabase.auth.getUser();
+    const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from("transactions")
+      .select("id,value,created_at")
+      .eq("business_id", business.id)
+      .eq("type", "spend")
+      .eq("recorded_by", auth.user?.id ?? "")
+      .is("voided_at", null)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setRecentSpend((data || []) as RecentSpend[]);
+  }, [business.id, spendShop]);
+  useEffect(() => { void loadRecentSpend(); }, [loadRecentSpend]);
+
+  function pressKey(key: string) {
+    setAmountPence((current) => {
+      if (key === "back") return Math.floor(current / 10);
+      if (key === "clear") return 0;
+      const next = current * 10 + Number(key);
+      const cap = spendSummary?.manualMaxPence ?? business.manual_spend_max_pence ?? 20000;
+      return next > cap ? current : next;
+    });
+  }
+
+  async function submitSpend(paymentMethod?: "cash" | "unlinked_card") {
+    if (!matched || amountPence < 1) return;
+    if (linkStatus?.linked && !paymentMethod) {
+      setAskPayment(true);
+      return;
+    }
+    setAskPayment(false);
+    const cap = spendSummary?.manualMaxPence ?? business.manual_spend_max_pence ?? 20000;
+    const name = matched.first_name || "this customer";
+    const confirmed = await new Promise<boolean>((resolve) => {
+      const big = amountPence * 2 >= cap;
+      Alert.alert(
+        big ? `${pounds(amountPence)} — is that right?` : `Add ${pounds(amountPence)} for ${name}?`,
+        big ? `That's a large amount for one purchase. Check it before adding it for ${name}.` : undefined,
+        [
+          { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+          { text: `Add ${pounds(amountPence)}`, onPress: () => resolve(true) },
+        ],
+      );
+    });
+    if (!confirmed) return;
+    spendRef.current = spendRef.current ?? newClientRef();
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("record_manual_spend", {
+        _business_id: business.id,
+        _customer_id: matched.id,
+        _amount_pence: amountPence,
+        _payment_method: paymentMethod ?? null,
+        _client_ref: spendRef.current,
+      });
+      const refusal = spendRefusal(error);
+      if (refusal) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        Alert.alert("Can’t add this purchase", refusal);
+        spendRef.current = null;
+        void loadSpendSummary(matched.id);
+        return;
+      }
+      if (error) throw error;
+      spendRef.current = null;
+      const result = data as { progressPence: number; thresholdPence: number; rewardsEarned: number | null };
+      const left = Math.max(0, result.thresholdPence - result.progressPence);
+      setLastSpendMessage(
+        result.rewardsEarned
+          ? `${pounds(amountPence)} added. ${name} earned ${result.rewardsEarned === 1 ? "a reward" : `${result.rewardsEarned} rewards`}!`
+          : `${pounds(amountPence)} added. ${name} is ${pounds(left)} from a reward.`,
+      );
+      void supabase.functions.invoke("send-user-push", { body: { business_id: business.id, user_id: matched.id } });
+      void supabase.functions.invoke("update-wallet-pass", { body: { business_id: business.id, user_id: matched.id } });
+      void loadRecentSpend();
+      setShowSuccess(true);
+    } catch (e) {
+      // spendRef is kept, so trying again cannot credit the purchase twice.
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Could not add purchase", e instanceof Error ? e.message : "Check the connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function undoSpend(entry: RecentSpend) {
+    Alert.alert(`Undo ${pounds(entry.value)}?`, "This takes the amount back off the customer's progress.", [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Undo",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase.rpc("undo_manual_spend", { _transaction_id: entry.id, _reason: "Undone by staff" });
+          const refusal = spendRefusal(error);
+          if (refusal || error) Alert.alert("Could not undo", refusal ?? error?.message ?? "Please try again.");
+          else setLastSpendMessage(`${pounds(entry.value)} undone.`);
+          void loadRecentSpend();
+        },
+      },
+    ]);
+  }
+
+  function choosePayment(method: "cash" | "unlinked_card") {
+    if (spendShop) void submitSpend(method);
+    else void award(method);
+  }
+
+  async function loadLinkStatus(userId: string) {
+    const { data, error } = await supabase.rpc("customer_card_link_status", {
+      _customer_id: userId,
+      _business_id: business.id,
+    });
+    // On any error, behave as before (no payment question). The database
+    // still enforces the rule and award() explains any refusal.
+    setLinkStatus(error || !data ? null : (data as CardLinkStatus));
   }
 
   // After a successful award/redeem, show the checkmark confirmation first;
@@ -642,6 +866,7 @@ function StampsScreen({
   }
 
   async function loadMemberDetails(userId: string) {
+    void (spendShop ? loadSpendSummary(userId) : loadLinkStatus(userId));
     const [{ data: memberRows }, { data: rewardRows }] = await Promise.all([
       supabase.rpc("get_scanned_member_details", { _business_id: business.id, _user_id: userId }),
       supabase
@@ -759,8 +984,13 @@ function StampsScreen({
       setBusy(false);
     }
   }
-  async function award() {
+  async function award(paymentMethod?: "cash" | "unlinked_card") {
     if (!matched) return;
+    if (linkStatus?.linked && !paymentMethod) {
+      setAskPayment(true);
+      return;
+    }
+    setAskPayment(false);
     const value = Math.max(1, amount);
     setBusy(true);
     try {
@@ -769,7 +999,19 @@ function StampsScreen({
         business_id: business.id,
         type: "stamp",
         value,
+        ...(paymentMethod ? { manual_payment_method: paymentMethod } : {}),
       });
+      const refusal = manualEntryRefusal(error);
+      if (refusal) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        Alert.alert("Can’t add this entry", refusal);
+        if (error?.message?.includes("linked_customer_payment_method_required")) {
+          setLinkStatus((current) => ({ manualToday: 0, nextAllowedAt: null, ...current, linked: true }));
+          setAskPayment(true);
+        }
+        void loadLinkStatus(matched.id);
+        return;
+      }
       if (error) throw error;
       void supabase.functions.invoke("send-visit-thank-you", {
         body: { business_id: business.id, user_id: matched.id, amount: value },
@@ -825,7 +1067,7 @@ function StampsScreen({
   return (
     <View>
       <Text style={styles.pageKicker}>QUICK ACTION</Text>
-      <Text style={styles.pageTitle}>Stamps</Text>
+      <Text style={styles.pageTitle}>{spendShop ? "Record a purchase" : "Stamps"}</Text>
       <View style={[styles.segment, { marginTop: 18 }]}>
         {(["stamps", "reward"] as const).map((value) => (
           <Pressable
@@ -842,7 +1084,7 @@ function StampsScreen({
                 mode === value && styles.segmentTextActive,
               ]}
             >
-              {value === "stamps" ? "Stamps" : "Reward"}
+              {value === "stamps" ? (spendShop ? "Purchase" : "Stamps") : "Reward"}
             </Text>
           </Pressable>
         ))}
@@ -862,7 +1104,12 @@ function StampsScreen({
         </View>
       ) : (
         <>
-          {mode === "stamps" && (
+          {lastSpendMessage && spendShop && mode === "stamps" ? (
+            <Pressable onPress={() => setLastSpendMessage(null)} style={styles.spendBanner}>
+              <Text style={styles.spendBannerText}>{lastSpendMessage}</Text>
+            </Pressable>
+          ) : null}
+          {mode === "stamps" && !spendShop && (
             <View style={styles.stepper}>
               <Pressable
                 onPress={() => setAmount((a) => Math.max(1, a - 1))}
@@ -936,9 +1183,48 @@ function StampsScreen({
           {matched && (
             <ScanMatchCard key={matched.id}>
             <View style={styles.card}>
-              {mode === "stamps" ? (
+              {mode === "stamps" && spendShop ? (
+                <View>
+                  {spendSummary && spendSummary.thresholdPence ? (
+                    <Text style={styles.spendProgress}>
+                      {(matched.first_name || "Customer")}: {pounds(Math.max(0, spendSummary.progressPence ?? 0))} of {pounds(spendSummary.thresholdPence)}
+                      {spendSummary.redemptionBlocked ? " · reward paused" : ""}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.spendAmount} accessibilityLabel={`Amount ${pounds(amountPence)}`}>{pounds(amountPence)}</Text>
+                  <Text style={styles.spendCap}>
+                    Up to {pounds(spendSummary?.manualMaxPence ?? business.manual_spend_max_pence ?? 20000)} per entry
+                  </Text>
+                  <View style={styles.keypad}>
+                    {["1", "2", "3", "4", "5", "6", "7", "8", "9", "clear", "0", "back"].map((key) => (
+                      <Pressable
+                        key={key}
+                        onPress={() => pressKey(key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={key === "back" ? "Delete last digit" : key === "clear" ? "Clear amount" : key}
+                        style={({ pressed }) => [styles.keypadKey, pressed && styles.pressed]}
+                      >
+                        <Text style={styles.keypadKeyText}>{key === "back" ? "⌫" : key === "clear" ? "C" : key}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Pressable
+                    onPress={() => void submitSpend()}
+                    disabled={busy || amountPence < 1}
+                    style={({ pressed }) => [
+                      styles.bigActionButton,
+                      pressed && styles.pressed,
+                      (busy || amountPence < 1) && styles.disabled,
+                    ]}
+                  >
+                    <Text style={styles.bigActionButtonText}>
+                      {busy ? "Adding…" : amountPence ? `Add ${pounds(amountPence)}` : "Type the amount"}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : mode === "stamps" ? (
                 <Pressable
-                  onPress={award}
+                  onPress={() => void award()}
                   disabled={busy}
                   style={({ pressed }) => [
                     styles.bigActionButton,
@@ -1003,6 +1289,48 @@ function StampsScreen({
           )}
         </>
       )}
+      {spendShop && mode === "stamps" && recentSpend.length > 0 ? (
+        <View style={styles.card}>
+          <Text style={styles.section}>Your recent entries</Text>
+          {recentSpend.map((entry) => {
+            const ageMs = nowTick - new Date(entry.created_at).getTime();
+            const minutesLeft = Math.max(0, Math.ceil((10 * 60 * 1000 - ageMs) / 60000));
+            return (
+              <View key={entry.id} style={styles.recentRow}>
+                <Text style={styles.recentAmount}>{pounds(entry.value)}</Text>
+                <Text style={styles.recentTime}>
+                  {new Date(entry.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+                {minutesLeft > 0 ? (
+                  <Pressable onPress={() => undoSpend(entry)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Undo ${pounds(entry.value)}`}>
+                    <Text style={styles.recentUndo}>Undo · {minutesLeft} min</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+      <Sheet visible={askPayment} onClose={() => setAskPayment(false)} dragArea="full" sheetStyle={styles.paySheet}>
+        <SafeAreaView edges={["bottom"]}>
+          <View style={styles.paySheetHandle} />
+          <Text style={styles.paySheetTitle}>This customer has a linked card</Text>
+          <Text style={styles.paySheetCopy}>
+            If they paid with it, their reward updates automatically, so there’s nothing to do.
+          </Text>
+          <Text style={styles.paySheetQuestion}>How did they pay?</Text>
+          <View style={styles.paySheetButtons}>
+            <Button title="Cash" onPress={() => choosePayment("cash")} disabled={busy} />
+            <Button title="A different card" onPress={() => choosePayment("unlinked_card")} disabled={busy} />
+            <Button title="They used their linked card" secondary onPress={() => setAskPayment(false)} disabled={busy} />
+          </View>
+          {linkStatus && linkStatus.manualToday > 0 ? (
+            <Text style={styles.paySheetNote}>
+              {linkStatus.manualToday} of 3 manual entries used today for this customer.
+            </Text>
+          ) : null}
+        </SafeAreaView>
+      </Sheet>
       <SuccessCheck visible={showSuccess} onFinished={finishAfterSuccess} />
     </View>
   );
@@ -3169,6 +3497,25 @@ const styles = StyleSheet.create({
   },
   matchTitle: { fontSize: 17, fontWeight: "800", color: green },
   cameraSheet: { flex: 1 },
+  spendBanner: { backgroundColor: "#e0f2e4", borderRadius: 18, padding: 14, marginTop: 16 },
+  spendBannerText: { color: "#1f5c33", fontSize: 15, fontWeight: "800", textAlign: "center" },
+  spendProgress: { color: "#657060", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
+  spendAmount: { fontSize: 46, fontWeight: "900", color: green, textAlign: "center", marginTop: 4 },
+  spendCap: { color: "#8a8378", fontSize: 13, textAlign: "center", marginBottom: 12 },
+  keypad: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginBottom: 14 },
+  keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center" },
+  keypadKeyText: { fontSize: 24, fontWeight: "800", color: green },
+  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.12)" },
+  recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80 },
+  recentTime: { flex: 1, color: "#8a8378", fontSize: 14 },
+  recentUndo: { color: orange, fontSize: 14, fontWeight: "800" },
+  paySheet: { backgroundColor: cream, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
+  paySheetHandle: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.18)", marginBottom: 16 },
+  paySheetTitle: { fontSize: 21, fontWeight: "900", color: green },
+  paySheetCopy: { color: "#657060", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
+  paySheetQuestion: { fontSize: 16, fontWeight: "800", color: green, marginTop: 18 },
+  paySheetButtons: { gap: 10, marginTop: 12 },
+  paySheetNote: { color: "#8a8378", fontSize: 13, textAlign: "center", marginTop: 12 },
   cameraWrap: { flex: 1, padding: 20, backgroundColor: "#111" },
   cameraTitle: {
     color: "#fff",
