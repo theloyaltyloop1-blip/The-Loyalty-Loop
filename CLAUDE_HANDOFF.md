@@ -3373,6 +3373,32 @@ Product owner said "do the next step". Merged `origin/main` (17 commits) into lo
 
 Remaining: device/browser smoke test of owner Settings → Rewards, Scan → record £ purchase, and a customer shop page. Remaining issue 1 in the previous entry is resolved.
 
+## App Store review: both apps sent back (2026-09-27) — Claude, product owner asked
+
+Live App Store Connect API check: both iOS apps' version 1.0 are `REJECTED`. The 2026-09-22 submissions (shopper build 8, retailer build 3) are `UNRESOLVED_ISSUES`, which makes three sends-back per app. Earlier rejection reasons were never recorded.
+
+Retailer message (pasted by the product owner): **Guideline 2.1(b) Information Needed**, reviewed 2026-09-26 on iPad Air 11-inch (M3). Apple asks five business-model questions because the app "may access paid digital content or services". Likely triggers: the retailer sign-in screen links to `/help` (`apps/retailer/App.tsx:536`), which said "Shops pay a small subscription" and "Contact us for current subscription pricing". The listing also ended "Free to get started." Code check: no billing or payment code exists and nothing is gated by plan. AI coach, report and summary have only per-account fair-use daily caps (100/10/50). **Product owner confirmed the service is free** for shops.
+
+Shopper message: not yet seen. The product owner needs to paste it from the Resolution Center.
+
+What changed (local, not yet pushed or deployed):
+- `apps/web/src/pages/Help.tsx`: removed the shop-subscription wording. Shopper FAQ is now "completely free, with no ads…". Business "How much does it cost?" is now "Nothing… free to use, with no subscriptions or in-app purchases."
+- `apps/retailer/store.config.json`: description, release notes and promo text no longer say stamps, points or visit-based (stale since the 2026-09-25 switchover; a 2.3.1 accurate-metadata risk). The description now describes £ spend rewards and announcements, and ends "Free to use, with no subscriptions or in-app purchases."
+- `apps/shopper/store.config.json`: subtitle "Loyalty cards for local shops"; description, release notes and promo text rewritten from stamps to spend. Keywords unchanged.
+- Legal PDFs checked: the merchant agreement already says core services are free unless a fee is shown. No change.
+
+Checks actually performed: `eas metadata:lint` passes for both apps. Field lengths OK (subtitles 29, promo 136/125). Help.tsx change is string-only; no web build run yet. Local `main` level with `origin/main` before these edits.
+
+Remaining issues:
+1. The edits need a product-owner OK to push (the website deploys from GitHub `main`) and to run `eas metadata:push` for both apps. The 2.1(b) reply claims the wording was removed, so send it only after both are live.
+2. The product owner sends the 2.1(b) reply in App Store Connect (web only; draft given in chat).
+3. The shopper rejection reason is unknown.
+4. The iOS roadmap artifact is stale (says 12 Sep).
+
+Next actions:
+- Product owner: approve the push and metadata push; paste the shopper Resolution Center message; send the retailer reply once changes are live.
+- Claude: on approval, commit, push, verify the live `/help`, run `eas metadata:push` in both apps and confirm in ASC; then address the shopper message.
+
 ## Copy-ready prompt for Claude Code
 
 Read CLAUDE_HANDOFF.md, ARCH_PLAN.md §2/§4.2, CARD_LINKING_PLAN.md, IMPLEMENTATION_TIMELINE.md and docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md. Review and disposition R1–R9; design additive fixes and give Codex the exact first local implementation task for R1–R3. Acceptance: recovery cannot undo removal; claim/unlink/sweep/account deletion cannot race; historical clearing/refunds retain purchase ownership after unlink/relink; rejected provider cards have durable cleanup. Address activation, manual retry/undo and UI findings in subsequent tasks. Review docs/PAYMENT_PROVIDER_RESEARCH_2026-09-25.md as a conditional proposal, not approval to integrate. Update the handoff after each item. No product-owner input is required for this review. Do not deploy, change secrets/settings/live data, create fixtures, contact providers or trigger/replay transactions.

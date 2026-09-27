@@ -28,7 +28,7 @@ const SHOPPER_ITEMS: Item[] = [
   },
   {
     q: 'Is it free?',
-    a: 'Yes, completely free for shoppers, with no ads. Shops pay a small subscription; you never pay anything and we don’t sell your data.',
+    a: 'Yes, completely free, with no ads, and we don’t sell your data.',
   },
   {
     q: 'What happens to my existing paper cards?',
@@ -59,7 +59,7 @@ const BUSINESS_ITEMS: Item[] = [
   },
   {
     q: 'How much does it cost?',
-    a: 'It’s free to get started. Contact us for current subscription pricing for your business.',
+    a: 'Nothing. The Loyalty Loop for Business is free to use, with no subscriptions or in‑app purchases.',
   },
 ]
 
