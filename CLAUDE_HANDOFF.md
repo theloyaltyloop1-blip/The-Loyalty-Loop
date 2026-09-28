@@ -3410,7 +3410,7 @@ What changed:
 - iOS build 10 of both apps built on EAS and auto-uploaded. ASC processingState `VALID` for both. The first two upload attempts failed (network reset / session ended) and never created EAS builds.
 
 Remaining issues:
-1. Attach build 10 to each app's 1.0 version and submit both for review. The product owner asked for upload only so far; confirm before submitting. Shopper reviewer note: the two apps now have different icons.
+1. Build 10 attached to both 1.0 versions via ASC API (read back: shopper READY_FOR_REVIEW, business PREPARE_FOR_SUBMISSION). Not submitted for review yet; confirm with the product owner first. Shopper reviewer note: the two apps now have different icons.
 2. Android apps pick up the new business icon only at the next Play build.
 3. iOS roadmap artifact still stale.
 
