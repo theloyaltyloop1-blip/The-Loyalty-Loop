@@ -2,10 +2,14 @@
   "configVersion": 0,
   "apple": {
     "version": "1.0",
+    "copyright": "2026 Cotech Software Consultants",
     "release": {
       "automaticRelease": true
     },
-    "categories": ["LIFESTYLE", "SHOPPING"],
+    "categories": [
+      "LIFESTYLE",
+      "SHOPPING"
+    ],
     "info": {
       "en-GB": {
         "title": "The Loyalty Loop",

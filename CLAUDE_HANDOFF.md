@@ -3409,10 +3409,15 @@ What changed:
 - Retailer 2.1(b) reply sent in the Resolution Center (Chrome, product owner signed in, approved the text) on 2026-09-28 20:04. All five answers are present, but the browser duplicated the tail of answer 4, answer 5 and "Thank you" at the end. The message can't be edited. The product owner was offered a one-line follow-up.
 - iOS build 10 of both apps built on EAS and auto-uploaded. ASC processingState `VALID` for both. The first two upload attempts failed (network reset / session ended) and never created EAS builds.
 
+- **Both apps submitted for review 2026-09-28** with build 10 (ASC read-back: both versions and submissions `WAITING_FOR_REVIEW`). Shopper was submitted via the API (PATCH reviewSubmissions submitted=true). The business app was refused by the API ("Version is not ready"). The real blocker was an empty **copyright** field, which the website showed. After setting it, it was resubmitted through the website (Update Review → Resubmit to App Review, in the same submission thread as the 2.1(b) reply).
+- Found and fixed before submitting: the business app's **primary locale is en-US**, and that listing still had the old stamp text without "completely free". Only en-GB had been updated. en-US now matches en-GB (ASC API PATCH, read back). `apps/retailer/store.config.json` now has an `en-US` block, and both configs have `copyright: "2026 Cotech Software Consultants"`, so future `eas metadata:push` keeps them. `metadata:lint` passes.
+- Reviewer notes on both versions were rewritten from stamps to £ spend and mention the icon change. The demo accounts' live data was **not** checked (production read blocked in this session). The notes avoid specific numbers.
+
 Remaining issues:
-1. Build 10 attached to both 1.0 versions via ASC API (read back: shopper READY_FOR_REVIEW, business PREPARE_FOR_SUBMISSION). Not submitted for review yet; confirm with the product owner first. Shopper reviewer note: the two apps now have different icons.
-2. Android apps pick up the new business icon only at the next Play build.
-3. iOS roadmap artifact still stale.
+1. Wait for Apple's decision. If either app is rejected, paste the Resolution Center message.
+2. Confirm the demo review accounts (Demo Cafe / Demo Shop) show sensible £-spend data after the 2026-09-25 switchover (needs a production read or a sign-in).
+3. Android apps pick up the new business icon only at the next Play build.
+4. iOS roadmap artifact still stale.
 
 ## Copy-ready prompt for Claude Code
 

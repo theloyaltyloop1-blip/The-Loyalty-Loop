@@ -2,11 +2,35 @@
   "configVersion": 0,
   "apple": {
     "version": "1.0",
+    "copyright": "2026 Cotech Software Consultants",
     "release": {
       "automaticRelease": true
     },
-    "categories": ["BUSINESS", "PRODUCTIVITY"],
+    "categories": [
+      "BUSINESS",
+      "PRODUCTIVITY"
+    ],
     "info": {
+      "en-US": {
+        "title": "The Loyalty Loop for Business",
+        "subtitle": "Loyalty rewards for your shop",
+        "description": "The Loyalty Loop for Business is the easiest way to run a loyalty programme for your cafe, salon, bakery or shop - no card printer, no extra hardware.\n\nWHAT YOU CAN DO\n- Record a visit in seconds: scan the customer's code or type it in, then enter what they spent\n- Set your own rewards: \"spend £20, get a free coffee\", with bigger rewards at higher amounts\n- See what's working: visits, repeat-visit rate, rewards and reviews in one view\n- Share news: send announcements to your members\n- Personalised AI coach: weekly wins, watch-outs and next steps based on your data\n- Deep AI Business Report: summarise your reviews, spot red flags, and get growth ideas\n- Get discovered: your shop appears on the map in the customer app\n\nSetup takes minutes - add your address, pin your location on the map, write a short description, and you're live to nearby shoppers.\n\nCompletely free to use, with no subscriptions, fees or in-app purchases.",
+        "keywords": [
+          "loyalty program",
+          "rewards",
+          "stamp card",
+          "customer retention",
+          "small business",
+          "repeat customers",
+          "retail",
+          "cafe"
+        ],
+        "releaseNotes": "The first release of The Loyalty Loop for Business. Set up spend-based rewards, record visits with a scan, and track what drives repeat visits.",
+        "promoText": "Run a completely free digital loyalty programme in minutes. Record visits with a scan, reward customers for what they spend, and get weekly AI coaching.",
+        "marketingUrl": "https://www.the-loyalty-loop.com",
+        "supportUrl": "https://www.the-loyalty-loop.com/help",
+        "privacyPolicyUrl": "https://www.the-loyalty-loop.com/legal/privacy-notice.pdf"
+      },
       "en-GB": {
         "title": "The Loyalty Loop for Business",
         "subtitle": "Loyalty rewards for your shop",
