@@ -3399,6 +3399,23 @@ Next actions:
 - Product owner: approve the push and metadata push; paste the shopper Resolution Center message; send the retailer reply once changes are live.
 - Claude: on approval, commit, push, verify the live `/help`, run `eas metadata:push` in both apps and confirm in ASC; then address the shopper message.
 
+## Business app icon, store text and new iOS builds (2026-09-28) — Claude, product owner asked
+
+Shopper rejection reason (from the product owner): both iOS apps used the same icon (`apps/*/assets/icon.png` were byte-identical).
+
+What changed:
+- `apps/retailer/assets/*` + `apps/retailer/app.json`: business app now uses the product owner's new logo (supplied 480×480, upscaled to 1024) on light cream `#FDF8EA` for icon, splash, Android adaptive icons and favicon. Shopper icon unchanged. Commit `fe3d46d`, pushed to `main`. (A recoloured dark-green variant was tried and rejected by the product owner. Use supplied logos as-is.)
+- Store text live at Apple: retailer via `eas metadata:push` (succeeded). Shopper `eas metadata:push` failed because version 1.0 is `READY_FOR_REVIEW`, which EAS doesn't treat as editable. Patched shopper en-GB description, keywords, promo text, URLs, name and subtitle directly via the ASC API; read back and matched `store.config.json`. Release notes were not set (first version).
+- ASC state before builds: shopper 1.0 `READY_FOR_REVIEW`, retailer 1.0 `REJECTED`; latest builds shopper 8, retailer 3 (highest 5).
+- iOS production builds started for both apps with `--auto-submit` (upload to ASC only, not submitted for review). Build number auto-increments to 10.
+
+Remaining issues:
+1. Confirm both builds finish and process in ASC.
+2. Attach build 10 to each 1.0 version and submit for review. The product owner asked for upload only; confirm before submitting. Add a reviewer note on the shopper app saying the icons now differ.
+3. Product owner sends the retailer 2.1(b) answers in the Resolution Center (draft given in chat 2026-09-27/28). Store text is now live, so the "wording removed" claim is true.
+4. The Android apps pick up the new business icon only at the next Play build.
+5. The iOS roadmap artifact is still stale.
+
 ## Copy-ready prompt for Claude Code
 
 Read CLAUDE_HANDOFF.md, ARCH_PLAN.md §2/§4.2, CARD_LINKING_PLAN.md, IMPLEMENTATION_TIMELINE.md and docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md. Review and disposition R1–R9; design additive fixes and give Codex the exact first local implementation task for R1–R3. Acceptance: recovery cannot undo removal; claim/unlink/sweep/account deletion cannot race; historical clearing/refunds retain purchase ownership after unlink/relink; rejected provider cards have durable cleanup. Address activation, manual retry/undo and UI findings in subsequent tasks. Review docs/PAYMENT_PROVIDER_RESEARCH_2026-09-25.md as a conditional proposal, not approval to integrate. Update the handoff after each item. No product-owner input is required for this review. Do not deploy, change secrets/settings/live data, create fixtures, contact providers or trigger/replay transactions.
