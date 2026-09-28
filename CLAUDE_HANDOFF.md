@@ -3399,22 +3399,20 @@ Next actions:
 - Product owner: approve the push and metadata push; paste the shopper Resolution Center message; send the retailer reply once changes are live.
 - Claude: on approval, commit, push, verify the live `/help`, run `eas metadata:push` in both apps and confirm in ASC; then address the shopper message.
 
-## Business app icon, store text and new iOS builds (2026-09-28) — Claude, product owner asked
+## Business app icon, store text, Apple reply and new iOS builds (2026-09-28) — Claude, product owner asked
 
 Shopper rejection reason (from the product owner): both iOS apps used the same icon (`apps/*/assets/icon.png` were byte-identical).
 
 What changed:
-- `apps/retailer/assets/*` + `apps/retailer/app.json`: business app now uses the product owner's new logo (supplied 480×480, upscaled to 1024) on light cream `#FDF8EA` for icon, splash, Android adaptive icons and favicon. Shopper icon unchanged. Commit `fe3d46d`, pushed to `main`. (A recoloured dark-green variant was tried and rejected by the product owner. Use supplied logos as-is.)
-- Store text live at Apple: retailer via `eas metadata:push` (succeeded). Shopper `eas metadata:push` failed because version 1.0 is `READY_FOR_REVIEW`, which EAS doesn't treat as editable. Patched shopper en-GB description, keywords, promo text, URLs, name and subtitle directly via the ASC API; read back and matched `store.config.json`. Release notes were not set (first version).
-- ASC state before builds: shopper 1.0 `READY_FOR_REVIEW`, retailer 1.0 `REJECTED`; latest builds shopper 8, retailer 3 (highest 5).
-- iOS production builds started for both apps with `--auto-submit` (upload to ASC only, not submitted for review). Build number auto-increments to 10.
+- Business app now uses the product owner's new logo (supplied 480×480, upscaled to 1024) on light cream `#FDF8EA` for icon, splash, Android adaptive icons and favicon. Shopper icon unchanged. Commit `fe3d46d`. (A recoloured dark-green variant was tried and rejected by the product owner. Use supplied logos as-is.)
+- Both store listings now say "completely free" (description + promo text). Commit `dff5876`. Live at Apple: retailer via `eas metadata:push`. Shopper via direct ASC API PATCH, because its 1.0 is `READY_FOR_REVIEW` and `eas metadata:push` then tries to create a new version and fails. Read back and matched `store.config.json`.
+- Retailer 2.1(b) reply sent in the Resolution Center (Chrome, product owner signed in, approved the text) on 2026-09-28 20:04. All five answers are present, but the browser duplicated the tail of answer 4, answer 5 and "Thank you" at the end. The message can't be edited. The product owner was offered a one-line follow-up.
+- iOS build 10 of both apps built on EAS and auto-uploaded. ASC processingState `VALID` for both. The first two upload attempts failed (network reset / session ended) and never created EAS builds.
 
 Remaining issues:
-1. Confirm both builds finish and process in ASC.
-2. Attach build 10 to each 1.0 version and submit for review. The product owner asked for upload only; confirm before submitting. Add a reviewer note on the shopper app saying the icons now differ.
-3. Product owner sends the retailer 2.1(b) answers in the Resolution Center (draft given in chat 2026-09-27/28). Store text is now live, so the "wording removed" claim is true.
-4. The Android apps pick up the new business icon only at the next Play build.
-5. The iOS roadmap artifact is still stale.
+1. Attach build 10 to each app's 1.0 version and submit both for review. The product owner asked for upload only so far; confirm before submitting. Shopper reviewer note: the two apps now have different icons.
+2. Android apps pick up the new business icon only at the next Play build.
+3. iOS roadmap artifact still stale.
 
 ## Copy-ready prompt for Claude Code
 
