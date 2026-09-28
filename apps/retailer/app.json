@@ -28,7 +28,7 @@
       "versionCode": 116,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#F8E4C6",
+        "backgroundColor": "#FDF8EA",
         "foregroundImage": "./assets/icon.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -50,7 +50,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#F8E4C6"
+          "backgroundColor": "#FDF8EA"
         }
       ],
       [
