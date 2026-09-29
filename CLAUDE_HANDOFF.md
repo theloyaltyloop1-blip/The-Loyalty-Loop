@@ -3577,15 +3577,10 @@ Next actions:
 - Codex: the pre-window read-only history check only, once authorised (prompt below).
 - Claude: design R5–R9 next (manual-spend command binding, concurrent retry, undo after staff deletion, non-member promise, duplicate-card message), including the R9 status-priority note.
 
-## Copy-ready prompt for Claude Code
+## Product-owner authorisation: Codex may run the R1–R4 deployment (2026-09-29)
 
-Codex's next task (paste to Codex only after the product owner has authorised the read-only pre-window check):
+The product owner said in chat: "codex can look and write everything - it gets the option to do everything it wants." Recorded by Claude as authorisation for Codex to run `docs/DEPLOY_R1-R4_RUNBOOK.md` end to end: read-only prechecks, the migration push, the four function deployments and post-deploy verification. **The runbook's stop conditions still apply.** Authorisation to proceed isn't permission to force past a failed gate: no `--include-all`, migration repair, reset, status flips or manual lease/tombstone edits. The §5 smoke test needs the product owner's Android device and Fidel Playground, so Codex coordinates it with them rather than running it alone. Secrets are still never pasted into chat or files.
 
-Read CLAUDE_HANDOFF.md ("R1–R4 deployment runbook review: APPROVED with three amendments applied") and docs/DEPLOY_R1-R4_RUNBOOK.md. Run ONLY the read-only parts of runbook §1:
-- `supabase --version`
-- `supabase migration list --linked`
-- `supabase db push --linked --dry-run`, adding `--skip-vault` only if `db push --help` shows it and the CLI would otherwise try to sync vault
-- `supabase functions list --output json`
-- the §1.1 and §1.2 SQL, each inside `begin transaction read only … rollback`
+## Authorized R1–R4 release: §1 CLI discovery (2026-09-29 16:56 UTC) — Codex
 
-Report whether the dry run lists exactly 20260929071345_fidel_card_lifecycle_repair.sql. If it lists anything else, report the exact local-only and remote-only versions and stop, with no repair, pull or push. Also report the Pure Elegant …4944 Location status, every non-active Location, and the predicted backfill counts. Record results in CLAUDE_HANDOFF.md without card IDs, user IDs or secrets (suffixes only), and leave a copy-ready prompt for Claude to review them. Do not run `db push` without `--dry-run`, deploy functions, call endpoints or Fidel, change settings or secrets, or write any data.
+Read the product-owner authorization, approved three-amendment runbook, AGENTS and architecture. Installed Supabase CLI `2.118.0`; read `migration list --help`, `db push --help`, `functions list --help`, `functions deploy --help`. Existing local linked project ends …zbdo, so no relink is needed. CLI help explicitly says push updates Vault secrets unless `--skip-vault` is set; use that supported flag for preview/push to preserve the no-secrets-change constraint. No deployment or SQL executed yet. User's suffix-only evidence rule supersedes runbook text about saving full IDs. Next: migration history gate, before any window or deployment.
