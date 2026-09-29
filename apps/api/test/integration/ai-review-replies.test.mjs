@@ -50,7 +50,7 @@ test('AI review replies: triggers, posting rules, drafts and permissions', { tim
   const { client, newClient, stop } = await startFidelDatabase('ai-review-replies-');
   try {
     await client.query(reviewStubs);
-    for (const name of ['20260929180500_ai_review_replies.sql', '20260929214500_ai_review_replies_hardening.sql', '20260929223000_ai_review_replies_locks_budget.sql']) {
+    for (const name of ['20260929180500_ai_review_replies.sql', '20260929214500_ai_review_replies_hardening.sql', '20260929223000_ai_review_replies_locks_budget.sql', '20260929230000_ai_review_reply_usage_ledger.sql']) {
       await client.query(await readFile(new URL('../../../../supabase/migrations/' + name, import.meta.url), 'utf8'));
     }
     await client.query('grant select, insert, update, delete on all tables in schema public to service_role');
@@ -265,16 +265,57 @@ test('AI review replies: triggers, posting rules, drafts and permissions', { tim
       }
     });
 
-    await t.test('a shop gets at most 100 automatic replies a day', async () => {
+    await t.test('a shop gets at most 100 automatic replies a day, exactly', async () => {
       const x = await setup();
-      // Another review at the same shop has used the whole day's budget.
+      await client.query("insert into public.ai_review_reply_usage(business_id) select $1 from generate_series(1,99)", [x.shop]);
+      assert.equal((await claim(x.review.id)).status, 'claimed', 'the 100th is allowed');
+      const y = await setup();
+      await client.query("insert into public.ai_review_reply_usage(business_id) select $1 from generate_series(1,100)", [y.shop]);
+      assert.equal((await claim(y.review.id)).reason, 'daily_limit', 'the 101st is refused');
+      const owner = await claim(y.review.id, true);
+      assert.equal(owner.status, 'claimed', 'the owner can still ask');
+      await complete(y.review.id, owner.attempt, 'Thank you!', true, false);
+      await client.query("update public.ai_review_reply_usage set created_at=now()-interval '25 hours' where business_id=$1", [y.shop]);
+      await client.query("update public.reviews set body='Again' where id=$1", [y.review.id]);
+      assert.equal((await claim(y.review.id)).status, 'claimed', 'yesterday no longer counts');
+    });
+
+    await t.test('deleting and rewriting a review does not reset the budget', async () => {
+      const x = await setup(2, 'First');
+      for (let i = 1; i <= 3; i++) {
+        const c = await claim(x.review.id);
+        assert.equal(c.status, 'claimed', 'generation ' + i);
+        await complete(x.review.id, c.attempt, 'Sorry ' + i);
+        // The author deletes the review and writes it again.
+        await client.query('delete from public.reviews where id=$1', [x.review.id]);
+        const { rows: [again] } = await client.query('insert into public.reviews(user_id,business_id,rating,body) values($1,$2,2,$3) returning *', [x.customer, x.shop, 'Rewrite ' + i]);
+        x.review = again;
+      }
+      assert.equal((await claim(x.review.id)).reason, 'daily_limit');
+      assert.equal((await client.query('select count(*)::int n from public.ai_review_reply_usage where business_id=$1', [x.shop])).rows[0].n, 3);
+      // Deleting the author's account keeps the shop's usage.
+      await client.query('delete from public.reviews where user_id=$1', [x.customer]);
+      await client.query('delete from public.memberships where user_id=$1', [x.customer]);
+      await client.query('delete from auth.users where id=$1', [x.customer]);
+      assert.equal((await client.query('select count(*)::int n from public.ai_review_reply_usage where business_id=$1 and author_id is null', [x.shop])).rows[0].n, 3);
+    });
+
+    await t.test('two reviews racing for the last shop slot: only one gets it', async () => {
+      const x = await setup();
       const other = randomUUID();
       await client.query('insert into auth.users(id) values($1)', [other]);
       await client.query('insert into public.memberships(user_id,business_id) values($1,$2)', [other, x.shop]);
-      const { rows: [r] } = await client.query('insert into public.reviews(user_id,business_id,rating) values($1,$2,5) returning id', [other, x.shop]);
-      await client.query('update public.review_reply_drafts set auto_window_start=now(), auto_count=100 where review_id=$1', [r.id]);
-      assert.equal((await claim(x.review.id)).reason, 'daily_limit');
-      assert.equal((await claim(x.review.id, true)).status, 'claimed', 'the owner can still ask');
+      const { rows: [second] } = await client.query('insert into public.reviews(user_id,business_id,rating,body) values($1,$2,5,$3) returning id', [other, x.shop, 'Also great']);
+      await client.query("insert into public.ai_review_reply_usage(business_id) select $1 from generate_series(1,99)", [x.shop]);
+      const a = await newClient(), b = await newClient();
+      const results = await Promise.all([
+        as(a, 'service_role', null, 'select public.claim_review_reply_generation($1,false) r', [x.review.id]).then(r => r.rows[0].r),
+        as(b, 'service_role', null, 'select public.claim_review_reply_generation($1,false) r', [second.id]).then(r => r.rows[0].r),
+      ]);
+      assert.deepEqual(results.map(r => r.status).sort(), ['claimed', 'skipped']);
+      assert.equal(results.find(r => r.status === 'skipped').reason, 'daily_limit');
+      assert.equal((await client.query('select count(*)::int n from public.ai_review_reply_usage where business_id=$1', [x.shop])).rows[0].n, 100);
+      await a.end(); await b.end();
     });
 
     await t.test('an edited review gets a fresh reply after an earlier draft', async () => {

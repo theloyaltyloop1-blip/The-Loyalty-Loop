@@ -73,8 +73,10 @@ export function buildVerifierMessages(reply: string, ctx: ReplyContext): Array<{
   ];
 }
 
+// The documented contract is exactly one word, PASS. Only surrounding
+// whitespace is tolerated; anything else counts as a FAIL.
 export function verifierPassed(answer: unknown): boolean {
-  return typeof answer === "string" && answer.trim().replace(/[.!"'\s]/g, "").toUpperCase() === "PASS";
+  return typeof answer === "string" && answer.trim() === "PASS";
 }
 
 const URL_RE = /(https?:\/\/|www\.|\.(com|co\.uk|uk|org|net|io)\b)/i;

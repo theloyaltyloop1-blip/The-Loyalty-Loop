@@ -35,8 +35,8 @@ test('the verifier sees the reply as data and only an exact PASS passes', () => 
   const [system, user] = buildVerifierMessages('Thank you!', context());
   assert.match(system.content, /exactly one word: PASS or FAIL/);
   assert.equal(JSON.parse(user.content).reply, 'Thank you!');
-  for (const ok of ['PASS', ' pass ', 'PASS.']) assert.equal(verifierPassed(ok), true, ok);
-  for (const bad of ['FAIL', 'PASS, but it offers a refund', 'I think PASS', '', null, 'PASSED']) assert.equal(verifierPassed(bad), false, String(bad));
+  for (const ok of ['PASS', ' PASS\n']) assert.equal(verifierPassed(ok), true, ok);
+  for (const bad of ['pass', 'PASS.', 'Pass', 'FAIL', 'PASS, but it offers a refund', 'I think PASS', '', null, 'PASSED']) assert.equal(verifierPassed(bad), false, String(bad));
 });
 
 test('the model is told nothing about the customer', () => {
