@@ -3767,7 +3767,10 @@ Checks run:
 
 Live checks: RPC and table ACLs and both triggers confirmed after the first deploy. The live function returns 400 `invalid_mode` for `mode:"post"` and `skipped/no_review` for an unknown id. `tmp/ai-review-audit/regressions.test.mjs` (Codex's scratch reproducer) was not changed.
 
-Deployed: function (21:32 UTC), migrations `214500` and `223000`. Following this entry: a `main` push (website types only) and a retailer OTA for the polling fix.
+Deployed:
+- function (21:32 UTC) and migrations `214500` and `223000`;
+- `main` `16048a8` → Vercel `dpl_vHzpk2…` READY;
+- retailer OTA on runtime 1.0.0: Android `d477bb10…`, iOS `46e44034…`.
 
 **Still unverified:** real Groq reply and verifier quality (no live review yet). Next actions:
 - Codex re-reviews (prompt below);
