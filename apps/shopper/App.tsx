@@ -317,13 +317,18 @@ type RewardCatalogItem = {
   stamp_threshold: number
   spend_threshold_pence?: number | null
 }
+type ReviewReply = { body: string; created_at: string }
 type ShopReview = {
   id: string
   user_id: string
   rating: number
   body?: string | null
   created_at: string
+  // One reply per review; PostgREST may return it as an object or a one-item list.
+  reply?: ReviewReply | ReviewReply[] | null
 }
+const reviewReply = (review: ShopReview): ReviewReply | null =>
+  Array.isArray(review.reply) ? review.reply[0] ?? null : review.reply ?? null
 type BusinessPhoto = { id: string; url: string; sort_order: number }
 type GalleryPhoto = {
   id: string
@@ -1050,7 +1055,7 @@ function ShopDetail({
       // `reviews_select_visible` RLS policy filters them out server-side.
       const { data, error } = await supabase
         .from('reviews')
-        .select('id,user_id,rating,body,created_at')
+        .select('id,user_id,rating,body,created_at,reply:review_replies(body,created_at)')
         .eq('business_id', business.id)
         .order('created_at', { ascending: false })
       if (error) throw error
@@ -1090,6 +1095,9 @@ function ShopDetail({
         )
       if (error) throw error
       await loadReviews()
+      // The shop's reply (often written by AI within seconds) arrives just
+      // after the review is saved, so look again shortly.
+      for (const delay of [4000, 12000]) setTimeout(() => { void loadReviews() }, delay)
       Alert.alert('Review saved', 'Thank you for sharing your experience.')
     } catch (error) {
       Alert.alert('Could not save review', error instanceof Error ? error.message : 'Please try again.')
@@ -1427,6 +1435,12 @@ function ShopDetail({
                   </View>
                   <Text style={styles.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</Text>
                   {!!review.body && <Text style={styles.reviewBody}>{review.body}</Text>}
+                  {reviewReply(review) && (
+                    <View style={[styles.reviewReply, { borderLeftColor: business.brand_color || primary }]}>
+                      <Text style={styles.reviewReplyTitle}>Reply from {business.name}</Text>
+                      <Text style={styles.reviewBody}>{reviewReply(review)?.body}</Text>
+                    </View>
+                  )}
                   {review.user_id !== userId && (
                     <View style={styles.reviewModRow}>
                       <Pressable onPress={() => reportReview(review)} hitSlop={8}>
@@ -2628,6 +2642,8 @@ const styles = StyleSheet.create({
   reviewDate: { color: '#8a8378', fontSize: 11.5 },
   reviewStars: { color: accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
   reviewBody: { color: '#5c564c', fontSize: 13.5, lineHeight: 20, marginTop: 6 },
+  reviewReply: { marginTop: 10, marginLeft: 6, paddingLeft: 12, borderLeftWidth: 3 },
+  reviewReplyTitle: { color: ink, fontSize: 13, fontWeight: '800' },
   reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   reviewModLink: { color: '#8a8378', fontSize: 12, fontWeight: '600' },
   reviewModDot: { color: '#c9c2b6', fontSize: 12 },
