@@ -1,3 +1,4 @@
+// Every provider DELETE acquires a lease and records its fenced completion.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { unlinkCard } from "../_shared/fidel-cards.ts";
 import { serveUserCardFunction } from "../_shared/fidel-card-http.ts";

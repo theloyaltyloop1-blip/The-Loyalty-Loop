@@ -1,3 +1,4 @@
+// Explicit SDK claims use v2; recovery cannot cancel a pending removal.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { claimCards } from "../_shared/fidel-cards.ts";
 import { serveUserCardFunction } from "../_shared/fidel-card-http.ts";

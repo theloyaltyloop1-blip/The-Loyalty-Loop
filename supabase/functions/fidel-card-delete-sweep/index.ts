@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { CardLinkError, sweepPendingDeletes } from "../_shared/fidel-cards.ts";
+import { CardLinkError, sweepPendingDeletes, sweepOrphanCards } from "../_shared/fidel-cards.ts";
 import { adminClient, cardDb } from "../_shared/fidel-card-http.ts";
 
 const encoder = new TextEncoder();
@@ -24,7 +24,8 @@ Deno.serve(async (request) => {
   try {
     const admin = adminClient();
     const result = await sweepPendingDeletes({ env: (name) => Deno.env.get(name), db: cardDb(admin), fetch });
-    return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
+    const orphans = await sweepOrphanCards({ env: (name) => Deno.env.get(name), db: cardDb(admin), fetch });
+    return new Response(JSON.stringify({ ...result, orphans }), { headers: { "Content-Type": "application/json" } });
   } catch (error) {
     const code = error instanceof CardLinkError ? error.code : "server_error";
     console.error("fidel-card-delete-sweep failed", code);

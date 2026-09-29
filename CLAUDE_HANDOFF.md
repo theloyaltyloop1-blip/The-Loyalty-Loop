@@ -11,7 +11,11 @@ need Claude's sign-off before the next one starts.
 
 ---
 
-## Status (2026-09-25): Independent implementation review complete — changes requested
+## Current status (2026-09-29): R1–R4 approved; deployment runbook awaits Claude check
+
+One additive migration, lifecycle/account/orphan Edge changes and 15 desired-behaviour scenarios are complete locally. Final checks: 35/35 pure tests; 15/15 new scenarios plus all three required existing integration suites and the existing spend-tier suite; both app TypeScript checks; strict shared-helper TypeScript. Claude's subsequent implementation review approved staged deployment and completed Deno checking successfully. The deployment runbook is now written in docs/DEPLOY_R1-R4_RUNBOOK.md and awaits Claude's document review, then product-owner deployment authorization. Nothing deployed and no live data/provider API accessed. Unknown-metadata age-based orphan deletion is deferred because the created timestamp was not confirmed. See the final entries and copy-ready prompt for files, deviations and exact commands.
+
+## Historical status (2026-09-25): Independent implementation review complete — changes requested
 
 Card linking, manual spend/undo and Test-mode automatic credit are implemented, deployed and partly device-tested. The original signed auth/clearing verification is retained below. Current read-only metadata reports `fidel-webhook` **version 6**, ACTIVE, `verify_jwt: false`, with source matching the reviewed selector implementation. Refund delivery/signature/correlation remain unverified; the missing Test-mode delivery has no established cause. Do not call it a proven Test-mode limitation.
 
@@ -3437,14 +3441,151 @@ Remaining issues:
 3. Unverified in this design: Fidel's program-card listing endpoint and whether cards carry a created timestamp (the orphan-sweep rule 2 depends on it). Sweep scheduling (`pg_cron` absent) stays a separate gate.
 4. Earlier App Store items are unchanged (both iOS apps waiting for review).
 
+## R1–R4 local implementation: contract and reference check (2026-09-29) — Codex
+
+Read repair §1–§7, review R1–R9, original reproducer, current helper/entrypoints, card-linking and webhook migrations, ARCH_PLAN and applicable AGENTS. `git status --short` shows unrelated deleted docs/untracked folders; preserved. No implementation tests run yet. Public reference reads only: https://reference.fidel.uk/reference/list-cards confirms GET /v1/programs/{programId}/cards, limit and JSON-encoded last/start pagination. Timestamp response schema could not be confirmed (markdown/index unavailable): implement retired-metadata rule only; unknown-metadata >24h rule remains unverified. Supabase changelog markdown retrieval failed; database-functions documentation accessible. No provider API called.
+
+Design refinements to verify: block same-card reuse across users while any delete is pending/in flight; fence late delete completions by attempt number; make old claim RPC a conservative wrapper so it cannot bypass removal state. Existing pure tests will retain their scenarios but mocks/assertions must use the new RPC protocol. Original reproducer stays unchanged. `npx --no-install supabase migration new --help` is still pending; no migration generated yet.
+
+## R1–R4 SQL implementation stage (2026-09-29) — Codex
+
+Created one migration with installed CLI: `& C:/Users/zahih/AppData/Local/npm-cache/_npx/b96a6bd565c470ce/node_modules/@supabase/cli-windows-x64/bin/supabase.exe migration new fidel_card_lifecycle_repair` succeeded after sandbox attempt failed writing CLI telemetry. File: `supabase/migrations/20260929071345_fidel_card_lifecycle_repair.sql`. No database connection. Implemented backfill/constraints, identity tombstone, retired metadata, v2 claim, conservative old-claim wrapper, leases/attempt fencing, compatibility mark, account lifecycle, orphan disposition, and historical webhook resolution/outcomes. Syntax/runtime verification pending.
+
+Refinements: account begin creates an identity even if missing to close first-session-vs-deletion race; retired identities remain blocked even after one hour, preventing re-use of a retired metadata id if later account cleanup fails. Old Edge callers retain signatures but cannot explicitly relink pending removals until updated. Old deployed DELETE callers cannot acquire new leases: full race guarantees require all deletion callers to be upgraded together; staged schema compatibility is not equivalent to race safety during mixed deployment. New Edge calls always send the attempt fence. Pending work: Edge implementation and local tests.
+
+## R1–R4 Edge implementation stage (2026-09-29) — Codex
+
+Updated `_shared/fidel-cards.ts`, claim/unlink entrypoints, sweep entrypoint and delete-my-account. Claim uses explicit v2 flag and removal statuses; session checks tombstone even at cap; all local-card DELETEs acquire/finish fenced leases; HTTP timeout 20s; listing throws on truncation/malformed data; account deletion lists provider-only cards and persists cleanup rows through new prepare RPC. Sweep includes separate retired-metadata pass, disabled for live keys. SQL prepare RPC added to the same new migration. Provider-only account cards also get durable rows (stronger than direct DELETE in design). No checks claimed yet; tests next. No remote actions.
+
+## First local test attempt (2026-09-29) — Codex
+
+`node --test apps/api/test/integration/fidel-card-linking.test.mjs` failed before setup: Windows sandbox `uv_os_get_passwd` ENOMEM in embedded-postgres, matching the prior review environment failure. No SQL ran. Will retry with approval for disposable loopback PostgreSQL only. Existing pure tests updated for v2 claim and begin/finish protocol (same scenario count); old card-linking suite now confirms deletion before legacy relink, since old RPC intentionally uses recovery semantics. Superseding pending removal is covered by new explicit-v2 tests. No reproducer changes.
+
+## R1–R4 desired-behaviour suite written (2026-09-29) — Codex
+
+Added `apps/api/test/integration/fidel-card-lifecycle.test.mjs`: 15 numbered scenarios including actual multi-connection PostgreSQL operations, controlled fake HTTP in-flight barriers, lease expiry/fencing, provider-only cleanup, truncation/retirement, eligibility/outcomes and client privilege checks. No provider requests. Existing card-linking retry successfully applied the migration locally, then failed only because its invalid-row assertion expected the old constraint name; broadened assertion to accept either enforcing constraint. Exact run: `node --test apps/api/test/integration/fidel-card-linking.test.mjs` (approved local-only run), 0/1 before that assertion correction. New tests not yet run. Historical reproducer unchanged.
+
+## Pure tests and app TypeScript stage (2026-09-29) — Codex
+
+Passed: `node --test supabase/functions/_shared/fidel-cards.test.mjs supabase/functions/fidel-webhook/*.test.mjs` — 35/35 (current repository has 35, not the older recorded 33). Existing scenarios retained with updated lifecycle mocks. Passed, exit 0: `node ./node_modules/typescript/bin/tsc --noEmit -p apps/shopper/tsconfig.json` and same command for `apps/retailer/tsconfig.json`. No app source edits. Node emitted only existing module-type warnings. Integration batch still running: `node --test --test-concurrency=1 apps/api/test/integration/fidel-card-lifecycle.test.mjs apps/api/test/integration/fidel-card-linking.test.mjs apps/api/test/integration/fidel-manual-spend.test.mjs apps/api/test/integration/fidel-supabase-spend.test.mjs apps/api/test/integration/fidel-spend-tiers.test.mjs` (approved disposable local PostgreSQL); first three new scenarios passed so far.
+
+## First full integration results and fixture corrections (2026-09-29) — Codex
+
+Batch completed: 14/20 Node test records passed, 6 failed (including parent suite). Card-linking, manual-spend and spend-tier suites passed. Failures identified: new adapter incorrectly treated table-valued pending-delete RPC as scalar; isolation test reused a clearing event id and correctly got duplicate; race assertion incorrectly excluded valid superseded history; old spend fixture omitted Active Location status. Corrected first three test defects; updating old spend fixture's eligibility setup next. No production defect hidden by these changes. New lifecycle checks already confirmed refund correlation, cap row durability, tombstone, provider-only cleanup, retired-only sweep, eligibility and ACLs. Additional review found provider-only orphan DELETE needs its own lease to prevent a cross-metadata claim between disposition and HTTP; addressing before final verification.
+
+## Orphan race hardening and fixture corrections complete (2026-09-29) — Codex
+
+Same additive migration now includes private/RLS `fidel_orphan_delete_leases` and fenced finish RPC. This extra table is a deliberate deviation: provider-only cards have no user/card row; without a card-id lease a different metadata owner's claim could commit during orphan HTTP DELETE. Claim and provider-only account registration check this lease. Existing local orphan history gets a new pending row for a reappearing retired enrollment. Account begin records whether it created a fresh identity, so a never-linked account can be deleted without provider configuration or calls. Complete/prepare reject expired account tombstones. Edge orphan worker releases its fenced lease after HTTP. Updated old spend fixture to seed `active`; corrected new test table-valued adapter, distinct event IDs and valid superseded race outcome. Verification rerun next.
+
+## Lifecycle suite passes; final fixture adjustment (2026-09-29) — Codex
+
+Second integration batch: 15/15 new scenarios passed; card-linking, manual-spend and tier suites passed. Batch 19/20 records, only existing spend suite failed because setting Active before its direct-insert RLS check caused P5 to reject earlier than RLS. Moved activation to immediately before synthetic webhook events, preserving the original RLS assertion. Shared-helper strict type check passed: `node ./node_modules/typescript/bin/tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext --allowImportingTsExtensions --skipLibCheck supabase/functions/_shared/fidel-cards.ts`. `git diff --check` passed. Outcome writes now bind to the inserted ledger row's UUID rather than the nonunique provider message ID, avoiding accidental overwrites. More coverage for the added orphan lease and backfill follows before final batch.
+
+## Supplemental safety coverage complete (2026-09-29) — Codex
+
+Expanded the same 15 scenarios with pre-migration active/pending/failed/deleted backfill fixtures, concurrent sweep-vs-held lease, never-linked account without provider access, expired account tombstone, provider-only orphan claim/sweep races, orphan pagination fail-closed checks, and RLS/client denial on both new private tables. Shared disposable fixture accepts an optional before-migration hook; normal suites unchanged. delete-my-account now uses the shared admin client consistently, avoiding mixed esm/jsr client types. Existing spend fixture activates only at webhook stage so its RLS check remains meaningful. Rerun required after these changes.
+
+## Pure regression rerun and Edge type-check limitation (2026-09-29) — Codex
+
+Pure regression command rerun after final helper changes: 35/35 pass. `& C:/Users/zahih/AppData/Local/npm-cache/_npx/05b6ef7b13673c57/node_modules/deno/deno.exe check --cached-only supabase/functions/fidel-card-claim/index.ts supabase/functions/fidel-card-unlink/index.ts supabase/functions/fidel-card-delete-sweep/index.ts supabase/functions/delete-my-account/index.ts` could not resolve uncached JSR functions-js/supabase-js manifests; no Deno type-check success claimed. Removed an unused old esm import left by CRLF replacement in delete-my-account. Shared-helper strict tsc and both app checks passed earlier; complete Edge runtime type-check remains limited by dependency availability. Final database batch in progress.
+
+## Final disposable database verification passed (2026-09-29) — Codex
+
+Exact command: `node --test --test-concurrency=1 apps/api/test/integration/fidel-card-lifecycle.test.mjs apps/api/test/integration/fidel-card-linking.test.mjs apps/api/test/integration/fidel-manual-spend.test.mjs apps/api/test/integration/fidel-supabase-spend.test.mjs apps/api/test/integration/fidel-spend-tiers.test.mjs`. Exit 0: 20/20 Node records, comprising 15/15 numbered lifecycle scenarios, their parent, all three required existing suites and the additional existing spend-tier suite. Includes migration backfill, RPC ACL/RLS, deterministic in-flight HTTP races and five repeated concurrent lock-order runs. Disposable PostgreSQL only; all provider HTTP injected fakes. Original reproducer is unchanged (SHA256 E21EA9BED2F91B32F29966D7E5BA29F641FBD2BB4C74A8B9967420E429D55969); it is historical defect evidence and was not rerun as an acceptance test.
+
+
+## R1–R4 local implementation complete; review handoff (2026-09-29) — Codex
+
+Changed files: the one new migration `20260929071345_fidel_card_lifecycle_repair.sql`; `_shared/fidel-cards.ts` and its pure tests; claim/unlink/sweep/delete-my-account entrypoints; new `fidel-card-lifecycle.test.mjs`; shared disposable fixture hook; two existing integration fixtures; this handoff and IMPLEMENTATION_TIMELINE.md. All applied migrations and the original reproducer preserved. `git diff --name-only -- supabase/migrations` returned empty; `git ls-files --others --exclude-standard -- supabase/migrations` returned exactly the new migration. `git diff --check` passed (line-ending notices only). Rechecked final helper with the strict tsc command above: exit 0. Initial CLI help processes no longer exist; their help output was unavailable, but the successful local migration-creation command is recorded above.
+
+Acceptance boundaries for Claude: schema/signature compatibility remains, but old deployed bare-DELETE code cannot provide the new lease guarantee during a mixed deployment. Upgrade all deletion callers before claiming race safety; old claim wrapper deliberately cannot cancel pending removal. The extra orphan lease table is private and user-free; claim blocks its in-flight deletion. A retired identity stays blocked if later account cleanup fails; an abandoned, non-retired tombstone expires in one hour. Missing identities are created as tombstones to serialize first session versus account deletion. Provider-only account cards receive pending rows before HTTP. These safety refinements are documented deviations for review, not new product requirements. Status responses include neutral removal copy; broader shopper UI work remains R9.
+
+No deployment, remote migration, secrets/settings changes, scheduling, provider API calls, live data, commits or pushes. Public documentation was read only. Tests are focused fixtures, not full application migration-history replay or provider/device verification. Full Deno entrypoint type checking remains unverified because required dependency manifests are not cached. R5–R9, real refund delivery, scheduling and other release gates remain open. Claude owns §7 review next; product-owner input is unnecessary for that review and is required before any deployment.
+
+## R1–R4 implementation review: APPROVED for staged deployment (2026-09-29) — Claude
+
+Reviewed against `docs/CARD_LIFECYCLE_REPAIR_R1-R4.md` §7: the final migration `20260929071345_fidel_card_lifecycle_repair.sql`, `_shared/fidel-cards.ts`, the claim/unlink/sweep/delete-my-account entrypoints, the new lifecycle suite and the adjusted fixtures. **Verdict: approved. No required code fixes.** Deployment still needs the product owner's authorisation and the runbook below.
+
+§7 checklist:
+- Recovery can't undo a removal (`_explicit=false` → `removal_pending`). An explicit relink supersedes only this user's pending removal, never while a lease is live, and never while another user's removal is pending. ✔
+- No DELETE for a card with an active row: `begin` supersedes instead. Fenced `finish` ignores stale workers. The orphan DELETE has its own lease, which claim and account-prepare both respect. ✔
+- Durable rows for every refused or removed card: the `cap_exceeded` row is inserted before HTTP. Provider-only account cards get a `pending` row before HTTP. A reappearing retired enrollment gets a new row. ✔
+- Account deletion covers local rows and provider-only cards. The listing fails closed on truncation or a malformed page. The tombstone blocks session and claim. A never-linked account needs no provider call. ✔
+- Clearing/refund resolve through the purchase row, its own card row and user, and the business mapped from the event's Location. No active-card or Active Location requirement. The refund locks the purchaser's membership. Cross-business and cross-card events stay `unresolved_*`. ✔
+- Auth needs an Active Location, an active card and a membership. Every non-duplicate path stores `outcome`, keyed to the inserted ledger row's id. ✔
+- New functions are service-role only with `search_path=''`. The two new tables have RLS on and no client grants. Existing client privileges unchanged. ✔
+- Additive migration, applied migrations untouched, old signatures preserved. ✔ (See the deploy constraint below.)
+
+Accepted deviations: the orphan lease table (closes a cross-metadata race my design missed); the conservative legacy `claim_linked_card` wrapper; identity-tombstone creation for never-linked accounts; a retired metadata id staying blocked if later account cleanup fails (the account can't link again; acceptable, since the user asked to delete it); expired tombstones rejected by complete/prepare. Orphan rule 2 (unknown metadata older than 24 hours) is **not implemented**, pending a Fidel API-reference check of the card created-timestamp. It is recorded, not required.
+
+Checks I ran myself (disposable local PostgreSQL and fake HTTP only):
+- `node --test --test-concurrency=1` on the lifecycle, card-linking, manual-spend, supabase-spend and spend-tiers suites → **20/20 pass**
+- pure `fidel-cards` and `fidel-webhook` tests → **35/35 pass**
+- shopper and retailer `tsc --noEmit` → **exit 0**
+- **Edge type check completed:** `deno check --config <scratch deno.json with nodeModulesDir:auto>` on fidel-card-claim, fidel-card-unlink, fidel-card-delete-sweep and delete-my-account → **exit 0**. This was Codex's open item. The dependency download went only into the scratch folder; nothing was added to the repo.
+
+Non-blocking notes:
+1. **R9 input:** `claimCards` ranks `removal_pending`/`removal_in_progress` above `claimed`. When a recover-all claims one card while another is still being removed, the status reads "still being removed". The shopper app's `cardAlreadyExists` branch only treats `claimed` as success and otherwise shows ELSEWHERE. Fix both together in R9.
+2. **Deploy constraint (from Codex, confirmed):** the migration and all five changed functions (fidel-card-claim, fidel-card-unlink, fidel-card-delete-sweep, delete-my-account and the shared helper they bundle) must go out in one window. Old bare-DELETE code has no lease, so a mixed deployment isn't race-safe.
+3. **Deploy precondition (R4 changes live behaviour immediately):** once the migration applies, card payments at any Location whose `fidel_status` isn't `active` stop earning. Before deploying, check read-only that the test shop's Location (Pure Elegant, `…4944`) is `active`. A production read was blocked in this session, so this is **not yet verified**.
+4. Orphan sweep and pending-delete sweep scheduling remain a separate gate (`pg_cron` absent). The orphan pass is disabled under live keys by design. Program-card listing above 1,000 cards fails closed. Revisit before live.
+
+Remaining issues:
+1. Codex writes the R1–R4 staged deployment runbook (prompt below). The product owner authorises the deployment.
+2. Claude designs R5–R9 next.
+3. Real refund delivery, scheduling, notifications recovery, merchant enrollment and the other pre-pilot gates are unchanged.
+
+## R1–R4 deployment runbook drafted (2026-09-29) — Codex
+
+Created `docs/DEPLOY_R1-R4_RUNBOOK.md` from Claude's APPROVED review and current migration/Edge sources. Includes exact read-only pre/post SQL, a single-pending-migration dry-run gate, migration then four Edge deployments in one quiet window, source/version/JWT/ACL/backfill checks, historical-ledger limitations, forward-fix recovery, and a separately authorised Android/one-Playground-auth test using current balances. Shared helper is bundled, not separately deployable. No commands or SQL from the runbook executed. Public Supabase CLI documentation inspected for link, push/dry-run, deploy and list syntax; no project APIs accessed. R9 cross-reference and document validation follow. Claude has already resolved the prior Edge type-check limitation; the runbook reflects that approval.
+
+## R9 review cross-reference added (2026-09-29) — Codex
+
+Updated only the R9 section of `docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md`: linked the approval/runbook and documented removal-status priority over claimed, mixed recover-all results and the cardAlreadyExists branch's claimed-only success handling (including already_linked falling through). Ownership proof must remain intact; both behaviours are to be reviewed together in R9. No UI/backend changes or new test claims. Document-only validation follows.
+
+
+## Runbook document verification and handoff complete (2026-09-29) — Codex
+
+Static-only Node assertions passed: seven SQL blocks bounded by read-only transactions, no mutation statements in those blocks, 16 expected function signatures, exactly four correctly ordered deployments after the migration, project-reference placeholders only, balanced fences, existing local link targets and no embedded credential patterns. `git diff --check -- CLAUDE_HANDOFF.md docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md docs/DEPLOY_R1-R4_RUNBOOK.md` passed (line-ending notice only). SQL was checked against the migration/schema by inspection, not executed or database-validated. No implementation tests re-run for this documentation-only change; the earlier test results and Claude approval remain historical evidence.
+
+Updated the current handoff summary to reflect Claude’s successful Deno check and approval, and IMPLEMENTATION_TIMELINE.md to mark runbook writing complete with Claude’s runbook check next. Runbook contents and R9 cross-reference are the only substantive documentation additions. No project API/remote SQL/provider call, deployment, secret/settings change, live data, commit or push. Pending: Claude checks the document; product owner later authorizes the specific deployment window and smoke test. The Pure Elegant Active precondition remains unverified remotely in this session.
+
+## R1–R4 deployment runbook review: APPROVED with three amendments applied (2026-09-29) — Claude
+
+Checked `docs/DEPLOY_R1-R4_RUNBOOK.md` against the approved migration `20260929071345_fidel_card_lifecycle_repair.sql`, `_shared/fidel-cards.ts`, the four entrypoints, `fidel-webhook/handler.ts`, `supabase/config.toml` and the table definitions. Nothing was executed.
+
+Verified correct:
+- **Read-only SQL (§1.1, §1.2, §3.2–§3.4, §5):** every table and column exists in the migrations. Checked `business_fidel_locations.id/fidel_status/fidel_status_checked_at`, `reward_catalog.spend_threshold_pence`, `rewards.redeemed_at`, `memberships.visit_count` and the pre-repair `linked_cards` columns. All wrapped in `begin transaction read only … rollback`. The §1.2 backfill prediction matches the migration's `case` order exactly: deleted, then failed (including an empty error string), then pending.
+- **Single-migration gate:** the dry run must list only the repair, and anything else stops the release. There's no `--include-all`, repair or reset. This matches the project's recorded push practice.
+- **Deploy order:** the migration first, then fidel-card-claim, fidel-card-unlink, fidel-card-delete-sweep and delete-my-account. Correctly identifies the shared module as not a function. None of the four has a `config.toml` entry, so they keep `verify_jwt = true`. Only fidel-webhook, and the two WhatsApp functions, are `false`, and they aren't deployed. Leaving fidel-card-session out is acceptable. Its deployed copy returns early at the 5-card cap without calling `fidel_link_identity`, so it skips the tombstone there. But that path hands out no SDK key or metadata, so nothing can be enrolled.
+- **Mixed-window compatibility (confirmed from source):** old claim → the conservative wrapper. Old unlink/sweep/account deletion still work against the new schema but send bare DELETEs. The quiet-window requirement and "don't redeploy legacy functions" are correct.
+- **§3.2 ACL query:** 16 signatures, PUBLIC checked through `aclexplode(coalesce(proacl, acldefault(...)))`, plus the two private tables. The expectations match the tested local results.
+- **§3.4 evidence limits:** correctly says pre-migration rows have a NULL outcome and prove only historical purchases. With no new post-deploy event, it records "not yet observed", not a pass.
+- **§4 forward-fix only:** correct that columns, backfill, retired metadata and leases are durable, and that redeploying old functions is unsafe.
+- **§5 smoke test:** uses current balances rather than old fixtures, a single Playground auth at the verified Active Location, no replays, and warns about reward-cycle carry.
+- **R9 cross-reference** in `docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md` is accurate and correctly labelled non-blocking.
+
+Amendments I made directly to the runbook (documentation only):
+1. **§1:** run `migration list --linked` and the dry run read-only **well before booking the window**, not only at its start. The handoff says `20260925172000` and `20260925190000` were "applied live" but doesn't record how. Any history mismatch must be a separate reviewed task. Also added a note on `--skip-vault`: used by the 22–23 Sep pushes and not by later ones; use it only if the installed CLI needs it.
+2. **§3.4:** `fidel-webhook/handler.ts` returns 200 for `ineligible_location` and `refund_membership_missing` (the correct ack), but its "reconciliation required" warning doesn't list them. Operators must use stored `outcome` counts, not logs. Adding them to the warning is deferred to the next reviewed webhook change.
+3. **§5 step 3:** if the test card is already active for the account (the 25 Sep milestone account had one active Visa), start at the unlink step. Re-enrolling a card Fidel still holds returns `cardAlreadyExists` and hits the known R9 defect instead of testing R1–R4.
+
+Verdict: **the runbook is approved as amended.** Deployment and the smoke test still need the product owner's explicit authorisation. Nothing was executed; there were no remote calls, SQL, deployments or Fidel calls.
+
+Next actions:
+- Product owner: decide when to authorise the pre-window history check (§1, read-only) and later the deployment window.
+- Codex: the pre-window read-only history check only, once authorised (prompt below).
+- Claude: design R5–R9 next (manual-spend command binding, concurrent retry, undo after staff deletion, non-member promise, duplicate-card message), including the R9 status-priority note.
+
 ## Copy-ready prompt for Claude Code
 
-Codex's next task (paste to Codex):
+Codex's next task (paste to Codex only after the product owner has authorised the read-only pre-window check):
 
-Read CLAUDE_HANDOFF.md, docs/CARD_LIFECYCLE_REPAIR_R1-R4.md, docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md and tmp/claude-review/regressions.test.mjs. Implement docs/CARD_LIFECYCLE_REPAIR_R1-R4.md §1–§5 locally:
-- one new additive migration (do not edit applied migrations)
-- the new/replacement SQL functions
-- Edge Function changes in supabase/functions/_shared/fidel-cards.ts, fidel-card-claim, fidel-card-unlink, fidel-card-delete-sweep and delete-my-account
-- the 15 desired-behaviour tests in apps/api/test/integration/ using disposable PostgreSQL and fake HTTP only
+Read CLAUDE_HANDOFF.md ("R1–R4 deployment runbook review: APPROVED with three amendments applied") and docs/DEPLOY_R1-R4_RUNBOOK.md. Run ONLY the read-only parts of runbook §1:
+- `supabase --version`
+- `supabase migration list --linked`
+- `supabase db push --linked --dry-run`, adding `--skip-vault` only if `db push --help` shows it and the CLI would otherwise try to sync vault
+- `supabase functions list --output json`
+- the §1.1 and §1.2 SQL, each inside `begin transaction read only … rollback`
 
-Keep the existing 33 pure tests, 3 integration suites and both apps' TypeScript checks passing. Leave the original reproducer unchanged. Verify the Fidel program-card listing endpoint and card created-timestamp from the API reference before implementing orphan-sweep rule 2; if unconfirmed, implement only the retired-metadata rule and record it. Do not deploy, apply migrations remotely, change secrets or provider settings, call Fidel, or touch live data. Record in CLAUDE_HANDOFF.md after each completed item what changed, the exact commands and results, and any deviation from the design with its reason. When finished, leave a copy-ready prompt asking Claude to review the implementation against §7.
+Report whether the dry run lists exactly 20260929071345_fidel_card_lifecycle_repair.sql. If it lists anything else, report the exact local-only and remote-only versions and stop, with no repair, pull or push. Also report the Pure Elegant …4944 Location status, every non-active Location, and the predicted backfill counts. Record results in CLAUDE_HANDOFF.md without card IDs, user IDs or secrets (suffixes only), and leave a copy-ready prompt for Claude to review them. Do not run `db push` without `--dry-run`, deploy functions, call endpoints or Fidel, change settings or secrets, or write any data.

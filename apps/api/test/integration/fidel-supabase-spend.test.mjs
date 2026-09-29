@@ -314,6 +314,7 @@ test('Focused Fidel migrations with a public-schema fixture enforce JSON-claims 
     // Synthetic provider events exercise the single atomic RPC directly. They
     // are not Fidel-signed sandbox deliveries and do not verify provider shape.
     await setClaims(client, 'service_role');
+    await client.query("update public.business_fidel_locations set fidel_status='active' where business_id=$1", [business]);
     const syntheticAuth = await client.query(`
       select public.process_fidel_webhook_event(
         'synthetic-message-auth', 'transaction.auth', 'synthetic-auth',

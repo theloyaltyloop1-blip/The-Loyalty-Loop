@@ -132,7 +132,7 @@ export const fixtureSql = String.raw`
 
 
 // Starts a disposable database with the fixture and every Fidel migration applied.
-export async function startFidelDatabase(prefix) {
+export async function startFidelDatabase(prefix, { beforeMigration } = {}) {
   const postgres = new EmbeddedPostgres({
     databaseDir: join(tmpdir(), prefix + randomUUID()),
     port: await freePort(),
@@ -161,7 +161,7 @@ export async function startFidelDatabase(prefix) {
     await postgres.stop();
   };
   try {
-    return { client, newClient, migrations: await setUp(client), stop };
+    return { client, newClient, migrations: await setUp(client, beforeMigration), stop };
   } catch (error) {
     // Without this a setup failure leaves the database running and the test hangs.
     await stop().catch(() => {});
@@ -169,11 +169,14 @@ export async function startFidelDatabase(prefix) {
   }
 }
 
-async function setUp(client) {
+async function setUp(client, beforeMigration) {
   await client.query(fixtureSql);
   const dir = new URL('../../../../supabase/migrations/', import.meta.url);
   const migrations = (await readdir(dir)).filter(n => /^\d+_fidel_.*\.sql$/.test(n)).sort();
-  for (const name of migrations) await client.query(await readFile(new URL(name, dir), 'utf8'));
+  for (const name of migrations) {
+    if (beforeMigration) await beforeMigration(client, name);
+    await client.query(await readFile(new URL(name, dir), 'utf8'));
+  }
   // The live project attaches these guards in the pre-Fidel history.
   await client.query(`
     create trigger enforce_membership_update_scope

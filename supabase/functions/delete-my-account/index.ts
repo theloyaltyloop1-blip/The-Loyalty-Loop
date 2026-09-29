@@ -1,10 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { adminClient, cardDb } from "../_shared/fidel-card-http.ts";
 import { deleteAllFidelCardsForUser } from "../_shared/fidel-cards.ts";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('ok',{headers:cors}); try {
   const auth=req.headers.get('Authorization'); if(!auth) throw new Error('Missing authorization');
-  const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const admin=adminClient();
   const token=auth.replace('Bearer ',''); const {data:{user},error}=await admin.auth.getUser(token); if(error||!user) throw new Error('Not authenticated');
   const { data: ownedBusinesses, error: ownershipError } = await admin.from('businesses').select('id').eq('owner_id', user.id);
   if (ownershipError) throw ownershipError;
@@ -27,9 +27,7 @@ Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('o
   // holds first; if any delete fails, stop and keep the account rather than
   // leave cards at Fidel that can no longer be traced to anyone. Then remove
   // the Fidel purchase records before the cards they reference.
-  const { data: linkedCards, error: linkedCardsError } = await admin.from('linked_cards').select('fidel_card_id, fidel_deleted_at').eq('user_id', user.id);
-  if (linkedCardsError) throw linkedCardsError;
-  if (!(await deleteAllFidelCardsForUser({ env: (name) => Deno.env.get(name), fetch }, linkedCards ?? []))) {
+  if (!(await deleteAllFidelCardsForUser({ env: (name) => Deno.env.get(name), db: cardDb(admin), fetch }, user.id))) {
     throw new Error("We couldn't finish removing your linked cards. Please try again in a few minutes.");
   }
   for (const table of ['fidel_transactions', 'linked_cards']) {

@@ -116,11 +116,6 @@ test('card linking migration: identities, claims, unlink, badge list and P5 manu
     const pending = async () => (await as(client, 'service_role', null,
       'select linked_card_id from public.fidel_cards_pending_delete(50)')).rows.map(r => r.linked_card_id);
     assert.ok((await pending()).includes(first.linked_card_id));
-    const relink = await claim(client, alice, 'card-a1');
-    assert.equal(relink.status, 'claimed', 're-link after unlink works');
-    assert.notEqual(relink.linked_card_id, first.linked_card_id);
-    assert.ok(!(await pending()).includes(first.linked_card_id),
-      'an unlinked row whose card was re-linked must not be deleted at Fidel');
     await as(client, 'service_role', null, 'select public.mark_fidel_card_deleted($1, $2)',
       [first.linked_card_id, 'fidel 503']);
     let row = (await client.query('select fidel_deleted_at, fidel_delete_error from public.linked_cards where id = $1',
@@ -132,9 +127,14 @@ test('card linking migration: identities, claims, unlink, badge list and P5 manu
       [first.linked_card_id])).rows[0];
     assert.ok(row.fidel_deleted_at instanceof Date);
     assert.equal(row.fidel_delete_error, null);
+    const relink = await claim(client, alice, 'card-a1');
+    assert.equal(relink.status, 'claimed', 're-link after unlink works');
+    assert.notEqual(relink.linked_card_id, first.linked_card_id);
+    assert.ok(!(await pending()).includes(first.linked_card_id),
+      'an unlinked row whose card was re-linked must not be deleted at Fidel');
     await assert.rejects(client.query(
       "update public.linked_cards set unlinked_at = now() where id = $1", [relink.linked_card_id]),
-      /linked_cards_unlink_state_check/);
+      /linked_cards_(unlink_state|delete_active)_check/);
 
     // --- badge list: only active Locations ---
     const badge = (await as(client, 'authenticated', stranger,

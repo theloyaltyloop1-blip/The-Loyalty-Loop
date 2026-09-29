@@ -70,9 +70,14 @@ function fakeDb({ cards = [], admin = false, claim = () => ({ status: "claimed",
     rpc: async (fn, args) => {
       rpcCalls.push({ fn, args });
       if (fn === "fidel_link_identity") return { data: META, error: null };
-      if (fn === "claim_linked_card") return { data: claim(args), error: null };
+      if (fn === "claim_linked_card_v2") return { data: claim(args), error: null };
       if (fn === "unlink_linked_card") return { data: unlink(args), error: null };
-      if (fn === "mark_fidel_card_deleted") return { data: null, error: null };
+      if (fn === "begin_fidel_card_delete") return { data: { status: 'acquired', attempt: 1,
+        fidel_card_id: pending.find(r => r.linked_card_id === args._linked_card_id)?.fidel_card_id ?? 'fidel-card-1' }, error: null };
+      if (fn === "begin_fidel_account_deletion") return { data: { status: 'begun', metadata_id: META, rows: pending }, error: null };
+      if (fn === "prepare_fidel_account_card_delete") return { data: LINKED, error: null };
+      if (fn === "complete_fidel_account_deletion" || fn === "abort_fidel_account_deletion") return { data: null, error: null };
+      if (fn === "finish_fidel_card_delete") return { data: null, error: null };
       if (fn === "fidel_cards_pending_delete") return { data: pending, error: null };
       return { data: null, error: { code: "unexpected" } };
     },
@@ -137,7 +142,7 @@ test("claim: a card id not listed under the user's metadata is never stored", as
   const { db, rpcCalls } = fakeDb();
   const result = await claimCards({ env: envOf(), db, fetch: fidel.fetch }, USER, { cardId: "someone-elses-card" });
   assert.equal(result.status, "not_found");
-  assert.ok(!rpcCalls.some(c => c.fn === "claim_linked_card"));
+  assert.ok(!rpcCalls.some(c => c.fn === "claim_linked_card_v2"));
   assert.ok(fidel.calls[0].url.includes(`/cards/metadata/${META}?`));
   assert.equal(fidel.calls[0].key, API_KEY);
 });
@@ -148,7 +153,7 @@ test("claim: wrong program, wrong environment or wrong metadata are filtered out
     const fidel = fakeFidel({ pages: [[fidelCard(bad)]] });
     const result = await claimCards({ env: envOf(), db, fetch: fidel.fetch }, USER, { cardId: "fidel-card-1" });
     assert.equal(result.status, "not_found", JSON.stringify(bad));
-    assert.ok(!rpcCalls.some(c => c.fn === "claim_linked_card"));
+    assert.ok(!rpcCalls.some(c => c.fn === "claim_linked_card_v2"));
   }
 });
 
@@ -158,10 +163,10 @@ test("claim: stores Fidel's own card fields, not the client's, and returns displ
   const result = await claimCards({ env: envOf(), db, fetch: fidel.fetch }, USER,
     { cardId: "fidel-card-1", scheme: "visa", lastNumbers: "9999" });
   assert.equal(result.status, "claimed");
-  const claim = rpcCalls.find(c => c.fn === "claim_linked_card");
+  const claim = rpcCalls.find(c => c.fn === "claim_linked_card_v2");
   assert.deepEqual(claim.args, {
     _user_id: USER, _fidel_card_id: "fidel-card-1", _fidel_account_id: "acct-1",
-    _card_scheme: "amex", _last_numbers: "0005",
+    _card_scheme: "amex", _last_numbers: "0005", _explicit: true,
   });
   assert.ok(!JSON.stringify(result).includes("fidel-card-1"), "Fidel card id never returned to the app");
   assert.ok(!JSON.stringify(result).includes("acct-1"));
@@ -169,7 +174,7 @@ test("claim: stores Fidel's own card fields, not the client's, and returns displ
 
 test("claim: over the limit, the card is deleted at Fidel", async () => {
   const fidel = fakeFidel();
-  const { db } = fakeDb({ claim: () => ({ status: "limit_reached" }) });
+  const { db } = fakeDb({ claim: () => ({ status: "limit_reached", linked_card_id: LINKED }) });
   const result = await claimCards({ env: envOf(), db, fetch: fidel.fetch }, USER, { cardId: "fidel-card-1" });
   assert.equal(result.status, "limit_reached");
   const del = fidel.calls.find(c => c.method === "DELETE");
@@ -189,7 +194,7 @@ test("claim: recovery with no card id claims every listed card across pages", as
   const { db, rpcCalls } = fakeDb();
   const result = await claimCards({ env: envOf(), db, fetch: fidel.fetch }, USER, {});
   assert.equal(result.status, "claimed");
-  assert.deepEqual(rpcCalls.filter(c => c.fn === "claim_linked_card").map(c => c.args._fidel_card_id), ["p1", "p2"]);
+  assert.deepEqual(rpcCalls.filter(c => c.fn === "claim_linked_card_v2").map(c => c.args._fidel_card_id), ["p1", "p2"]);
   const empty = await claimCards({ env: envOf(), db: fakeDb().db, fetch: fakeFidel({ pages: [[]] }).fetch }, USER, {});
   assert.equal(empty.status, "nothing_to_claim");
 });
@@ -208,19 +213,19 @@ test("unlink: stops earning first, then deletes at Fidel and records the outcome
   const { db, rpcCalls } = fakeDb();
   const result = await unlinkCard({ env: envOf(), db, fetch: fidel.fetch }, USER, { linkedCardId: LINKED });
   assert.equal(result.status, "removed");
-  assert.deepEqual(rpcCalls.map(c => c.fn), ["unlink_linked_card", "mark_fidel_card_deleted"]);
+  assert.deepEqual(rpcCalls.map(c => c.fn), ["unlink_linked_card", "begin_fidel_card_delete", "finish_fidel_card_delete"]);
   assert.deepEqual(rpcCalls[0].args, { _user_id: USER, _linked_card_id: LINKED, _reason: "user" });
-  assert.equal(rpcCalls[1].args._error, null);
+  assert.equal(rpcCalls[2].args._error, null);
   assert.ok(fidel.calls.some(c => c.method === "DELETE" && c.url.endsWith("/cards/fidel-card-1")));
 });
 
 test("unlink: a Fidel failure is recorded for the sweep, a Fidel 404 counts as deleted", async () => {
   const failing = fakeDb();
   await unlinkCard({ env: envOf(), db: failing.db, fetch: fakeFidel({ deleteStatus: { "fidel-card-1": 503 } }).fetch }, USER, { linkedCardId: LINKED });
-  assert.equal(failing.rpcCalls[1].args._error, "fidel_delete_503");
+  assert.equal(failing.rpcCalls[2].args._error, "fidel_delete_503");
   const gone = fakeDb();
   await unlinkCard({ env: envOf(), db: gone.db, fetch: fakeFidel({ deleteStatus: { "fidel-card-1": 404 } }).fetch }, USER, { linkedCardId: LINKED });
-  assert.equal(gone.rpcCalls[1].args._error, null);
+  assert.equal(gone.rpcCalls[2].args._error, null);
 });
 
 test("unlink: someone else's card or a bad id is refused without calling Fidel", async () => {
@@ -244,19 +249,21 @@ test("sweep: retries pending deletes and alerts on cards stuck over 24 hours", a
   const before = logged.length;
   const result = await sweepPendingDeletes({ env: envOf(), db, fetch: fidel.fetch }, now);
   assert.deepEqual(result, { checked: 3, deleted: 1, failed: 2, overdue: 1 });
-  assert.equal(rpcCalls.filter(c => c.fn === "mark_fidel_card_deleted").length, 3);
+  assert.equal(rpcCalls.filter(c => c.fn === "finish_fidel_card_delete").length, 3);
   assert.ok(logged.slice(before).some(line => line.includes("ALERT")));
 });
 
 test("account deletion: all cards must be gone at Fidel before the account is deleted", async () => {
-  assert.equal(await deleteAllFidelCardsForUser({ env: envOf({ FIDEL_API_KEY: "" }), fetch: fakeFidel().fetch },
-    [{ fidel_card_id: "x", fidel_deleted_at: "2026-09-01" }]), true, "nothing pending needs no Fidel access");
-  assert.equal(await deleteAllFidelCardsForUser({ env: envOf({ FIDEL_API_KEY: "" }), fetch: fakeFidel().fetch },
-    [{ fidel_card_id: "x", fidel_deleted_at: null }]), false, "pending cards but no configuration: stop");
-  assert.equal(await deleteAllFidelCardsForUser({ env: envOf(), fetch: fakeFidel({ deleteStatus: { y: 500 } }).fetch },
-    [{ fidel_card_id: "x", fidel_deleted_at: null }, { fidel_card_id: "y", fidel_deleted_at: null }]), false);
-  assert.equal(await deleteAllFidelCardsForUser({ env: envOf(), fetch: fakeFidel().fetch },
-    [{ fidel_card_id: "x", fidel_deleted_at: null }]), true);
+  const missing = fakeDb();
+  assert.equal(await deleteAllFidelCardsForUser({ env: envOf({ FIDEL_API_KEY: '' }), db: missing.db, fetch: fakeFidel().fetch }, USER), false);
+  assert.ok(missing.rpcCalls.some(c => c.fn === 'abort_fidel_account_deletion'));
+  const failure = fakeDb();
+  assert.equal(await deleteAllFidelCardsForUser({ env: envOf(), db: failure.db,
+    fetch: fakeFidel({ deleteStatus: { 'fidel-card-1': 503 } }).fetch }, USER), false);
+  assert.ok(!failure.rpcCalls.some(c => c.fn === 'complete_fidel_account_deletion'));
+  const success = fakeDb();
+  assert.equal(await deleteAllFidelCardsForUser({ env: envOf(), db: success.db, fetch: fakeFidel().fetch }, USER), true);
+  assert.ok(success.rpcCalls.some(c => c.fn === 'complete_fidel_account_deletion'));
 });
 
 test("no Fidel key ever appears in logs", () => {

@@ -117,26 +117,32 @@ export async function listCardsByMetadata(
   config: FidelConfig,
   metadataId: string,
 ): Promise<FidelCard[]> {
+  return listFidelCards(fetchFn, config, '/cards/metadata/' + encodeURIComponent(metadataId));
+}
+
+async function listFidelCards(fetchFn: Fetch, config: FidelConfig, path: string): Promise<FidelCard[]> {
   const cards: FidelCard[] = [];
   let start: unknown = undefined;
   for (let page = 0; page < MAX_LIST_PAGES; page += 1) {
     const query = new URLSearchParams({ limit: "100" });
     if (start !== undefined) query.set("start", JSON.stringify(start));
     const response = await fetchFn(
-      `${FIDEL_API_BASE}/cards/metadata/${encodeURIComponent(metadataId)}?${query}`,
-      { headers: { "Content-Type": "application/json", "Fidel-Key": config.apiKey } },
+      `${FIDEL_API_BASE}${path}?${query}`,
+      { headers: { "Content-Type": "application/json", "Fidel-Key": config.apiKey }, signal: AbortSignal.timeout(20_000) },
     );
     if (!response.ok) throw new CardLinkError(502, `fidel_list_failed_${response.status}`);
     const body = await response.json() as Record<string, unknown>;
-    const items = Array.isArray(body.items) ? body.items : [];
+    if (!Array.isArray(body.items)) throw new CardLinkError(502, "fidel_list_invalid");
+    const items = body.items;
     for (const item of items) {
       const card = parseFidelCard(item);
-      if (card) cards.push(card);
+      if (!card) throw new CardLinkError(502, "fidel_list_invalid_card");
+      cards.push(card);
     }
-    if (!body.last || items.length === 0) return cards;
+    if (!body.last) return cards;
     start = body.last;
   }
-  return cards;
+  throw new CardLinkError(502, "fidel_list_truncated");
 }
 
 // Returns true when Fidel no longer holds the card (deleted now or already gone).
@@ -148,18 +154,20 @@ export async function deleteFidelCard(
   try {
     const response = await fetchFn(`${FIDEL_API_BASE}/cards/${encodeURIComponent(fidelCardId)}`, {
       method: "DELETE",
+      signal: AbortSignal.timeout(20_000),
       headers: { "Content-Type": "application/json", "Fidel-Key": config.apiKey },
     });
     if (response.ok || response.status === 404) return { ok: true };
     return { ok: false, error: `fidel_delete_${response.status}` };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? `fidel_delete_network: ${error.message}` : "fidel_delete_network" };
+  } catch {
+    return { ok: false, error: "fidel_delete_network" };
   }
 }
 
 async function rpcOrThrow<T>(db: CardDb, fn: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await db.rpc(fn, args);
   if (error) {
+    if (error.message === "account_deleting") throw new CardLinkError(409, "account_deleting");
     console.error("fidel-cards rpc failed", fn, error.code ?? "unknown");
     throw new CardLinkError(500, "server_error");
   }
@@ -194,11 +202,11 @@ export async function cardSession(deps: { env: Env; db: CardDb }, userId: string
     (config.enabled || isNamedTester(deps.env, userId) || await deps.db.isAdmin(userId));
   if (!enabled || !config) return { enabled: false };
 
+  const metadataId = await rpcOrThrow<string>(deps.db, "fidel_link_identity", { _user_id: userId });
   const cards = await deps.db.activeCards(userId);
   if (cards.length >= CARD_LIMIT) {
     return { enabled: true, atLimit: true, activeCount: cards.length, limit: CARD_LIMIT, cards };
   }
-  const metadataId = await rpcOrThrow<string>(deps.db, "fidel_link_identity", { _user_id: userId });
   return {
     enabled: true,
     atLimit: false,
@@ -242,29 +250,34 @@ export async function claimCards(
 
   const outcomes: string[] = [];
   for (const card of candidates) {
-    const result = await rpcOrThrow<ClaimResult>(deps.db, "claim_linked_card", {
+    const result = await rpcOrThrow<ClaimResult>(deps.db, "claim_linked_card_v2", {
       _user_id: userId,
       _fidel_card_id: card.id,
       _fidel_account_id: card.accountId,
       _card_scheme: card.scheme,
       _last_numbers: card.lastNumbers,
+      _explicit: typeof requested === "string",
     });
     if (result.status === "limit_reached") {
       // Don't leave an ownerless card enrolled in our program.
-      const deleted = await deleteFidelCard(deps.fetch, config, card.id);
-      if (!deleted.ok) console.error("fidel-card-claim cap delete failed", deleted.error);
+      if (!result.linked_card_id) throw new CardLinkError(500, "missing_cleanup_row");
+      await deleteLeasedCard(deps, result.linked_card_id);
     }
     outcomes.push(result.status);
   }
 
   const cards = await deps.db.activeCards(userId);
-  const status = outcomes.includes("claimed") ? "claimed"
+  const status = outcomes.includes("account_deleting") ? "account_deleting"
+    : outcomes.includes("removal_in_progress") ? "removal_in_progress"
+    : outcomes.includes("removal_pending") ? "removal_pending"
+    : outcomes.includes("claimed") ? "claimed"
     : outcomes.includes("limit_reached") ? "limit_reached"
     : outcomes.includes("already_linked_elsewhere") ? "already_linked_elsewhere"
     : outcomes.includes("already_linked") ? "already_linked"
     : typeof requested === "string" ? "not_found"
     : "nothing_to_claim";
-  return { status, cards };
+  return { status, cards, ...(status === "removal_pending" || status === "removal_in_progress"
+    ? { message: "This card is still being removed. Try again in a minute." } : {}) };
 }
 
 // --- fidel-card-unlink ----------------------------------------------------
@@ -291,15 +304,7 @@ export async function unlinkCard(
   }
   // Step 2: delete at Fidel. A failure is recorded for the retry sweep; the
   // shopper still sees "Removed" because earning has already stopped.
-  const config = fidelConfig(deps.env);
-  const deleted = config
-    ? await deleteFidelCard(deps.fetch, config, result.fidel_card_id)
-    : { ok: false as const, error: "not_configured" };
-  await rpcOrThrow(deps.db, "mark_fidel_card_deleted", {
-    _linked_card_id: linkedCardId,
-    _error: deleted.ok ? null : deleted.error,
-  });
-  if (!deleted.ok) console.warn("fidel-card-unlink Fidel delete deferred", deleted.error);
+  await deleteLeasedCard(deps, linkedCardId);
   return { status: "removed", cards: await deps.db.activeCards(userId) };
 }
 
@@ -313,11 +318,8 @@ export async function sweepPendingDeletes(deps: { env: Env; db: CardDb; fetch: F
   );
   let deleted = 0, failed = 0, overdue = 0;
   for (const row of rows ?? []) {
-    const result = await deleteFidelCard(deps.fetch, config, row.fidel_card_id);
-    await rpcOrThrow(deps.db, "mark_fidel_card_deleted", {
-      _linked_card_id: row.linked_card_id,
-      _error: result.ok ? null : result.error,
-    });
+    const result = await deleteLeasedCard(deps, row.linked_card_id);
+    if (result.skipped) continue;
     if (result.ok) deleted += 1;
     else {
       failed += 1;
@@ -328,24 +330,78 @@ export async function sweepPendingDeletes(deps: { env: Env; db: CardDb; fetch: F
   return { checked: rows?.length ?? 0, deleted, failed, overdue };
 }
 
-// For delete-my-account (plan §3.4, P4). Deletes every card still held at
-// Fidel. Returns false if any delete failed; the caller must then stop and keep
-// the account, rather than orphan cards it can no longer trace.
-export async function deleteAllFidelCardsForUser(
-  deps: { env: Env; fetch: Fetch },
-  cards: Array<{ fidel_card_id: string; fidel_deleted_at: string | null }>,
-): Promise<boolean> {
-  const pending = cards.filter(card => card.fidel_deleted_at === null);
-  if (pending.length === 0) return true;
+type CardDeps = { env: Env; db: CardDb; fetch: Fetch };
+
+export async function deleteLeasedCard(deps: CardDeps, linkedCardId: string): Promise<{ ok: boolean; skipped?: boolean }> {
+  const lease = await rpcOrThrow<{ status: string; fidel_card_id: string; attempt: number }>(
+    deps.db, "begin_fidel_card_delete", { _linked_card_id: linkedCardId });
+  if (lease.status !== "acquired") return { ok: false, skipped: true };
   const config = fidelConfig(deps.env);
-  if (!config) return false;
-  let allDeleted = true;
-  for (const card of pending) {
-    const result = await deleteFidelCard(deps.fetch, config, card.fidel_card_id);
-    if (!result.ok) {
-      console.error("delete-my-account Fidel card delete failed", result.error);
-      allDeleted = false;
+  const result = config ? await deleteFidelCard(deps.fetch, config, lease.fidel_card_id)
+    : { ok: false as const, error: "not_configured" };
+  await rpcOrThrow(deps.db, "finish_fidel_card_delete", {
+    _linked_card_id: linkedCardId, _error: result.ok ? null : result.error, _attempt: lease.attempt,
+  });
+  return { ok: result.ok };
+}
+
+// The caller proceeds to personal-data/Auth deletion only after this succeeds.
+export async function deleteAllFidelCardsForUser(deps: CardDeps, userId: string): Promise<boolean> {
+  const begun = await rpcOrThrow<{ status: string; provider_lookup?: boolean; metadata_id: string; rows: Array<{ linked_card_id: string }> }>(
+    deps.db, "begin_fidel_account_deletion", { _user_id: userId });
+  if (begun.status !== "begun") return false; // Another deleter owns the tombstone: do not abort it.
+  try {
+    if (begun.provider_lookup === false && begun.rows.length === 0) {
+      await rpcOrThrow(deps.db, "complete_fidel_account_deletion", { _user_id: userId });
+      return true;
+    }
+    const config = fidelConfig(deps.env);
+    if (!config) throw new CardLinkError(503, "not_configured");
+    for (const row of begun.rows) {
+      if (!(await deleteLeasedCard(deps, row.linked_card_id)).ok) throw new Error("delete_incomplete");
+    }
+    // Materialize the complete listing before deleting anything from it.
+    const listed = await listCardsByMetadata(deps.fetch, config, begun.metadata_id);
+    for (const card of listed) {
+      if (card.metadataId !== begun.metadata_id || card.programId !== config.programId || card.live !== config.live) continue;
+      const rowId = await rpcOrThrow<string>(deps.db, "prepare_fidel_account_card_delete", {
+        _user_id: userId, _fidel_card_id: card.id,
+      });
+      if (!(await deleteLeasedCard(deps, rowId)).ok) throw new Error("delete_incomplete");
+    }
+    await rpcOrThrow(deps.db, "complete_fidel_account_deletion", { _user_id: userId });
+    return true;
+  } catch {
+    await rpcOrThrow(deps.db, "abort_fidel_account_deletion", { _user_id: userId });
+    return false;
+  }
+}
+
+// API reference confirms program listing but not the created timestamp.
+// Only retired metadata is eligible. Unknown-metadata age rule is deferred.
+export async function sweepOrphanCards(deps: CardDeps) {
+  const config = fidelConfig(deps.env);
+  if (!config) throw new CardLinkError(503, "not_configured");
+  if (config.live) return { checked: 0, deleted: 0, failed: 0, disabled: true };
+  const listed = await listFidelCards(deps.fetch, config, '/programs/' + encodeURIComponent(config.programId) + '/cards');
+  let checked = 0, deleted = 0, failed = 0;
+  for (const card of listed) {
+    if (card.programId !== config.programId || card.live !== config.live || !card.metadataId) continue;
+    checked++;
+    const action = await rpcOrThrow<{ status: string; rows?: string[]; attempt: number }>(deps.db, "fidel_orphan_card_action", {
+      _metadata_id: card.metadataId, _fidel_card_id: card.id,
+    });
+    if (action.status === "keep") continue;
+    if (action.status === "local") {
+      for (const id of action.rows ?? []) {
+        const result = await deleteLeasedCard(deps, id);
+        if (!result.skipped) result.ok ? deleted++ : failed++;
+      }
+    } else if (action.status === "orphan") {
+      const result = await deleteFidelCard(deps.fetch, config, card.id);
+      await rpcOrThrow(deps.db, "finish_fidel_orphan_delete", { _fidel_card_id: card.id, _attempt: action.attempt });
+      result.ok ? deleted++ : failed++;
     }
   }
-  return allDeleted;
+  return { checked, deleted, failed };
 }
