@@ -3419,6 +3419,32 @@ Remaining issues:
 3. Android apps pick up the new business icon only at the next Play build.
 4. iOS roadmap artifact still stale.
 
+## R1–R4 repair design (2026-09-29) — Claude, product owner asked
+
+Wrote `docs/CARD_LIFECYCLE_REPAIR_R1-R4.md`, the binding contract for Codex's next task. Summary:
+- **Two rules.** New earning (auth) needs current permission: an active card, an **Active** Location and a membership. Clearings and refunds resolve through the original purchase row and the card row that earned it, never the currently active card.
+- **R1:** a `linked_cards.fidel_delete_state` machine (`pending` / `in_progress` with a 5-minute lease / `deleted` / `failed` / `superseded`) with a per-card advisory lock (identity lock first, then card locks sorted by id). Background recovery returns `removal_pending` / `removal_in_progress` and never re-creates a removed card. Only an explicit claim (SDK `cardId`) can supersede a pending removal, and never while a delete is running. All DELETEs go through `begin_fidel_card_delete` / `finish_fidel_card_delete`. There is a 20-second HTTP timeout.
+- **R2:** the webhook resolves clearing/refund by purchase, checking business, the purchase's own card row and the user. The refund locks the purchaser's membership (missing → `refund_membership_missing`).
+- **R3:** cap refusals insert an unlinked `cap_exceeded` row before deleting. Account deletion sets a tombstone (`fidel_link_identities.deleting_at`, 1-hour expiry), deletes local rows through the lease, and deletes provider-only cards by listing under the metadata id (fails closed on a truncated listing). On success it retires the metadata id into a new user-free table. An orphan sweep deletes program cards under retired or unknown (>24h) metadata. The unknown-metadata rule needs an API-reference check first.
+- **R4:** an auth at a non-Active Location → `ineligible_location`, no award. `fidel_webhook_events.outcome` records every path for reconciliation.
+- 15 required tests, acceptance list and a staged-deploy compatibility requirement are in the doc. `ARCH_PLAN.md` §4.2 and `IMPLEMENTATION_TIMELINE.md` now point to it.
+
+Checks performed: design only. Read the current migrations (card linking, the webhook RPC as last redefined in `20260922233331`), `_shared/fidel-cards.ts`, `delete-my-account`, the shopper claim/recovery client and the review reproducer. No code, database, provider or deployment changes. A production read of the demo accounts was blocked earlier in this session and wasn't needed here.
+
+Remaining issues:
+1. Codex implements R1–R4 locally (prompt below). Claude reviews, then the product owner authorises deployment.
+2. R5–R9 design/implementation follow.
+3. Unverified in this design: Fidel's program-card listing endpoint and whether cards carry a created timestamp (the orphan-sweep rule 2 depends on it). Sweep scheduling (`pg_cron` absent) stays a separate gate.
+4. Earlier App Store items are unchanged (both iOS apps waiting for review).
+
 ## Copy-ready prompt for Claude Code
 
-Read CLAUDE_HANDOFF.md, ARCH_PLAN.md §2/§4.2, CARD_LINKING_PLAN.md, IMPLEMENTATION_TIMELINE.md and docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md. Review and disposition R1–R9; design additive fixes and give Codex the exact first local implementation task for R1–R3. Acceptance: recovery cannot undo removal; claim/unlink/sweep/account deletion cannot race; historical clearing/refunds retain purchase ownership after unlink/relink; rejected provider cards have durable cleanup. Address activation, manual retry/undo and UI findings in subsequent tasks. Review docs/PAYMENT_PROVIDER_RESEARCH_2026-09-25.md as a conditional proposal, not approval to integrate. Update the handoff after each item. No product-owner input is required for this review. Do not deploy, change secrets/settings/live data, create fixtures, contact providers or trigger/replay transactions.
+Codex's next task (paste to Codex):
+
+Read CLAUDE_HANDOFF.md, docs/CARD_LIFECYCLE_REPAIR_R1-R4.md, docs/CLAUDE_IMPLEMENTATION_REVIEW_2026-09-25.md and tmp/claude-review/regressions.test.mjs. Implement docs/CARD_LIFECYCLE_REPAIR_R1-R4.md §1–§5 locally:
+- one new additive migration (do not edit applied migrations)
+- the new/replacement SQL functions
+- Edge Function changes in supabase/functions/_shared/fidel-cards.ts, fidel-card-claim, fidel-card-unlink, fidel-card-delete-sweep and delete-my-account
+- the 15 desired-behaviour tests in apps/api/test/integration/ using disposable PostgreSQL and fake HTTP only
+
+Keep the existing 33 pure tests, 3 integration suites and both apps' TypeScript checks passing. Leave the original reproducer unchanged. Verify the Fidel program-card listing endpoint and card created-timestamp from the API reference before implementing orphan-sweep rule 2; if unconfirmed, implement only the retired-metadata rule and record it. Do not deploy, apply migrations remotely, change secrets or provider settings, call Fidel, or touch live data. Record in CLAUDE_HANDOFF.md after each completed item what changed, the exact commands and results, and any deviation from the design with its reason. When finished, leave a copy-ready prompt asking Claude to review the implementation against §7.

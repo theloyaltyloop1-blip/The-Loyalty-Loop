@@ -481,6 +481,12 @@ between eligibility for new awards and historical purchase adjustments. Claude
 must specify that repair before implementation; do not weaken historical ownership
 checks or claim the current code is safe merely because the original suites pass.
 
+**Specified 2026-09-29:** `docs/CARD_LIFECYCLE_REPAIR_R1-R4.md` is now the binding
+contract. An auth needs an active card, an Active Location and a membership now. A
+clearing or refund resolves through the original purchase row and the card row that
+earned it, with no active-card or Active Location requirement. Steps 7–9 below are
+superseded wherever they conflict with it.
+
 6. Insert into `fidel_webhook_events (fidel_message_id, fidel_transaction_id, event_type)`.
    On unique-violation (`23505`) on `(fidel_transaction_id, event_type)`: this exact
    event was already processed — return 200 immediately, do nothing else. This is the
