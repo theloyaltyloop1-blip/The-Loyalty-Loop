@@ -3584,3 +3584,49 @@ The product owner said in chat: "codex can look and write everything - it gets t
 ## Authorized R1–R4 release: §1 CLI discovery (2026-09-29 16:56 UTC) — Codex
 
 Read the product-owner authorization, approved three-amendment runbook, AGENTS and architecture. Installed Supabase CLI `2.118.0`; read `migration list --help`, `db push --help`, `functions list --help`, `functions deploy --help`. Existing local linked project ends …zbdo, so no relink is needed. CLI help explicitly says push updates Vault secrets unless `--skip-vault` is set; use that supported flag for preview/push to preserve the no-secrets-change constraint. No deployment or SQL executed yet. User's suffix-only evidence rule supersedes runbook text about saving full IDs. Next: migration history gate, before any window or deployment.
+
+## R1–R4 DEPLOYED to production (2026-09-29 17:01–17:02 UTC) — Claude, product owner asked
+
+Codex stopped after the CLI discovery entry above (usage limits; no SQL or deployment), so the product owner asked Claude to run `docs/DEPLOY_R1-R4_RUNBOOK.md`. Source revision `56fbfc8`; migration sha256 `2b473b1b12162d23…`. Supabase CLI 2.118.0, already linked to project `…zbdo`.
+
+**§1 prechecks (all passed):**
+- `migration list --linked`: 59 matched. The only local-only migration was `20260929071345`. The two 25 Sep migrations (`172000`, `190000`) **are** matched, which resolves the history question raised in the runbook review.
+- `db push --linked --dry-run`: exactly `20260929071345_fidel_card_lifecycle_repair.sql`, with no seeds and no roles.
+- Function baseline: claim v4, unlink v4, sweep v4, delete-my-account v18 (JWT on); session v5; webhook v7 (JWT off). The handoff's older "v6" for the webhook was stale.
+- §1.1: exactly one Location mapping, Pure Elegant Dry Cleaners `…4944`, program `…0b95`, **active**, checked 2026-09-24 23:58 UTC. No other shop is affected by R4.
+- §1.2 predicted backfill: 1 active row (`…ecb7`), 1 removed row (`…9594`, reason `user`) → `deleted`. The removed row shares its card id with the active row (relinked after a confirmed deletion). There were no pending or failed rows, so the release triggers no DELETEs.
+- Quiescence: 2 link identities (both test accounts), 1 user with cards, newest identity 2026-09-23, last webhook event 2026-09-25, no `pg_cron` schema.
+
+**§2 deployment:**
+- `supabase db push --linked --skip-vault` applied the repair at 17:01:52–55 UTC, exit 0.
+- `supabase functions deploy` ran fidel-card-claim, fidel-card-unlink, fidel-card-delete-sweep and delete-my-account in order, finishing by 17:02:29 UTC. All exit 0. The mixed window was 34 seconds.
+
+**§3 verification (read-only):**
+- `migration list`: 60/60 matched, latest `20260929071345`.
+- Functions: claim **v5**, unlink **v5**, sweep **v5**, delete-my-account **v19**, all ACTIVE with `verify_jwt=true`, updated 17:02:24–30 UTC. Session v5 and webhook v7 are unchanged.
+- The deployed claim bundle (`get_edge_function`) contains `claim_linked_card_v2`, the `_explicit` flag and `deleteLeasedCard`. The other three were uploaded from the same shared file in the same run.
+- §3.2 ACLs: **16/16 functions OK** (security definer, `search_path=""`, service-only; anon, authenticated and PUBLIC denied). **2/2 new tables OK** (RLS on, no client privileges).
+- §3.3 backfill: `…ecb7` active (NULL, attempts 0, no lease); `…9594` `deleted` (attempts 0, no lease). **0 invariant violations**, exactly as predicted.
+- §3.4 ledger: 4 pre-migration events, all with NULL outcome (historical only). **0 events since the migration**, so "post-deploy Active auth processing not yet observed". Pure Elegant is still active.
+
+**Not done:**
+- The §5 pre-purchase membership snapshot. This session's safety classifier blocked the read of the test shopper's membership and balance ("Production Reads"). The product owner can run runbook §5's snapshot SQL in the Supabase SQL editor, or allow the read.
+- The §5 Android unlink/relink and the one Playground auth, which need the product owner.
+
+**Remaining issues:**
+1. §5 smoke test (product owner plus a verifier).
+2. Add `ineligible_location` / `refund_membership_missing` to the webhook's reconciliation warning at the next webhook change.
+3. R5–R9 design (Claude) and implementation.
+4. Sweep scheduling and orphan rule 2 are still deferred.
+
+## Copy-ready prompt for Claude Code
+
+Codex's next task (paste to Codex when its limits reset):
+
+Read CLAUDE_HANDOFF.md, "R1–R4 DEPLOYED to production (2026-09-29 17:01–17:02 UTC)". Claude ran the deployment after you stopped at CLI discovery, so **do not run runbook §1–§2 again.** Independently re-verify it **read-only**:
+- `supabase migration list --linked`
+- `supabase functions list --output json`
+- runbook §3.2 and §3.3 SQL inside read-only transactions
+- inspect the deployed bundles for fidel-card-unlink, fidel-card-delete-sweep and delete-my-account to confirm they use `begin_fidel_card_delete` / `finish_fidel_card_delete`, and that delete-my-account calls `deleteAllFidelCardsForUser(…, user.id)`
+
+Record agreement or discrepancies in CLAUDE_HANDOFF.md, using suffixes only. If the product owner has since done the §5 smoke test, verify its new transaction by ID with runbook §5's read-only query and record the result. Do not deploy, push migrations, call Fidel, replay events, or change settings, secrets or data. Leave a copy-ready prompt for Claude.
