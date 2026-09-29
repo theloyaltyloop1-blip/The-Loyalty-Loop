@@ -128,8 +128,20 @@ interface CustomerReview {
   rating: number;
   body: string | null;
   created_at: string;
-  reply?: { id: string; body: string; created_at: string }[] | null;
+  reply?: { id: string; body: string; ai_generated?: boolean; created_at: string }[] | null;
 }
+interface ReviewDraft {
+  review_id: string;
+  status: "generating" | "ready" | "failed" | "posted" | "dismissed";
+  body: string | null;
+  updated_at: string;
+}
+interface ReviewAiSettings {
+  enabled: boolean;
+  auto_post_positive: boolean;
+  sign_off: string | null;
+}
+const DEFAULT_REVIEW_AI: ReviewAiSettings = { enabled: true, auto_post_positive: true, sign_off: null };
 interface StaffMember {
   id: string;
   name: string;
@@ -1384,26 +1396,116 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
   );
 }
 
-function ReviewsPage({ business, userId, onBack, preview = false }: PageProps) {
+function ReviewAiSettingsCard({ businessId }: { businessId: string }) {
+  const [settings, setSettings] = useState<ReviewAiSettings>(DEFAULT_REVIEW_AI);
+  const [saved, setSaved] = useState<ReviewAiSettings>(DEFAULT_REVIEW_AI);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    void supabase
+      .from("business_review_ai_settings")
+      .select("enabled,auto_post_positive,sign_off")
+      .eq("business_id", businessId)
+      .maybeSingle()
+      .then(({ data }) => {
+        const value = (data as ReviewAiSettings | null) ?? DEFAULT_REVIEW_AI;
+        setSettings(value);
+        setSaved(value);
+      });
+  }, [businessId]);
+  const changed = JSON.stringify(settings) !== JSON.stringify(saved);
+  async function save() {
+    setBusy(true);
+    const { error } = await supabase.rpc("set_review_ai_settings", {
+      _business_id: businessId,
+      _enabled: settings.enabled,
+      _auto_post_positive: settings.auto_post_positive,
+      _sign_off: settings.sign_off?.trim() || null,
+    });
+    setBusy(false);
+    if (error) return Alert.alert("Could not save", error.code === "42501" ? "Only the shop owner can change AI replies." : error.message);
+    setSaved(settings);
+  }
+  const Toggle = ({ value, onChange, title, detail, disabled = false }: { value: boolean; onChange: (value: boolean) => void; title: string; detail: string; disabled?: boolean }) => (
+    <Pressable accessibilityRole="switch" accessibilityState={{ checked: value, disabled }} disabled={disabled} onPress={() => onChange(!value)} style={[styles.aiToggleRow, disabled && styles.disabled]}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.listTitle}>{title}</Text>
+        <Text style={styles.date}>{detail}</Text>
+      </View>
+      <View style={[styles.aiSwitch, value && styles.aiSwitchOn]}><View style={[styles.aiKnob, value && styles.aiKnobOn]} /></View>
+    </Pressable>
+  );
+  return (
+    <View style={styles.aiCard}>
+      <View style={styles.aiCardHeading}>
+        <Sparkles size={20} color={orange} />
+        <Text style={styles.aiCardTitle}>AI replies</Text>
+      </View>
+      <Text style={styles.body}>Every review gets a thoughtful reply written from your shop’s details.</Text>
+      <Toggle value={settings.enabled} onChange={(enabled) => setSettings({ ...settings, enabled })} title="Write replies with AI" detail="Drafts a reply as soon as a customer reviews you." />
+      <Toggle value={settings.auto_post_positive} disabled={!settings.enabled} onChange={(auto_post_positive) => setSettings({ ...settings, auto_post_positive })} title="Post 4★ and 5★ replies automatically" detail="1–3★ replies always wait for you to check." />
+      <Field value={settings.sign_off ?? ""} onChangeText={(sign_off) => setSettings({ ...settings, sign_off })} placeholder="Sign-off (optional), e.g. — Sam and the team" />
+      {changed ? <PrimaryButton label="Save AI settings" onPress={() => void save()} busy={busy} /> : null}
+    </View>
+  );
+}
+
+function ReviewsPage({ business, onBack, preview = false }: PageProps) {
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [aiDrafts, setAiDrafts] = useState<Record<string, ReviewDraft>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [writingId, setWritingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (preview) return;
-    const { data, error } = await supabase
-      .from("reviews")
-      .select("id,user_id,rating,body,created_at,reply:review_replies(id,body,created_at)")
-      .eq("business_id", business.id)
-      .order("created_at", { ascending: false });
+    const [{ data, error }, { data: draftRows }] = await Promise.all([
+      supabase
+        .from("reviews")
+        .select("id,user_id,rating,body,created_at,reply:review_replies(id,body,ai_generated,created_at)")
+        .eq("business_id", business.id)
+        .order("created_at", { ascending: false }),
+      supabase.from("review_reply_drafts").select("review_id,status,body,updated_at").eq("business_id", business.id),
+    ]);
     if (error) {
       Alert.alert("Could not load reviews", error.message);
       return;
     }
     const items = (data || []) as CustomerReview[];
+    const byReview = Object.fromEntries(((draftRows || []) as ReviewDraft[]).map((draft) => [draft.review_id, draft]));
     setReviews(items);
-    setDrafts(Object.fromEntries(items.map((review) => [review.id, review.reply?.[0]?.body || ""])));
+    setAiDrafts(byReview);
+    setDrafts(Object.fromEntries(items.map((review) => {
+      const suggestion = !review.reply?.[0] && byReview[review.id]?.status === "ready" ? byReview[review.id].body : null;
+      return [review.id, review.reply?.[0]?.body || suggestion || ""];
+    })));
   }, [business.id, preview]);
+
+  // A reply that is still being written usually lands within a few seconds.
+  const waiting = Object.values(aiDrafts).some((draft) => draft.status === "generating" && Date.now() - new Date(draft.updated_at).getTime() < 120_000);
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = setTimeout(() => void load(), 4000);
+    return () => clearTimeout(timer);
+  }, [waiting, aiDrafts, load]);
+
+  async function writeWithAi(review: CustomerReview) {
+    setWritingId(review.id);
+    const { data, error } = await supabase.functions.invoke("ai-review-reply", { body: { review_id: review.id, mode: "draft" } });
+    setWritingId(null);
+    if (error || typeof data?.body !== "string") {
+      const detail = error && "context" in error ? await (error.context as Response).json().catch(() => null) : null;
+      Alert.alert("AI reply", typeof detail?.error === "string" ? detail.error : "The AI couldn’t write a reply. Please try again.");
+      return;
+    }
+    setDrafts((current) => ({ ...current, [review.id]: data.body }));
+    setAiDrafts((current) => ({ ...current, [review.id]: { review_id: review.id, status: "ready", body: data.body, updated_at: new Date().toISOString() } }));
+  }
+
+  async function dismiss(review: CustomerReview) {
+    const { error } = await supabase.rpc("dismiss_review_reply_draft", { _review_id: review.id });
+    if (error) return Alert.alert("Could not dismiss", error.message);
+    await load();
+  }
 
   useEffect(() => {
     if (preview) {
@@ -1421,15 +1523,13 @@ function ReviewsPage({ business, userId, onBack, preview = false }: PageProps) {
     }
     setBusyId(review.id);
     try {
-      const existing = review.reply?.[0];
-      const query = existing
-        ? supabase.from("review_replies").update({ body }).eq("id", existing.id)
-        : supabase.from("review_replies").insert({ review_id: review.id, business_id: business.id, owner_id: userId, body });
-      const { error } = await query;
+      // The database keeps the "written by AI" label only for an unchanged draft.
+      const { error } = await supabase.rpc("post_review_reply_draft", { _review_id: review.id, _body: body });
       if (error) throw error;
       await load();
     } catch (error) {
-      Alert.alert("Could not save reply", error instanceof Error ? error.message : "Please try again.");
+      const denied = typeof error === "object" && error !== null && "code" in error && error.code === "42501";
+      Alert.alert("Could not save reply", denied ? "You can only change replies you wrote." : error instanceof Error ? error.message : "Please try again.");
     } finally {
       setBusyId(null);
     }
@@ -1439,21 +1539,39 @@ function ReviewsPage({ business, userId, onBack, preview = false }: PageProps) {
     <View>
       <PageHeader title="Reviews" eyebrow="CUSTOMER FEEDBACK" onBack={onBack} />
       <Text style={styles.body}>Read customer feedback and reply from your shop.</Text>
-      {reviews.length ? reviews.map((review) => (
-        <Section key={review.id}>
-          <View style={styles.requestHeading}>
-            <View>
-              <Text style={styles.listTitle}>Customer review</Text>
-              <Text style={styles.date}>{new Date(review.created_at).toLocaleDateString()}</Text>
+      {preview ? null : <ReviewAiSettingsCard businessId={business.id} />}
+      {reviews.length ? reviews.map((review) => {
+        const reply = review.reply?.[0];
+        const aiDraft = aiDrafts[review.id];
+        const suggestion = !reply && aiDraft?.status === "ready" ? aiDraft.body : null;
+        const generating = !reply && aiDraft?.status === "generating" && Date.now() - new Date(aiDraft.updated_at).getTime() < 120_000;
+        return (
+          <Section key={review.id}>
+            <View style={styles.requestHeading}>
+              <View>
+                <Text style={styles.listTitle}>Customer review</Text>
+                <Text style={styles.date}>{new Date(review.created_at).toLocaleDateString()}</Text>
+              </View>
+              <View style={styles.reviewRating}><Star size={16} fill={orange} color={orange} /><Text style={styles.reviewRatingText}>{review.rating}/5</Text></View>
             </View>
-            <View style={styles.reviewRating}><Star size={16} fill={orange} color={orange} /><Text style={styles.reviewRatingText}>{review.rating}/5</Text></View>
-          </View>
-          <Text style={styles.body}>{review.body || "No written comment."}</Text>
-          <Text style={styles.replyTitle}>{review.reply?.[0] ? "Your reply" : "Reply from your shop"}</Text>
-          <Field value={drafts[review.id] || ""} onChangeText={(value) => setDrafts((current) => ({ ...current, [review.id]: value }))} placeholder="Thank them for their feedback…" multiline />
-          <PrimaryButton label={review.reply?.[0] ? "Update reply" : "Post reply"} onPress={() => void saveReply(review)} busy={busyId === review.id} />
-        </Section>
-      )) : <Section><Text style={styles.empty}>No customer reviews yet.</Text></Section>}
+            <Text style={styles.body}>{review.body || "No written comment."}</Text>
+            <View style={styles.aiReplyHeading}>
+              <Text style={styles.replyTitle}>{reply ? "Your reply" : "Reply from your shop"}</Text>
+              {reply?.ai_generated ? <View style={styles.aiChip}><Sparkles size={12} color={orange} /><Text style={styles.aiChipText}>Written by AI</Text></View> : null}
+            </View>
+            {suggestion && drafts[review.id] === suggestion ? (
+              <View style={styles.aiNote}><Sparkles size={15} color={orange} /><Text style={styles.aiNoteText}>AI suggested this reply. Check it, edit it if you like, then post it.</Text></View>
+            ) : null}
+            {generating ? (
+              <View style={styles.aiNote}><ActivityIndicator size="small" color={orange} /><Text style={styles.aiNoteText}>AI is writing a reply…</Text></View>
+            ) : null}
+            <Field value={drafts[review.id] || ""} onChangeText={(value) => setDrafts((current) => ({ ...current, [review.id]: value }))} placeholder="Thank them for their feedback…" multiline />
+            <PrimaryButton label={reply ? "Update reply" : "Post reply"} onPress={() => void saveReply(review)} busy={busyId === review.id} />
+            <PrimaryButton label={writingId === review.id ? "Writing…" : suggestion || aiDraft?.body ? "Rewrite with AI" : "Write with AI"} onPress={() => void writeWithAi(review)} busy={writingId === review.id} secondary />
+            {suggestion ? <PrimaryButton label="Dismiss AI suggestion" onPress={() => void dismiss(review)} secondary /> : null}
+          </Section>
+        );
+      }) : <Section><Text style={styles.empty}>No customer reviews yet.</Text></Section>}
     </View>
   );
 }
@@ -1979,5 +2097,18 @@ const styles = StyleSheet.create({
     marginTop: 13,
   },
   replyTitle: { color: ink, fontWeight: "900", marginBottom: 4 },
+  aiCard: { backgroundColor: "#FFF0E8", borderRadius: 20, padding: 16, marginTop: 12, marginBottom: 4, gap: 6 },
+  aiCardHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
+  aiCardTitle: { color: ink, fontSize: 18, fontWeight: "900" },
+  aiToggleRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 },
+  aiSwitch: { width: 46, height: 26, borderRadius: 13, backgroundColor: "#D9D6CE", padding: 3 },
+  aiSwitchOn: { backgroundColor: orange },
+  aiKnob: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" },
+  aiKnobOn: { transform: [{ translateX: 20 }] },
+  aiReplyHeading: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  aiChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FFF0E8", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
+  aiChipText: { color: orange, fontSize: 11, fontWeight: "900" },
+  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF0E8", borderRadius: 12, padding: 10, marginBottom: 6 },
+  aiNoteText: { color: ink, flex: 1, fontSize: 13 },
   date: { color: muted, fontSize: 11, marginTop: 12 },
 });

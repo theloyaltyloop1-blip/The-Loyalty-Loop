@@ -550,9 +550,25 @@ export interface ReviewReply {
   business_id: string
   owner_id: string
   body: string
+  ai_generated?: boolean
   created_at: string
   updated_at: string
 }
+
+export interface ReviewReplyDraft {
+  review_id: string
+  status: 'generating' | 'ready' | 'failed' | 'posted' | 'dismissed'
+  body: string | null
+  updated_at: string
+}
+
+export interface ReviewAiSettings {
+  enabled: boolean
+  auto_post_positive: boolean
+  sign_off: string | null
+}
+
+export const DEFAULT_REVIEW_AI_SETTINGS: ReviewAiSettings = { enabled: true, auto_post_positive: true, sign_off: null }
 
 export interface ShopReview {
   id: string
@@ -568,7 +584,7 @@ export interface ShopReview {
 export async function fetchShopReviews(businessId: string): Promise<ShopReview[]> {
   const { data, error } = await supabase
     .from('reviews')
-    .select('id,user_id,business_id,rating,body,created_at,updated_at,reply:review_replies(id,review_id,business_id,owner_id,body,created_at,updated_at)')
+    .select('id,user_id,business_id,rating,body,created_at,updated_at,reply:review_replies(id,review_id,business_id,owner_id,body,ai_generated,created_at,updated_at)')
     .eq('business_id', businessId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -590,15 +606,55 @@ export async function deleteReview(id: string) {
   if (error) throw error
 }
 
-export async function replyToReview(review: ShopReview, ownerId: string, body: string) {
-  const values = { review_id: review.id, business_id: review.business_id, owner_id: ownerId, body: body.trim() }
+// AI review replies. Posting goes through the database so the "written by
+// AI" label is only kept when the draft is posted unchanged.
+export async function fetchReviewDrafts(businessId: string): Promise<Record<string, ReviewReplyDraft>> {
   const { data, error } = await supabase
-    .from('review_replies')
-    .upsert(values, { onConflict: 'review_id' })
-    .select()
-    .single()
+    .from('review_reply_drafts')
+    .select('review_id,status,body,updated_at')
+    .eq('business_id', businessId)
   if (error) throw error
-  return data as ReviewReply
+  return Object.fromEntries(((data ?? []) as ReviewReplyDraft[]).map((draft) => [draft.review_id, draft]))
+}
+
+export async function fetchReviewAiSettings(businessId: string): Promise<ReviewAiSettings> {
+  const { data, error } = await supabase
+    .from('business_review_ai_settings')
+    .select('enabled,auto_post_positive,sign_off')
+    .eq('business_id', businessId)
+    .maybeSingle()
+  if (error) throw error
+  return (data as ReviewAiSettings | null) ?? DEFAULT_REVIEW_AI_SETTINGS
+}
+
+export async function saveReviewAiSettings(businessId: string, settings: ReviewAiSettings) {
+  const { error } = await supabase.rpc('set_review_ai_settings', {
+    _business_id: businessId,
+    _enabled: settings.enabled,
+    _auto_post_positive: settings.auto_post_positive,
+    _sign_off: settings.sign_off?.trim() || null,
+  })
+  if (error) throw error
+}
+
+export async function postReviewReply(reviewId: string, body: string) {
+  const { error } = await supabase.rpc('post_review_reply_draft', { _review_id: reviewId, _body: body.trim() })
+  if (error) throw error
+}
+
+export async function dismissReviewDraft(reviewId: string) {
+  const { error } = await supabase.rpc('dismiss_review_reply_draft', { _review_id: reviewId })
+  if (error) throw error
+}
+
+export async function writeReviewReplyWithAi(reviewId: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('ai-review-reply', { body: { review_id: reviewId, mode: 'draft' } })
+  if (error) {
+    const context = (error as { context?: Response }).context
+    const detail = context ? await context.json().catch(() => null) : null
+    throw new Error(typeof detail?.error === 'string' ? detail.error : 'The AI couldn’t write a reply. Please try again.')
+  }
+  return (data as { body: string }).body
 }
 
 export async function fetchMyRewards(userId: string): Promise<CustomerReward[]> {

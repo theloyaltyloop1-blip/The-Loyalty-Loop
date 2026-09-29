@@ -6,3 +6,10 @@ verify_jwt = false
 
 [functions.fidel-webhook]
 verify_jwt = false
+
+# Called by the reviews trigger through pg_net with no user session. It
+# verifies owner "Write with AI" requests itself, and the database decides
+# whether any reply is due, so an unauthenticated call can't do more than
+# the trigger would.
+[functions.ai-review-reply]
+verify_jwt = false

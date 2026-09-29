@@ -3619,14 +3619,99 @@ Codex stopped after the CLI discovery entry above (usage limits; no SQL or deplo
 3. R5–R9 design (Claude) and implementation.
 4. Sweep scheduling and orphan rule 2 are still deferred.
 
+## R1–R4 migration-history retry confirmed (2026-09-29 19:34 UTC) — Codex
+
+The earlier migration-history attempt was not executed because automatic approval review hit a usage limit. On the owner's request to retry, `node tmp/r1r4-runbook/cli.mjs migrations` succeeded (Supabase `migration list --linked --output json`, CLI 2.118.0). Started 2026-09-29T19:34:51.680Z; finished 2026-09-29T19:34:53.446Z; exit 0. All local/remote entries match, including `20260929071345` and both questioned 25 September entries. No history divergence observed. Sanitized output; project suffix …zbdo only.
+
+The repair is already applied. Claude's intervening entry records deployment at 17:01–17:02 UTC, consistent with this independent history check. Following the runbook's already-applied stop condition, Codex did not repeat the dry run, migration push or deployments. No remote SQL, Fidel requests, secret/settings changes or live-data writes occurred in this retry. Function versions/bundles, ACLs, backfill and ledger outcomes were not independently rechecked; earlier results remain attributed to Claude. No new milestone completed. Remaining work is read-only verification and owner-assisted smoke testing. Initial local handoff-write attempt failed because Python was unavailable; retried with native PowerShell.
+
+## R1–R4 §3 verification completed (2026-09-29) — Claude, answering Codex's 19:34 prompt
+
+§3.1–§3.4 were already recorded in "R1–R4 DEPLOYED to production", and Codex's independent history check agrees (60 matched, `20260929071345` applied). The one open item was the bundle contents. `get_edge_function` shows:
+- **delete-my-account v19** (ACTIVE, JWT on) calls `deleteAllFidelCardsForUser({…, db: cardDb(admin), fetch }, user.id)`.
+- **fidel-card-claim v5** calls `claim_linked_card_v2` with `_explicit`.
+- Both bundles contain the shared module with `begin_fidel_card_delete` / `finish_fidel_card_delete` (`deleteLeasedCard`).
+- fidel-card-unlink v5 and fidel-card-delete-sweep v5 were uploaded from the same shared file in the same CLI run (upload log). Their bundles weren't fetched separately.
+
+There have been no post-deploy auth events yet, so "post-deploy Active auth processing not yet observed". The §5 smoke test is still with the product owner (steps given in chat 2026-09-29). **R1–R4 deployment verification is complete except §5.**
+
+## AI review replies, phase 1 (Loyalty Loop reviews): BUILT and tested locally, NOT deployed (2026-09-29) — Claude, product owner asked
+
+Request: "add an AI auto review bot - so every google review and every loyalty loop review you get, the AI can respond to it with context". Product-owner decisions:
+- **auto-post AI replies to 4–5★, and hold 1–3★ as drafts for the owner** (per-shop toggle, default on);
+- **Loyalty Loop reviews first, Google next.** Google's Business Profile API starts every project at zero quota until an access request is approved. It needs a verified Business Profile active for 60+ days and a website, and each shop must connect its Google account through OAuth with the `business.manage` scope.
+
+What was built:
+- **Migration `20260929180500_ai_review_replies.sql`:**
+  - `business_review_ai_settings`: enabled, auto_post_positive, sign_off; a missing row means on/on.
+  - `review_reply_drafts`: one per review, with a version tied to the review's `updated_at`, a 2-minute generation lease and an attempt fence.
+  - `review_replies.ai_generated`. A trigger forces it false on any direct client write, so only trusted paths can label a reply AI-written.
+  - RPCs: `can_manage_review_replies`; `set_review_ai_settings` (owner or admin only); service-only `claim_review_reply_generation` and `complete_review_reply_generation` (the DB enforces the auto-post rules: rating ≥4, enabled, auto-post on, text judged safe, no existing reply, review not edited since, no open report); `post_review_reply_draft`, where the AI label is kept only if the draft is posted unchanged, and staff can still only change their own replies; `dismiss_review_reply_draft`.
+  - A reviews trigger calls the new function through `pg_net` on insert, or when rating/body changes, if the shop is enabled and there's no reply yet.
+- **Edge Function `ai-review-reply`** (`verify_jwt = false` in `config.toml`):
+  - The trigger path has no user and is idempotent, because the DB decides.
+  - The owner "Write with AI" path verifies the user's JWT and `can_manage_review_replies`, with rate limits of 10/min and 50/day. It always writes a draft.
+  - Groq `openai/gpt-oss-120b` with low reasoning effort, the same key as the business coach.
+- **`_shared/review-reply.ts`:**
+  - The prompt uses the shop's name, category and description, plus tone-only customer notes (new/returning/regular, has redeemed). There are no names, amounts or ids. The review text is fenced as untrusted.
+  - Rules: no refunds or discounts, no invented facts, British English, under 90 words, optional exact sign-off.
+  - `sanitizeReply` never marks text safe to post if it contains a link, email, phone number, AI mention, placeholder, refund/discount offer, or runs over 700 characters. Such text stays a draft.
+- **Website** `pages/owner/Reviews.tsx` and `lib/businesses.ts`:
+  - an "AI replies" settings card for owners;
+  - an AI suggestion prefilled for unanswered reviews, with an "AI is writing…" state and 4-second polling;
+  - Post, "Write/Rewrite with AI" and Dismiss buttons, and a "Written by AI" chip;
+  - saving now goes through `post_review_reply_draft`. The unused `replyToReview` was removed.
+- **Business app** `src/owner-pages.tsx` ReviewsPage: the same features in native form, with an orange AI card and toggles.
+
+Checks run:
+- `node --test supabase/functions/_shared/review-reply.test.mjs` → 6/6;
+- `node --test apps/api/test/integration/ai-review-replies.test.mjs` (disposable PostgreSQL, pg_net stub) → 11/11. It covers the trigger, context without customer ids, auto-post vs draft, the stale/empty fences, disabled shops, the posting label, staff edit rights, direct-write label forcing, dismiss/settings/ACLs, and fresh replies after an edit;
+- web `tsc -b` and `vite build` → OK;
+- retailer `tsc --noEmit` → OK;
+- `deno check` on `ai-review-reply` → OK;
+- `db push --dry-run` lists only this migration.
+- No real model call has been made yet, so the reply quality is **unverified**.
+
+**Deployment was blocked** by this session's safety classifier ("Production Deploy"), pending the product owner's explicit go-ahead. Nothing is live.
+
+Deployment order once approved:
+1. `supabase functions deploy ai-review-reply`;
+2. `supabase db push --linked --skip-vault`;
+3. push to `main`, which deploys the website on Vercel;
+4. retailer OTA with `eas update --channel production`, one platform at a time, from PowerShell.
+
+**Don't push the website before the migration**, because its Post button calls the new RPC.
+
+Existing reviews without replies aren't back-filled. Owners can use "Write with AI" on them.
+
+Remaining issues:
+1. Product owner go-ahead to deploy.
+2. The first real replies need eyeballing, since reply quality is unverified.
+3. **Google phase 2:** the product owner applies for Business Profile API access now (Google Cloud project, OAuth consent screen with `business.manage`, access request form). Then build per-shop Google connect, a review poller (Google has no review webhook for this API; poll `accounts.locations.reviews.list`) and `updateReply`, reusing the same drafts and settings.
+4. R5–R9 design.
+
 ## Copy-ready prompt for Claude Code
 
-Codex's next task (paste to Codex when its limits reset):
+Codex's next task (paste to Codex):
 
-Read CLAUDE_HANDOFF.md, "R1–R4 DEPLOYED to production (2026-09-29 17:01–17:02 UTC)". Claude ran the deployment after you stopped at CLI discovery, so **do not run runbook §1–§2 again.** Independently re-verify it **read-only**:
-- `supabase migration list --linked`
-- `supabase functions list --output json`
-- runbook §3.2 and §3.3 SQL inside read-only transactions
-- inspect the deployed bundles for fidel-card-unlink, fidel-card-delete-sweep and delete-my-account to confirm they use `begin_fidel_card_delete` / `finish_fidel_card_delete`, and that delete-my-account calls `deleteAllFidelCardsForUser(…, user.id)`
+Read CLAUDE_HANDOFF.md, "AI review replies, phase 1 … NOT deployed", and review the change independently. The files are:
+- supabase/migrations/20260929180500_ai_review_replies.sql
+- supabase/functions/ai-review-reply/index.ts
+- supabase/functions/_shared/review-reply.ts and its test
+- apps/api/test/integration/ai-review-replies.test.mjs
+- apps/web/src/pages/owner/Reviews.tsx and apps/web/src/lib/businesses.ts
+- the ReviewsPage in apps/retailer/src/owner-pages.tsx
 
-Record agreement or discrepancies in CLAUDE_HANDOFF.md, using suffixes only. If the product owner has since done the §5 smoke test, verify its new transaction by ID with runbook §5's read-only query and record the result. Do not deploy, push migrations, call Fidel, replay events, or change settings, secrets or data. Leave a copy-ready prompt for Claude.
+Focus on:
+- whether the unauthenticated trigger path can be abused (cost, or posting to a review that shouldn't get a reply);
+- RLS and ACLs on the two new tables and five RPCs;
+- the AI-label trigger;
+- the staff edit-rights change;
+- prompt-injection handling;
+- whether any auto-posted text could make promises or leak customer data.
+
+Re-run the two new test files plus the web and retailer type checks. Record approval or specific fixes in CLAUDE_HANDOFF.md. Do not deploy, push migrations, call Groq, or change secrets or data. Leave a copy-ready prompt for Claude.
+
+## Superseded prompt (R1–R4 verification completed above)
+
+Read CLAUDE_HANDOFF.md's deployment and migration-history retry entries, and docs/DEPLOY_R1-R4_RUNBOOK.md. Codex's 19:34 UTC retry confirmed matching history with 20260929071345 already applied. Do not redeploy. Finish read-only verification under §3: function versions/ACTIVE/JWT, deployed unlink/sweep/account-deletion bundles using the new lease functions, ACLs, backfill invariants and existing ledger evidence. Compare with your recorded claim/unlink/sweep v5, delete-my-account v19, session v5 and webhook v7. Use read-only transactions for SQL, record timestamps and suffixes only, and investigate discrepancies without changing production. If no new auth exists, record “post-deploy Active auth processing not yet observed”. Verify an existing §5 smoke-test event if the owner already completed it; otherwise provide exact owner steps using current balances, starting with unlink if the card is active. Owner participation is still required for Android and Playground; report any blocked balance read without bypassing restrictions. Do not deploy, push/repair migrations, call Fidel, replay events or change secrets, settings or data. Update CLAUDE_HANDOFF.md after each completed item and leave one current copy-ready prompt.
