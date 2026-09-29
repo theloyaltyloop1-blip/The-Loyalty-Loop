@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -35,6 +36,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react-native";
+import { mergeReplyInputs } from "./review-reply-inputs";
 import { supabase } from "./supabase";
 
 const orange = "#E8703B";
@@ -132,7 +134,7 @@ interface CustomerReview {
 }
 interface ReviewDraft {
   review_id: string;
-  status: "generating" | "ready" | "failed" | "posted" | "dismissed";
+  status: "queued" | "generating" | "ready" | "failed" | "posted" | "dismissed";
   body: string | null;
   updated_at: string;
 }
@@ -1455,6 +1457,9 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
   const [aiDrafts, setAiDrafts] = useState<Record<string, ReviewDraft>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [writingId, setWritingId] = useState<string | null>(null);
+  // Reviews whose reply box the owner has typed in since it was last saved.
+  // Background refreshes never overwrite these.
+  const edited = useRef(new Set<string>());
 
   const load = useCallback(async () => {
     if (preview) return;
@@ -1474,10 +1479,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
     const byReview = Object.fromEntries(((draftRows || []) as ReviewDraft[]).map((draft) => [draft.review_id, draft]));
     setReviews(items);
     setAiDrafts(byReview);
-    setDrafts(Object.fromEntries(items.map((review) => {
-      const suggestion = !review.reply?.[0] && byReview[review.id]?.status === "ready" ? byReview[review.id].body : null;
-      return [review.id, review.reply?.[0]?.body || suggestion || ""];
-    })));
+    setDrafts((current) => mergeReplyInputs(current, items, byReview, edited.current));
   }, [business.id, preview]);
 
   // A reply that is still being written usually lands within a few seconds.
@@ -1497,6 +1499,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
       Alert.alert("AI reply", typeof detail?.error === "string" ? detail.error : "The AI couldn’t write a reply. Please try again.");
       return;
     }
+    edited.current.delete(review.id);
     setDrafts((current) => ({ ...current, [review.id]: data.body }));
     setAiDrafts((current) => ({ ...current, [review.id]: { review_id: review.id, status: "ready", body: data.body, updated_at: new Date().toISOString() } }));
   }
@@ -1504,6 +1507,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
   async function dismiss(review: CustomerReview) {
     const { error } = await supabase.rpc("dismiss_review_reply_draft", { _review_id: review.id });
     if (error) return Alert.alert("Could not dismiss", error.message);
+    edited.current.delete(review.id);
     await load();
   }
 
@@ -1526,6 +1530,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
       // The database keeps the "written by AI" label only for an unchanged draft.
       const { error } = await supabase.rpc("post_review_reply_draft", { _review_id: review.id, _body: body });
       if (error) throw error;
+      edited.current.delete(review.id);
       await load();
     } catch (error) {
       const denied = typeof error === "object" && error !== null && "code" in error && error.code === "42501";
@@ -1565,7 +1570,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
             {generating ? (
               <View style={styles.aiNote}><ActivityIndicator size="small" color={orange} /><Text style={styles.aiNoteText}>AI is writing a reply…</Text></View>
             ) : null}
-            <Field value={drafts[review.id] || ""} onChangeText={(value) => setDrafts((current) => ({ ...current, [review.id]: value }))} placeholder="Thank them for their feedback…" multiline />
+            <Field value={drafts[review.id] || ""} onChangeText={(value) => { edited.current.add(review.id); setDrafts((current) => ({ ...current, [review.id]: value })); }} placeholder="Thank them for their feedback…" multiline />
             <PrimaryButton label={reply ? "Update reply" : "Post reply"} onPress={() => void saveReply(review)} busy={busyId === review.id} />
             <PrimaryButton label={writingId === review.id ? "Writing…" : suggestion || aiDraft?.body ? "Rewrite with AI" : "Write with AI"} onPress={() => void writeWithAi(review)} busy={writingId === review.id} secondary />
             {suggestion ? <PrimaryButton label="Dismiss AI suggestion" onPress={() => void dismiss(review)} secondary /> : null}

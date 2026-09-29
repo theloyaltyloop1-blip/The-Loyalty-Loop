@@ -557,7 +557,7 @@ export interface ReviewReply {
 
 export interface ReviewReplyDraft {
   review_id: string
-  status: 'generating' | 'ready' | 'failed' | 'posted' | 'dismissed'
+  status: 'queued' | 'generating' | 'ready' | 'failed' | 'posted' | 'dismissed'
   body: string | null
   updated_at: string
 }

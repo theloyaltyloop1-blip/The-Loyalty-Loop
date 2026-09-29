@@ -47,10 +47,12 @@ const reviewStubs = String.raw`
 `;
 
 test('AI review replies: triggers, posting rules, drafts and permissions', { timeout: 120000 }, async t => {
-  const { client, stop } = await startFidelDatabase('ai-review-replies-');
+  const { client, newClient, stop } = await startFidelDatabase('ai-review-replies-');
   try {
     await client.query(reviewStubs);
-    await client.query(await readFile(new URL('../../../../supabase/migrations/20260929180500_ai_review_replies.sql', import.meta.url), 'utf8'));
+    for (const name of ['20260929180500_ai_review_replies.sql', '20260929214500_ai_review_replies_hardening.sql', '20260929223000_ai_review_replies_locks_budget.sql']) {
+      await client.query(await readFile(new URL('../../../../supabase/migrations/' + name, import.meta.url), 'utf8'));
+    }
     await client.query('grant select, insert, update, delete on all tables in schema public to service_role');
 
     const service = (sql, args) => as(client, 'service_role', null, sql, args).then(r => r.rows[0]?.r);
@@ -88,14 +90,44 @@ test('AI review replies: triggers, posting rules, drafts and permissions', { tim
       assert.equal(await calls(), before + 1);
     });
 
-    await t.test('the claim returns tone-only context and blocks a second writer', async () => {
+    await t.test('the claim returns only review and shop context and blocks a second writer', async () => {
       const x = await setup();
       const c = await claim(x.review.id);
       assert.equal(c.status, 'claimed');
-      assert.deepEqual(c.customer, { is_member: true, visits: 'regular', has_redeemed_a_reward: false });
+      assert.deepEqual(Object.keys(c).sort(), ['attempt', 'business', 'review', 'review_version', 'sign_off', 'status']);
       assert.equal(c.business.name, 'Pure Test');
       assert.ok(!JSON.stringify(c).includes(x.customer), 'no customer id in the model context');
       assert.equal((await claim(x.review.id)).reason, 'in_progress');
+    });
+
+    await t.test('the unauthenticated path only acts on a request the trigger queued', async () => {
+      // An old review with no queued request (e.g. from before the feature).
+      const x = await setup();
+      await client.query('update public.review_reply_drafts set requested_version=null where review_id=$1', [x.review.id]);
+      assert.equal((await claim(x.review.id)).reason, 'not_requested');
+      // Re-saving the review unchanged bumps updated_at but queues nothing.
+      const y = await setup();
+      const before = await calls();
+      await client.query('update public.reviews set body=body where id=$1', [y.review.id]);
+      assert.equal(await calls(), before);
+      assert.equal((await claim(y.review.id)).reason, 'not_requested');
+      // Each queued request is consumed once.
+      const z = await setup();
+      const c = await claim(z.review.id);
+      await complete(z.review.id, c.attempt, 'Thank you!');
+      assert.equal((await claim(z.review.id)).reason, 'not_requested');
+    });
+
+    await t.test('a customer editing a review gets at most 3 automatic replies a day', async () => {
+      const x = await setup(2, 'Edit 0');
+      for (let i = 1; i <= 3; i++) {
+        const c = await claim(x.review.id);
+        assert.equal(c.status, 'claimed', 'edit ' + i);
+        await complete(x.review.id, c.attempt, 'Sorry ' + i);
+        await client.query('update public.reviews set body=$2 where id=$1', [x.review.id, 'Edit ' + i]);
+      }
+      assert.equal((await claim(x.review.id)).reason, 'daily_limit');
+      assert.equal((await claim(x.review.id, true)).status, 'claimed', 'the owner can still ask');
     });
 
     await t.test('a safe 5-star reply is posted as the owner and labelled AI', async () => {
@@ -106,7 +138,7 @@ test('AI review replies: triggers, posting rules, drafts and permissions', { tim
       assert.equal(r.owner_id, x.owner);
       assert.equal(r.ai_generated, true);
       assert.equal((await draft(x.review.id)).status, 'posted');
-      assert.equal((await claim(x.review.id)).reason, 'already_replied');
+      assert.equal((await claim(x.review.id)).reason, 'not_requested');
     });
 
     await t.test('low ratings, unsafe text, auto-post off and open reports all wait as drafts', async () => {
@@ -137,17 +169,18 @@ test('AI review replies: triggers, posting rules, drafts and permissions', { tim
       assert.equal((await complete(x.review.id, c.attempt + 1, 'Thanks!')).status, 'stale');
       assert.equal((await complete(x.review.id, c.attempt, '   ')).status, 'failed');
       assert.equal(await reply(x.review.id), undefined);
-      assert.equal((await claim(x.review.id)).reason, 'already_drafted');
+      assert.equal((await claim(x.review.id)).reason, 'not_requested');
       assert.equal((await claim(x.review.id, true)).status, 'claimed', 'owner can ask again');
     });
 
     await t.test('disabled shops get no trigger call and no automatic claim', async () => {
       const x = await setup();
       await asUser(x.owner, 'select public.set_review_ai_settings($1,false,true,null)', [x.shop]);
+      assert.equal((await claim(x.review.id)).reason, 'disabled', 'a request queued before switching off');
       const before = await calls();
       await client.query("update public.reviews set body='Changed' where id=$1", [x.review.id]);
       assert.equal(await calls(), before);
-      assert.equal((await claim(x.review.id)).reason, 'disabled');
+      assert.equal((await claim(x.review.id)).reason, 'not_requested');
     });
 
     await t.test('posting a draft: unchanged is AI-labelled, edited is human; permissions enforced', async () => {
@@ -206,6 +239,42 @@ test('AI review replies: triggers, posting rules, drafts and permissions', { tim
         assert.equal(row.a, false, sig);
       }
       await assert.rejects(asUser(x.owner, 'select public.claim_review_reply_generation($1,true)', [x.review.id]), /permission denied/);
+    });
+
+    await t.test('completion and an owner post at the same moment do not deadlock', async () => {
+      for (let i = 0; i < 3; i++) {
+        const x = await setup(2, 'Slow service.');
+        const c = await claim(x.review.id);
+        const a = await newClient(), b = await newClient();
+        // A holds the review row, as an owner post does first.
+        await a.query('begin');
+        await a.query('select 1 from public.reviews where id=$1 for update', [x.review.id]);
+        // B's completion must now wait on the review before touching the draft.
+        const completing = as(b, 'service_role', null,
+          'select public.complete_review_reply_generation($1,$2,$3,null,false,true) r', [x.review.id, c.attempt, 'Sorry.'])
+          .then(r => r.rows[0].r, e => ({ error: e.code }));
+        await new Promise(resolve => setTimeout(resolve, 200));
+        // A then posts (review -> draft). With the old order this was a 40P01.
+        await as(a, 'authenticated', x.owner, 'select public.post_review_reply_draft($1,$2)', [x.review.id, 'We are sorry.']);
+        await a.query('commit');
+        const done = await completing;
+        assert.notEqual(done.error, '40P01');
+        assert.equal(done.status, 'stale', 'the owner posted first');
+        assert.equal((await reply(x.review.id)).body, 'We are sorry.');
+        await a.end(); await b.end();
+      }
+    });
+
+    await t.test('a shop gets at most 100 automatic replies a day', async () => {
+      const x = await setup();
+      // Another review at the same shop has used the whole day's budget.
+      const other = randomUUID();
+      await client.query('insert into auth.users(id) values($1)', [other]);
+      await client.query('insert into public.memberships(user_id,business_id) values($1,$2)', [other, x.shop]);
+      const { rows: [r] } = await client.query('insert into public.reviews(user_id,business_id,rating) values($1,$2,5) returning id', [other, x.shop]);
+      await client.query('update public.review_reply_drafts set auto_window_start=now(), auto_count=100 where review_id=$1', [r.id]);
+      assert.equal((await claim(x.review.id)).reason, 'daily_limit');
+      assert.equal((await claim(x.review.id, true)).status, 'claimed', 'the owner can still ask');
     });
 
     await t.test('an edited review gets a fresh reply after an earlier draft', async () => {

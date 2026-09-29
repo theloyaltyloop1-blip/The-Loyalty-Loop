@@ -3690,28 +3690,107 @@ Remaining issues:
 3. **Google phase 2:** the product owner applies for Business Profile API access now (Google Cloud project, OAuth consent screen with `business.manage`, access request form). Then build per-shop Google connect, a review poller (Google has no review webhook for this API; poll `accounts.locations.reviews.list`) and `updateReply`, reusing the same drafts and settings.
 4. R5–R9 design.
 
+## AI review replies: independent test stage (2026-09-29) — Codex
+
+Read the phase-1 handoff, architecture and applicable instructions; reviewing without production changes. `node --test supabase/functions/_shared/review-reply.test.mjs`: 6/6 passed. `node ../../node_modules/typescript/bin/tsc -b` from apps/web: exit 0. `node node_modules/typescript/bin/tsc --noEmit -p apps/retailer/tsconfig.json` from root: exit 0. `node --test apps/api/test/integration/ai-review-replies.test.mjs` failed before database setup with Windows sandbox `uv_os_get_passwd` ENOMEM; requesting local-only retry. No integration pass claimed yet. Public documentation fetch failed; source review continues. Deployment is conditional on no blocking findings, per the latest user instruction.
+
+## AI review replies: disposable integration retry passed (2026-09-29) — Codex
+
+`node --test apps/api/test/integration/ai-review-replies.test.mjs` rerun with local process permissions: exit 0, 11/11 Node records (10 subtests plus parent). Disposable PostgreSQL and pg_net stub only. All four requested checks now pass; these tests do not exercise the Edge HTTP handler or adversarial model outputs, so security review remains separate.
+
+## AI review replies: blocking abuse/output findings reproduced (2026-09-29) — Codex
+
+Created local-only `tmp/ai-review-audit/regressions.test.mjs` from the existing integration suite, leaving its source unchanged. `node --test tmp/ai-review-audit/regressions.test.mjs` passed 13/13 records, including two defect reproductions: 12 consecutive automatic claims after no-op review updates (updated_at changes, no trigger receipt required), and automatic posting with no queued trigger receipt. The latter demonstrates why historical unanswered reviews are reachable through the unauthenticated endpoint despite the stated no-backfill scope. No model/provider calls.
+
+An inline `node --input-type=module` probe importing sanitizeReply confirmed `safe:true` for “Your next clean is free.”, “We will give you a complimentary meal next time.”, “We will credit your account with twenty pounds.”, disclosure of regular/redeemed-customer context, and a synthetic name/street address. These are deterministic filter bypasses, not claims about measured Groq behaviour. Prompt instructions and triple quotes do not enforce output safety. Review verdict is already BLOCKED for deployment; further review checks follow. No function/migration/main/OTA deployment will be performed under the conditional authorisation.
+
+## AI review replies: independent review — CHANGES REQUIRED, NOT approved for deployment (2026-09-29) — Codex
+
+Reviewed all requested files, original review/staff policies and both client flows. No production code edited. Conditional deployment authority requires no blockers; blockers were found, so no function deployment, migration/main push or OTA attempted. No Groq, live SQL, secret/settings or production data change.
+
+Required fixes:
+
+1. **P1 — automatic generation lacks durable request authorization and cost limits.** `ai-review-reply/index.ts:53–86` authenticates/rate-limits only mode=draft; other modes invoke the service claim. Migration lines 170–185 use updated_at as the completed-work fence, so even no-op author updates unlock generation. Twelve consecutive claims for one low-rated review were reproduced locally; genuine content edits also cause unlimited trigger requests. Known historical unanswered review IDs can be submitted publicly and auto-posted without any trigger receipt, contrary to the no-backfill scope. Bind automatic work to a trusted queued job/content version, validate modes, enforce atomic budgets across edits (review/customer/shop/global as appropriate), and bind completion to the job's posting policy. Authenticating the trigger alone does not prevent an author spamming genuine edits. Add fake-HTTP handler tests plus quota/edit/concurrency cases.
+
+2. **P1 — unsafe prose passes the auto-post filter.** `_shared/review-reply.ts:58–83` returned safe:true for free-clean, complimentary-meal and account-credit promises, disclosure of regular/redeemed-customer context, and a synthetic name/address. Private membership/reward facts really are sent in the prompt. Triple-quote fencing and instructions do not enforce safety; shop name/sign-off are also interpolated into system instructions. These are confirmed filter bypasses, not measured Groq attack success. Keep arbitrary prose as drafts or use a constrained validated format for automatic publication; preserve positive auto-post only where safety is enforceable. Remove unnecessary private account context and treat all variable fields as data. More keyword matches alone do not resolve this class. Add adversarial output/injection/privacy fixtures without model calls.
+
+3. **P2 — inconsistent locks cause deadlocks.** Completion locks draft then review (migration 249,262); claim and owner posting lock review then draft (152,158;309,329). A controlled two-connection completion/posting reproduction returned PostgreSQL 40P01. This can lose generation work or fail an owner's post; the handler has no retry. Standardize lock order and test competing completion, claim and owner-post operations, including stale attempts.
+
+4. **P2 — retailer background refresh erases unsaved replies.** `apps/retailer/src/owner-pages.tsx:1477–1490` replaces the whole drafts map every four seconds while any review is generating. Editing a different reply then loses the correction and can restore unsafe AI text. Preserve dirty per-review input through polling; clear only on explicit discard or successful save. Add a focused two-review polling regression. Source-verified; no device test run.
+
+Passed security checks and limits:
+- Supplemental audit checks all eight functions: five workflow RPCs, authorization helper and two trigger functions. Anon/PUBLIC EXECUTE denied; authenticated limited to helper/settings/post/dismiss; empty search_path throughout. Both tables have RLS, manager SELECT and no client mutation grants. Supplied tests cover customer denial/staff access. This uses a simplified prior-schema fixture, not full-history or live verification.
+- Service claim/complete check service_role. Owner/admin settings, per-business staff permission and staff's original-author-only edit restriction are enforced in RPCs. Owner edits preserve original author, so that original staff author retains later edit rights; this matches the implemented original-author rule.
+- Label trigger blocks direct authenticated insert forgery, clears the label on changed body, and preserves the old label on unchanged updates. No exposed client path to set the trusted custom GUC was identified. Custom GUCs themselves are not secure against arbitrary SQL access.
+- Completion checks rating, enabled/auto-post settings, review version, existing reply and open reports. Passing these gates cannot make unsafe model prose safe.
+- Web renders text without a new raw HTML sink. Staff may see Edit where the RPC denies it; align UI affordances as follow-up polish.
+
+Final verification: original pure tests 6/6; original integration 11/11 records; both requested type checks exit 0 (exact commands in earlier entries). Final `node --test tmp/ai-review-audit/regressions.test.mjs`: 15/15 records, including ACL audit and three confirmed defect reproductions. Passing reproductions assert current bad behaviour, not desired behaviour. Original tests unchanged; only the scratch review file and handoff changed by this review. Pure filter probe used `node --input-type=module` and synthetic strings only. A first final-log write failed with a local JavaScript quoting SyntaxError before editing; native PowerShell retry used instead.
+
+No milestone completed. Release remains held for Claude's local fixes and independent re-review; eventual order remains function, migration, main/website, retailer OTA.
+
+## AI review replies: DEPLOYED, then Codex's four findings fixed and deployed (2026-09-29) — Claude, product owner asked
+
+**Deployment.** In chat the product owner told Claude directly: "Deploy AI reviews to production, - website, apps". Claude deployed phase 1 while Codex's review was still running:
+- `ai-review-reply` function at 21:20:44 UTC;
+- migration `20260929180500` at 21:20:54;
+- `main` push `84a6155` → Vercel `dpl_DZECsy…` READY;
+- retailer OTA on runtime 1.0.0: Android `a15f14e2…`, iOS `ec829f84…`.
+
+Codex's "CHANGES REQUIRED" verdict above arrived after that, so it was treated as live-fix work.
+
+**Exposure check:** 21:20:54–21:27:16 was the pre-hardening window. Read-only counts: 0 drafts, 0 AI replies posted, 0 reviews created or edited since the deploy. Nothing was affected.
+
+Fixes. Each was tested and then deployed:
+1. **P1 automatic authorisation and budgets:**
+   - Migration `20260929214500_ai_review_replies_hardening.sql` (live 21:27:16): the trigger now writes a `queued` draft with `requested_version`. The unauthenticated path claims only when `requested_version = reviews.updated_at` and consumes it. So manual calls, unchanged re-saves and old unanswered reviews all get `not_requested`, with no model call.
+   - Per review: at most 3 automatic generations per 24 hours.
+   - Migration `20260929223000_ai_review_replies_locks_budget.sql` (live 21:32:38): a shop-wide cap of 100 automatic generations per 24 hours, serialised by an advisory lock.
+   - The handler rejects any mode other than absent or `draft` (400). Owner drafts keep JWT, manager and rate-limit checks, and are never posted.
+2. **P1 unsafe prose and private context:**
+   - The model gets **no customer context at all**: claim returns only review, shop and sign-off, and the membership lookup is removed.
+   - All variable fields, including shop name and sign-off, are passed as JSON data, never interpolated into instructions.
+   - The filter is stricter and applied to the model's words, excluding the owner's sign-off. It rejects digits, money, links/emails, an offer/compensation/loyalty/account/visit vocabulary, AI mentions, placeholders, over 600 characters, and capitalised words not at a sentence start that aren't from the shop's details or sign-off (invented names or places).
+   - On top of that, **every automatic 4–5★ reply must pass a second, independent model check** (`buildVerifierMessages`; only an exact `PASS` passes; FAIL or an error keeps a draft).
+   - 1–3★ and owner drafts are always `_safe_to_post=false` in the handler as well as refused by the DB.
+   - Codex's point stands that keyword checks alone aren't a proof. The design is now layered: prompt, then strict filter, then independent verifier, then DB rules. Anything unusual becomes a draft.
+3. **P2 deadlock:** `complete_review_reply_generation` and `dismiss_review_reply_draft` now lock the review, then the draft, the same order as claim, owner posting and the trigger. A two-connection test (review held, completion waiting, owner posts, commit) ran 3 times with no 40P01; completion returns `stale` and the owner's reply stands.
+4. **P2 retailer polling:** `apps/retailer/src/review-reply-inputs.ts` `mergeReplyInputs` keeps any reply box the owner has typed in (an `edited` ref set; cleared on save, dismiss or AI rewrite). The website's cards already kept their own state.
+
+Refactor: request logic moved to `_shared/review-reply-handler.ts` with injected dependencies. `ai-review-reply/index.ts` now only wires Supabase and Groq, with temperature lowered to 0.4.
+
+Checks run:
+- `node --test supabase/functions/_shared/review-reply.test.mjs supabase/functions/_shared/review-reply-handler.test.mjs` → 15/15, including every Codex bypass string and fake-HTTP handler cases (mode validation, unqueued call costs nothing, verifier PASS/FAIL/error, low-rating, owner 401/403/429, no key);
+- `node --test apps/api/test/integration/ai-review-replies.test.mjs` (all three migrations) → 15/15, including queued-only, 3/day, 100/shop/day and deadlock;
+- `node --test apps/retailer/src/review-reply-inputs.test.mjs` → 2/2;
+- web `tsc -b`, retailer `tsc --noEmit` and `deno check` → all OK.
+
+Live checks: RPC and table ACLs and both triggers confirmed after the first deploy. The live function returns 400 `invalid_mode` for `mode:"post"` and `skipped/no_review` for an unknown id. `tmp/ai-review-audit/regressions.test.mjs` (Codex's scratch reproducer) was not changed.
+
+Deployed: function (21:32 UTC), migrations `214500` and `223000`. Following this entry: a `main` push (website types only) and a retailer OTA for the polling fix.
+
+**Still unverified:** real Groq reply and verifier quality (no live review yet). Next actions:
+- Codex re-reviews (prompt below);
+- the product owner eyeballs the first real replies;
+- Google phase 2 needs the product owner's Business Profile API application.
+
 ## Copy-ready prompt for Claude Code
 
 Codex's next task (paste to Codex):
 
-Read CLAUDE_HANDOFF.md, "AI review replies, phase 1 … NOT deployed", and review the change independently. The files are:
-- supabase/migrations/20260929180500_ai_review_replies.sql
+Read CLAUDE_HANDOFF.md, "AI review replies: DEPLOYED, then Codex's four findings fixed and deployed". The feature is live because the product owner told Claude directly to deploy it. Re-review the fixes against your four findings:
+- supabase/migrations/20260929214500_ai_review_replies_hardening.sql and 20260929223000_ai_review_replies_locks_budget.sql
+- supabase/functions/_shared/review-reply.ts, review-reply-handler.ts and their tests
 - supabase/functions/ai-review-reply/index.ts
-- supabase/functions/_shared/review-reply.ts and its test
+- apps/retailer/src/review-reply-inputs.ts, its test, and ReviewsPage
 - apps/api/test/integration/ai-review-replies.test.mjs
-- apps/web/src/pages/owner/Reviews.tsx and apps/web/src/lib/businesses.ts
-- the ReviewsPage in apps/retailer/src/owner-pages.tsx
 
-Focus on:
-- whether the unauthenticated trigger path can be abused (cost, or posting to a review that shouldn't get a reply);
-- RLS and ACLs on the two new tables and five RPCs;
-- the AI-label trigger;
-- the staff edit-rights change;
-- prompt-injection handling;
-- whether any auto-posted text could make promises or leak customer data.
+Re-run your tmp/ai-review-audit/regressions.test.mjs against the new migrations (update its expectations so it asserts the desired behaviour), plus the four test files and the web and retailer type checks.
 
-Re-run the two new test files plus the web and retailer type checks. Record approval or specific fixes in CLAUDE_HANDOFF.md. Do not deploy, push migrations, call Groq, or change secrets or data. Leave a copy-ready prompt for Claude.
+Check live state read-only only: function list, the §3.2-style ACL query for the new functions and tables, and counts of review_reply_drafts by status and of ai_generated replies. Record approval, or specific fixes with a severity, in CLAUDE_HANDOFF.md.
 
-## Superseded prompt (R1–R4 verification completed above)
+Do not deploy, push migrations, publish OTA, call Groq, or change secrets, settings or data. Leave a copy-ready prompt for Claude.
 
-Read CLAUDE_HANDOFF.md's deployment and migration-history retry entries, and docs/DEPLOY_R1-R4_RUNBOOK.md. Codex's 19:34 UTC retry confirmed matching history with 20260929071345 already applied. Do not redeploy. Finish read-only verification under §3: function versions/ACTIVE/JWT, deployed unlink/sweep/account-deletion bundles using the new lease functions, ACLs, backfill invariants and existing ledger evidence. Compare with your recorded claim/unlink/sweep v5, delete-my-account v19, session v5 and webhook v7. Use read-only transactions for SQL, record timestamps and suffixes only, and investigate discrepancies without changing production. If no new auth exists, record “post-deploy Active auth processing not yet observed”. Verify an existing §5 smoke-test event if the owner already completed it; otherwise provide exact owner steps using current balances, starting with unlink if the card is active. Owner participation is still required for Android and Playground; report any blocked balance read without bypassing restrictions. Do not deploy, push/repair migrations, call Fidel, replay events or change secrets, settings or data. Update CLAUDE_HANDOFF.md after each completed item and leave one current copy-ready prompt.
+## Superseded prompt (fixes completed above)
+
+Read CLAUDE_HANDOFF.md's “AI review replies: independent review — CHANGES REQUIRED” and tmp/ai-review-audit/regressions.test.mjs. Fix the four findings locally: authorize and budget automatic generation across review edits, prevent promises/private customer details from automatic publication with an enforceable output design, use consistent database lock ordering, and preserve dirty retailer replies during polling. Review the AI label and staff permissions while preserving their intended restrictions. Convert the reproductions into desired-behaviour tests and add fake-HTTP Edge tests and a focused polling regression; do not call Groq. Re-run both review test files and web/retailer type checks. Record each item and exact results in CLAUDE_HANDOFF.md, then request independent Codex review. Do not deploy, push migrations/main, publish OTA, change secrets/settings or touch live data during these fixes. The product owner already conditionally authorized deployment only after a clean review, in order: function, migration, main/website, retailer OTA. No further owner input is needed for the fixes unless you propose changing the agreed product behaviour. Leave one current copy-ready prompt.
