@@ -3950,6 +3950,23 @@ Exact runs:
 
 **Not shipped:** no OTA, push, deployment, migration or Edge change. The shopper change is committed locally only, on top of `6c2573a`. The live shopper app still has the original P2. Shipping is authorised once Codex approves: shopper OTA to production and preview, Android and iOS, then commit and push.
 
+## WhatsApp plan (2026-09-30) — Claude, product owner asked
+
+The product owner asked to revive "the whatsapp stuff" and chose three features:
+- sign up by WhatsApp;
+- progress and reward messages;
+- ask the bot about your balance.
+
+They did **not** choose shop announcements. The plan is in `docs/WHATSAPP_PLAN.md`: what exists (main repo webhook and web pages; paused repo `loyalty-loop-whatsapp-wip` with the migration and dispatch; live tables archived empty in `whatsapp_archive`), the Meta checklist for the product owner, and build stages 1–4 for Codex.
+
+Open decision **D1**: drop the old 30-day "move to the app" phase-out, because progress messages are ongoing. It's recommended, but needs the product owner's OK before stage 2.
+
+Nothing has been built or deployed.
+
+Order of work:
+1. Codex finishes the shopper P2 review and OTA (the prompt below is still first).
+2. Then WhatsApp stage 1. There's a second prompt below it.
+
 ## Copy-ready prompt for Claude Code
 
 Codex's next task (paste to Codex):
@@ -3974,3 +3991,26 @@ Do not change migrations, Edge Functions, secrets or live data. Leave a copy-rea
 ## Superseded prompt (completed above)
 
 Read CLAUDE_HANDOFF.md's “Shopper P2 local-fix review: CHANGES REQUIRED before OTA” and tmp/ai-review-audit/shopper-lifecycle.test.mjs. Fix both P2 cleanup races in apps/shopper/App.tsx: a save resolving after cleanup must not register timers or show stale completion UI, and late requests must not overwrite another shop's review list/loading state. Use a screen/shop generation or equivalent cancellation shared by opening loads, saves and timer callbacks; preserve the list-only refresh and unsaved editor protection. Extend the supplied shopper tests with both failing interleavings and make all five cleanup cases pass without weakening assertions. Rerun the four pure suites plus shopper test, integration plus original independent regression, and web/retailer/shopper type checks. Keep backend approval and the owner's moderation decision unchanged. Update CLAUDE_HANDOFF.md after each completed item and request independent review. Do not deploy, publish OTA, push main, change migrations/Edge Functions, secrets or live data in this local-fix task. No owner clarification is needed: shopper OTA on production/preview for Android/iOS, then commit/push, is already authorized once review passes. Leave one current copy-ready prompt.
+
+## Shopper cleanup final review: pure/UI/type stage passed (2026-09-30) — Codex
+
+Reviewed 0aa457c after 6c2573a. Captured visit identity gates list/error/loading updates, save continuations, timers and alerts; cleanup replaces the token and clears existing timers. List refresh preserves the composer. `node --test supabase/functions/_shared/review-reply.test.mjs supabase/functions/_shared/review-reply-handler.test.mjs apps/retailer/src/review-reply-inputs.test.mjs supabase/functions/_shared/fidel-cards.test.mjs apps/shopper/review-refresh.test.mjs tmp/ai-review-audit/shopper-lifecycle.test.mjs`: 44/44 pass, including both previously failing lifecycle tests unchanged. Web `node ../../node_modules/typescript/bin/tsc -b` in apps/web and root retailer/shopper `node node_modules/typescript/bin/tsc --noEmit -p apps/<app>/tsconfig.json`: all exit 0. Integration next, before authorized OTA sequence.
+
+## Shopper cleanup final review APPROVED (2026-09-30) — Codex
+
+`node --test --test-concurrency=1 apps/api/test/integration/ai-review-replies.test.mjs tmp/ai-review-audit/regressions.test.mjs`: 39/39 pass on disposable local PostgreSQL/fake HTTP. All requested stages passed: 44 pure/UI/lifecycle, 39 database/regression, three app type checks. No remaining blocker found in reviewed per-visit cleanup change. Source HEAD 0aa457c on main, following 6c2573a. Only shopper App/test and handoff differ from locally recorded origin/main; unrelated worktree files preserved. User explicitly authorized four separate shopper OTAs followed by push. Publishing next in production Android, production iOS, preview Android, preview iOS order. No backend changes authorized or planned.
+
+## Shopper release 1/4: production Android published (2026-09-30) — Codex
+
+From PowerShell in apps/shopper: `npx eas-cli update --channel production --platform android --message "Fix shopper review edit preservation and stale visit cleanup" --non-interactive --json` — exit 0, Published. Update 01a0f396-221d-70fc-a7af-a17db43cfd11; group 4466aa36-583a-4580-9a24-68e75981764c; created 2026-09-30T18:31:37.757Z (19:31 BST); runtime 1.0.0; source 0aa457c648475d43de3e8fcb42b840cc3fda9979. Publication confirmed, device receipt not yet tested. Initial sandboxed EAS help attempt failed EACCES on npm access; network-enabled help succeeded. Metro printed a non-interactive advisory, but export/upload/publication succeeded. No credentials printed or changed.
+
+## Shopper release 2–4/4 and push (2026-09-30) — Claude, taking over from Codex (usage limit)
+
+Checked `eas update:list` first: only production Android (`4466aa36…`) had been published, so nothing was double-published. Then published from PowerShell in apps/shopper, message "Fix shopper review edit preservation and stale visit cleanup", runtime 1.0.0:
+- production iOS `41c1b64a…`;
+- preview Android `796f1156…`;
+- preview iOS `f564649e…`.
+
+Pushed `main` with 6c2573a and 0aa457c, plus this handoff and `docs/WHATSAPP_PLAN.md`. **The shopper review P2 is shipped. AI review replies: complete.**
+
+Next: Claude builds WhatsApp stage 1 (Codex unavailable). D1 (drop the 30-day phase-out) is still awaiting the product owner, and is needed before stage 2.
