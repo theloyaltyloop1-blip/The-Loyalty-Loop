@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { isStop, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
+import { isLogout, isStop, LOGGED_OUT_ALREADY, LOGOUT_REPLY, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
 import { answerQuestion, DAILY_QUESTION_LIMIT, LIMIT_REPLY, type BotShop, type ChatMessage } from "../_shared/whatsapp-bot.ts";
 
 type MetaMessage = { id?: string; from?: string; type?: string; text?: { body?: string } };
@@ -210,6 +210,23 @@ async function processText(admin: Admin, phone: string, message: string): Promis
     await sendText(admin, phone, STOP_REPLY, "stop");
     return "stop";
   }
+  // LOGOUT unlinks this number from the account and cancels card links
+  // already sent here. The account itself is untouched.
+  if (isLogout(text)) {
+    const { data: linked } = await admin.from("whatsapp_contacts").select("user_id, opted_out_at").eq("phone_e164", phone).maybeSingle();
+    if (linked?.opted_out_at) return null;
+    if (!linked?.user_id) {
+      await sendText(admin, phone, LOGGED_OUT_ALREADY, "logout");
+      return "logout";
+    }
+    const now = new Date().toISOString();
+    await admin.from("whatsapp_contacts").update({ user_id: null }).eq("phone_e164", phone);
+    await admin.from("whatsapp_handoff_links").update({ expires_at: now })
+      .eq("phone_e164", phone).is("claimed_at", null).gt("expires_at", now);
+    await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "idle", pending_first_name: null, pending_email: null });
+    await sendText(admin, phone, LOGOUT_REPLY, "logout", null, linked.user_id);
+    return "logout";
+  }
   const startMatch = /^start(?:\s+([a-z0-9][a-z0-9-]{0,100}))?$/i.exec(text);
   const conversationState = startMatch ? null : await activeConversation(admin, phone);
   if (!startMatch && !conversationState) return await askBot(admin, phone, text);
@@ -226,7 +243,10 @@ async function processText(admin: Admin, phone: string, message: string): Promis
       businessId = business?.id ?? null;
     }
     let linkedUserId = contact.user_id;
-    if (!linkedUserId) {
+    // After someone has logged out here, never re-link by phone number alone
+    // (the phone may have changed hands): they confirm their email instead.
+    const loggedOutBefore = !linkedUserId && await recentCount(admin, phone, "outbound", ["logout"], 24 * 365 * 10) > 0;
+    if (!linkedUserId && !loggedOutBefore) {
       const { data: foundUserId } = await admin.rpc("find_whatsapp_user_by_phone", { _phone: phone });
       linkedUserId = foundUserId ?? null;
       if (linkedUserId) await admin.from("whatsapp_contacts").update({ user_id: linkedUserId, opted_out_at: null }).eq("phone_e164", phone);

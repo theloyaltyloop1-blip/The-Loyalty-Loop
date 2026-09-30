@@ -44,11 +44,20 @@ export function welcomeBack(firstName: string | null, shops: ShopProgress[], car
   const list = shops.length
     ? `\n\nYour rewards:\n${shops.slice(0, 10).map(progressLine).join("\n")}${shops.length > 10 ? `\n…and ${shops.length - 10} more in the app.` : ""}`
     : "\n\nYou haven't joined any shops yet. Show your card at a Loyalty Loop shop to start earning.";
-  return `${hello}${list}\n\nOpen your live card to show your QR code at the till: ${cardUrl}`;
+  return `${hello}${list}\n\nOpen your live card to show your QR code at the till: ${cardUrl}\n\nAsk me anything about your rewards. Send LOGOUT to unlink this number or STOP to stop messages.`;
 }
 
 export const STOP_REPLY =
   "Done — you won't get Loyalty Loop messages on WhatsApp any more. Your rewards are safe in the app. Send START any time to turn WhatsApp back on.";
+
+export const LOGOUT_REPLY =
+  "You're logged out on WhatsApp — this number is no longer linked to your Loyalty Loop account, and any card links sent here have stopped working. Your rewards are safe in the app. Send START to log in again — we'll ask for your email to check it's you.";
+
+export const LOGGED_OUT_ALREADY = "This number isn't logged in to a Loyalty Loop account. Send START to log in.";
+
+export function isLogout(text: string): boolean {
+  return /^(log ?out|sign ?out|unlink)$/i.test(text.trim());
+}
 
 export function isStop(text: string): boolean {
   return /^(stop|unsubscribe|opt out|optout)$/i.test(text.trim());

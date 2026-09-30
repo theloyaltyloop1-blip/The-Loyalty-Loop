@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { isStop, nextTier, pounds, progressLine, welcomeBack } from './whatsapp-messages.ts';
+import { isLogout, isStop, nextTier, pounds, progressLine, welcomeBack } from './whatsapp-messages.ts';
+
+test('LOGOUT and its variants are recognised on their own only', () => {
+  for (const t of ['LOGOUT', 'logout', 'Log out', ' sign out ', 'SIGNOUT', 'unlink']) assert.equal(isLogout(t), true, t);
+  for (const t of ['logout please', 'how do I log out?', 'STOP', 'START']) assert.equal(isLogout(t), false, t);
+});
+
+test('the welcome message tells people how to ask, log out and stop', () => {
+  assert.match(welcomeBack(null, [], 'u'), /Send LOGOUT to unlink this number or STOP to stop messages\.$/);
+});
 
 const shop = (progressPence, tiers = [{ title: 'Free coffee', spend_threshold_pence: 1000 }, { title: 'Free lunch', spend_threshold_pence: 2000 }], thresholdPence = 2000) =>
   ({ name: 'Pure Elegant', progressPence, thresholdPence, tiers });
@@ -29,7 +38,7 @@ test('welcome back lists shops, caps at ten and always gives the card link', () 
   const one = welcomeBack('Zahi', [shop(1250)], 'https://x/card?token=t');
   assert.match(one, /^Welcome back, Zahi!/);
   assert.match(one, /£12\.50 of £20 towards Free lunch/);
-  assert.match(one, /https:\/\/x\/card\?token=t$/);
+  assert.match(one, /at the till: https:\/\/x\/card\?token=t\n/);
   assert.doesNotMatch(one, /stamp|point/i);
   const many = welcomeBack(null, Array.from({ length: 12 }, () => shop(0)), 'u');
   assert.equal(many.split('\n').filter((l) => l.startsWith('• ')).length, 10);
