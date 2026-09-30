@@ -36,8 +36,15 @@ Deno.serve(async (request: Request) => {
 
     if (action === "start") {
       const shop = typeof body.shop === "string" ? body.shop.trim().toLowerCase() : "";
-      if (!DISPLAY_NUMBER || !/^[a-z0-9][a-z0-9-]{0,100}$/.test(shop)) {
-        return new Response(JSON.stringify({ error: "WhatsApp onboarding is not configured for this QR code yet." }), { status: 400, headers });
+      if (!DISPLAY_NUMBER) {
+        return new Response(JSON.stringify({ error: "WhatsApp isn't set up yet." }), { status: 503, headers });
+      }
+      // Without a shop (a general link) just open the chat with START.
+      if (!shop) {
+        return new Response(JSON.stringify({ url: `https://wa.me/${DISPLAY_NUMBER}?text=${encodeURIComponent("START")}` }), { headers });
+      }
+      if (!/^[a-z0-9][a-z0-9-]{0,100}$/.test(shop)) {
+        return new Response(JSON.stringify({ error: "This QR code isn't valid." }), { status: 400, headers });
       }
       const { data: business } = await admin.from("businesses")
         .select("id")

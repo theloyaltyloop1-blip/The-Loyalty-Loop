@@ -10,8 +10,14 @@ export function WhatsAppStart() {
 
   React.useEffect(() => {
     supabase.functions.invoke<{ url: string }>('whatsapp-handoff', { body: { action: 'start', shop } })
-      .then(({ data, error: requestError }) => {
-        if (requestError || !data?.url) throw requestError ?? new Error('This QR code is unavailable.')
+      .then(async ({ data, error: requestError }) => {
+        if (requestError) {
+          // Show the server's own reason, not the generic "non-2xx" text.
+          const context = (requestError as { context?: Response }).context
+          const detail = context ? await context.json().catch(() => null) : null
+          throw new Error(typeof detail?.error === 'string' ? detail.error : 'This QR code is unavailable.')
+        }
+        if (!data?.url) throw new Error('This QR code is unavailable.')
         window.location.assign(data.url)
       })
       .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : 'This QR code is unavailable.'))
