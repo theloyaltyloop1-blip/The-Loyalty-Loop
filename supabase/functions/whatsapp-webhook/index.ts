@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { isStop, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
+import { answerQuestion, DAILY_QUESTION_LIMIT, LIMIT_REPLY, type BotShop, type ChatMessage } from "../_shared/whatsapp-bot.ts";
 
 type MetaMessage = { id?: string; from?: string; type?: string; text?: { body?: string } };
 type MetaChange = { value?: { messages?: MetaMessage[] } };
@@ -17,6 +18,7 @@ const ACCESS_TOKEN = Deno.env.get("META_WHATSAPP_ACCESS_TOKEN");
 const PHONE_NUMBER_ID = Deno.env.get("META_WHATSAPP_PHONE_NUMBER_ID");
 const GRAPH_VERSION = Deno.env.get("META_WHATSAPP_GRAPH_VERSION") ?? "v25.0";
 const APP_URL = (Deno.env.get("APP_BASE_URL") ?? "https://www.the-loyalty-loop.com").replace(/\/$/, "");
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -126,20 +128,91 @@ async function activeConversation(admin: Admin, phone: string) {
   return data?.state && data.state !== "idle" ? data.state : null;
 }
 
-async function processText(admin: Admin, phone: string, message: string) {
+async function groqChat(messages: ChatMessage[], maxTokens: number): Promise<string> {
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "openai/gpt-oss-120b", messages, temperature: 0.3, max_tokens: maxTokens, reasoning_effort: "low" }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error(`groq_${response.status}`);
+  const body = await response.json();
+  return body.choices?.[0]?.message?.content ?? "";
+}
+
+async function recentCount(admin: Admin, phone: string, direction: "inbound" | "outbound", kinds: string[], hours: number) {
+  const { count } = await admin.from("whatsapp_message_log")
+    .select("id", { count: "exact", head: true })
+    .eq("phone_e164", phone).eq("direction", direction).in("message_kind", kinds)
+    .gte("created_at", new Date(Date.now() - hours * 60 * 60 * 1000).toISOString());
+  return count ?? 0;
+}
+
+// Free text outside a sign-up chat. Linked, opted-in customers get an AI
+// answer about their own cards; anyone else gets a START nudge at most once
+// a day. Opted-out numbers are never messaged.
+async function askBot(admin: Admin, phone: string, text: string): Promise<string | null> {
+  const { data: contact } = await admin.from("whatsapp_contacts")
+    .select("user_id, opted_out_at").eq("phone_e164", phone).maybeSingle();
+  if (contact?.opted_out_at) return null;
+  if (!contact?.user_id) {
+    if (await recentCount(admin, phone, "outbound", ["start_prompt"], 24)) return null;
+    await ensureContact(admin, phone);
+    await sendText(admin, phone, "Hi! Send START to get your Loyalty Loop card and see your rewards here.", "start_prompt");
+    return "question";
+  }
+  const userId = contact.user_id;
+  await admin.from("whatsapp_contacts").update({ last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
+  if (await recentCount(admin, phone, "inbound", ["question"], 24) >= DAILY_QUESTION_LIMIT) {
+    if (!await recentCount(admin, phone, "outbound", ["bot_limit"], 24)) await sendText(admin, phone, LIMIT_REPLY, "bot_limit", null, userId);
+    return "question";
+  }
+
+  const [{ data: profile }, { data: memberships }, { data: rewards }] = await Promise.all([
+    admin.from("profiles").select("first_name").eq("id", userId).single(),
+    admin.from("memberships")
+      .select("reward_progress_pence,business:businesses(id,name,category,description,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
+      .eq("user_id", userId),
+    admin.from("rewards").select("business_id,title,expires_at").eq("user_id", userId).is("redeemed_at", null),
+  ]);
+  const now = Date.now();
+  const shops: BotShop[] = (memberships ?? []).flatMap((m) => {
+    const business = Array.isArray(m.business) ? m.business[0] : m.business;
+    if (!business) return [];
+    return [{
+      name: business.name,
+      category: business.category ?? null,
+      description: business.description ?? null,
+      progressPence: m.reward_progress_pence ?? 0,
+      thresholdPence: business.reward_threshold_pence ?? null,
+      tiers: business.reward_catalog ?? [],
+      readyRewards: (rewards ?? [])
+        .filter((r) => r.business_id === business.id && (!r.expires_at || Date.parse(r.expires_at) > now))
+        .map((r) => r.title),
+    }];
+  });
+  const token = await createLink(admin, { linkType: "card", phone, userId, hours: 1 });
+  const cardUrl = `${APP_URL}/whatsapp/card?token=${encodeURIComponent(token)}`;
+  const chat = GROQ_API_KEY ? groqChat : async () => { throw new Error("not_configured"); };
+  const answer = await answerQuestion({ firstName: profile?.first_name ?? null, shops }, text, chat, cardUrl);
+  await sendText(admin, phone, answer.text, answer.kind, null, userId);
+  return "question";
+}
+
+// Returns the kind of inbound message handled, or null if it was ignored.
+async function processText(admin: Admin, phone: string, message: string): Promise<string | null> {
   const text = message.trim();
-  const command = text.toLowerCase();
   // STOP must always work, even when no sign-up conversation is open.
   if (isStop(text)) {
     await ensureContact(admin, phone);
     await admin.from("whatsapp_contacts").update({ opted_out_at: new Date().toISOString() }).eq("phone_e164", phone);
     await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "idle", pending_first_name: null, pending_email: null });
     await sendText(admin, phone, STOP_REPLY, "stop");
-    return true;
+    return "stop";
   }
   const startMatch = /^start(?:\s+([a-z0-9][a-z0-9-]{0,100}))?$/i.exec(text);
   const conversationState = startMatch ? null : await activeConversation(admin, phone);
-  if (!startMatch && !conversationState) return false;
+  if (!startMatch && !conversationState) return await askBot(admin, phone, text);
 
   await ensureContact(admin, phone);
   const { data: contact, error: contactError } = await admin.from("whatsapp_contacts")
@@ -161,41 +234,41 @@ async function processText(admin: Admin, phone: string, message: string) {
     if (linkedUserId) {
       await admin.from("whatsapp_contacts").update({ opted_out_at: null, last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
       await linkedCustomerReply(admin, phone, linkedUserId, businessId);
-      return true;
+      return "start";
     }
     await admin.from("whatsapp_contacts").update({ opted_out_at: null, last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
     await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "awaiting_name", business_id: businessId, pending_first_name: null, pending_email: null });
     await sendText(admin, phone, "Welcome to The Loyalty Loop. What's your first name?", "start_new_customer", businessId);
-    return true;
+    return "start";
   }
 
   const { data: conversation } = await admin.from("whatsapp_conversations").select("state,business_id,pending_first_name").eq("phone_e164", phone).maybeSingle();
-  if (!conversation || conversation.state === "idle") return false;
+  if (!conversation || conversation.state === "idle") return null;
   if (conversation.state === "awaiting_name") {
     const firstName = safeName(text);
     if (!firstName) {
       await sendText(admin, phone, "Please send just your first name (up to 80 characters).", "invalid_name", conversation.business_id);
-      return true;
+      return "conversation_step";
     }
     await admin.from("whatsapp_conversations").update({ state: "awaiting_email", pending_first_name: firstName }).eq("phone_e164", phone);
     await sendText(admin, phone, `Thanks, ${firstName}. What email address should we use for your Loyalty Loop account?`, "request_email", conversation.business_id);
-    return true;
+    return "conversation_step";
   }
   if (conversation.state === "awaiting_email") {
     const email = safeEmail(text);
     if (!email) {
       await sendText(admin, phone, "That doesn't look like an email address. Please try again.", "invalid_email", conversation.business_id);
-      return true;
+      return "conversation_step";
     }
     const token = await createLink(admin, { linkType: "signup", phone, businessId: conversation.business_id, email, firstName: conversation.pending_first_name, hours: 2 });
     await admin.from("whatsapp_conversations").update({ state: "handoff_sent", pending_email: email }).eq("phone_e164", phone);
     await sendText(admin, phone,
       `Almost there. Use this secure Loyalty Loop page to choose your password (or sign in if you already have an account): ${APP_URL}/whatsapp/onboarding?token=${encodeURIComponent(token)}\n\nFor your security, never send a password in WhatsApp.`,
       "secure_handoff", conversation.business_id);
-    return true;
+    return "conversation_step";
   }
   await sendText(admin, phone, "Your secure account link is still active. Open the most recent Loyalty Loop link, or send START to begin again.", "handoff_reminder", conversation.business_id);
-  return true;
+  return "conversation_step";
 }
 
 Deno.serve(async (request: Request) => {
@@ -227,10 +300,10 @@ Deno.serve(async (request: Request) => {
         .maybeSingle();
       if (duplicateLookupError) throw duplicateLookupError;
       if (alreadyHandled) continue;
-      const handled = await processText(admin, phone, text);
-      if (!handled) continue;
+      const kind = await processText(admin, phone, text);
+      if (!kind) continue;
       const { error } = await admin.from("whatsapp_message_log").insert({
-        direction: "inbound", provider_message_id: item.id, phone_e164: phone, message_kind: /^start/i.test(text.trim()) ? "start" : "conversation_step", provider_payload: { type: item.type },
+        direction: "inbound", provider_message_id: item.id, phone_e164: phone, message_kind: kind, provider_payload: { type: item.type },
       });
       if (error && error.code !== "23505") throw error;
     }
