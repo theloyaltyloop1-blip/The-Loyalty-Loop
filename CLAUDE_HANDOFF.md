@@ -3892,25 +3892,85 @@ Checks run:
 
 **Not shipped:** no OTA, no push to `main`, no deployment, as the prompt instructed. The live shopper app still has the P2: a typed edit can be lost within 12 seconds of saving a review. Once Codex approves, publish a shopper OTA to production and preview, both platforms, from PowerShell.
 
+## Shopper P2 local-fix review: supplied checks (2026-09-30) — Codex
+
+Read the NOT shipped entry and commit 6c2573a. The scratch harness change is only replyChecks ref injection plus its explanatory comment; existing assertions remain intact. `node --test supabase/functions/_shared/review-reply.test.mjs supabase/functions/_shared/review-reply-handler.test.mjs apps/retailer/src/review-reply-inputs.test.mjs supabase/functions/_shared/fidel-cards.test.mjs apps/shopper/review-refresh.test.mjs`: 37/37 pass (20 review/UI tests plus 17 existing Fidel helper regressions). Web `node ../../node_modules/typescript/bin/tsc -b` from apps/web; retailer and shopper `node node_modules/typescript/bin/tsc --noEmit -p apps/<app>/tsconfig.json` from root: all exit 0. No app/Edge/migration changes. Integration and late-save cleanup interleavings remain under review before conditional OTA approval.
+
+## Shopper P2 local-fix review: integration stage passed (2026-09-30) — Codex
+
+`node --test --test-concurrency=1 apps/api/test/integration/ai-review-replies.test.mjs tmp/ai-review-audit/regressions.test.mjs`: 39/39 records passed. Disposable local PostgreSQL with stubbed HTTP only. The original shopper input-overwrite regression now passes unchanged. Reviewing two uncovered cleanup interleavings before release: save resumes after cleanup, and an already-running load updates the list after shop cleanup. No OTA/push or provider invocation performed.
+
+## Shopper P2 local-fix review: CHANGES REQUIRED before OTA (2026-09-30) — Codex
+
+Reviewed local commit 6c2573a, the list-only loadReviews, shop-opening effect/cleanup, saveReview timer registration, supplied apps/shopper/review-refresh.test.mjs and the scratch harness replyChecks injection. Original editor-overwrite P2 is fixed: background list refresh no longer assigns reviewBody/reviewRating, and the unchanged independent assertion passes. The one-line replyChecks addition is legitimate component-context injection, not a weakened assertion. Existing backend approval and the owner's accepted moderation criterion remain unchanged.
+
+Two remaining cleanup issues need correction before this review approves publication:
+
+- **P2 — timers can be registered after cleanup.** apps/shopper/App.tsx:1114–1117 awaits the post-save list load before registering reply checks. If the screen leaves/changes shop while that load (or the preceding upsert) is pending, cleanup clears the currently empty timer array. When save resumes, it creates two new timers with the old shop closure and can show its completion alert after leaving. Reproduced with the actual functions: cleanup before resolving post-save refresh leaves two timers, expected zero. Guard the save continuation and timer callbacks with the captured screen/shop generation; invalidation must prevent late registration, not just cancel handles that already exist.
+- **P2 — the late-load guard does not protect the review list.** App.tsx:1068 and catch/finally update reviews/loading before the effect's current check at 1084. After a shop switch, an older request can overwrite the current shop list with the previous shop's reviews/replies; the editor alone is protected. Reproduced by settling the old opening request after cleanup and after the next shop's list is present. Guard all asynchronous list/loading/error state writes with the active screen/shop generation (or equivalent cancellation); ensure overlapping opening/save/background loads cannot apply stale results. ShopDetail is not keyed by business.id; selected shop can change via the existing open-business effect.
+
+The supplied cleanup test only leaves after save has already registered its timers, and checks the editor after late load; it misses both orderings. Added `tmp/ai-review-audit/shopper-lifecycle.test.mjs`, a copy of its actual-source fake-Supabase/timer harness with two desired-behaviour tests; no production or supplied test files changed. `node --test tmp/ai-review-audit/shopper-lifecycle.test.mjs`: 3/5 pass, 2/5 fail as above, exit 1. These are controlled source-level interleavings, not device tests.
+
+Completed verification:
+- Four pure suites (review-reply, review-reply-handler, retailer review-reply-inputs, existing fidel-cards) plus shopper review-refresh: 37/37 pass; exact command in stage entry above.
+- Supplied AI integration plus original independent regression: 39/39 records pass; disposable local PostgreSQL/fake HTTP only.
+- Web, retailer and shopper TypeScript: all exit 0; commands recorded above.
+- Additional cleanup tests: two genuine desired-behaviour failures; assertions intentionally left failing for Claude.
+
+No EAS update attempted, so no new update IDs. No new commit or push by Codex: authorization was conditional on approval. Commit 6c2573a already existed locally when review began. No migrations, Edge Function, settings, secrets or live data changed; no live/provider calls. Changed review artifacts: CLAUDE_HANDOFF.md and new tmp/ai-review-audit/shopper-lifecycle.test.mjs. Original scratch regression preserved, including Claude's context addition. Unrelated working-tree deletions/untracked files preserved. No milestone completed or release-order change; timeline unchanged.
+
+## Shopper P2 cleanup races fixed locally, NOT shipped (2026-09-30) — Claude
+
+Answers Codex's "Shopper P2 local-fix review: CHANGES REQUIRED before OTA". Backend approval and the owner's moderation decision are unchanged.
+
+**Design: a per-visit generation shared by every async path.** The existing `replyChecks` ref array doubles as the visit token. The shop-opening effect's cleanup (leaving, switching shop, or unmount) clears that array's timers and replaces it with a new `[]`. Each path captures `const visit = replyChecks.current` at its start and does nothing once `visit !== replyChecks.current`:
+- **`loadReviews`**: after the request, a stale visit returns `null` without calling `setReviews`, the error `setReviews([])`, or `setReviewsLoading(false)`. It still never writes the editor.
+- **Opening effect**: fills the editor only when `loadReviews` returned items, i.e. the visit is still current. The old `current` flag is gone.
+- **`saveReview`**:
+  - checks the visit after the upsert and again after the post-save refresh, before registering timers;
+  - registers timers into the captured `visit` array, and each timer re-checks the visit before loading;
+  - shows the "Review saved" and "Could not save review" alerts only for the current visit;
+  - still always resets `setSavingReview(false)`, so the next shop's Save button can't stay disabled.
+
+Reusing the ref kept both of Codex's harness contexts valid without further edits. Codex's `tmp/ai-review-audit/shopper-lifecycle.test.mjs` was not modified.
+
+Tests:
+- Codex's `shopper-lifecycle.test.mjs`: **5/5**, previously 3/5, with assertions unchanged.
+- The supplied `apps/shopper/review-refresh.test.mjs` is extended with both interleavings, and adds assertions Codex's version doesn't have:
+  - no "Review saved" alert after leaving;
+  - the old request doesn't end the next shop's loading state or fill its editor.
+  - Result: 5/5.
+- Mutation checks: removing the `loadReviews` stale-return fails 2 tests; removing the post-refresh save guard fails the save-after-leave test; making `setReviewsLoading(false)` unconditional fails the late-load test. Restored each time.
+
+Exact runs:
+- `node --test supabase/functions/_shared/review-reply.test.mjs supabase/functions/_shared/review-reply-handler.test.mjs apps/retailer/src/review-reply-inputs.test.mjs supabase/functions/_shared/fidel-cards.test.mjs apps/shopper/review-refresh.test.mjs` → 39/39;
+- `node --test tmp/ai-review-audit/shopper-lifecycle.test.mjs` → 5/5;
+- `node --test --test-concurrency=1 apps/api/test/integration/ai-review-replies.test.mjs tmp/ai-review-audit/regressions.test.mjs` → 39/39;
+- `tsc` for web, retailer and shopper → exit 0.
+
+**Not shipped:** no OTA, push, deployment, migration or Edge change. The shopper change is committed locally only, on top of `6c2573a`. The live shopper app still has the original P2. Shipping is authorised once Codex approves: shopper OTA to production and preview, Android and iOS, then commit and push.
+
 ## Copy-ready prompt for Claude Code
 
 Codex's next task (paste to Codex):
 
-Read CLAUDE_HANDOFF.md, "AI review replies: shopper P2 fixed locally, NOT shipped". Review the change in apps/shopper/App.tsx:
-- the list-only loadReviews;
-- the shop-opening effect with its late-load guard and replyChecks cleanup;
-- the saveReview timer registration.
+Read CLAUDE_HANDOFF.md, "Shopper P2 cleanup races fixed locally, NOT shipped". Review the per-visit generation in apps/shopper/App.tsx: loadReviews, the shop-opening effect, and saveReview with its timers and alerts. Also review the extended apps/shopper/review-refresh.test.mjs.
 
-Also review:
-- the new apps/shopper/review-refresh.test.mjs;
-- the one-line context addition (replyChecks) to your tmp/ai-review-audit/regressions.test.mjs. Its assertions are unchanged.
+Re-run:
+- your tmp/ai-review-audit/shopper-lifecycle.test.mjs;
+- the four pure suites plus the shopper test;
+- the integration file with your original regression;
+- the web, retailer and shopper type checks.
 
-Re-run the four supplied pure test files plus the shopper test, the integration file with your regression, and the web, retailer and shopper type checks.
+If you approve, ship it. The product owner has already authorised this:
+1. From PowerShell in apps/shopper, run `npx eas-cli update --channel production --platform android`, then the same for `ios`, then `--channel preview` for both platforms, each with a message.
+2. Then `git push origin main` (the local commits are 6c2573a and the one after it).
+3. Record all four update IDs and the pushed commit in CLAUDE_HANDOFF.md.
 
-If you approve, you may publish the shopper OTA yourself, since the product owner allows Codex to deploy. Run `npx eas-cli update --channel production` and `--channel preview`, `--platform android` and `--platform ios` separately, from PowerShell in apps/shopper. Then commit and push to main. Record the update IDs. Otherwise record specific fixes with a severity.
+Otherwise record specific fixes with a severity.
 
-Do not change migrations, the Edge Function, secrets or live data. Leave a copy-ready prompt for Claude.
+Do not change migrations, Edge Functions, secrets or live data. Leave a copy-ready prompt for Claude.
 
 ## Superseded prompt (completed above)
 
-Read CLAUDE_HANDOFF.md's “AI review replies: backend APPROVED under owner's criterion; shopper P2 fix required” and tmp/ai-review-audit/regressions.test.mjs. The durable budget, exact-PASS parsing and owner-approved probabilistic moderation now pass review; preserve those decisions and fixes. Fix only the remaining shopper P2 in apps/shopper/App.tsx: delayed reply refresh must not overwrite unsaved review text or rating, and stale timers must be cancelled/ignored on navigation or shop changes. Keep reply display working for object/array/null results. Make the independent fake-timer regression pass, add navigation/dirty-input coverage as appropriate, and rerun the four supplied test files, the independent regression and web/retailer/shopper type checks. Update CLAUDE_HANDOFF.md after each item with exact results and request independent review. Do not deploy, push migrations/main, publish OTA, call Groq or change secrets, settings or live data. No product-owner input is required for this local fix; the moderation criterion is already decided. Leave one current copy-ready prompt.
+Read CLAUDE_HANDOFF.md's “Shopper P2 local-fix review: CHANGES REQUIRED before OTA” and tmp/ai-review-audit/shopper-lifecycle.test.mjs. Fix both P2 cleanup races in apps/shopper/App.tsx: a save resolving after cleanup must not register timers or show stale completion UI, and late requests must not overwrite another shop's review list/loading state. Use a screen/shop generation or equivalent cancellation shared by opening loads, saves and timer callbacks; preserve the list-only refresh and unsaved editor protection. Extend the supplied shopper tests with both failing interleavings and make all five cleanup cases pass without weakening assertions. Rerun the four pure suites plus shopper test, integration plus original independent regression, and web/retailer/shopper type checks. Keep backend approval and the owner's moderation decision unchanged. Update CLAUDE_HANDOFF.md after each completed item and request independent review. Do not deploy, publish OTA, push main, change migrations/Edge Functions, secrets or live data in this local-fix task. No owner clarification is needed: shopper OTA on production/preview for Android/iOS, then commit/push, is already authorized once review passes. Leave one current copy-ready prompt.

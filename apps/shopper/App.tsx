@@ -1048,13 +1048,17 @@ function ShopDetail({
     return () => { active = false }
   }, [business.id])
 
-  // Background checks for the shop's reply after a review is saved. Cleared
-  // when the shopper leaves or switches shop, so none can fire late.
+  // Background checks for the shop's reply after a review is saved. The array
+  // itself also marks this visit to the shop: leaving or switching shop clears
+  // its timers and swaps in a new array, so any load, save or check started
+  // during the old visit sees it is stale and changes nothing.
   const replyChecks = useRef<ReturnType<typeof setTimeout>[]>([])
 
   // Refreshes the list only. It never touches the review editor, so a check
   // that lands while the shopper is typing can't overwrite their edit.
+  // Returns null when the shopper has since left this shop.
   const loadReviews = async () => {
+    const visit = replyChecks.current
     setReviewsLoading(true)
     try {
       // Reviews by users this shopper has blocked never come back — the
@@ -1065,22 +1069,23 @@ function ShopDetail({
         .eq('business_id', business.id)
         .order('created_at', { ascending: false })
       if (error) throw error
+      if (visit !== replyChecks.current) return null
       const items = ((data || []) as ShopReview[]).filter((review) => !hiddenReviewIds.has(review.id))
       setReviews(items)
       return items
     } catch {
+      if (visit !== replyChecks.current) return null
       setReviews([])
       return []
     } finally {
-      setReviewsLoading(false)
+      if (visit === replyChecks.current) setReviewsLoading(false)
     }
   }
 
   useEffect(() => {
     // Opening a shop fills the editor with the shopper's own review, once.
-    let current = true
     void loadReviews().then((items) => {
-      if (!current) return
+      if (!items) return
       const mine = items.find((review) => review.user_id === userId)
       if (mine) {
         setReviewRating(mine.rating)
@@ -1088,7 +1093,6 @@ function ShopDetail({
       }
     })
     return () => {
-      current = false
       replyChecks.current.forEach(clearTimeout)
       replyChecks.current = []
     }
@@ -1102,6 +1106,7 @@ function ShopDetail({
       Alert.alert('Please rewrite your review', 'It looks like your review contains language that breaks our community rules. Reviews with hate speech, slurs or harassment are not allowed.')
       return
     }
+    const visit = replyChecks.current
     setSavingReview(true)
     try {
       const { error } = await supabase
@@ -1111,14 +1116,23 @@ function ShopDetail({
           { onConflict: 'user_id,business_id' },
         )
       if (error) throw error
+      // The review is saved either way; if the shopper has left this shop
+      // there is nothing more to show them here.
+      if (visit !== replyChecks.current) return
       await loadReviews()
+      if (visit !== replyChecks.current) return
       // The shop's reply (often written by AI within seconds) arrives just
       // after the review is saved, so look again shortly.
-      for (const delay of [4000, 12000]) replyChecks.current.push(setTimeout(() => { void loadReviews() }, delay))
+      for (const delay of [4000, 12000]) {
+        visit.push(setTimeout(() => { if (visit === replyChecks.current) void loadReviews() }, delay))
+      }
       Alert.alert('Review saved', 'Thank you for sharing your experience.')
     } catch (error) {
-      Alert.alert('Could not save review', error instanceof Error ? error.message : 'Please try again.')
+      if (visit === replyChecks.current) {
+        Alert.alert('Could not save review', error instanceof Error ? error.message : 'Please try again.')
+      }
     } finally {
+      // Always reset, or the next shop's Save button would stay disabled.
       setSavingReview(false)
     }
   }
