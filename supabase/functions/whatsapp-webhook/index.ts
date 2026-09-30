@@ -1,9 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { isLogout, isStop, LOGGED_OUT_ALREADY, LOGOUT_REPLY, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
+import { isLogout, isStop, LOGGED_OUT_ALREADY, LOGOUT_REPLY, progressLine, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
 import { answerQuestion, DAILY_QUESTION_LIMIT, LIMIT_REPLY, type BotShop, type ChatMessage } from "../_shared/whatsapp-bot.ts";
+import {
+  ASK_LOCATION, joinChoices, matchShops, NO_SHOP_FOUND, nearbyReply, nearestShops, parseJoin, parseNearby, type Shop,
+} from "../_shared/whatsapp-shops.ts";
 
-type MetaMessage = { id?: string; from?: string; type?: string; text?: { body?: string } };
+type MetaMessage = { id?: string; from?: string; type?: string; text?: { body?: string }; location?: { latitude?: number; longitude?: number } };
 type MetaChange = { value?: { messages?: MetaMessage[] } };
 
 // Untyped client: this project has no generated database types.
@@ -199,6 +202,88 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
   return "question";
 }
 
+async function approvedShops(admin: Admin): Promise<Shop[]> {
+  const { data } = await admin.from("businesses")
+    .select("id,name,slug,category,lat,lng")
+    .eq("is_active", true).eq("approval_status", "approved")
+    .limit(2000);
+  return (data ?? []) as Shop[];
+}
+
+async function linkedUser(admin: Admin, phone: string): Promise<{ userId: string | null; optedOut: boolean }> {
+  const { data } = await admin.from("whatsapp_contacts").select("user_id, opted_out_at").eq("phone_e164", phone).maybeSingle();
+  return { userId: data?.user_id ?? null, optedOut: Boolean(data?.opted_out_at) };
+}
+
+// "JOIN <shop>". A linked customer joins straight away; anyone else starts
+// sign-up with that shop, exactly like scanning its QR code.
+async function joinByChat(admin: Admin, phone: string, query: string): Promise<string | null> {
+  const { userId, optedOut } = await linkedUser(admin, phone);
+  if (optedOut) return null;
+  const matches = matchShops(query, await approvedShops(admin));
+  if (!matches.length) {
+    await sendText(admin, phone, NO_SHOP_FOUND, "join", null, userId);
+    return "join";
+  }
+  if (matches.length > 1) {
+    await sendText(admin, phone, joinChoices(matches), "join", null, userId);
+    return "join";
+  }
+  const shop = matches[0];
+  if (!userId) return await processText(admin, phone, `START ${shop.slug}`);
+
+  const { data: existing } = await admin.from("memberships").select("id").eq("user_id", userId).eq("business_id", shop.id).maybeSingle();
+  if (!existing) {
+    const { error } = await admin.from("memberships").insert({ user_id: userId, business_id: shop.id });
+    if (error && error.code !== "23505") throw error;
+  }
+  const [{ data: membership }, { data: business }] = await Promise.all([
+    admin.from("memberships").select("reward_progress_pence").eq("user_id", userId).eq("business_id", shop.id).single(),
+    admin.from("businesses").select("reward_threshold_pence,reward_catalog(title,spend_threshold_pence)").eq("id", shop.id).single(),
+  ]);
+  const token = await createLink(admin, { linkType: "card", phone, userId, businessId: shop.id, hours: 1 });
+  const line = progressLine({
+    name: shop.name,
+    progressPence: membership?.reward_progress_pence ?? 0,
+    thresholdPence: business?.reward_threshold_pence ?? null,
+    tiers: business?.reward_catalog ?? [],
+  }).replace(/^• /, "");
+  await sendText(admin, phone,
+    `${existing ? "You're already a member of" : "You've joined"} ${shop.name}! 🎉\n\n${line}\n\nShow your card at the till to earn: ${APP_URL}/whatsapp/card?token=${encodeURIComponent(token)}`,
+    "join", shop.id, userId);
+  return "join";
+}
+
+async function replyNearby(admin: Admin, phone: string, lat: number, lng: number): Promise<string | null> {
+  const { userId, optedOut } = await linkedUser(admin, phone);
+  if (optedOut) return null;
+  const found = nearestShops(lat, lng, await approvedShops(admin));
+  let joined = new Set<string>();
+  if (userId && found.length) {
+    const { data } = await admin.from("memberships").select("business_id").eq("user_id", userId).in("business_id", found.map((f) => f.shop.id));
+    joined = new Set((data ?? []).map((m) => m.business_id));
+  }
+  await ensureContact(admin, phone);
+  await sendText(admin, phone, nearbyReply(found, joined), "nearby", null, userId);
+  return "nearby";
+}
+
+// "shops near <postcode>": look the postcode up (postcodes.io, UK only).
+async function shopsNear(admin: Admin, phone: string, postcode: string): Promise<string | null> {
+  try {
+    const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`, { signal: AbortSignal.timeout(8_000) });
+    const body = await response.json().catch(() => null);
+    const lat = body?.result?.latitude, lng = body?.result?.longitude;
+    if (response.ok && typeof lat === "number" && typeof lng === "number") return await replyNearby(admin, phone, lat, lng);
+  } catch {
+    // Fall through to the not-found reply.
+  }
+  const { userId, optedOut } = await linkedUser(admin, phone);
+  if (optedOut) return null;
+  await sendText(admin, phone, `I couldn't find the postcode ${postcode}. Try another, or share your location instead.`, "nearby", null, userId);
+  return "nearby";
+}
+
 // Returns the kind of inbound message handled, or null if it was ignored.
 async function processText(admin: Admin, phone: string, message: string): Promise<string | null> {
   const text = message.trim();
@@ -229,7 +314,17 @@ async function processText(admin: Admin, phone: string, message: string): Promis
   }
   const startMatch = /^start(?:\s+([a-z0-9][a-z0-9-]{0,100}))?$/i.exec(text);
   const conversationState = startMatch ? null : await activeConversation(admin, phone);
-  if (!startMatch && !conversationState) return await askBot(admin, phone, text);
+  if (!startMatch && !conversationState) {
+    const joinQuery = parseJoin(text);
+    if (joinQuery) return await joinByChat(admin, phone, joinQuery);
+    const nearby = parseNearby(text);
+    if (nearby === "ask") {
+      await sendText(admin, phone, ASK_LOCATION, "nearby_ask");
+      return "nearby";
+    }
+    if (nearby) return await shopsNear(admin, phone, nearby.postcode);
+    return await askBot(admin, phone, text);
+  }
 
   await ensureContact(admin, phone);
   const { data: contact, error: contactError } = await admin.from("whatsapp_contacts")
@@ -312,7 +407,11 @@ Deno.serve(async (request: Request) => {
     for (const item of messages) {
       const phone = item.from ? normalisePhone(item.from) : null;
       const text = item.type === "text" ? item.text?.body : null;
-      if (!phone || !text || !item.id) continue;
+      // A shared location finds nearby shops. It is used once and not stored.
+      const lat = item.type === "location" ? item.location?.latitude : undefined;
+      const lng = item.type === "location" ? item.location?.longitude : undefined;
+      const location = typeof lat === "number" && typeof lng === "number" ? { lat, lng } : null;
+      if (!phone || (!text && !location) || !item.id) continue;
       const { data: alreadyHandled, error: duplicateLookupError } = await admin
         .from("whatsapp_message_log")
         .select("id")
@@ -320,7 +419,9 @@ Deno.serve(async (request: Request) => {
         .maybeSingle();
       if (duplicateLookupError) throw duplicateLookupError;
       if (alreadyHandled) continue;
-      const kind = await processText(admin, phone, text);
+      const kind = location
+        ? await replyNearby(admin, phone, location.lat, location.lng)
+        : await processText(admin, phone, text!);
       if (!kind) continue;
       const { error } = await admin.from("whatsapp_message_log").insert({
         direction: "inbound", provider_message_id: item.id, phone_e164: phone, message_kind: kind, provider_payload: { type: item.type },
