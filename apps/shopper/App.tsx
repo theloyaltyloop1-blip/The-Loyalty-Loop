@@ -1048,6 +1048,12 @@ function ShopDetail({
     return () => { active = false }
   }, [business.id])
 
+  // Background checks for the shop's reply after a review is saved. Cleared
+  // when the shopper leaves or switches shop, so none can fire late.
+  const replyChecks = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  // Refreshes the list only. It never touches the review editor, so a check
+  // that lands while the shopper is typing can't overwrite their edit.
   const loadReviews = async () => {
     setReviewsLoading(true)
     try {
@@ -1061,20 +1067,31 @@ function ShopDetail({
       if (error) throw error
       const items = ((data || []) as ShopReview[]).filter((review) => !hiddenReviewIds.has(review.id))
       setReviews(items)
-      const mine = items.find((review) => review.user_id === userId)
-      if (mine) {
-        setReviewRating(mine.rating)
-        setReviewBody(mine.body || '')
-      }
+      return items
     } catch {
       setReviews([])
+      return []
     } finally {
       setReviewsLoading(false)
     }
   }
 
   useEffect(() => {
-    void loadReviews()
+    // Opening a shop fills the editor with the shopper's own review, once.
+    let current = true
+    void loadReviews().then((items) => {
+      if (!current) return
+      const mine = items.find((review) => review.user_id === userId)
+      if (mine) {
+        setReviewRating(mine.rating)
+        setReviewBody(mine.body || '')
+      }
+    })
+    return () => {
+      current = false
+      replyChecks.current.forEach(clearTimeout)
+      replyChecks.current = []
+    }
   }, [business.id, userId])
 
   const myReview = reviews.find((review) => review.user_id === userId)
@@ -1097,7 +1114,7 @@ function ShopDetail({
       await loadReviews()
       // The shop's reply (often written by AI within seconds) arrives just
       // after the review is saved, so look again shortly.
-      for (const delay of [4000, 12000]) setTimeout(() => { void loadReviews() }, delay)
+      for (const delay of [4000, 12000]) replyChecks.current.push(setTimeout(() => { void loadReviews() }, delay))
       Alert.alert('Review saved', 'Thank you for sharing your experience.')
     } catch (error) {
       Alert.alert('Could not save review', error instanceof Error ? error.message : 'Please try again.')

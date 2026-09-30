@@ -3833,20 +3833,84 @@ Checks run:
 
 Deployed: `ai-review-reply` and migration `20260929230000` at 22:34:28 UTC (dry run listed only this migration).
 
+## AI review replies final-pass review: accepted criterion and type/pure checks (2026-09-29) — Codex
+
+Read the shopper-display/owner-decision/durable-budget entry. Owner's choice of strict filter + separate verifier + DB rules is the accepted unattended-publication criterion; the previous deterministic-output requirement is superseded, not reopened. Source uses exact trimmed uppercase PASS. `node --test supabase/functions/_shared/review-reply.test.mjs supabase/functions/_shared/review-reply-handler.test.mjs apps/retailer/src/review-reply-inputs.test.mjs`: 17/17 pass. Web `node ../../node_modules/typescript/bin/tsc -b` from apps/web; retailer and shopper `node node_modules/typescript/bin/tsc --noEmit -p apps/<app>/tsconfig.json` from root: all exit 0. Ledger/disposable tests and live read-only checks follow. No deployment/provider call/live-data change.
+
+## AI review replies final-pass review: durable budget regressions passed (2026-09-29) — Codex
+
+Updated tmp/ai-review-audit/regressions.test.mjs to apply 20260929230000 and seed ai_review_reply_usage in its obsolete shop-cap fixture. `node --test --test-concurrency=1 apps/api/test/integration/ai-review-replies.test.mjs tmp/ai-review-audit/regressions.test.mjs`: 36/36 records passed (supplied 17, independent 19). The independent delete/recreate test now refuses at the stronger per-author limit; it no longer reaches 101. Supplied tests also verify 100th/101st boundary, expiration, account-deletion preservation and exactly one concurrent last-slot claimant. Disposable local PostgreSQL and fake network only. Durable budget P1 is resolved in these checks; reviewing shopper refresh and live metadata next.
+
+## AI review replies final-pass review: live read-only ledger checks passed (2026-09-29 22:39 UTC) — Codex
+
+MCP list_edge_functions reports ai-review-reply v4 ACTIVE, verify_jwt=false, updated 2026-09-29T22:34:27.151Z. One MCP execute_sql BEGIN TRANSACTION READ ONLY ... ROLLBACK catalog/count query at 2026-09-29 22:39:40.325645+00: ai_review_reply_usage RLS enabled, no policies, no anon/authenticated/PUBLIC table privileges; its sequence also has no client/PUBLIC privileges. Claim RPC SECURITY DEFINER, empty search_path, service-role execute allowed and anon/authenticated/PUBLIC denied. Aggregate counts: drafts {posted:1}; AI-generated replies 1. Project suffix …zbdo. No reply text or customer identifiers read, no provider/function invocation, no remote mutation. This confirms live metadata/counts, not the contents of the posted reply or deployed bundle equivalence.
+
+## AI review replies final-pass review: shopper refresh P2 reproduced (2026-09-30 local date) — Codex
+
+Added independent exact-PASS, shopper reply-normalization and delayed-refresh checks to the scratch regression. The latter transpiles the actual loadReviews/saveReview source from App.tsx and injects fake Supabase/timers; no copied implementation, Expo runtime or remote calls. Initial harness run failed to extract the source because App.tsx has CRLF line endings; normalized line endings in the harness and reran. `node --test --test-name-pattern='independent: verifier|independent: shopper' tmp/ai-review-audit/regressions.test.mjs`: 2 passed, 1 failed. Exact PASS and object/array/null reply normalization pass. Desired input-preservation test fails: after save, typing “Unsaved correction” and changing rating to 3 is overwritten by the scheduled 4-second callback with “Saved review” and rating 5. App.tsx loadReviews unconditionally resets both form fields, and saveReview reuses it for its 4/12-second reply polls. Required P2: refresh reply/review display without resetting a dirty composer; initialize/reset composer only on the appropriate explicit save/load/shop-change path. Cancel/invalidate delayed callbacks on navigation/unmount. No app code changed by this review.
+
+## AI review replies: backend APPROVED under owner's criterion; shopper P2 fix required (2026-09-30 local date) — Codex
+
+The earlier P1 findings are closed for this review. The owner's explicit acceptance of probabilistic moderation is authoritative: strict deterministic filter, separate verifier requiring exact trimmed uppercase PASS, and SQL posting rules. The implementation follows that sequence, holds failures/errors as drafts, excludes private membership/reward context, and keeps owner/low-rating requests draft-only. No deterministic safety guarantee is claimed or required. Real-model quality was not measured by Codex and no Groq call was made; the prior owner test is Claude's recorded evidence.
+
+Durable budget approved: the private ledger has no FK to reviews; review deletion cannot remove charges. Account deletion nulls author_id while preserving shop usage. The claim transaction serializes a shop, checks rolling 24-hour counts (100/shop and 3/author/shop), records automatic usage atomically, and retains the previous ownership/job/attempt gates. Supplied tests cover deletion, account deletion, boundary, expiry and concurrency; independent author deletion/recreation regression now passes. No ledger contents were read live.
+
+Shopper reply loading/rendering approved by source and normalizer test: the query includes review_replies; object/array/absent shapes are handled; reply body is rendered as native text under the appropriate shop name/colour. **One remaining P2:** App.tsx:1066–1067 resets the review editor on every loadReviews, including the delayed callbacks at line 1100. After save, a shopper editing before the 4/12-second refresh loses unsaved text/rating. The actual-source fake-timer test demonstrates it (details above). Separate background display refresh from composer initialization or preserve dirty fields, and cancel/invalidate pending callbacks when leaving/switching shops. No UI code was changed in this review.
+
+Final exact checks:
+- `node --test supabase/functions/_shared/review-reply.test.mjs supabase/functions/_shared/review-reply-handler.test.mjs apps/retailer/src/review-reply-inputs.test.mjs`: 17/17 pass.
+- `node --test --test-concurrency=1 apps/api/test/integration/ai-review-replies.test.mjs tmp/ai-review-audit/regressions.test.mjs`: 36/36 pass before adding the shopper-specific tests (supplied 17, independent 19).
+- Final `node --test tmp/ai-review-audit/regressions.test.mjs`: 21/22 records pass, one P2 shopper preservation regression fails; all database cases and exact-PASS/normalizer tests pass. Both PostgreSQL runs used disposable localhost databases with pg_net stub.
+- Web `node ../../node_modules/typescript/bin/tsc -b` from apps/web, retailer `node node_modules/typescript/bin/tsc --noEmit -p apps/retailer/tsconfig.json`, shopper `node node_modules/typescript/bin/tsc --noEmit -p apps/shopper/tsconfig.json`: all exit 0.
+- Live read-only snapshot 2026-09-29 22:39:40 UTC: function v4 ACTIVE, expected usage table/sequence ACL and RLS, service-only claim, drafts posted=1, AI replies=1. No row text/customer IDs or deployed source bundles fetched.
+
+Changed only CLAUDE_HANDOFF.md and the requested scratch regression file. Applied migrations, app/Edge source and supplied tests preserved. No deploy, push, OTA, provider call, secret/settings change or live mutation. Overall sign-off awaits the P2 shopper fix; no milestone completion or release-order change, so timeline unchanged.
+
+## AI review replies: shopper P2 fixed locally, NOT shipped (2026-09-30) — Claude
+
+Scope: only the remaining shopper P2 from Codex's approval entry. The backend decisions (durable budget, exact-PASS, owner-approved moderation) are unchanged.
+
+Change in `apps/shopper/App.tsx`:
+- `loadReviews` now only refreshes the list (and returns the items). **It never writes the review editor**, so the 4-second and 12-second reply checks after a save can't overwrite unsaved text or rating.
+- The editor is filled from the shopper's own review only by the shop-opening effect. That effect has a `current` flag, so a load that finishes after the shopper has left or switched shop is ignored.
+- The reply-check timers are held in a new `replyChecks` ref. The same effect's cleanup clears them when the shop changes or the screen unmounts.
+- Reply display (object, array or null) is unchanged.
+
+Harness: Codex's `tmp/ai-review-audit/regressions.test.mjs` injects component variables by hand. I added only `replyChecks:{current:[]}` to its context, marked with a comment. **Its assertions are unchanged.** Without that line, `saveReview` throws inside its own try/catch, so no timers are scheduled and the test fails for the wrong reason.
+
+New supplied test `apps/shopper/review-refresh.test.mjs` runs the real `loadReviews`, opening effect and `saveReview` from App.tsx (transpiled) with fake Supabase and timers. It checks three things:
+1. opening fills the editor once;
+2. a reply check keeps typed text and rating while still showing the reply;
+3. leaving cancels both checks and ignores a late opening load.
+
+Mutation check: removing either the late-load guard or the timer clearing fails test 3; restored → 3/3.
+
+Checks run:
+- `node --test supabase/functions/_shared/review-reply.test.mjs supabase/functions/_shared/review-reply-handler.test.mjs apps/retailer/src/review-reply-inputs.test.mjs apps/shopper/review-refresh.test.mjs` → 20/20;
+- `node --test --test-concurrency=1 apps/api/test/integration/ai-review-replies.test.mjs tmp/ai-review-audit/regressions.test.mjs` → 39/39, including Codex's three shopper/verifier checks;
+- `tsc` for web, retailer and shopper → all exit 0.
+
+**Not shipped:** no OTA, no push to `main`, no deployment, as the prompt instructed. The live shopper app still has the P2: a typed edit can be lost within 12 seconds of saving a review. Once Codex approves, publish a shopper OTA to production and preview, both platforms, from PowerShell.
+
 ## Copy-ready prompt for Claude Code
 
 Codex's next task (paste to Codex):
 
-Read CLAUDE_HANDOFF.md, "AI review replies: shopper display fix, owner safety decision, durable budget". Re-review against your re-review verdict:
-- The product owner explicitly accepted probabilistic moderation (strict filter + independent verifier + DB rules) for unattended 4–5★ replies. Treat that criterion as decided, and check the implementation matches it.
-- Verify the durable budget in 20260929230000_ai_review_reply_usage_ledger.sql. In tmp/ai-review-audit/regressions.test.mjs, add that migration and change its old shop-budget test to seed ai_review_reply_usage.
-- Verify the exact-PASS verifier parsing.
-- Verify the shopper reply display in apps/shopper/App.tsx.
+Read CLAUDE_HANDOFF.md, "AI review replies: shopper P2 fixed locally, NOT shipped". Review the change in apps/shopper/App.tsx:
+- the list-only loadReviews;
+- the shop-opening effect with its late-load guard and replyChecks cleanup;
+- the saveReview timer registration.
 
-Re-run the four supplied test files, your regression file, and the web, retailer and shopper type checks. Live read-only checks only: function version, ACL/RLS on ai_review_reply_usage, and counts by draft status and AI replies.
+Also review:
+- the new apps/shopper/review-refresh.test.mjs;
+- the one-line context addition (replyChecks) to your tmp/ai-review-audit/regressions.test.mjs. Its assertions are unchanged.
 
-Record approval, or specific fixes with a severity, in CLAUDE_HANDOFF.md. Do not deploy, push migrations, publish OTA, call Groq, or change secrets, settings or data. Leave a copy-ready prompt for Claude.
+Re-run the four supplied pure test files plus the shopper test, the integration file with your regression, and the web, retailer and shopper type checks.
+
+If you approve, you may publish the shopper OTA yourself, since the product owner allows Codex to deploy. Run `npx eas-cli update --channel production` and `--channel preview`, `--platform android` and `--platform ios` separately, from PowerShell in apps/shopper. Then commit and push to main. Record the update IDs. Otherwise record specific fixes with a severity.
+
+Do not change migrations, the Edge Function, secrets or live data. Leave a copy-ready prompt for Claude.
 
 ## Superseded prompt (completed above)
 
-Read CLAUDE_HANDOFF.md's “AI review replies re-review verdict: CHANGES REQUIRED” and tmp/ai-review-audit/regressions.test.mjs. Fix the P1 budget bypass locally using a new additive migration: usage must survive author deletion/recreation, and the independent test must reject generation beyond the shop limit. Keep deployed migrations unchanged and add concurrent/boundary tests. Resolve the remaining P1 unattended-output safety gap with a deterministically validated safe auto-post format and owner review for arbitrary prose; if proposing probabilistic moderation instead, obtain the product owner's explicit acceptance of that changed safety criterion. Preserve the now-passing queued-admission, private-context removal, lock-order, AI-label/staff-permission and dirty-input protections. Align verifier parsing with its documented contract. Rerun the four supplied test files, the independent regression and web/retailer type checks; log exact results after each item. Live read-only checks showed function v3 ACTIVE, expected ACL/RLS and zero drafts/AI replies at 21:54:52 UTC. Do not deploy, push migrations/main, publish OTA, call Groq, or change secrets, settings or live data in this task. Request independent Codex review and leave one current copy-ready prompt. No owner input is needed for local fixes unless changing the agreed product behaviour or safety acceptance criteria.
+Read CLAUDE_HANDOFF.md's “AI review replies: backend APPROVED under owner's criterion; shopper P2 fix required” and tmp/ai-review-audit/regressions.test.mjs. The durable budget, exact-PASS parsing and owner-approved probabilistic moderation now pass review; preserve those decisions and fixes. Fix only the remaining shopper P2 in apps/shopper/App.tsx: delayed reply refresh must not overwrite unsaved review text or rating, and stale timers must be cancelled/ignored on navigation or shop changes. Keep reply display working for object/array/null results. Make the independent fake-timer regression pass, add navigation/dirty-input coverage as appropriate, and rerun the four supplied test files, the independent regression and web/retailer/shopper type checks. Update CLAUDE_HANDOFF.md after each item with exact results and request independent review. Do not deploy, push migrations/main, publish OTA, call Groq or change secrets, settings or live data. No product-owner input is required for this local fix; the moderation criterion is already decided. Leave one current copy-ready prompt.
