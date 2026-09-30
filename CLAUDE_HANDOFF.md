@@ -4014,3 +4014,30 @@ Checked `eas update:list` first: only production Android (`4466aa36…`) had bee
 Pushed `main` with 6c2573a and 0aa457c, plus this handoff and `docs/WHATSAPP_PLAN.md`. **The shopper review P2 is shipped. AI review replies: complete.**
 
 Next: Claude builds WhatsApp stage 1 (Codex unavailable). D1 (drop the 30-day phase-out) is still awaiting the product owner, and is needed before stage 2.
+
+## WhatsApp stage 1: found already live; wording, STOP and owner switch fixed and deployed (2026-09-30) — Claude (Codex at usage limit)
+
+**Correction to `docs/WHATSAPP_PLAN.md`: sign-up was never fully paused.**
+- Live `public` has `whatsapp_contacts`, `whatsapp_conversations`, `whatsapp_handoff_links` and `whatsapp_message_log`, plus `complete_whatsapp_signup` (authenticated-only) and `find_whatsapp_user_by_phone` (service-only). All with RLS, and no client table access.
+- Only `whatsapp_outbox` and `queue_whatsapp_transaction_update` remain in `whatsapp_archive`; they're needed for stage 2.
+- `whatsapp-webhook` (v9 at 29 Aug) and `whatsapp-handoff` (v10) were ACTIVE with `verify_jwt=false`.
+- Usage counts: 1 contact, 1 conversation, 155 links, 14 messages (the last on 2026-08-30), 2 shops with `whatsapp_onboarding_enabled`.
+- The Meta secrets are all set (names checked only, never values): ACCESS_TOKEN, APP_SECRET, DISPLAY_NUMBER, GRAPH_VERSION, PHONE_NUMBER_ID, VERIFY_TOKEN, and WHATSAPP_DISPATCH_SECRET. **Whether the access token is still valid is unknown.** A temporary token would have expired; the owner's live test will tell.
+- The main repo's webhook is newer than the WIP repo's (message_kind, the approved-shop check, 1-hour card links, conversation gating), so main is authoritative. The WIP repo is only needed for `whatsapp-dispatch` in stage 2.
+
+Changes, all deployed:
+1. **Bug fixed: STOP was ignored** unless a sign-up chat was in progress, because non-START messages were dropped before the STOP check. STOP, unsubscribe and opt out now always opt the contact out, with a clear reply.
+2. "Welcome back" now lists up to 10 shops with **£ progress towards the next tier** (same rule as `spend_next_tier`), a "reward is ready" line, and the card link. The old shop count and any stamp/points wording are gone. The logic is in `supabase/functions/_shared/whatsapp-messages.ts`, tested by `whatsapp-messages.test.mjs` (5/5).
+3. The webhook's Supabase client is now typed (`SupabaseClient<any…>`). `deno check` went from 31 existing errors to 0.
+4. The website's Growth tools has the **"Join on WhatsApp"** owner switch back (`whatsapp_onboarding_enabled`). The poster QR already honours it. Web `tsc -b` → exit 0.
+
+Deployed:
+- `whatsapp-webhook` (commit 1612e4c);
+- `main` pushed, so the website deploys on Vercel.
+
+Live probes: a wrong verify token → 403; an unsigned POST → 401. **Not yet verified: a real message round trip.** That's the product owner's phone test.
+
+Next:
+- product owner: open https://www.the-loyalty-loop.com/whatsapp/start on a phone, send START, and report what comes back;
+- product owner: decide D1 (drop the 30-day phase-out);
+- Claude: stage 2 (outbox restore + dispatch + £ templates), then stage 3 (AI Q&A).
