@@ -1,8 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { isStop, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
 
 type MetaMessage = { id?: string; from?: string; type?: string; text?: { body?: string } };
 type MetaChange = { value?: { messages?: MetaMessage[] } };
+
+// Untyped client: this project has no generated database types.
+// deno-lint-ignore no-explicit-any
+type Admin = SupabaseClient<any, "public", any>;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -54,7 +59,7 @@ async function validSignature(rawBody: string, signature: string | null) {
   return secureEquals(digest, signature.slice("sha256=".length));
 }
 
-async function sendText(admin: ReturnType<typeof createClient>, phone: string, text: string, kind: string, businessId?: string | null, userId?: string | null) {
+async function sendText(admin: Admin, phone: string, text: string, kind: string, businessId?: string | null, userId?: string | null) {
   if (!ACCESS_TOKEN || !PHONE_NUMBER_ID) throw new Error("WhatsApp sending is not configured");
   const response = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${PHONE_NUMBER_ID}/messages`, {
     method: "POST",
@@ -70,7 +75,7 @@ async function sendText(admin: ReturnType<typeof createClient>, phone: string, t
   });
 }
 
-async function createLink(admin: ReturnType<typeof createClient>, values: {
+async function createLink(admin: Admin, values: {
   linkType: "signup" | "card"; phone: string; businessId?: string | null; userId?: string | null; email?: string | null; firstName?: string | null; hours: number;
 }) {
   const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
@@ -84,35 +89,54 @@ async function createLink(admin: ReturnType<typeof createClient>, values: {
   return token;
 }
 
-async function linkedCustomerReply(admin: ReturnType<typeof createClient>, phone: string, userId: string, businessId: string | null) {
+async function linkedCustomerReply(admin: Admin, phone: string, userId: string, businessId: string | null) {
   if (businessId) {
     await admin.from("memberships").upsert({ user_id: userId, business_id: businessId }, { onConflict: "user_id,business_id", ignoreDuplicates: true });
   }
   const [{ data: profile }, { data: memberships }] = await Promise.all([
     admin.from("profiles").select("first_name").eq("id", userId).single(),
-    admin.from("memberships").select("stamp_count,points_balance,visit_count,business:businesses(name,loyalty_type)").eq("user_id", userId),
+    admin.from("memberships")
+      .select("reward_progress_pence,business:businesses(id,name,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
+      .eq("user_id", userId)
+      .order("last_activity_at", { ascending: false, nullsFirst: false }),
   ]);
+  const shops: ShopProgress[] = (memberships ?? []).flatMap((m) => {
+    const business = Array.isArray(m.business) ? m.business[0] : m.business;
+    return business ? [{
+      name: business.name,
+      progressPence: m.reward_progress_pence ?? 0,
+      thresholdPence: business.reward_threshold_pence ?? null,
+      tiers: business.reward_catalog ?? [],
+    }] : [];
+  });
   const token = await createLink(admin, { linkType: "card", phone, businessId, userId, hours: 1 });
-  const total = memberships?.length ?? 0;
   await sendText(admin, phone,
-    `Welcome back${profile?.first_name ? `, ${profile.first_name}` : ""}! You're collecting at ${total} ${total === 1 ? "shop" : "shops"}. Open your live Loyalty Loop card to show your QR code and see every balance: ${APP_URL}/whatsapp/card?token=${encodeURIComponent(token)}`,
+    welcomeBack(profile?.first_name ?? null, shops, `${APP_URL}/whatsapp/card?token=${encodeURIComponent(token)}`),
     "start_existing_customer", businessId, userId);
 }
 
-async function ensureContact(admin: ReturnType<typeof createClient>, phone: string) {
+async function ensureContact(admin: Admin, phone: string) {
   const { error } = await admin.from("whatsapp_contacts")
     .upsert({ phone_e164: phone, last_inbound_at: new Date().toISOString() }, { onConflict: "phone_e164" });
   if (error) throw error;
 }
 
-async function activeConversation(admin: ReturnType<typeof createClient>, phone: string) {
+async function activeConversation(admin: Admin, phone: string) {
   const { data } = await admin.from("whatsapp_conversations").select("state").eq("phone_e164", phone).maybeSingle();
   return data?.state && data.state !== "idle" ? data.state : null;
 }
 
-async function processText(admin: ReturnType<typeof createClient>, phone: string, message: string) {
+async function processText(admin: Admin, phone: string, message: string) {
   const text = message.trim();
   const command = text.toLowerCase();
+  // STOP must always work, even when no sign-up conversation is open.
+  if (isStop(text)) {
+    await ensureContact(admin, phone);
+    await admin.from("whatsapp_contacts").update({ opted_out_at: new Date().toISOString() }).eq("phone_e164", phone);
+    await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "idle", pending_first_name: null, pending_email: null });
+    await sendText(admin, phone, STOP_REPLY, "stop");
+    return true;
+  }
   const startMatch = /^start(?:\s+([a-z0-9][a-z0-9-]{0,100}))?$/i.exec(text);
   const conversationState = startMatch ? null : await activeConversation(admin, phone);
   if (!startMatch && !conversationState) return false;
@@ -121,13 +145,6 @@ async function processText(admin: ReturnType<typeof createClient>, phone: string
   const { data: contact, error: contactError } = await admin.from("whatsapp_contacts")
     .select("user_id, opted_out_at").eq("phone_e164", phone).single();
   if (contactError) throw contactError;
-
-  if (command === "stop") {
-    await admin.from("whatsapp_contacts").update({ opted_out_at: new Date().toISOString() }).eq("phone_e164", phone);
-    await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "idle" });
-    await sendText(admin, phone, "WhatsApp onboarding is paused. You can still use every reward in The Loyalty Loop app. Send START when you want to use this optional service again.", "stop");
-    return true;
-  }
 
   if (startMatch) {
     let businessId: string | null = null;
