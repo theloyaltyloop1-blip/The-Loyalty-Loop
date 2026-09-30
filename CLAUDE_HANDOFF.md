@@ -4041,3 +4041,13 @@ Next:
 - product owner: open https://www.the-loyalty-loop.com/whatsapp/start on a phone, send START, and report what comes back;
 - product owner: decide D1 (drop the 30-day phase-out);
 - Claude: stage 2 (outbox restore + dispatch + £ templates), then stage 3 (AI Q&A).
+
+## WhatsApp live round trip VERIFIED (2026-09-30 19:17 UTC) — Claude with the product owner
+
+- First test: the `/whatsapp/start` link without `?shop=` returned 400, and the page showed a generic "non-2xx". **Fixed** in `whatsapp-handoff` (a no-shop link opens the chat with START; 503 if not configured) and `WhatsAppStart.tsx` (shows the server's reason). Deployed and pushed.
+- Second test: Meta delivered signed messages (19:10). The webhook failed with **"Meta send failed: 401", an expired access token**. The configured number is Meta's **US test number (+1 5…)**.
+- The product owner created a permanent system-user token and replaced `META_WHATSAPP_ACCESS_TOKEN` themselves; it was never shared in chat.
+- **Verified:** inbound `start` → outbound `start_existing_customer` at 19:16:48, 19:16:57 and 19:17:06. That's the £ welcome-back message to the owner's already-linked number.
+- Still to do (product owner): Meta business verification (in progress), and a real UK number to replace the test number (so far only registered testers can receive). Then update `META_WHATSAPP_PHONE_NUMBER_ID` and `DISPLAY_NUMBER`.
+- Known behaviour: if sending fails, the webhook returns 500 and Meta retries it about five times. That's acceptable for now; stage 2's outbox will handle retries properly.
+- Next: stage 2 (progress and reward messages; needs D1) and stage 3 (ask the bot).
