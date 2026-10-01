@@ -75,7 +75,7 @@ Cost: replies within 24 hours of a customer's message (sign-up and "ask the bot"
 
 ## Decisions
 
-- **D1 (recommended, needs the product owner's OK):** drop the old 30-day "move to the app" phase-out, because progress messages are wanted on an ongoing basis. Cost is controlled by the §2 limits instead.
+- **D1 — APPROVED by the product owner 2026-10-01:** drop the old 30-day "move to the app" phase-out, because progress messages are wanted on an ongoing basis. Cost is controlled by the §2 limits instead.
 - **D2:** sign-up and Q&A replies are free-form text inside the 24-hour window. Business-initiated messages use approved templates only.
 - **D3:** WhatsApp is optional and never required. Every feature stays in the app.
 
