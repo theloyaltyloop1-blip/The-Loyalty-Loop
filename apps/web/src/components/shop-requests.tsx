@@ -34,18 +34,28 @@ export function AskShopDialog({open,onOpenChange,initialQuery=''}:{open:boolean;
   <p className="text-right text-xs text-[#5e5e5e]">Google Maps</p>
  </DialogContent></Dialog>
 }
+// Google Places names stay in memory for this page session only; never persisted.
+export const shopNameCache=new Map<string,Detail>()
+supabase.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')shopNameCache.clear()})
+// Looks up only uncached IDs, charged to the separate details budget (never shop search).
+export async function hydrateShopNames(ids:string[],limit:number){
+ const missing=[...new Set(ids)].filter(id=>!shopNameCache.has(id)).slice(0,limit);if(!missing.length)return
+ const {data,error}=await supabase.functions.invoke('shop-request-search',{body:{mode:'details',place_ids:missing}})
+ if(!error&&data?.details)for(const d of data.details as Detail[])shopNameCache.set(d.place_id,d)
+}
+const named=<T extends {place_id:string}>(rows:T[])=>rows.map(row=>({...row,...shopNameCache.get(row.place_id)}))
 export function RequestedShops(){
- const navigate=useNavigate()
- const [rows,setRows]=useState<Mine[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false)
- async function load(){const {data,error:e}=await supabase.rpc('my_shop_requests');if(e){setError('Could not load your shop requests.');return}const all:Mine[]=data??[];setRows(all);setError('')
-  const ids=all.slice(0,20).map(row=>row.place_id);if(!ids.length)return
-  const {data:details,error:de}=await supabase.functions.invoke('shop-request-search',{body:{mode:'details',place_ids:ids}})
-  if(!de&&details?.details){const names=new Map<string,Detail>(details.details.map((d:Detail)=>[d.place_id,d]));setRows(all.map(row=>({...row,...names.get(row.place_id)})))}
- }
+ const navigate=useNavigate(),section=useRef<HTMLElement>(null)
+ const [rows,setRows]=useState<Mine[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[seen,setSeen]=useState(false)
+ async function load(){const {data,error:e}=await supabase.rpc('my_shop_requests');if(e){setError('Could not load your shop requests.');return}const all:Mine[]=data??[];setRows(named(all));setError('')}
  useEffect(()=>{void load()},[])
+ // Names are fetched only once the list scrolls into view.
+ useEffect(()=>{const el=section.current;if(!el||seen)return
+  const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setSeen(true);observer.disconnect()}});observer.observe(el);return()=>observer.disconnect()},[seen])
+ useEffect(()=>{if(!seen||!rows.length)return;let cancelled=false;void hydrateShopNames(rows.map(r=>r.place_id),20).then(()=>{if(!cancelled)setRows(prev=>named(prev))});return()=>{cancelled=true}},[seen,rows.length])
  async function withdraw(id:string){setBusy(true);const {error:e}=await supabase.rpc('withdraw_shop_request',{p_place_id:id});if(e)setError('Could not withdraw your request. Please try again.');else await load();setBusy(false)}
  async function view(id:string){try{navigate(await shopPath(id))}catch{setError('Could not open that shop. Please try again.')}}
- return <section className="mb-5 rounded-2xl bg-card p-6"><h2 className="font-display text-xl">Shops you've asked for</h2>{error&&<p role="alert">{error}</p>}{!rows.length&&!error&&<p className="mt-2 text-muted-foreground">Your requested shops will appear here.</p>}
+ return <section ref={section} className="mb-5 rounded-2xl bg-card p-6"><h2 className="font-display text-xl">Shops you've asked for</h2>{error&&<p role="alert">{error}</p>}{!rows.length&&!error&&<p className="mt-2 text-muted-foreground">Your requested shops will appear here.</p>}
   {rows.map(row=><div key={row.place_id} className="flex flex-wrap items-center justify-between gap-3 border-b py-4"><div><strong>{row.name??'A shop you asked for'}</strong>{row.address&&<p>{row.address}</p>}<p>{requestStatus[row.status]??'Request recorded'} · {row.count} {row.count===1?'person has':'people have'} asked</p></div>{row.business_id&&<button className="underline" onClick={()=>void view(row.business_id!)}>View shop</button>}<button disabled={busy} className="underline disabled:opacity-50" onClick={()=>void withdraw(row.place_id)}>Withdraw</button></div>)}
   {rows.some(row=>row.name)&&<p className="mt-3 text-right text-xs text-[#5e5e5e]">Google Maps</p>}
  </section>

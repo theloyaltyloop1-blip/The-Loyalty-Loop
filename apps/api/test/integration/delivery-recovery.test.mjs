@@ -23,12 +23,13 @@ test('Scheduled recovery commands on disposable PostgreSQL with fake cron/HTTP p
   // SQL commands/health queries against recorded jobs; no wall-clock scheduler.
   const cron=await migration('20261002211306_scheduled_delivery_recovery.sql');assert.match(cron,/create extension if not exists pg_cron;/);
   await db.query(cron.replace('create extension if not exists pg_cron;',''));
+  await db.query(await migration('20261002230326_shop_request_review_fixes.sql'));
   const user=randomUUID();await db.query('insert into auth.users values($1)',[user]);
   const wake=async name=>{const {command}= (await db.query('select command from cron.job where jobname=$1',[name])).rows[0];await db.query(command);};
   await t.test('lost ready wake recovered; repeated sweeps send one operator email',async()=>{
    await db.query('update shop_request_settings set threshold=1');const place={place_id:'lost',name:'Transient cafe',address:'Leeds',lat:53.8,lng:-1.5,country:'GB',postcode:null,website:null,phone:null,primary_type:null};
    await as(db,'authenticated',user,'select request_shop($1)',[await signPlace(place,user,'fake')]);await db.query('delete from net.wakes');
-   let sends=0;const handler=notifyHandler({details:async()=>place,current:async id=>(await db.query('select * from requested_shops where place_id=$1',[id])).rows[0],claim:async id=>(await db.query('select claim_shop_request_notify($1) r',[id])).rows[0].r,finish:async(id,lease,sent)=>{await db.query('select finish_shop_request_notify($1,$2,$3)',[id,lease,sent])},joined:async()=>[]},async()=>{sends++;return Response.json({id:'fake-mail'})},n=>n==='SHOP_REQUEST_NOTIFY_SECRET'?'fake':n==='RESEND_API_KEY'?'fake':undefined);
+   let sends=0;const handler=notifyHandler({begin:async id=>(await db.query('select begin_shop_request_notify($1) r',[id])).rows[0].r,details:async()=>place,current:async id=>(await db.query('select * from requested_shops where place_id=$1',[id])).rows[0],claim:async id=>(await db.query('select claim_shop_request_notify($1) r',[id])).rows[0].r,finish:async(id,lease,sent)=>{await db.query('select finish_shop_request_notify($1,$2,$3)',[id,lease,sent])},joined:async()=>[]},async()=>{sends++;return Response.json({id:'fake-mail'})},n=>n==='SHOP_REQUEST_NOTIFY_SECRET'?'fake':n==='RESEND_API_KEY'?'fake':undefined);
    await wake('shop-request-delivery-recovery');assert.equal((await db.query('select body from net.wakes')).rows[0].body.place_id,'lost');
    const req=()=>new Request('http://fake',{method:'POST',headers:{Authorization:'Bearer fake'},body:JSON.stringify({place_id:'lost'})});await Promise.all([handler(req()),handler(req())]);await wake('shop-request-delivery-recovery');await handler(req());assert.equal(sends,1);
    const wakes=(await db.query('select count(*) n from net.wakes')).rows[0].n;assert.equal(wakes,'1');

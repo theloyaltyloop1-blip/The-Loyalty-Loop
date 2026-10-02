@@ -22,7 +22,7 @@ export function readPlace(p:GooglePlace):Place|null {
     website:p.websiteUri?.startsWith('https://')||p.websiteUri?.startsWith('http://')?p.websiteUri.slice(0,2000):null,
     phone:p.nationalPhoneNumber?.slice(0,100)??null,primary_type:p.primaryType?.slice(0,100)??null};
 }
-export type SearchStore={user:(jwt:string)=>Promise<string|null>;consume:(id:string)=>Promise<boolean>;listed:(place:Place)=>Promise<string|null>;mine:(id:string)=>Promise<{place_id:string;count:number}[]>;isAdmin?:(id:string)=>Promise<boolean>};
+export type SearchStore={user:(jwt:string)=>Promise<string|null>;consume:(id:string)=>Promise<boolean>;consumeDetails:(id:string,count:number,admin:boolean)=>Promise<boolean>;listed:(place:Place)=>Promise<string|null>;mine:(id:string)=>Promise<{place_id:string;count:number}[]>;isAdmin?:(id:string)=>Promise<boolean>};
 export const shopCors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'};
 export function searchHandler(store:SearchStore,fetchFn:typeof fetch,env:(name:string)=>string|undefined) {
  return async(req:Request):Promise<Response>=>{
@@ -41,8 +41,9 @@ export function searchHandler(store:SearchStore,fetchFn:typeof fetch,env:(name:s
     if(!Array.isArray(input.place_ids)||input.place_ids.length>(admin?50:20)||input.place_ids.some((id:unknown)=>typeof id!=='string'||id.length<1||id.length>255))return json({error:'Invalid requested shops'},400);
     const ids=[...new Set(input.place_ids as string[])];
     if(!admin){const own=new Set((await store.mine(userId)).map(p=>p.place_id));if(ids.some(id=>!own.has(id)))return json({error:'Not allowed'},403);}
-    // Charge each provider lookup, so batching cannot bypass the budget.
-    const details=[];for(const id of ids){if(!await store.consume(userId))return json({error:'Daily shop search limit reached'},429);const place=await placeDetails(id,fetchFn,key);if(place)details.push({place_id:place.place_id,name:place.name,address:place.address});}
+    // Reserve every provider lookup from the separate details budget, never the search caps.
+    if(ids.length&&!await store.consumeDetails(userId,ids.length,admin))return json({error:'Shop names are unavailable right now'},429);
+    const details=[];for(const id of ids){try{const place=await placeDetails(id,fetchFn,key);if(place)details.push({place_id:place.place_id,name:place.name,address:place.address});}catch{/* One obsolete place must not hide the others. */}}
     return json({details,attribution:'Google Maps'});
    }
    if(!await store.consume(userId))return json({error:'Daily shop search limit reached'},429);
@@ -65,13 +66,16 @@ export function searchHandler(store:SearchStore,fetchFn:typeof fetch,env:(name:s
   } catch {return json({error:'Shop search is temporarily unavailable'},500);}
  };
 }
-export type ReadyShop=Place&{request_count:number;ready_at:string};
+export type ReadyShop=Partial<Place>&{place_id:string;request_count:number;ready_at:string};
 export async function operatorEmail(shop:ReadyShop,baseUrl:string) {
  const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(shop.place_id)));
  const ref=[...hash].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,20);
  const link=`${baseUrl.replace(/\/$/,'')}/join?ref=req_${ref}`;
- const pitch=`Hello ${shop.name},\n\n${shop.request_count} local shoppers have asked for ${shop.name} on The Loyalty Loop. It's a simple way for independent shops to reward repeat visits with £ spend rewards.\n\nIf you'd like to join, you can get started here: ${link}\n\nThe Loyalty Loop`;
- return {subject:`${shop.request_count} local shoppers asked for ${shop.name}`.replace(/[\r\n]/g,' '),
-  text:`Ready shop request\n\n${shop.name}\n${shop.address}\nPostcode: ${shop.postcode??'Not supplied'}\nLocation: ${shop.lat}, ${shop.lng}\nType: ${shop.primary_type??'Not supplied'}\nWebsite: ${shop.website??'Not supplied'}\nPhone: ${shop.phone??'Not supplied'}\nGoogle Places ID: ${shop.place_id}\nRequest count: ${shop.request_count}\n\nReady-to-send pitch (choose how to reach the shop):\n\n${pitch}`,
+ const name=shop.name??`shop ${shop.place_id}`;
+ const demand=`${shop.request_count} local ${shop.request_count===1?'shopper has':'shoppers have'} asked`;
+ const maps=`https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(shop.place_id)}`;
+ const pitch=`Hello${shop.name?' '+shop.name:''},\n\n${demand} for ${name} on The Loyalty Loop. It's a simple way for independent shops to reward repeat visits with £ spend rewards.\n\nIf you'd like to join, you can get started here: ${link}\n\nThe Loyalty Loop`;
+ return {subject:`${demand} for ${name}`.replace(/[\r\n]/g,' '),
+  text:`Ready shop request\n\n${name}\n${shop.address??'Details unavailable; open Google Maps below.'}\nPostcode: ${shop.postcode??'Not supplied'}\nLocation: ${shop.lat!=null&&shop.lng!=null?`${shop.lat}, ${shop.lng}`:'Not supplied'}\nType: ${shop.primary_type??'Not supplied'}\nWebsite: ${shop.website??'Not supplied'}\nPhone: ${shop.phone??'Not supplied'}\nGoogle Places ID: ${shop.place_id}\nGoogle Maps: ${maps}\nRequest count: ${shop.request_count}\n\nReady-to-send pitch (choose how to reach the shop):\n\n${pitch}`,
   idempotencyKey:`shop-request-${ref}-${Date.parse(shop.ready_at)}`};
 }

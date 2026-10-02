@@ -43,7 +43,7 @@ import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, se
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { SuccessCheck } from './src/components/SuccessCheck'
-import { AskShopSheet, RequestedShopsList } from './src/components/ShopRequests'
+import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
@@ -118,6 +118,30 @@ function HeartIcon({ color = foreground, size = 22, filled = false }: IconProps)
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d={d} stroke={color} strokeWidth={2} strokeLinejoin="round" fill={filled ? color : 'none'} />
     </Svg>
+  )
+}
+
+function SearchIcon({ color = foreground, size = 20 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={11} cy={11} r={6.5} stroke={color} strokeWidth={2.2} />
+      <Path d="m16 16 4.5 4.5" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+// White, outlined search field so it stands out from the cream page background.
+function SearchBar({ value, onChangeText, accessibilityLabel }: { value: string; onChangeText: (v: string) => void; accessibilityLabel: string }) {
+  return (
+    <View style={styles.searchBar}>
+      <SearchIcon color={primary} size={20} />
+      <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#857d70" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
+      {value.length > 0 && (
+        <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
+          <CloseIcon color="#8a8378" size={16} />
+        </Pressable>
+      )}
+    </View>
   )
 }
 
@@ -643,6 +667,7 @@ const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', ca
  * The card, the name editor and the blocked list open inside the same sheet. */
 function SettingsSheet({ visible, session, userId, stampCode, onClose, initialView = 'root', cardLinking, onLinkCard, onViewRequested }: { visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void; initialView?: SettingsView; cardLinking: CardLinking; onLinkCard: () => void; onViewRequested: (id:string) => void }) {
   const [view, setView] = useState<SettingsView>('root')
+  const [showRequests, setShowRequests] = useState(false)
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
   const [blocks, setBlocks] = useState<{ blocked_id: string; created_at: string }[]>([])
@@ -659,6 +684,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   useEffect(() => {
     if (!visible) return
     setView(initialView)
+    setShowRequests(false)
     biometricLockEnabled().then(setBiometricEnabled)
     getUsageAnalyticsConsent().then(setAnalyticsEnabled)
     void loadBlocks()
@@ -748,7 +774,9 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   <ChevronRightIcon color={primary} size={18} />
                 </Pressable>
               </LinearGradient>
-              <RequestedShopsList active={visible && view === 'root'} onViewShop={onViewRequested}/>
+              <SettingsGroup title="Shop requests">
+                <SettingsRow tile="orange" icon={(c) => <MegaphoneIcon color={c} size={18} />} title="Shops you've asked for" detail="See progress or withdraw a request" onPress={() => setShowRequests(true)} last />
+              </SettingsGroup>
 
               {cardLinking.enabled && (
                 <SettingsGroup title="Payment cards">
@@ -888,6 +916,8 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
           )}
         </ScrollView>
       </SafeAreaView>
+      {/* Nested inside the settings sheet so it presents on top of it. */}
+      <RequestedShopsSheet visible={visible && showRequests} onClose={() => setShowRequests(false)} onViewShop={id => { setShowRequests(false); onViewRequested(id) }} />
     </Sheet>
   )
 }
@@ -1601,7 +1631,7 @@ function HomeTab({
   return (
     <>
       <Text style={styles.pageTitle}>Discover local rewards</Text>
-      <TextInput accessibilityLabel="Search local shops" placeholder="Search shops" value={query} onChangeText={setQuery} style={styles.input} />
+      <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
       <CategoryPills businesses={businesses} selected={category} onSelect={setCategory} />
 
       {announcements.length > 0 && (
@@ -1636,7 +1666,14 @@ function HomeTab({
       {filtered.map((b) => (
         <NearbyRow key={b.id} business={b} onPress={() => onSelect(b)} />
       ))}
-      {filtered.length === 0 && <Pressable accessibilityRole="button" onPress={() => onAsk(query)} style={styles.settingsRow}><Text style={styles.settingsRowTitle}>Can't find your favourite shop? Ask them to join</Text></Pressable>}
+      <Pressable accessibilityRole="button" onPress={() => onAsk(query)} style={({ pressed }) => [styles.askShopCard, pressed && { opacity: 0.85 }]}>
+        <View style={styles.askShopIcon}><MegaphoneIcon color="#fff" size={18} /></View>
+        <View style={styles.settingsRowBody}>
+          <Text style={styles.askShopTitle}>{filtered.length === 0 ? "Can't find your favourite shop?" : 'Ask a shop to join'}</Text>
+          <Text style={styles.askShopCopy}>Tell them local shoppers want them on The Loyalty Loop</Text>
+        </View>
+        <ChevronRightIcon color={primary} size={18} />
+      </Pressable>
     </>
   )
 }
@@ -1745,7 +1782,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
   return (
     <>
       <Text style={styles.pageTitle}>Shops near you</Text>
-      <TextInput accessibilityLabel="Search shops on map" placeholder="Search shops" value={query} onChangeText={setQuery} style={styles.input} />
+      <SearchBar accessibilityLabel="Search shops on map" value={query} onChangeText={setQuery} />
       {matches.length === 0 && <Pressable accessibilityRole="button" onPress={() => onAsk(query, center)} style={styles.settingsRow}><Text style={styles.settingsRowTitle}>Can't find your favourite shop? Ask them to join</Text></Pressable>}
       {pins.length > 0 ? (
         <View style={styles.mapWrap}>
@@ -2494,6 +2531,12 @@ const styles = StyleSheet.create({
 
   card: { backgroundColor: card, borderRadius: 20, padding: 18, marginTop: 26, gap: 12, shadowColor: '#1a1a1a', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
   input: { backgroundColor: '#f4efe4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: foreground, fontSize: 16 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#ecd5bf', paddingHorizontal: 14, marginBottom: 4, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  searchInput: { flex: 1, paddingVertical: 14, color: foreground, fontSize: 16 },
+  askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 14, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
+  askShopIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
+  askShopTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
+  askShopCopy: { color: '#7a6a5c', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
   appleButton: { width: '100%', height: 48, marginBottom: 12 },
   appleButtonAndroid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#000', borderRadius: 12 },
   appleButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },

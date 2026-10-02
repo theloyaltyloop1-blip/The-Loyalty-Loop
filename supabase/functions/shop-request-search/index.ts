@@ -5,6 +5,7 @@ const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SE
 Deno.serve(searchHandler({
  user:async jwt=>{const {data,error}=await admin.auth.getUser(jwt);return error?null:data.user?.id??null;},
  consume:async id=>{const {data,error}=await admin.rpc('consume_shop_search',{p_user_id:id});if(error)throw Error('budget unavailable');return data===true;},
+ consumeDetails:async(id,count,isAdmin)=>{const {data,error}=await admin.rpc('consume_shop_details',{p_user_id:id,p_count:count,p_admin:isAdmin});if(error)throw Error('budget unavailable');return data===true;},
  isAdmin:async id=>{const {data,error}=await admin.rpc('has_role',{_user_id:id,_role:'admin'});if(error)throw Error('role lookup failed');return data===true;},
  listed:async place=>{const {data,error}=await admin.rpc('shop_request_listed',{p_place:place});if(error)throw Error('listing lookup failed');return data;},
  mine:async id=>{

@@ -39,7 +39,7 @@ export function AskShopSheet({visible,onClose,initialQuery='',location,onViewSho
  return <><Sheet visible={visible} onClose={onClose} sheetStyle={s.sheet}>
   <View style={s.handle}/><View style={s.header}><Text style={s.title}>Ask them to join</Text><Pressable accessibilityLabel="Close shop requests" onPress={onClose} hitSlop={12}><Text style={s.action}>Close</Text></Pressable></View>
   <Text style={s.copy}>We'll let them know local shoppers want them. If they join, we'll tell you.</Text>
-  <TextInput accessibilityLabel="Find a shop to request" placeholder="Shop name and town" value={query} onChangeText={setQuery} style={s.input} autoCorrect={false}/>
+  <TextInput accessibilityLabel="Find a shop to request" placeholder="Shop name and town" placeholderTextColor="#857d70" value={query} onChangeText={setQuery} style={s.input} autoCorrect={false}/>
   {loading&&<ActivityIndicator color={colors.primary}/>}{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
   <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.rows}>
    {listed.map(row=><View key={row.business_id} style={s.row}><View style={s.details}><Text style={s.name}>{row.name}</Text><Text style={s.copy}>{row.address}</Text></View><Pressable accessibilityRole="button" onPress={()=>{onClose();onViewShop(row.business_id)}}><Text style={s.action}>View shop</Text></Pressable></View>)}
@@ -49,15 +49,31 @@ export function AskShopSheet({visible,onClose,initialQuery='',location,onViewSho
   <Text style={s.attribution}>Google Maps</Text>
  </Sheet><SuccessCheck visible={success} onFinished={()=>setSuccess(false)}/></>
 }
-export function RequestedShopsList({active,onViewShop}:{active:boolean;onViewShop?:(id:string)=>void}){
- const [rows,setRows]=useState<Mine[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState<string|null>(null)
- const load=useCallback(async()=>{const {data,error:e}=await supabase.rpc('my_shop_requests');if(e){setError('Could not load your shop requests.');return}const own:Mine[]=data??[];setRows(own);setError('');const ids=own.slice(0,20).map(r=>r.place_id);if(!ids.length)return;const {data:d,error:de}=await supabase.functions.invoke('shop-request-search',{body:{mode:'details',place_ids:ids}});if(!de&&d?.details){const map=new Map<string,Place>(d.details.map((p:Place)=>[p.place_id,p]));setRows(own.map(r=>({...r,...map.get(r.place_id)})))}},[])
- useEffect(()=>{if(active)void load()},[active,load])
+// Names are Google Places content: memory only for this app session, never persisted.
+const nameCache=new Map<string,Place>()
+supabase.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')nameCache.clear()})
+const withNames=(rows:Mine[])=>rows.map(r=>({...r,...nameCache.get(r.place_id)}))
+export function RequestedShopsSheet({visible,onClose,onViewShop}:{visible:boolean;onClose:()=>void;onViewShop?:(id:string)=>void}){
+ const [rows,setRows]=useState<Mine[]>([]),[loading,setLoading]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState<string|null>(null)
+ const load=useCallback(async()=>{
+  const {data,error:e}=await supabase.rpc('my_shop_requests');if(e){setError('Could not load your shop requests.');return}
+  const own:Mine[]=data??[];setRows(withNames(own));setError('')
+  // Only uncached names are looked up, from the details budget, while the sheet is open.
+  const missing=own.filter(r=>!nameCache.has(r.place_id)).slice(0,20).map(r=>r.place_id);if(!missing.length)return
+  const {data:d,error:de}=await supabase.functions.invoke('shop-request-search',{body:{mode:'details',place_ids:missing}})
+  if(!de&&d?.details){for(const p of d.details as Place[])nameCache.set(p.place_id,p);setRows(withNames(own))}
+ },[])
+ useEffect(()=>{if(!visible)return;setLoading(true);void load().finally(()=>setLoading(false))},[visible,load])
  async function withdraw(id:string){setBusy(id);const {error:e}=await supabase.rpc('withdraw_shop_request',{p_place_id:id});if(e)setError('Could not withdraw your request. Please try again.');else await load();setBusy(null)}
- return <View style={s.profile}><Text style={s.title}>Shops you've asked for</Text>{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
-  {!rows.length&&!error&&<Text style={s.copy}>When you ask a shop to join, it will appear here.</Text>}
-  {rows.map(row=><View style={s.row} key={row.place_id}><View style={s.details}><Text style={s.name}>{row.name??'A shop you asked for'}</Text>{row.address&&<Text style={s.copy}>{row.address}</Text>}<Text style={s.copy}>{labels[row.status]??'Request recorded'} · {row.count} {row.count===1?'person has':'people have'} asked</Text>{row.business_id&&onViewShop&&<Pressable accessibilityRole="button" onPress={()=>onViewShop(row.business_id!)}><Text style={s.action}>View shop</Text></Pressable>}</View><Pressable accessibilityRole="button" disabled={busy!==null} onPress={()=>void withdraw(row.place_id)}><Text style={s.action}>{busy===row.place_id?'Withdrawing…':'Withdraw'}</Text></Pressable></View>)}
+ return <Sheet visible={visible} onClose={onClose} sheetStyle={s.sheet}>
+  <View style={s.handle}/><View style={s.header}><Text style={s.title}>Shops you've asked for</Text><Pressable accessibilityLabel="Close shops you've asked for" onPress={onClose} hitSlop={12}><Text style={s.action}>Close</Text></Pressable></View>
+  <Text style={s.copy}>We'll tell you when a shop you asked for joins.</Text>
+  {loading&&!rows.length&&<ActivityIndicator color={colors.primary} style={{marginTop:16}}/>}{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
+  <ScrollView contentContainerStyle={s.rows}>
+   {!loading&&!rows.length&&!error&&<View style={s.empty}><Text style={s.emptyTitle}>No requests yet</Text><Text style={s.copy}>When you ask a shop to join, it will appear here.</Text></View>}
+   {rows.map(row=><View style={s.row} key={row.place_id}><View style={s.details}><Text style={s.name}>{row.name??'A shop you asked for'}</Text>{row.address&&<Text style={s.copy}>{row.address}</Text>}<View style={[s.badge,row.status==='joined'&&s.badgeJoined]}><Text style={[s.badgeText,row.status==='joined'&&s.badgeTextJoined]}>{labels[row.status]??'Request recorded'}</Text></View><Text style={s.copy}>{row.count} {row.count===1?'person has':'people have'} asked</Text>{row.business_id&&onViewShop&&<Pressable accessibilityRole="button" onPress={()=>onViewShop(row.business_id!)}><Text style={s.action}>View shop</Text></Pressable>}</View><Pressable accessibilityRole="button" disabled={busy!==null} onPress={()=>void withdraw(row.place_id)}><Text style={s.action}>{busy===row.place_id?'Withdrawing…':'Withdraw'}</Text></Pressable></View>)}
+  </ScrollView>
   {rows.some(row=>row.name)&&<Text style={s.attribution}>Google Maps</Text>}
- </View>
+ </Sheet>
 }
-const s=StyleSheet.create({sheet:{padding:20,maxHeight:'85%',backgroundColor:colors.background,borderTopLeftRadius:28,borderTopRightRadius:28},handle:{width:36,height:4,borderRadius:2,backgroundColor:'#bbb',alignSelf:'center',marginBottom:18},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:10},title:{fontSize:21,fontWeight:'700',color:colors.foreground},copy:{fontSize:14,lineHeight:20,color:'#777064',marginTop:4},input:{borderWidth:1,borderColor:'#d4cec4',borderRadius:14,padding:14,fontSize:16,marginVertical:16,color:colors.foreground,backgroundColor:colors.card},rows:{paddingBottom:16},row:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:14,borderBottomWidth:1,borderBottomColor:'#e6dfd4'},details:{flex:1},name:{fontSize:16,fontWeight:'600',color:colors.foreground},action:{color:colors.primary,fontWeight:'600'},button:{borderRadius:12,padding:12,backgroundColor:colors.primary},buttonText:{color:'white',fontWeight:'700'},disabled:{opacity:0.6},error:{color:'#a52b21',marginVertical:8},attribution:{color:'#777064',fontSize:12,textAlign:'right',marginTop:10},profile:{gap:8}})
+const s=StyleSheet.create({sheet:{padding:20,maxHeight:'85%',backgroundColor:colors.background,borderTopLeftRadius:28,borderTopRightRadius:28},handle:{width:36,height:4,borderRadius:2,backgroundColor:'#bbb',alignSelf:'center',marginBottom:18},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:10},title:{fontSize:21,fontWeight:'700',color:colors.foreground},copy:{fontSize:14,lineHeight:20,color:'#777064',marginTop:4},input:{borderWidth:1,borderColor:'#d4cec4',borderRadius:14,padding:14,fontSize:16,marginVertical:16,color:colors.foreground,backgroundColor:colors.card},rows:{paddingBottom:16},row:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:14,borderBottomWidth:1,borderBottomColor:'#e6dfd4'},details:{flex:1},name:{fontSize:16,fontWeight:'600',color:colors.foreground},action:{color:colors.primary,fontWeight:'600'},button:{borderRadius:12,padding:12,backgroundColor:colors.primary},buttonText:{color:'white',fontWeight:'700'},disabled:{opacity:0.6},error:{color:'#a52b21',marginVertical:8},attribution:{color:'#777064',fontSize:12,textAlign:'right',marginTop:10},empty:{alignItems:'center',paddingVertical:28},emptyTitle:{fontSize:17,fontWeight:'700',color:colors.foreground},badge:{alignSelf:'flex-start',marginTop:6,paddingHorizontal:10,paddingVertical:3,borderRadius:999,backgroundColor:'#fde6d9'},badgeJoined:{backgroundColor:'#e0f2e4'},badgeText:{fontSize:12,fontWeight:'700',color:colors.primary},badgeTextJoined:{color:'#2f8a4c'}})

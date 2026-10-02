@@ -9,6 +9,7 @@ function Invoke-Check {
 }
 Invoke-Check 'node' @('--test',
   'apps/api/test/integration/shop-requests.test.mjs',
+  'apps/api/test/integration/shop-request-fixes.test.mjs',
   'apps/api/test/integration/whatsapp-stage2.test.mjs',
   'apps/api/test/integration/delivery-recovery.test.mjs',
   'apps/api/test/integration/fidel-manual-spend.test.mjs',

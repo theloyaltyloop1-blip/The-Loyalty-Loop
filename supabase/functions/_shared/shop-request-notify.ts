@@ -1,7 +1,7 @@
 import {sameSecret} from './whatsapp-dispatch.ts';
 import {operatorEmail,type ReadyShop} from './shop-requests.ts';
 export type NotifyShop=ReadyShop&{status:string;lease?:string};
-export type NotifyStore={claim:(id:string)=>Promise<NotifyShop|null>;current:(id:string)=>Promise<NotifyShop>;details:(id:string)=>Promise<ReadyShop|null>;finish:(id:string,lease:string,sent:boolean)=>Promise<void>;joined:(id:string)=>Promise<string[]>};
+export type NotifyStore={begin:(id:string)=>Promise<{attempt:number}|null>;claim:(id:string)=>Promise<NotifyShop|null>;current:(id:string)=>Promise<NotifyShop>;details:(id:string)=>Promise<ReadyShop|null>;finish:(id:string,lease:string,sent:boolean)=>Promise<void>;joined:(id:string)=>Promise<string[]>};
 export function notifyHandler(store:NotifyStore,fetchFn:typeof fetch,env:(name:string)=>string|undefined){
  return async(req:Request):Promise<Response>=>{
   if(req.method!=='POST')return new Response('method not allowed',{status:405});
@@ -16,10 +16,12 @@ export function notifyHandler(store:NotifyStore,fetchFn:typeof fetch,env:(name:s
      body:JSON.stringify({notification_id:id}),signal:AbortSignal.timeout(15000)});if(!r.ok)failed++;}catch{failed++;}}
     return Response.json({processed:ids.length-failed,failed},{status:failed?207:200});
    }
+   const reservation=await store.begin(place_id);if(!reservation)return Response.json({skipped:true});
    const key=env('RESEND_API_KEY');if(!key)return Response.json({error:'email not configured'},{status:503});
-   // Resolve transient details before reserving the sole email attempt. A provider
-   // failure is safely recoverable by a later sweep without claiming a delivery.
-   const details=await store.details(place_id);if(!details)return Response.json({error:'shop details unavailable'},{status:502});
+   // Details are optional. No provider call after the bounded final attempt.
+   let details:ReadyShop|null=null;
+   if(reservation.attempt<5){try{details=await store.details(place_id);}catch{/* Use the bounded fallback below. */}}
+   if(!details&&reservation.attempt<3)return Response.json({error:'shop details unavailable; retry scheduled'},{status:502});
    const shop=await store.claim(place_id);if(!shop)return Response.json({skipped:true});
    const current=await store.current(place_id);
    if(current.status!=='ready'){await store.finish(place_id,shop.lease!,false);return Response.json({skipped:true});}

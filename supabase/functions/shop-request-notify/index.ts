@@ -4,6 +4,7 @@ import {notifyHandler} from '../_shared/shop-request-notify.ts';
 import {placeDetails,type ReadyShop} from '../_shared/shop-requests.ts';
 const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 Deno.serve(notifyHandler({
+ begin:async id=>{const {data,error}=await admin.rpc('begin_shop_request_notify',{p_place_id:id});if(error)throw Error('attempt reservation failed');return data;},
  details:async id=>{const key=Deno.env.get('GOOGLE_PLACES_API_KEY');if(!key)throw Error('details not configured');return await placeDetails(id,fetch,key,true) as ReadyShop|null;},
  claim:async id=>{const {data,error}=await admin.rpc('claim_shop_request_notify',{p_place_id:id});if(error)throw Error('claim failed');return data;},
  current:async id=>{const {data,error}=await admin.from('requested_shops').select('*').eq('place_id',id).single();if(error)throw Error('shop lookup failed');return data;},
