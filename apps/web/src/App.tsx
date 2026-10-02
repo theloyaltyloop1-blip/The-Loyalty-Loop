@@ -42,6 +42,7 @@ const AuthCallback = lazy(() => import('@/pages/AuthCallback').then((m) => ({ de
 const NotFound = lazy(() => import('@/pages/NotFound').then((m) => ({ default: m.NotFound })))
 const Help = lazy(() => import('@/pages/Help').then((m) => ({ default: m.Help })))
 const AccessPanel = lazy(() => import('@/pages/AccessPanel').then((m) => ({ default: m.AccessPanel })))
+const ShopRequests = lazy(() => import('@/pages/ShopRequests').then((m) => ({ default: m.ShopRequests })))
 const BrandWorkspace = lazy(() => import('@/pages/BrandWorkspace').then((m) => ({ default: m.BrandWorkspace })))
 const WhatsAppOnboarding = lazy(() => import('@/pages/WhatsAppOnboarding').then((m) => ({ default: m.WhatsAppOnboarding })))
 const WhatsAppCard = lazy(() => import('@/pages/WhatsAppCard').then((m) => ({ default: m.WhatsAppCard })))
@@ -51,7 +52,7 @@ const queryClient = new QueryClient()
 
 function RouteMeta() {
   const { pathname } = useLocation()
-  const privatePage = pathname.startsWith('/dashboard') || pathname.startsWith('/owner') || pathname.startsWith('/access') || pathname.startsWith('/brand') || pathname.startsWith('/whatsapp') || pathname.startsWith('/auth') || pathname.startsWith('/reset-password')
+  const privatePage = pathname.startsWith('/admin') || pathname.startsWith('/dashboard') || pathname.startsWith('/owner') || pathname.startsWith('/access') || pathname.startsWith('/brand') || pathname.startsWith('/whatsapp') || pathname.startsWith('/auth') || pathname.startsWith('/reset-password')
   const labels: Record<string, { title: string; description: string }> = {
     '/login': { title: 'Log in | The Loyalty Loop', description: 'Log in to your Loyalty Loop account.' },
     '/signup': { title: 'Join The Loyalty Loop', description: 'Create a free Loyalty Loop account and start collecting local rewards.' },
@@ -104,6 +105,8 @@ function App() {
                 <Route path="/dashboard/inbox" element={<InboxPage />} />
                 <Route path="/dashboard/admin" element={<Navigate to="/access" replace />} />
                 <Route path="/access" element={<AccessPanel />} />
+                <Route path="/admin/shop-requests" element={<ShopRequests />} />
+                <Route path="/join" element={<Signup asOwner />} />
                 <Route path="/brand" element={<BrandWorkspace />} />
                 <Route path="/owner" element={<OwnerAnalytics />} />
                 <Route path="/owner/onboarding" element={<OwnerOnboarding />} />

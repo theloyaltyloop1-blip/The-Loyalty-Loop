@@ -59,5 +59,6 @@ Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('o
   // Auth deletion cascades the remaining account-owned records (profile,
   // settings, roles, tokens, referrals, legal acceptance and sessions).
   const {error:del}=await admin.auth.admin.deleteUser(user.id); if(del) throw del;
+  const {error:recountError}=await admin.rpc('recount_shop_requests'); if(recountError) throw new Error('Account removed; shop request recount needs recovery.');
   return new Response(JSON.stringify({ok:true}),{headers:{...cors,'Content-Type':'application/json'}});
 } catch(e) { return new Response(JSON.stringify({error:e instanceof Error?e.message:'Deletion failed'}),{status:400,headers:{...cors,'Content-Type':'application/json'}}) }});

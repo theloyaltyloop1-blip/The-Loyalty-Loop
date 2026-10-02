@@ -43,6 +43,7 @@ import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, se
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { SuccessCheck } from './src/components/SuccessCheck'
+import { AskShopSheet, RequestedShopsList } from './src/components/ShopRequests'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
@@ -729,6 +730,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
           {view === 'root' && (
             <>
+              <RequestedShopsList active={visible && view === 'root'} />
               <LinearGradient colors={[primary, '#c9542a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
                 <Pressable onPress={() => setView('name')} style={styles.settingsHeroRow}>
                   <View style={styles.settingsHeroAvatar}><Text style={styles.settingsHeroAvatarText}>{initialsOf(firstName)}</Text></View>
@@ -1584,18 +1586,22 @@ function HomeTab({
   businesses,
   announcements,
   onSelect,
+  onAsk,
 }: {
   businesses: Business[]
   announcements: Announcement[]
   onSelect: (business: Business) => void
+  onAsk: (query: string) => void
 }) {
   const [category, setCategory] = useState<string | null>(null)
-  const filtered = category ? businesses.filter((b) => (b.category || 'Other') === category) : businesses
+  const [query, setQuery] = useState('')
+  const filtered = businesses.filter((b) => (!category || (b.category || 'Other') === category) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
   const trending = filtered.slice(0, 4)
 
   return (
     <>
       <Text style={styles.pageTitle}>Discover local rewards</Text>
+      <TextInput accessibilityLabel="Search local shops" placeholder="Search shops" value={query} onChangeText={setQuery} style={styles.input} />
       <CategoryPills businesses={businesses} selected={category} onSelect={setCategory} />
 
       {announcements.length > 0 && (
@@ -1630,7 +1636,7 @@ function HomeTab({
       {filtered.map((b) => (
         <NearbyRow key={b.id} business={b} onPress={() => onSelect(b)} />
       ))}
-      {filtered.length === 0 && <Text style={styles.empty}>No businesses match yet. Pull down to refresh.</Text>}
+      {filtered.length === 0 && <Pressable accessibilityRole="button" onPress={() => onAsk(query)} style={styles.settingsRow}><Text style={styles.settingsRowTitle}>Can't find your favourite shop? Ask them to join</Text></Pressable>}
     </>
   )
 }
@@ -1716,8 +1722,11 @@ function ShopMarker({ business, description, onCalloutPress }: { business: Busin
   )
 }
 
-function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (business: Business) => void }) {
+function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSelect: (business: Business) => void; onAsk: (query: string, location?: {lat:number;lng:number}) => void }) {
   const mapRef = useRef<MapView>(null)
+  const [query, setQuery] = useState('')
+  const [center, setCenter] = useState<{lat:number;lng:number}|undefined>()
+  const matches = businesses.filter(b => b.name.toLowerCase().includes(query.trim().toLowerCase()))
   const pins = businesses
     .filter((b): b is Business & { lat: number; lng: number } => b.lat != null && b.lng != null)
     .map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, business: b }))
@@ -1736,9 +1745,11 @@ function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (b
   return (
     <>
       <Text style={styles.pageTitle}>Shops near you</Text>
+      <TextInput accessibilityLabel="Search shops on map" placeholder="Search shops" value={query} onChangeText={setQuery} style={styles.input} />
+      {matches.length === 0 && <Pressable accessibilityRole="button" onPress={() => onAsk(query, center)} style={styles.settingsRow}><Text style={styles.settingsRowTitle}>Can't find your favourite shop? Ask them to join</Text></Pressable>}
       {pins.length > 0 ? (
         <View style={styles.mapWrap}>
-          <MapView ref={mapRef} provider={PROVIDER_GOOGLE} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false} onMapReady={fitAllPins}>
+          <MapView ref={mapRef} provider={PROVIDER_GOOGLE} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false} onMapReady={fitAllPins} onRegionChangeComplete={region => setCenter({lat:region.latitude,lng:region.longitude})}>
             {pins.map((pin) => (
               <ShopMarker key={pin.id} business={pin.business} onCalloutPress={() => onSelect(pin.business)} />
             ))}
@@ -1750,7 +1761,7 @@ function MapTab({ businesses, onSelect }: { businesses: Business[]; onSelect: (b
           <Text style={styles.mapPlaceholderText}>No shops have a pinned location yet.</Text>
         </View>
       )}
-      {businesses.map((b) => (
+      {matches.map((b) => (
         <NearbyRow key={b.id} business={b} onPress={() => onSelect(b)} />
       ))}
     </>
@@ -2087,6 +2098,7 @@ function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => voi
 // ---------------------------------------------------------------------
 
 function AppHome({ session }: { session: Session }) {
+  const [askShop, setAskShop] = useState<{query:string;location?:{lat:number;lng:number}}|null>(null)
   const [tab, setTab] = useState<Tab>('home')
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [memberships, setMemberships] = useState<Membership[]>([])
@@ -2322,8 +2334,8 @@ function AppHome({ session }: { session: Session }) {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
-          {tab === 'home' && <HomeTab businesses={businesses} announcements={announcements} onSelect={setSelected} />}
-          {tab === 'map' && <MapTab businesses={businesses} onSelect={setSelected} />}
+          {tab === 'home' && <HomeTab businesses={businesses} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
+          {tab === 'map' && <MapTab businesses={businesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
           {tab === 'favourites' && (
@@ -2332,6 +2344,7 @@ function AppHome({ session }: { session: Session }) {
         </ScrollView>
       )}
       {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
+      <AskShopSheet visible={askShop !== null} initialQuery={askShop?.query ?? ''} location={askShop?.location} onClose={() => setAskShop(null)} onViewShop={id => { const shop=businesses.find(b => b.id === id); if(shop)setSelected(shop) }} />
       <SettingsSheet
         visible={showProfile}
         session={session}

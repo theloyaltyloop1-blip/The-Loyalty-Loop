@@ -66,6 +66,10 @@ async function validSignature(rawBody: string, signature: string | null) {
 
 async function sendText(admin: Admin, phone: string, text: string, kind: string, businessId?: string | null, userId?: string | null) {
   if (!ACCESS_TOKEN || !PHONE_NUMBER_ID) throw new Error("WhatsApp sending is not configured");
+  if(kind !== 'stop') {
+    const {data:contact,error}=await admin.from('whatsapp_contacts').select('user_id,opted_out_at').eq('phone_e164',phone).maybeSingle();
+    if(error||!contact||contact.opted_out_at||(userId&&kind!=='logout'&&contact.user_id!==userId)) throw Error('WhatsApp contact is not active');
+  }
   const response = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${PHONE_NUMBER_ID}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${ACCESS_TOKEN}`, "Content-Type": "application/json" },
@@ -414,7 +418,7 @@ Deno.serve(async (request: Request) => {
       const lng = item.type === "location" ? item.location?.longitude : undefined;
       const location = typeof lat === "number" && typeof lng === "number" ? { lat, lng } : null;
       if (!phone || (!text && !location) || !item.id) continue;
-      const commandKind = text && isStop(text) ? 'stop' : text && isLogout(text) ? 'logout' : text && /^start\b/i.test(text) ? 'start' : 'question';
+      const commandKind = text && isStop(text) ? 'stop' : text && isLogout(text) ? 'logout' : text && /^start(?:\s+([a-z0-9][a-z0-9-]{0,100}))?$/i.test(text.trim()) ? 'start' : 'question';
       const { data: reserved, error: reserveError } = await admin.rpc('reserve_whatsapp_inbound', {p_id:item.id,p_phone:phone,p_kind:commandKind});
       if(reserveError) throw Error('inbound reservation failed');
       if(!reserved) continue;

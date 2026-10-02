@@ -13,6 +13,17 @@ create function public.whatsapp_contact_relinked() returns trigger language plpg
 begin if new.user_id is not null and new.user_id is distinct from old.user_id then new.logged_out_at:=null; end if; return new; end $$;
 create trigger whatsapp_contact_relinked before update on public.whatsapp_contacts for each row execute function public.whatsapp_contact_relinked();
 revoke execute on function public.whatsapp_contact_relinked() from public,anon,authenticated;
+-- An in-flight bot request must not mint a usable card link after LOGOUT/STOP.
+create function public.protect_whatsapp_card_link() returns trigger language plpgsql security definer set search_path='' as $$
+declare c public.whatsapp_contacts;
+begin
+ if new.link_type<>'card' then return new; end if;
+ select * into c from public.whatsapp_contacts where phone_e164=new.phone_e164 for update;
+ if not found or c.user_id is distinct from new.user_id or c.opted_out_at is not null or c.logged_out_at is not null then raise exception 'WhatsApp contact is not linked'; end if;
+ return new;
+end $$;
+create trigger protect_whatsapp_card_link before insert on public.whatsapp_handoff_links for each row execute function public.protect_whatsapp_card_link();
+revoke execute on function public.protect_whatsapp_card_link() from public,anon,authenticated;
 alter table public.whatsapp_outbox
   drop constraint whatsapp_outbox_event_type_check,
   drop constraint whatsapp_outbox_status_check,
@@ -77,7 +88,7 @@ begin
     payload:=jsonb_build_array(b,'£'||to_char(greatest(prog,0)/100.0,'FM999999990.00'),tier.title,
       '£'||to_char(greatest(tier.amount_pence-prog,0)/100.0,'FM999999990.00'));
     update public.whatsapp_outbox set parameters=payload where user_id=new.user_id and business_id=new.business_id
-      and event_type=eid and status='pending' and created_at>now()-interval '30 minutes';
+      and event_type=eid and status='pending';
     if found then return new; end if;
     select max(sent_at) into last_send from public.whatsapp_outbox where user_id=new.user_id and business_id=new.business_id and event_type=eid;
   else payload:=jsonb_build_array(new.title,b); end if;
@@ -109,8 +120,15 @@ begin
   update public.whatsapp_outbox set status='failed',error_message='delivery_unknown' where status='sending' and lease_until<now();
   update public.whatsapp_outbox o set status='suppressed' where status='pending' and not exists(
     select 1 from public.whatsapp_contacts c where c.phone_e164=o.phone_e164 and c.user_id=o.user_id and c.opted_out_at is null and c.logged_out_at is null);
-  select * into item from public.whatsapp_outbox where status='pending' and available_at<=now() and attempts<3
-    order by created_at for update skip locked limit 1;
+  -- A new purchase during an in-flight progress send must wait for its slot.
+  update public.whatsapp_outbox o set available_at=s.sent_at+interval '30 minutes'
+   from public.whatsapp_outbox s where o.status='pending' and o.event_type='spend_progress'
+   and s.user_id=o.user_id and s.business_id=o.business_id and s.event_type='spend_progress'
+   and s.status='sent' and s.sent_at>now()-interval '30 minutes' and o.available_at<s.sent_at+interval '30 minutes';
+  select o.* into item from public.whatsapp_outbox o where o.status='pending' and o.available_at<=now() and o.attempts<3
+    and not (o.event_type='spend_progress' and exists(select 1 from public.whatsapp_outbox s where s.status='sending'
+      and s.event_type='spend_progress' and s.user_id=o.user_id and s.business_id=o.business_id))
+    order by o.created_at for update of o skip locked limit 1;
   if not found then return null; end if;
   update public.whatsapp_dispatch_usage set attempts=attempts+1 where day=(now() at time zone 'UTC')::date;
   update public.whatsapp_outbox set status='sending',lease_id=token,lease_until=now()+interval '2 minutes',attempts=attempts+1

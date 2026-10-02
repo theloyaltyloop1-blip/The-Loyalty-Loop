@@ -7,6 +7,12 @@ verify_jwt = false
 [functions.whatsapp-dispatch]
 verify_jwt = false
 
+[functions.shop-request-search]
+verify_jwt = true
+
+[functions.shop-request-notify]
+verify_jwt = false
+
 [functions.fidel-webhook]
 verify_jwt = false
 

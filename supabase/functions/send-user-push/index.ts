@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sendPendingPushes } from "../_shared/push.ts";
 import { supabasePushStore } from "../_shared/push-store.ts";
+import { sameSecret } from "../_shared/whatsapp-dispatch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +20,22 @@ Deno.serve(async (req) => {
     if (!authHeader) return new Response(JSON.stringify({ error: "missing authorization" }), { status: 401, headers: jsonHeaders });
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const requestSecret = req.headers.get('x-shop-request-secret');
+    if (requestSecret) {
+      if (!await sameSecret(Deno.env.get('SHOP_REQUEST_NOTIFY_SECRET'), `Bearer ${requestSecret}`)) {
+        return Response.json({error:'forbidden'},{status:403,headers:jsonHeaders});
+      }
+      const input=await req.json();
+      if(typeof input.notification_id!=='string') return Response.json({error:'notification_id required'},{status:400,headers:jsonHeaders});
+      const {data:item,error:claimError}=await admin.rpc('claim_shop_request_push',{p_notification_id:input.notification_id});
+      if(claimError) throw Error('push claim failed');
+      if(!item)return Response.json({skipped:true},{headers:jsonHeaders});
+      const store=supabasePushStore(admin);
+      // Exact persisted join notification, never another notification at this shop.
+      store.pending=async()=>[{id:item.id,kind:item.kind,title:item.title,body:item.body,businessId:item.business_id}];
+      const result=await sendPendingPushes(store,fetch,item.user_id,item.business_id);
+      return Response.json(result,{headers:jsonHeaders});
+    }
     const { data: { user }, error: authError } = await admin.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return new Response(JSON.stringify({ error: "not authenticated" }), { status: 401, headers: jsonHeaders });
 

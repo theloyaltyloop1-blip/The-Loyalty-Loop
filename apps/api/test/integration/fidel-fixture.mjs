@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
 import EmbeddedPostgres from 'embedded-postgres';
 
 // Shared focused fixture for the Fidel database tests: a minimal public
@@ -133,8 +133,10 @@ export const fixtureSql = String.raw`
 
 // Starts a disposable database with the fixture and every Fidel migration applied.
 export async function startFidelDatabase(prefix, { beforeMigration } = {}) {
+  const databaseDir = join(tmpdir(), prefix + randomUUID());
+  if (dirname(resolve(databaseDir)) !== resolve(tmpdir())) throw Error('Invalid disposable database path');
   const postgres = new EmbeddedPostgres({
-    databaseDir: join(tmpdir(), prefix + randomUUID()),
+    databaseDir,
     port: await freePort(),
     password: randomUUID(),
     user: 'postgres',
@@ -158,7 +160,11 @@ export async function startFidelDatabase(prefix, { beforeMigration } = {}) {
   const stop = async () => {
     for (const c of extra) await c.end().catch(() => {});
     await client.end();
-    await postgres.stop();
+    try { await postgres.stop(); } catch (error) {
+      // Retry transient Windows handle retention only for this verified disposable directory.
+      if (error.code !== 'EBUSY' && error.code !== 'ENOTEMPTY') throw error;
+      await rm(databaseDir, {recursive:true,force:true,maxRetries:10,retryDelay:200});
+    }
   };
   try {
     return { client, newClient, migrations: await setUp(client, beforeMigration), stop };

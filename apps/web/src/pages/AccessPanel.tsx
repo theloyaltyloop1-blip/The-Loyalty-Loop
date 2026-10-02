@@ -110,6 +110,7 @@ export function AccessPanel() {
     <aside className="border-b border-white/10 p-4 sm:p-6 lg:flex lg:w-72 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
       <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-primary"><ShieldCheck className="h-6 w-6" /></span><div><p className="font-display font-bold">Access Panel</p><p className="text-xs text-white/45">The Loyalty Loop</p></div></div>
       <nav aria-label="Access panel navigation" className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:mt-10 lg:flex-col lg:overflow-visible">
+        <Link to="/admin/shop-requests" className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10">Shop requests</Link>
         {(Object.keys(tabLabels) as Tab[]).map((key) => <button data-press-feedback key={key} onClick={() => setTab(key)} className={'shrink-0 rounded-xl px-4 py-2.5 text-left text-sm font-semibold lg:w-full lg:py-3 lg:text-base ' + (tab === key ? 'bg-primary' : 'text-white/60 hover:bg-white/10')}>
           {key === 'verifications' ? `Listings (${verifications.length})` : key === 'support' ? `Support (${support.filter((item) => item.status === 'open').length})` : key === 'moderation' ? `Reported reviews (${reports.length})` : tabLabels[key]}
         </button>)}
