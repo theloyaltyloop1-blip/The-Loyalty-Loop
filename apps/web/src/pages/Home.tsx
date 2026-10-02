@@ -41,6 +41,7 @@ export function Home() {
   const { session, loading, rolesLoading, primaryRole } = useAuth()
   const [firstName, setFirstName] = React.useState<string | null>(null)
   const [category, setCategory] = React.useState<string>('All')
+  const [query, setQuery] = React.useState('')
   const [businesses, setBusinesses] = React.useState<Business[]>([])
   const [memberships, setMemberships] = React.useState<Membership[]>([])
   const [fetching, setFetching] = React.useState(true)
@@ -75,16 +76,24 @@ export function Home() {
     acc[cat] = (acc[cat] ?? 0) + 1
     return acc
   }, {})
-  const filtered = category === 'All' ? businesses : businesses.filter((b) => b.category === category)
+  const search = query.trim().toLowerCase()
+  const filtered = businesses.filter((business) =>
+    (category === 'All' || business.category === category) &&
+    `${business.name} ${business.category ?? ''} ${business.address ?? ''} ${business.postcode ?? ''}`.toLowerCase().includes(search)
+  )
 
   return (
     <DashboardLayout>
       <div className="relative mb-8">
         <input
+          type="search"
+          aria-label="Search shops, categories or areas"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
           placeholder="Search shops, cafés, salons…"
           className="h-14 w-full rounded-full border border-black/10 bg-card pl-14 pr-5 font-medium text-foreground placeholder:text-foreground/40 outline-none"
         />
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/60" />
+        <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/60" />
       </div>
 
       <p className="text-sm text-foreground/50 mb-1">
@@ -118,13 +127,15 @@ export function Home() {
 
       {!fetching && businesses.length === 0 ? (
         <p className="text-foreground/50">No shops yet — check back soon.</p>
+      ) : !fetching && filtered.length === 0 ? (
+        <p role="status" className="text-foreground/50">No shops match. Try another search or category.</p>
       ) : (
         <>
           <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-foreground/60 mb-4">
             <Sparkles className="h-4 w-4 text-primary" /> Trending nearby
           </p>
           <div className="flex gap-4 overflow-x-auto pb-2 mb-10">
-            {businesses.slice(0, 2).map((business, index) => (
+            {filtered.slice(0, 2).map((business, index) => (
               <div key={business.id} className="stagger-card" style={{ animationDelay: `${index * 45}ms` }}><TrendingCard business={business} /></div>
             ))}
           </div>
