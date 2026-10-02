@@ -904,3 +904,165 @@ Run the three `_shared/whatsapp-*.test.mjs` suites and `deno check` on the webho
 3. Tests, on a disposable local PostgreSQL with a fake Graph API: queueing per type, no queueing on refund/undo, the 30-minute dedupe, the daily cap, opt-out and logout, account deletion, the dispatch lease race (two concurrent dispatchers, one send), the retry cap, and the auth rejection. Re-run the existing Fidel spend/manual-spend integration suites, to prove the triggers don't break or slow the credit path (a trigger failure must never roll back a spend), and also the WhatsApp pure suites, `deno check` on both functions, and the web, retailer and shopper type checks.
 
 Don't apply migrations, deploy functions, send WhatsApp messages, call Meta or the model provider, change secrets or write live data. Commit locally; don't push. Leave one copy-ready prompt for Claude Code asking for the stage 2 review, listing the files and exact test commands with their results.
+
+## Current status — 2 October 2026: local WhatsApp stage 2 and shop requests phase A complete
+
+Local commits 67e8a2a, 1c2ba08 and b35e7c8; not pushed. S1 operator email and S2 configurable threshold 5 are confirmed. No migration/function deployment, live messages, production writes, native build or shopper OTA. Claude review remains required.
+
+WhatsApp A/B: independently reviewed 9b92125/e066b1b/008381b. Deployed webhook version 14 and three helper files matched 008381b after newline normalization. Fixed approval/onboarding checks, atomic inbound replay reservation and bounded model budget, durable logout state, stale card-link guard and outbound active-contact check. Built private template outbox, lease/attempt/daily cap 500, latest-progress coalescing/30-minute spacing, threshold reward messages excluding signup, and account cascade. Ambiguous delivery is terminal to avoid duplicates; delayed retry needs caller wake, no scheduler. Existing live contacts restoration is absent from local migration history: focused fixture is not a full-history replay. Meta prerequisites and Claude review still block release.
+
+Shop requests: one additive migration 20261002133700_shop_requests_phase_a.sql implements tables, nullable Google ID with protected writes, setting 5, full-payload HMAC user/expiry-bound RPC, own-vote-only RLS, persistent budgets, locked recount, exactly one collecting-to-ready status wake, admin management, join notification and atomic push/email claims. Search uses JWT, Text Search (New) field mask including addressComponents (regionCode alone is a bias), UK validation, listed ID/normalized-name+75m filtering, ten-minute signed tokens, 30 searches/day. Notify uses secret auth, anonymized operator pitch, existing push path, durable pre-send claims. delete-my-account recounts after auth deletion. Admin route/count/status/link/threshold and shopper Sheet/SuccessCheck, Requested count, Profile/withdraw, Home/Map entries implemented without native dependencies.
+
+Changed paths: supabase/migrations/20261002133050_whatsapp_spend_dispatch.sql and 20261002133700_shop_requests_phase_a.sql; supabase/functions/whatsapp-{webhook,dispatch}, shop-request-{search,notify}, _shared/{whatsapp-dispatch,shop-requests,shop-request-notify}.ts, send-user-push, delete-my-account, config.toml; apps/shopper/App.tsx and src/components/ShopRequests.tsx; apps/web/src/App.tsx, pages/{AccessPanel,ShopRequests}.tsx; apps/api/test/integration/{shop-requests,whatsapp-stage2}.test.mjs and fidel-fixture.mjs; tmp/whatsapp-independent.test.mjs; scripts/verify-shop-requests.ps1. Timeline and docs/SHOP_REQUESTS_PLAN.md reflect local completion.
+
+Verification: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1 passed 26 database/fake-provider tests (all ten shop-request scenarios, eleven WhatsApp scenarios, parents and three existing Fidel regressions), 23 pure/independent tests, six Deno entrypoints and shopper/web/retailer/admin types, plus git diff --check. The script contains exact underlying commands. Deno uses --no-config --node-modules-dir=none. Initial Windows EBUSY fixture cleanup fixed with retry of verified disposable directory; final rerun stalled on an orphan PostgreSQL io_worker with exited parent, stopped that exact local worker and run completed with all assertions passing. Initial default Deno/config dependency checks failed; specified cached-runtime command passed. Tests use minimal fixture/direct REST-equivalent roles, not full Supabase REST or migration-history replay.
+
+Browser fake harness tmp/shop-request-ui imports real components with fake stores and native Sheet/SuccessCheck stubs. Request/count/Profile/withdraw and admin contacted/join actions and screenshots reviewed. Later preview cleanup exposed repeated-render errors from unstable fake auth; fixed primitive user/admin dependencies (b35e7c8), stabilized harness, reran web types/diff and fresh browser/error checks. Preview server/browser stopped. Native gestures/device delivery remain unverified.
+
+Release blockers: read-only secret-name check found GOOGLE_PLACES_API_KEY, SHOP_REQUEST_SIGNING_SECRET, SHOP_REQUEST_NOTIFY_SECRET absent; RESEND_API_KEY and WHATSAPP_DISPATCH_SECRET present (no values printed). Key supplied in chat was not used/stored/repeated; owner must revoke and replace it securely in Supabase. Matching signing/notify secrets required in Edge and Vault. Google Places policy conflicts with persistent POI-detail storage requested by plan; documented in docs/SHOP_REQUESTS_PLAN.md and blocks live release pending compliant design or confirmed contractual permission. Resend idempotency lasts 24 hours: durable pre-send claim prevents later duplicate retries but ambiguous failures require manual investigation. Expo ambiguity likewise can lose delivery, manual recovery required. No live provider traffic.
+
+### Handoff editing incident — 2 October 2026
+A later read-only website review attempted to insert before a missing prompt heading. PowerShell continued after a failed substring and overwrote the handoff. Restored tracked HEAD history and reconstructed the implementation/verification status from session evidence. Any pre-existing uncommitted wording not represented by tracked history or reconstructed notes may be lost; do not claim exact restoration of those edits. Other files were not changed in this incident. Future handoff replacements must stop on error and validate headings before writing.
+### Website search read-only review — 2 October 2026
+- Home.tsx dashboard search input has no value/onChange and does not filter results; category buttons alone filter. Discover.tsx map search does filter loaded businesses by name/category/address. Confirmed from source only; deployed website not checked. No code change, test or deployment.
+### Dashboard search implemented — 2 October 2026
+- apps/web/src/pages/Home.tsx now controls the search input and filters Trending/Nearby by case-insensitive trimmed shop name, category, address and postcode, combined with the category selection. Clearing restores matching category results. Added accessible search label and no-match message. Local only; verification pending.
+
+### Dashboard search verification completed
+- node apps/web/node_modules/typescript/bin/tsc --noEmit -p apps/web/tsconfig.app.json: PASS. git diff --check: PASS. No new tests added for this small reversible input/filter change; browser/live verification not run. No deployment. Prior WhatsApp/shop-request release gates remain unchanged.
+### Dashboard deployment preparation — 2 October 2026
+- Vercel reports latest production READY deployment dpl_EkxSMEzv4AzqBxs5epZK8DKRzPVS based on 008381b. Will isolate search fix from held shop requests. Connector get_project hit inconsistent input schema; CLI has no saved credentials and is awaiting device authentication. Reopened Vercel device sign-in in Codex at user request. No deployment started.
+
+### Isolated website release prepared
+- .codex-dashboard-search-release contains tracked production baseline 008381b plus only the Home.tsx search fix. No held shop-request/frontend changes are included. Build/deploy pending CLI authentication.
+
+### Dashboard search release — built, NOT yet in production (2 October 2026) — Claude
+- Used the already-authorised Vercel connector instead of CLI device sign-in, so the owner no longer needs to finish the device sign-in.
+- Created commit `230a73a` ("Website: make the dashboard search box filter shops") on a new branch `release/dashboard-search`. Its parent is production's `008381b`, and it changes only apps/web/src/pages/Home.tsx (+14/−3). The blob is byte-identical to the main working tree's Home.tsx and to .codex-dashboard-search-release. It was built with git plumbing; the main working tree and local `main` were not touched.
+- Pushed **only** that branch. Remote `main` is still `008381b`. The held commits d5386e5/67e8a2a/1c2ba08/b35e7c8 are not pushed.
+- Vercel automatically built a preview, `dpl_DhVzqE5NZo3VpBoHyfys79zUVgyt`, at loyalty-loop-i4alv5dvu-loyalty-loop.vercel.app (alias loyalty-loop-git-release-dashboard-search-loyalty-loop.vercel.app). Result: **READY**, clean build (vite built in 2.24 s; the only warning is the pre-existing 500 kB react-vendor chunk warning). The preview is behind Vercel SSO, and the page needs a signed-in shopper, so no browser check was made.
+- **Production deploy not done.** Claude Code's permission check blocked the production deployment call. The live site is still `dpl_EkxSMEzv4AzqBxs5epZK8DKRzPVS` (008381b) on www.the-loyalty-loop.com. Going live needs the owner's decision (see next actions).
+- Unchanged: the WhatsApp stage 2 / shop-request review gates and the shopper OTA hold.
+- Note for whoever next pushes `main`: the main working tree already contains the identical Home.tsx change (uncommitted). Commit it with the next `main` push, or a later production build from `main` would drop the search fix.
+- Next actions:
+  - (owner) Decide how it goes live: either promote preview `dpl_DhVzqE5NZo3VpBoHyfys79zUVgyt` to Production in the Vercel dashboard, or approve Claude to deploy it.
+  - (Claude or Codex, after it is live) Read-only check that the production deployment is READY on commit 230a73a with the custom domains aliased.
+  - (owner) Sign in on www.the-loyalty-loop.com, type a shop name into the home search box, and check the list filters, then clears again when the box is emptied.
+
+### Owner asked to push everything to `main` (2 October 2026) — Claude
+- The owner said "push that all to main". This fast-forwards `origin/main` from `008381b` through d5386e5, 67e8a2a, 1c2ba08 and b35e7c8, plus the Home.tsx search commit and this docs commit. Vercel builds production from `main`, so this replaces the release-branch route above.
+- What goes live on the **website**:
+  - the dashboard search fix;
+  - the `/join` route (owner sign-up);
+  - the admin "Shop requests" link and page. Until the shop-request migration is applied, the page shows a load error to admins only.
+- What does **not** go live:
+  - No Supabase migrations or Edge Functions: there are no GitHub workflows, and Supabase branching is off (no branches), so nothing auto-deploys.
+  - No shopper OTA: `eas update` is manual.
+  - The B1–B3 review gates for applying migrations and deploying functions remain in force.
+- Checked before the push: web type check PASS, and the local `npm run build:web` succeeded (only the pre-existing chunk-size warning). Supabase `list_branches` returned none, and HEAD has no `.github` workflows.
+- Not committed (pre-existing working-tree state, left for the owner to decide): the deleted docs/HANDOFF-*.md, docs/LOYALTY-LOOP-*.md and docs/NEW-SESSION-PROMPT.md; untracked tmp/, output/, timeline-site*, remote_schema_dump.sql and the .codex-* release folders.
+- `release/dashboard-search` (230a73a) is now redundant. Its preview deployment was never promoted.
+
+## Review: WhatsApp stage 2 + shop requests phase A (2026-10-02) — Claude (restored)
+
+(This review was first recorded earlier on 2 October. It was lost in the handoff-editing incident above and is restored here verbatim from Claude's saved copy.)
+
+**Verdict: APPROVED for local work; NOT approved for live release until P1 fixes B1–B3 are done.** Nothing was deployed or applied, and no live data was written. The only live access was one read-only query, which confirmed `pg_cron` is **not installed** (only `pg_net`).
+
+**Checks actually run:** `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1` exited 0, with 26/26 disposable PostgreSQL/fake-provider tests, 23/23 pure/independent tests, six Deno entrypoints, the shopper/retailer/web/admin type checks, and the diff check. No orphan PostgreSQL process remained afterwards. I read every listed file and diff, and re-read Google's Places policy page: place IDs may be stored indefinitely, and other Places content must not be cached or stored outside the stated exceptions. This is prototype evidence only: there was no native device run and no real Places/Resend/Meta traffic.
+
+**Verified correct (by reading the code, backed by the tests):**
+- Shop requests:
+  - Own-vote-only RLS, and no client access to `requested_shops`.
+  - An HMAC token bound to the user, the `place_id`, GB, and an expiry of at most 15 minutes.
+  - Persistent daily counters that survive withdrawal, and a threshold setting with default 5.
+  - Exactly one wake: the trigger fires only on `collecting→ready`, under a row lock.
+  - Silent suppression: the shopper sees "Request recorded", and the claim refuses rows that aren't ready.
+  - Recount on withdrawal and account deletion. `ready` is sticky.
+  - The operator pitch contains the count only, with no requester identity.
+  - Each requester gets one claimed push, of their own notification only.
+- WhatsApp:
+  - The inbound reservation is atomic per provider message ID, so Meta retries can't repeat a command.
+  - The contact is rechecked before every send and every dispatch.
+  - The card-link trigger blocks links minted after LOGOUT or STOP.
+  - Coalescing is serialised by the contact-row lock, and two dispatchers produce one send.
+  - An expired lease ends as terminal `delivery_unknown` and is never resent.
+  - A queue failure never rolls back a spend.
+
+**Required before live (P1):**
+- **B1. Places storage policy (resolves Codex's documented conflict).** Durable Places data is `place_id` only.
+  - Amend the *unapplied* migration in place: drop `name, address, postcode, lat, lng, website, phone, primary_type` from `requested_shops` and stop writing them.
+  - Fetch details only when needed, and don't store them:
+    - (a) `shop-request-notify` calls Place Details once to build the operator email. It may include website and phone.
+    - (b) A `details` mode on `shop-request-search` returns names and addresses for the caller's own requested IDs (max 20), or for admins any IDs (max 50 per page). It counts against the search budget.
+    - (c) `my_shop_requests` and `admin_shop_requests` return ID, count and status only. The UI falls back to "A shop you asked for" if details fail.
+    - (d) The join push title uses `businesses.name`, not Places data.
+  - The token's lat/lng and name stay transient. They're used only for the listed-shop check.
+  - Drop `websiteUri` and `nationalPhoneNumber` from the search field mask. That's data minimisation, and a cheaper SKU.
+  - Update tests 5, 7 and 10, and §3 of docs/SHOP_REQUESTS_PLAN.md.
+- **B2. A STOP can be lost.** With the new replay guard, a STOP whose opt-out update fails is still acknowledged with 200, so Meta never retries it. The current update also ignores its `{error}` and replies "unsubscribed" anyway.
+  - Fix: in `reserve_whatsapp_inbound`, when `p_kind='stop'`, set `opted_out_at=now()` in the same transaction as the reservation, and suppress that phone's pending outbox rows.
+  - Keep the webhook's STOP reply, and check errors on its remaining writes.
+  - Test: the opt-out persists even when the later handler throws.
+- **B3. There is no scheduler.** Nothing wakes `whatsapp-dispatch` for rows deferred by the 30-minute spacing or by retry backoff. They wait for the next unrelated spend, which at pilot scale could be hours away, or never come.
+  - The same gap affects lost shop-request wakes and the existing `fidel-card-delete-sweep`. Its code says it's "called by a scheduled job", but none exists.
+  - It's also why the admin "Scheduled jobs" health card is red: it's hardcoded `ok:false` at supabase/functions/platform-health/index.ts:42.
+  - Fix: enable `pg_cron`. Add one-minute jobs for `whatsapp-dispatch` and for a shop-request sweep. The sweep picks up ready rows with `email_attempted_at is null`, and join notifications with `joined_push_claimed_at is null`. Add an hourly job for `fidel-card-delete-sweep`. Take secrets from Vault.
+  - Make the health check read `cron.job` and recent `cron.job_run_details`.
+
+**Should fix (P2):**
+- **S1.** Per-user caps don't bound total Places cost, because accounts are free to create. Add a global daily search cap setting (default 1,000). The product owner should also set a quota on the key in Google Cloud.
+- **S2.** In `joined` mode, one failed push throws and abandons the remaining requesters. Continue past failures and report them. The B3 sweep catches anything left unclaimed.
+- **S3.** The admin page can't show a `ready` shop whose wake was lost. When `email_attempted_at` is null, show "Operator email not sent" with a resend action.
+
+**Minor (P3, may batch):**
+- The shopper list shows raw status words (`collecting`, `declined`). Use friendly labels, and offer **View shop** once joined.
+- The "Shops you've asked for" block sits above the profile hero in Settings. Move it below.
+- Shoppers see raw RPC errors such as "invalid place token".
+- Recount from an AFTER DELETE statement trigger on `shop_requests` instead of from `delete-my-account`. That also covers dashboard deletes, and avoids an error message after a deletion that succeeded.
+- `businesses.google_place_id` has no unique index.
+- `finish_whatsapp_outbox` records a dispatcher `suppressed` outcome as `failed`.
+
+**Gates still open:**
+- Product owner: revoke the Places key that was pasted in chat; create a replacement Places API (New) server key with a quota (S1) and set it as the `GOOGLE_PLACES_API_KEY` secret.
+- Codex: set `SHOP_REQUEST_SIGNING_SECRET` and `SHOP_REQUEST_NOTIFY_SECRET` in both Edge secrets and Vault, with matching values.
+- Product owner, for WhatsApp with Meta: both templates approved, business verification done, and a real UK number.
+
+**Next actions:**
+- Codex fixes B1–B3 and S1–S3 locally (plus P3 if quick) and re-runs the script with the new tests (owner: Codex).
+- Claude re-reviews the diff before any migration, deploy or shopper OTA (owner: Claude).
+- The product owner completes the key gates above (owner: product owner).
+
+Still pending, not dropped: Claude's check of the marketing contact artwork (output/marketing/*-contacts.png and business-card-front.png against output/marketing/README.md). Exact contacts: 07710244140, developer@the-loyalty-loop.com, www.the-loyalty-loop.com.
+
+## Copy-ready prompt for Codex (next task)
+
+Read CLAUDE_HANDOFF.md ("Review: WhatsApp stage 2 + shop requests phase A … (restored)") and fix B1–B3 and S1–S3 locally, plus the P3 items if quick. Nothing is applied or deployed yet, so amend 20261002133700_shop_requests_phase_a.sql and 20261002133050_whatsapp_spend_dispatch.sql in place. Add a new migration only for pg_cron.
+
+- **B1:** durable Places data is `place_id` only. Details are fetched only when needed:
+  - Place Details for the operator email.
+  - A `details` mode on shop-request-search: the caller's own IDs (max 20), or admin pages (max 50, admin-checked), counted in the budget.
+  - `my_shop_requests` and `admin_shop_requests` return ID, count and status only.
+  - The join push uses `businesses.name`.
+  - Drop website and phone from the search field mask.
+  - Update docs/SHOP_REQUESTS_PLAN.md §3.
+- **B2:** the STOP opt-out happens atomically inside `reserve_whatsapp_inbound` and suppresses pending outbox rows. Check errors on the webhook's STOP writes. Add a test where the handler throws after reservation and the opt-out persists.
+- **B3:** a pg_cron migration:
+  - Every minute: whatsapp-dispatch, and a shop-request sweep (ready shops never attempted; join notifications never claimed).
+  - Hourly: fidel-card-delete-sweep.
+  - Secrets come from Vault, never inline.
+  - platform-health's "Scheduled jobs" check reads `cron.job` and recent `cron.job_run_details` instead of the hardcoded `ok:false`.
+  - Tests: a deferred progress row and a retry row are sent by a sweep wake with no new spend; a lost ready wake is emailed exactly once by the sweep.
+- **S1:** a global daily Places search cap setting (default 1,000), enforced in `consume_shop_search`.
+- **S2:** joined-mode pushes continue past a failure.
+- **S3:** the admin page shows "Operator email not sent" with a resend action.
+
+Add the new tests to scripts/verify-shop-requests.ps1, re-run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1`, and record the counts.
+
+Deploy gates:
+- After Claude's re-review passes, you may apply the migrations and deploy whatsapp-dispatch, shop-request-notify and the sweep.
+- shop-request-search and the shopper OTA also wait for the product owner's replacement Places key, with a quota.
+
+Also: when you next commit and push `main`, include the already-present Home.tsx search change. It's identical to release commit 230a73a, and leaving it out would remove the live search fix.
+
+When editing this file, stop on any error and check the headings before writing; don't overwrite it wholesale. Never log tokens, keys, phone numbers or requester identities. Update CLAUDE_HANDOFF.md after each item, and finish with one copy-ready prompt for Claude Code asking for the re-review, listing the files and exact commands with their results.

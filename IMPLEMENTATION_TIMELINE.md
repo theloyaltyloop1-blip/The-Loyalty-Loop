@@ -167,3 +167,21 @@ the wording and operational fit; publication completed on Vercel (e07e648), with
 web acceptLegal helper is currently unused; recording acceptance is still a
 release dependency. Existing
 backend milestone order and gates remain unchanged.
+
+## Shopper review-refresh release — completed, verified 1 October 2026
+
+The reviewed shopper fixes (6c2573a and 0aa457c) are published to production and preview on Android and iOS, runtime 1.0.0. Codex independently verified all four EAS update IDs and the reviewed commits' inclusion in remote main on 1 October. Exact IDs and timestamps are in CLAUDE_HANDOFF.md, “Shopper OTA release COMPLETE: exact IDs independently verified”. Review checks passed (44 pure/UI/lifecycle, 39 database/regression, all three app TypeScript checks). Device receipt/smoke confirmation remains with the product owner; no further shopper publication is pending. Separate WhatsApp work and the broader pilot gates retain their existing scope.
+
+## Shop requests ("Request this shop") — designed 2 October 2026
+
+Claude designed it in `docs/SHOP_REQUESTS_PLAN.md`. Order: Codex builds phase A (the operator is emailed when 5 shoppers ask) after WhatsApp stage 2, then Claude reviews before the shopper OTA. Phase B (the bot emails the shop) waits for the option 1 outreach bot. The product owner must create a Google Places (New) server key. S1 operator email and S2 threshold setting 5 are confirmed by the product owner.
+
+## WhatsApp stage 2 local completion — 2 October 2026
+
+Codex completed the prerequisite independent review and local progress/reward outbox implementation. Fake Graph/disposable PostgreSQL acceptance, existing spend regressions, pure suites, Deno and app TypeScript checks pass (commands/results in CLAUDE_HANDOFF.md). Claude review and Meta prerequisites precede WhatsApp deployment. Shop requests phase A follows locally; both stages await Claude review, and shopper OTA remains held.
+
+## Shop requests phase A local completion — 2 October 2026
+
+Database, masked/signed Places search, operator notification, account recount, admin and shopper integration are implemented locally. All ten acceptance scenarios run against fake providers and disposable PostgreSQL; exact verification evidence is in CLAUDE_HANDOFF.md. Claude reviews both stages before release and resolves the documented Google Places retention conflict. Owner must replace the exposed key and configure it securely; matching Edge/Vault secrets are still required. No migration/function deployment or shopper OTA; phase B remains deferred.
+
+Update 2 October 2026: Claude reviewed phase A and WhatsApp stage 2. Both are approved locally, but not for live release until B1 to B3 are fixed: store only the Places place_id, make STOP opt-out atomic, and add pg_cron scheduled jobs. Codex fixes, Claude re-reviews, then deploy. Search and the shopper OTA also wait for the product owner's replacement Places key.
