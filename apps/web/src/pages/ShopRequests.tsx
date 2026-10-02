@@ -16,7 +16,8 @@ export function ShopRequests(){
    if(e||be)throw Error(e?.message??be?.message);setShops(data.shops);setThreshold(String(data.threshold));setBusinesses(bs??[])
   }catch(e){setError(e instanceof Error?e.message:'Could not load requests')}finally{setBusy(false)}
  },[])
- useEffect(()=>{if(session&&roles.includes('admin'))void load()},[session,roles,load])
+ const userId=session?.user.id, isAdmin=roles.includes('admin')
+ useEffect(()=>{if(userId&&isAdmin)void load()},[userId,isAdmin,load])
  if(loading||rolesLoading)return <p className="p-8">Loading…</p>
  if(!session)return <Navigate to="/login" replace/>
  if(!roles.includes('admin'))return <Navigate to="/dashboard" replace/>
