@@ -44,6 +44,7 @@ import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { SuccessCheck } from './src/components/SuccessCheck'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
+import { trendingShops } from './src/trending'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
@@ -316,6 +317,8 @@ type Business = {
   loyalty_config?: { stamps_required?: number }
   reward_model?: 'stamp_legacy' | 'spend_threshold'
   reward_threshold_pence?: number | null
+  trending?: boolean | null
+  trending_position?: number | null
 }
 type Membership = {
   business_id: string
@@ -1626,7 +1629,7 @@ function HomeTab({
   const [category, setCategory] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const filtered = businesses.filter((b) => (!category || (b.category || 'Other') === category) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
-  const trending = filtered.slice(0, 4)
+  const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
 
   return (
     <>
