@@ -1,6 +1,6 @@
 # Shop requests: "Request this shop" (design, 2026-10-02)
 
-Owner: Claude (design). Builder: Codex. Status: **phase A built locally; Claude review pending**. The product owner confirmed S1 operator email and S2 threshold setting 5. No live deployment; provider-policy and key blockers below.
+Owner: Claude (design). Builder: Codex. Status: **phase A live on the website and production Android/iOS OTA (2 October 2026)**. The product owner confirmed S1 operator email and S2 threshold setting 5, configured the authorized Places key, and explicitly authorized this release. Only place IDs are retained; Places details are fetched transiently. Backend, scoped recovery cron, website and both runtime 1.0.0 OTAs are verified deployed; exact commands/results/IDs are in `CLAUDE_HANDOFF.md`. Physical-device receipt and signed-in production request/email/push smoke remain unverified. Claude reviews final release evidence next. Earlier blockers below are historical design/review context; WhatsApp/Fidel activation remains held and phase B remains deferred.
 
 ## 1. What it does
 

@@ -1137,6 +1137,57 @@ Still pending, not dropped: Claude's check of the marketing contact artwork (out
 ### Shop-only recovery tests passed — 2 October 2026
 - Narrowed release recovery tests PASS 3/3. Old broad case is excluded from production release; prior broad fake-command evidence remains local. Staging shop paths only, with an explicit migration rename; held WhatsApp source/test/migration excluded.
 
+### Shop release committed with held changes isolated — 2 October 2026
+- Local shop-only commit 1d98558 created. Inspected staged list: applied shop migration is R086 rename (old file removed), no WhatsApp edits or broad scheduler draft. Three held WhatsApp edits temporarily stashed under Hold WhatsApp review fixes outside shop release; restore after release. Rechecking exact release source before push/OTA.
+
+### Exact shop release verification passed — 2 October 2026
+- Exact committed shop-only code (held WhatsApp edits stashed) passed scripts/verify-shop-requests.ps1: 31 DB/fake-provider/shop-recovery plus 23 pure tests (54), seven Deno checks, all four app types and diff. No cleanup intervention in this run. Shop-only release commit 1d98558 ready to push.
+
+### Production source pushed — 2 October 2026
+- Pushed shop-only commit 1d98558 to origin/main successfully (f150ad4 to 1d98558). Vercel automatic production build expected; verifying state next. Backend and shop cron already live; Android/iOS EAS publication next.
+
+### Website production deployment READY — 2 October 2026
+- Vercel deployment dpl_E6X3YzPYmpgUPX9bUY1zqHWZwuv7 is READY/production for exact commit 1d9855834015efac7303986b6b37750d377a1f21, URL loyalty-loop-itjo9kgwn-loyalty-loop.vercel.app. Domain bundle smoke next. OTA is still running; no completion claimed.
+
+### Shopper OTA failed — 2 October 2026
+- EAS update exited 1; no success claimed. Error summary: [expo-cli] Web Bundling failed 26417ms apps\shopper\index.ts (1122 modules) [expo-cli] Error: Importing native-only module "react-native/Libraries/Utilities/codegenNativeCommands" on web from: ..\..\node_modules\react-native-maps\lib\MapMarkerNativeComponent.js × Export failed     Error: update command failed.
+
+### Production domain smoke passed; native OTA retry scoped — 2 October 2026
+- Live www.the-loyalty-loop.com routes HTTP 200 and shop-requests-nmadm-2F.js contains dialog/Profile/request RPC code; both unauthenticated Edge calls return 401. Initial all-platform EAS export failed on web-only native maps import before publishing. Retry separately for Android then iOS, with no native source/config change.
+
+### Live Edge versions verified — 2 October 2026
+- Supabase confirms ACTIVE: search v1 JWT true; notify v1 secret-auth/JWT false; send-user-push v17; delete-my-account v22; platform-health v14. Existing WhatsApp webhook observed v15 (not deployed by this run). Production domain smoke passed; OTA Android export/upload pending. No production requester votes or emails created by verification.
+
+### Shopper production OTA published — 2 October 2026
+- EAS production publication succeeded for android. Exact metadata: [{"id":"01a0fe87-975c-7622-8419-715c16b25716","group":"fd000bdb-1708-4a8a-a3b6-8341d93f2d71","platform":"android","runtimeVersion":"1.0.0","createdAt":"2026-10-02T21:31:34.108Z","gitCommitHash":"1d9855834015efac7303986b6b37750d377a1f21"}]. No native build; device receipt/restart smoke remains owner check.
+
+### Shop release security advisor check completed — 2 October 2026
+Reviewed live Supabase security advisors. Shop-private tables intentionally have RLS with no client policies, and authenticated SECURITY DEFINER RPCs retain explicit user/admin guards. Existing unrelated findings remain outside this release; this is not a claim that all project advisors are clean.
+
+### Browser harness stopped — 2 October 2026
+Stopped the temporary local Vite browser harness after passing request/Profile/withdraw interaction checks. No production data was created.
+
+### Earlier test harness cleanup recorded — 2 October 2026
+Stopped an earlier targeted recovery test session that remained idle after its assertions. Process inventory was denied by the sandbox, so no claim is made that every earlier disposable process was removed. The final exact-release verification completed normally without cleanup intervention.
+
+### Shopper production OTA published — 2 October 2026
+- EAS production publication succeeded for ios. Exact metadata: [{"id":"01a0fe8e-19c7-78ee-a200-3be8517c6916","group":"c01589b0-efc8-4c0e-8818-dcd45992c57e","platform":"ios","runtimeVersion":"1.0.0","createdAt":"2026-10-02T21:38:40.711Z","gitCommitHash":"1d9855834015efac7303986b6b37750d377a1f21"}]. No native build; device receipt/restart smoke remains owner check.
+
+### OTA readback parser correction pending — 2 October 2026
+Both platform publications succeeded, but independent verification stopped because the channel JSON shape did not match the helper assumption. Inspecting safe metadata keys before correcting the parser; no republish or channel change.
+
+### Production native OTA records independently verified — 2 October 2026
+- EAS channel production points to branch production. Remote update:view confirmed both published IDs, platform, runtime 1.0.0 and shop commit 1d9855834015efac7303986b6b37750d377a1f21: [{"id":"01a0fe87-975c-7622-8419-715c16b25716","group":"fd000bdb-1708-4a8a-a3b6-8341d93f2d71","platform":"android","runtimeVersion":"1.0.0","createdAt":"2026-10-02T21:31:34.108Z","gitCommitHash":"1d9855834015efac7303986b6b37750d377a1f21"},{"id":"01a0fe8e-19c7-78ee-a200-3be8517c6916","group":"c01589b0-efc8-4c0e-8818-dcd45992c57e","platform":"ios","runtimeVersion":"1.0.0","createdAt":"2026-10-02T21:38:40.711Z","gitCommitHash":"1d9855834015efac7303986b6b37750d377a1f21"}]. Device download/restart and signed-in smoke remain unverified.
+
+### Held WhatsApp edits restored — 2 October 2026
+Verified the named shop-release stash and restored its three WhatsApp source/test/migration edits successfully. These local review fixes and the broader inactive recovery draft are preserved, excluded from the shop production commit and not deployed by this run.
+
+### Shop release milestone records updated — 2 October 2026
+Updated IMPLEMENTATION_TIMELINE.md and docs/SHOP_REQUESTS_PLAN.md to mark website/backend and both production native OTAs live. Exact release total is 54 tests; device/live-delivery limits and separate WhatsApp/Fidel hold remain. First handoff write hit a transient filesystem error; inspected the intact file and retried successfully. Final documentation-only push follows.
+
+### Current Claude review prompt replaced — 2 October 2026
+Replaced the single final Claude Code prompt with released paths, exact verification commands/results, acceptance criteria, live publication status and remaining physical-device/delivery limits. Shop configuration input is complete; separate WhatsApp/Fidel gates remain.
+
 ## Copy-ready prompt for Claude Code
 
-Review the shop-only release in apps/web/src/components/shop-requests.tsx and dashboard/map/Profile/admin pages, apps/shopper/App.tsx and src/components/ShopRequests.tsx, shop search/notify/push/account/platform-health functions, and migrations 20261002211052_shop_requests_phase_a.sql and 20261002211306_scheduled_delivery_recovery.sql. Backend is live; website push and production Android/iOS OTA are in progress. Run powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1; prior full run passed 32 DB/recovery plus 23 pure tests, seven Deno checks and four app types; narrowed shop recovery passed 3/3 and npm run build:web passed. Review final release IDs/evidence below, and smoke signed-in website/native devices. Owner authorized the existing Google key; configured and HTTP 200 verified. Held WhatsApp changes remain local and broader recovery was rejected by approval review; no Meta or Fidel recovery activated. No further owner input for shop release; separate Meta prerequisites remain. Record your verdict in the handoff.
+Review released shop phase A commit 1d98558: apps/web/src/components/shop-requests.tsx and Home/Discover/Profile/ShopRequests pages; apps/shopper/App.tsx and src/components/ShopRequests.tsx; supabase/functions/shop-request-search, shop-request-notify, send-user-push, delete-my-account and platform-health; migrations 20261002211052_shop_requests_phase_a.sql and 20261002211306_scheduled_delivery_recovery.sql. Website/backend and production Android/iOS OTAs are live, runtime 1.0.0; exact IDs are in CLAUDE_HANDOFF.md. Run powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1 (exact release PASS: 31 database/fake-provider/recovery plus 23 pure tests, seven Deno checks, four app types) and npm run build:web (PASS). Verify ID-only Places retention, threshold 5, one operator email, one joined push per requester, own-request RLS, quota and signed tokens; smoke signed-in website and physical devices. Restore shop-only test context when assessing evidence: held WhatsApp edits are local and unapplied. No product-owner configuration input remains for shop requests; device/live delivery confirmation remains unverified and separate Meta prerequisites remain. Record verdict without activating WhatsApp/Fidel or phase B.
