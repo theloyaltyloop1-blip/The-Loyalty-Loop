@@ -7,7 +7,8 @@ import {SuccessCheck} from './SuccessCheck'
 type Place={place_id:string;name:string;address:string}
 type Result={place:Place;token:{payload:string;signature:string};requested:boolean;count:number}
 type Listed={name:string;address:string;business_id:string}
-type Mine={place_id:string;name:string;address:string;count:number;status:string;business_id:string|null}
+type Mine={place_id:string;name?:string;address?:string;count:number;status:string;business_id:string|null}
+const labels:Record<string,string>={collecting:'Gathering requests',ready:'Ready to invite',contacted:'Invitation underway',joined:'Now on The Loyalty Loop',declined:'Not joining yet',suppressed:'Request recorded'}
 export function AskShopSheet({visible,onClose,initialQuery='',location,onViewShop}:{visible:boolean;onClose:()=>void;initialQuery?:string;location?:{lat:number;lng:number};onViewShop:(id:string)=>void}){
  const [query,setQuery]=useState(initialQuery),[results,setResults]=useState<Result[]>([]),[listed,setListed]=useState<Listed[]>([])
  const [loading,setLoading]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState<string|null>(null),[success,setSuccess]=useState(false)
@@ -33,7 +34,7 @@ export function AskShopSheet({visible,onClose,initialQuery='',location,onViewSho
    const {data,error:e}=await supabase.rpc('request_shop',{p_place:row.token});if(e)throw Error(e.message)
    submitted.current.set(row.place.place_id,data.count)
    setResults(prev=>prev.map(r=>r.place.place_id===row.place.place_id?{...r,requested:true,count:data.count}:r));setSuccess(true)
-  }catch(e){setError(e instanceof Error?e.message:'Could not request this shop')}finally{setBusy(null)}
+  }catch{setError('Could not record your request. Search again and retry.')}finally{setBusy(null)}
  }
  return <><Sheet visible={visible} onClose={onClose} sheetStyle={s.sheet}>
   <View style={s.handle}/><View style={s.header}><Text style={s.title}>Ask them to join</Text><Pressable accessibilityLabel="Close shop requests" onPress={onClose} hitSlop={12}><Text style={s.action}>Close</Text></Pressable></View>
@@ -48,14 +49,15 @@ export function AskShopSheet({visible,onClose,initialQuery='',location,onViewSho
   <Text style={s.attribution}>Google Maps</Text>
  </Sheet><SuccessCheck visible={success} onFinished={()=>setSuccess(false)}/></>
 }
-export function RequestedShopsList({active}:{active:boolean}){
+export function RequestedShopsList({active,onViewShop}:{active:boolean;onViewShop?:(id:string)=>void}){
  const [rows,setRows]=useState<Mine[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState<string|null>(null)
- const load=useCallback(async()=>{const {data,error:e}=await supabase.rpc('my_shop_requests');if(e)setError('Could not load your shop requests.');else{setRows(data??[]);setError('')}},[])
+ const load=useCallback(async()=>{const {data,error:e}=await supabase.rpc('my_shop_requests');if(e){setError('Could not load your shop requests.');return}const own:Mine[]=data??[];setRows(own);setError('');const ids=own.slice(0,20).map(r=>r.place_id);if(!ids.length)return;const {data:d,error:de}=await supabase.functions.invoke('shop-request-search',{body:{mode:'details',place_ids:ids}});if(!de&&d?.details){const map=new Map<string,Place>(d.details.map((p:Place)=>[p.place_id,p]));setRows(own.map(r=>({...r,...map.get(r.place_id)})))}},[])
  useEffect(()=>{if(active)void load()},[active,load])
- async function withdraw(id:string){setBusy(id);const {error:e}=await supabase.rpc('withdraw_shop_request',{p_place_id:id});if(e)setError(e.message);else await load();setBusy(null)}
+ async function withdraw(id:string){setBusy(id);const {error:e}=await supabase.rpc('withdraw_shop_request',{p_place_id:id});if(e)setError('Could not withdraw your request. Please try again.');else await load();setBusy(null)}
  return <View style={s.profile}><Text style={s.title}>Shops you've asked for</Text>{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
   {!rows.length&&!error&&<Text style={s.copy}>When you ask a shop to join, it will appear here.</Text>}
-  {rows.map(row=><View style={s.row} key={row.place_id}><View style={s.details}><Text style={s.name}>{row.name}</Text><Text style={s.copy}>{row.address}</Text><Text style={s.copy}>{row.status==='suppressed'?'Request recorded':row.status} · {row.count} {row.count===1?'person has':'people have'} asked</Text></View><Pressable accessibilityRole="button" disabled={busy!==null} onPress={()=>void withdraw(row.place_id)}><Text style={s.action}>{busy===row.place_id?'Withdrawing…':'Withdraw'}</Text></Pressable></View>)}
+  {rows.map(row=><View style={s.row} key={row.place_id}><View style={s.details}><Text style={s.name}>{row.name??'A shop you asked for'}</Text>{row.address&&<Text style={s.copy}>{row.address}</Text>}<Text style={s.copy}>{labels[row.status]??'Request recorded'} · {row.count} {row.count===1?'person has':'people have'} asked</Text>{row.business_id&&onViewShop&&<Pressable accessibilityRole="button" onPress={()=>onViewShop(row.business_id!)}><Text style={s.action}>View shop</Text></Pressable>}</View><Pressable accessibilityRole="button" disabled={busy!==null} onPress={()=>void withdraw(row.place_id)}><Text style={s.action}>{busy===row.place_id?'Withdrawing…':'Withdraw'}</Text></Pressable></View>)}
+  {rows.some(row=>row.name)&&<Text style={s.attribution}>Google Maps</Text>}
  </View>
 }
 const s=StyleSheet.create({sheet:{padding:20,maxHeight:'85%',backgroundColor:colors.background,borderTopLeftRadius:28,borderTopRightRadius:28},handle:{width:36,height:4,borderRadius:2,backgroundColor:'#bbb',alignSelf:'center',marginBottom:18},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:10},title:{fontSize:21,fontWeight:'700',color:colors.foreground},copy:{fontSize:14,lineHeight:20,color:'#777064',marginTop:4},input:{borderWidth:1,borderColor:'#d4cec4',borderRadius:14,padding:14,fontSize:16,marginVertical:16,color:colors.foreground,backgroundColor:colors.card},rows:{paddingBottom:16},row:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:14,borderBottomWidth:1,borderBottomColor:'#e6dfd4'},details:{flex:1},name:{fontSize:16,fontWeight:'600',color:colors.foreground},action:{color:colors.primary,fontWeight:'600'},button:{borderRadius:12,padding:12,backgroundColor:colors.primary},buttonText:{color:'white',fontWeight:'700'},disabled:{opacity:0.6},error:{color:'#a52b21',marginVertical:8},attribution:{color:'#777064',fontSize:12,textAlign:'right',marginTop:10},profile:{gap:8}})

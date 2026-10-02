@@ -7,6 +7,7 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { ShopCard } from '@/components/shop-card'
 import { fetchBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
+import {AskShopDialog} from '@/components/shop-requests'
 
 const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   Café: Coffee,
@@ -42,6 +43,7 @@ export function Home() {
   const [firstName, setFirstName] = React.useState<string | null>(null)
   const [category, setCategory] = React.useState<string>('All')
   const [query, setQuery] = React.useState('')
+  const [askOpen,setAskOpen]=React.useState(false)
   const [businesses, setBusinesses] = React.useState<Business[]>([])
   const [memberships, setMemberships] = React.useState<Membership[]>([])
   const [fetching, setFetching] = React.useState(true)
@@ -128,7 +130,7 @@ export function Home() {
       {!fetching && businesses.length === 0 ? (
         <p className="text-foreground/50">No shops yet — check back soon.</p>
       ) : !fetching && filtered.length === 0 ? (
-        <p role="status" className="text-foreground/50">No shops match. Try another search or category.</p>
+        <div><p role="status" className="text-foreground/50">No shops match. Try another search or category.</p><button onClick={()=>setAskOpen(true)} className="mt-4 rounded-xl bg-primary px-5 py-3 font-semibold text-white">Can't find your favourite shop? Ask them to join</button></div>
       ) : (
         <>
           <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-foreground/60 mb-4">
@@ -148,6 +150,8 @@ export function Home() {
           </div>
         </>
       )}
+      <button onClick={()=>setAskOpen(true)} className="mt-6 text-primary underline">Ask a shop to join</button>
+      <AskShopDialog open={askOpen} onOpenChange={setAskOpen} initialQuery={query}/>
     </DashboardLayout>
   )
 }

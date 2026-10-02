@@ -185,3 +185,7 @@ Codex completed the prerequisite independent review and local progress/reward ou
 Database, masked/signed Places search, operator notification, account recount, admin and shopper integration are implemented locally. All ten acceptance scenarios run against fake providers and disposable PostgreSQL; exact verification evidence is in CLAUDE_HANDOFF.md. Claude reviews both stages before release and resolves the documented Google Places retention conflict. Owner must replace the exposed key and configure it securely; matching Edge/Vault secrets are still required. No migration/function deployment or shopper OTA; phase B remains deferred.
 
 Update 2 October 2026: Claude reviewed phase A and WhatsApp stage 2. Both are approved locally, but not for live release until B1 to B3 are fixed: store only the Places place_id, make STOP opt-out atomic, and add pg_cron scheduled jobs. Codex fixes, Claude re-reviews, then deploy. Search and the shopper OTA also wait for the product owner's replacement Places key.
+
+## Shop requests production release — 2 October 2026
+
+Owner authorized website and Android/iOS shopper release. Reviewed ID-only Places architecture and request screens implemented, backend shop migration/functions and minute recovery deployed; 55 local tests and seven Deno/four app checks pass, real Places key and hosted cron checked. Website push and shopper OTA in progress; exact IDs/status recorded in CLAUDE_HANDOFF.md. WhatsApp/Fidel scheduler activation remains a separate held release.

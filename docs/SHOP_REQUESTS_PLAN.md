@@ -40,8 +40,7 @@ Places results, and the stable **`place_id`** is the key everything is grouped b
 ```
 public.requested_shops
   place_id text primary key
-  name text, address text, postcode text, lat/lng double precision
-  website text, phone text, primary_type text      -- from Places, at the moment of request
+  -- No durable Places name/address/location/contact data; fetch details transiently.
   request_count int not null default 0             -- distinct requesters, kept by the RPC
   status text check in ('collecting','ready','contacted','joined','declined','suppressed')
   ready_at, contacted_at, joined_at timestamptz
@@ -118,9 +117,9 @@ a flagged risk for the product owner, not legal advice.**
   `google_place_id` (or the operator links it in admin). It sets `joined` and sends one push to
   each requester through the existing push path (`send-user-push`). The push opens the shop page.
 
-The web app gets the same sheet later. It isn't needed for the first release.
+The web dashboard and map now have the same request dialog; web Profile lists requested shops.
 
-## 7. Open decisions (product owner)
+## 7. Confirmed decisions (product owner)
 
 - **S1. Who contacts the shop?** Recommended: **phase A, the operator** is emailed a ready pitch
   and decides how to reach out. The alternative is to wait for option 1 and send automatically,

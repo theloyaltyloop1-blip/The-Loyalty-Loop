@@ -962,6 +962,9 @@ A later read-only website review attempted to insert before a missing prompt hea
 - Checked before the push: web type check PASS, and the local `npm run build:web` succeeded (only the pre-existing chunk-size warning). Supabase `list_branches` returned none, and HEAD has no `.github` workflows.
 - Not committed (pre-existing working-tree state, left for the owner to decide): the deleted docs/HANDOFF-*.md, docs/LOYALTY-LOOP-*.md and docs/NEW-SESSION-PROMPT.md; untracked tmp/, output/, timeline-site*, remote_schema_dump.sql and the .codex-* release folders.
 - `release/dashboard-search` (230a73a) is now redundant. Its preview deployment was never promoted.
+- **Result: LIVE.** Pushed `008381b..f150ad4` to `main`. Vercel production deployment `dpl_Fe5m9w8p4v7tSGkQLMs2LSV9pEaM` (loyalty-loop-hm8xgjbr7-loyalty-loop.vercel.app) is READY, built in about 22 s, and aliased to www.the-loyalty-loop.com, the-loyalty-loop.com and the vercel.app domains, with no alias error.
+- Verification: www.the-loyalty-loop.com returns 200, and its main bundle `assets/index-Cpe5jHCe.js` exactly matches the local `npm run build:web` output from the same tree. `/join` returns 200.
+- Not verified: the signed-in search interaction itself. That needs a shopper account, so the owner checks it (next action above). Rollback if needed: promote the previous production deployment `dpl_EkxSMEzv4AzqBxs5epZK8DKRzPVS` (008381b) in Vercel.
 
 ## Review: WhatsApp stage 2 + shop requests phase A (2026-10-02) — Claude (restored)
 
@@ -1035,34 +1038,105 @@ A later read-only website review attempted to insert before a missing prompt hea
 
 Still pending, not dropped: Claude's check of the marketing contact artwork (output/marketing/*-contacts.png and business-card-front.png against output/marketing/README.md). Exact contacts: 07710244140, developer@the-loyalty-loop.com, www.the-loyalty-loop.com.
 
-## Copy-ready prompt for Codex (next task)
+### Production release prerequisites checked — 2 October 2026
+- Owner requested website/shop requests production and Android/iOS OTA. Read restored Claude review B1–B3/S1–S3. Key-name check still reports Google/signing/notify secrets absent, never printed values. Asked owner to configure replacement Google key securely. No deployment or OTA yet; implementing reviewed fixes and website flow. Latest owner instruction authorizes release after checks; technical configuration gates remain.
 
-Read CLAUDE_HANDOFF.md ("Review: WhatsApp stage 2 + shop requests phase A … (restored)") and fix B1–B3 and S1–S3 locally, plus the P3 items if quick. Nothing is applied or deployed yet, so amend 20261002133700_shop_requests_phase_a.sql and 20261002133050_whatsapp_spend_dispatch.sql in place. Add a new migration only for pg_cron.
+### Schema edit anchor corrected — 2 October 2026
+- Initial local edit script rejected a newline-sensitive anchor before writing; no partial schema change. Corrected LF anchor and rerunning.
 
-- **B1:** durable Places data is `place_id` only. Details are fetched only when needed:
-  - Place Details for the operator email.
-  - A `details` mode on shop-request-search: the caller's own IDs (max 20), or admin pages (max 50, admin-checked), counted in the budget.
-  - `my_shop_requests` and `admin_shop_requests` return ID, count and status only.
-  - The join push uses `businesses.name`.
-  - Drop website and phone from the search field mask.
-  - Update docs/SHOP_REQUESTS_PLAN.md §3.
-- **B2:** the STOP opt-out happens atomically inside `reserve_whatsapp_inbound` and suppresses pending outbox rows. Check errors on the webhook's STOP writes. Add a test where the handler throws after reservation and the opt-out persists.
-- **B3:** a pg_cron migration:
-  - Every minute: whatsapp-dispatch, and a shop-request sweep (ready shops never attempted; join notifications never claimed).
-  - Hourly: fidel-card-delete-sweep.
-  - Secrets come from Vault, never inline.
-  - platform-health's "Scheduled jobs" check reads `cron.job` and recent `cron.job_run_details` instead of the hardcoded `ok:false`.
-  - Tests: a deferred progress row and a retry row are sent by a sweep wake with no new spend; a lost ready wake is emailed exactly once by the sweep.
-- **S1:** a global daily Places search cap setting (default 1,000), enforced in `consume_shop_search`.
-- **S2:** joined-mode pushes continue past a failure.
-- **S3:** the admin page shows "Operator email not sent" with a resend action.
+### B1 schema and S1 budget implemented — 2 October 2026
+- Unapplied shop migration now retains only place ID/votes/count/status; unique business Google ID, statement-delete recount, global search budget 1000 plus per-user 30 and guarded admin wake retry. Names/location remain transient for signed listed-shop validation; join title comes from business name. SQL verification pending; no live changes.
 
-Add the new tests to scripts/verify-shop-requests.ps1, re-run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1`, and record the counts.
+### B1 transient Places and S2 dispatch implemented — 2 October 2026
+- Search details mode authorizes own IDs/admin, limits batches and charges every lookup; search mask omits phone/website. Notify fetches contact details transiently before email claim; joined pushes continue after failures and select only unclaimed jobs. Account deletion uses database statement recount. Verification pending; no provider calls.
 
-Deploy gates:
-- After Claude's re-review passes, you may apply the migrations and deploy whatsapp-dispatch, shop-request-notify and the sweep.
-- shop-request-search and the shopper OTA also wait for the product owner's replacement Places key, with a quota.
+### B2 STOP persistence implemented — 2 October 2026
+- STOP opt-out/pending suppression is atomic with inbound reservation; webhook checks remaining writes. Corrected outbox error column and suppressed finish state. One inline helper command failed shell quoting before mutation; corrected via patch. Verification pending.
 
-Also: when you next commit and push `main`, include the already-present Home.tsx search change. It's identical to release commit 230a73a, and leaving it out would remove the live search fix.
+### Website shopper requests implemented — 2 October 2026
+- Added accessible Radix request dialog to dashboard and map, Requested check/count, and Profile list/withdraw/View shop. Detail names are transient with fallback; no tokens/data persisted in browser storage. Initial combined patch rejected before mutation; corrected patch applied. Browser/type verification pending. Owner explicitly authorizes using previously supplied Google key.
 
-When editing this file, stop on any error and check the headings before writing; don't overwrite it wholesale. Never log tokens, keys, phone numbers or requester identities. Update CLAUDE_HANDOFF.md after each item, and finish with one copy-ready prompt for Claude Code asking for the re-review, listing the files and exact commands with their results.
+### Transient-detail screens and admin recovery implemented — 2 October 2026
+- Mobile Profile below hero now hydrates own details, friendly statuses and View shop; generic request/withdraw errors. Admin transient details and never-attempted email retry action added. Website Profile uses same ID-only RPC and details mode. UI and type checks pending.
+
+### B3 scheduled recovery implemented — 2 October 2026
+- CLI generated 20261002210040_scheduled_delivery_recovery.sql. One-minute WhatsApp and shop notification recovery plus hourly Fidel deletion job use Vault; jobs fail visibly if secret missing. Platform health now reads job activity and recent run statuses. Confirmed current Supabase cron/job-run/Vault scheduling docs. Previous combined documentation call stalled and was terminated; CLI retry created migration. Disposable fake-cron scheduler-command tests pending; no jobs enabled live.
+
+### Acceptance cases expanded — 2 October 2026
+- Added ID-only durable/projection assertions, authorized transient details/minimal masks/admin batch validation, global cap and continue-after-push-failure tests. STOP opt-out survives simulated post-reservation handler crash and next case explicitly opts back in. Recovery tests next; none run yet.
+
+### Expanded acceptance passed and recovery tests added — 2 October 2026
+- Shop/WhatsApp targeted tests PASS 25/25 (including all ten original scenarios plus details/global cap/failed push). Added delivery-recovery.test.mjs and verification script: actual scheduled SQL commands, fake cron metadata/HTTP providers, due/deferred retry, lost wake exactly one mail and health/private access. Windows fixture lacks pg_cron binary; physical timer must be verified on hosted database. New recovery cases not yet run.
+
+### Full release verification passed — 2 October 2026
+- powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1 PASS: 32 disposable DB/fake-provider/recovery tests, 23 pure tests, seven Deno checks and shopper/web/retailer/admin types, diff check. One verified orphan embedded-PG io_worker required stopping; no assertions failed. Physical pg_cron timers and native behavior remain hosted/device checks. Combined credential check call stalled/cancelled; sandbox CLI help hit telemetry EPERM, will retry read-only help outside sandbox.
+
+### Secret provisioning approach rejected — 2 October 2026
+- Automatic approval rejected live SECURITY DEFINER provisioning endpoint/service-key retrieval/Fidel-secret copy as broader privileged access than shop release scope. No SQL/secret changes applied. Discarding that approach; use direct Vault/Edge configuration of shop signing/notify and user-authorized Google key only, with no extra endpoint or service-key retrieval.
+
+### Shop Vault secrets created — 2 October 2026
+- Direct live Vault creation of only SHOP_REQUEST_SIGNING_SECRET and SHOP_REQUEST_NOTIFY_SECRET succeeded with generated random values (not printed). No provisioning endpoint/service key copied. Matching Edge configuration next.
+
+### Shop Edge secrets configured — 2 October 2026
+- Configured only GOOGLE_PLACES_API_KEY (existing key explicitly authorized by owner), SHOP_REQUEST_SIGNING_SECRET and SHOP_REQUEST_NOTIFY_SECRET; signing/notify match Vault. Values not printed or committed; temporary env file deleted. Initial no-stdin invocation failed before mutation; validated piped transport succeeded. No unrelated service credential retrieved or copied.
+
+### Release scope and shared main verified — 2 October 2026
+- Fetch shows shared main includes Claude documentation/search release (f150ad4) and prior implementation commits. Preserved those changes. Cron keeps WhatsApp/Fidel recovery jobs inactive when their separate Vault credentials are absent; only shop recovery is ready for this release. Updated plan durable ID-only schema, delete trigger and website flow. Targeted cron rerun pending after activation guard.
+
+### Authorized Google key verified — 2 October 2026
+- One minimal Places API (New) lookup returned HTTP 200 and one result, reporting only status/count. Key works; no requester data or tokens used. Cron targeted assertions passed 4/4; runner cleanup remains pending due to Windows handle retention. Backend deployment next, only shop release scope.
+
+### Shop migration applied — 2 October 2026
+- Live additive shop_requests_phase_a migration applied successfully after tests. Only IDs/votes/count/state are durable; threshold 5, budgets, RLS, recount/join/wake are installed. No votes or emails created. Function deployment/hosted checks next.
+
+### Edge function deployed — 2 October 2026
+- send-user-push deployed successfully through Supabase API. No requester test votes, emails or pushes sent. Hosted smoke pending.
+
+### Edge function deployed — 2 October 2026
+- shop-request-notify deployed successfully through Supabase API. No requester test votes, emails or pushes sent. Hosted smoke pending.
+
+### Edge function deployed — 2 October 2026
+- shop-request-search deployed successfully through Supabase API. No requester test votes, emails or pushes sent. Hosted smoke pending.
+
+### Edge function deployed — 2 October 2026
+- delete-my-account deployed successfully through Supabase API. No requester test votes, emails or pushes sent. Hosted smoke pending.
+
+### Recovery release narrowed after approval rejection — 2 October 2026
+- Automatic approval rejected broad production scheduler/possible WhatsApp activation. No recovery migration applied. Split deployment migration to shop-request recovery and scoped health only; broader WhatsApp/Fidel design saved as docs/WHATSAPP_FIDEL_RECOVERY_DRAFT.sql (not applied, forces jobs inactive). No broad privileged endpoint or service credential copied. Local tests cover held draft commands and actual shop job; rerun pending.
+
+### Narrowed recovery test correction — 2 October 2026
+- First split-test run failed on SQL dollar quoting introduced by JavaScript replacement semantics, before assertions. Fixed test quote delimiter; production migration file unaffected. Rerun follows.
+
+### Narrowed recovery verification passed — 2 October 2026
+- Shop-only migration plus held-draft command tests PASS 4/4 after delimiter fix. No broader recovery applied. Applying only shop recovery next.
+
+### Shop recovery applied and website build passed — 2 October 2026
+- Applied narrowed scheduled_delivery_recovery migration: pg_cron plus only minute shop-request recovery job and scoped health. No WhatsApp/Fidel jobs enabled. npm run build:web PASS (existing large-chunk warning). Platform health deployment/cron run verification and website push next.
+
+### Platform health deployed — 2 October 2026
+- platform-health deployed successfully for the shop-only scheduler health. Hosted requested_shops columns confirmed no Places details/contact fields. Cron status verification pending (multi-query tool returns last result only).
+
+### Website joined-shop navigation corrected — 2 October 2026
+- Website routes expect business slug, not UUID. Request dialog/Profile now resolve slug before View shop; admin uses approved business slug. Fake browser harness updated for transient details and web dialog. Web type/build rerun next.
+
+### Hosted scheduler verified — 2 October 2026
+- Real pg_cron shop-request minute job is active and latest run succeeded; scheduled_jobs_health returns ok true. No WhatsApp/Fidel job enabled. Web type check after slug fix passed; actual request dialog renders in fake browser with correct attribution, buttons and close control. Interaction checks next.
+
+### Website interactions verified — 2 October 2026
+- Actual web dialog with fake provider passed Request to Requested check/count, Profile transient details/friendly status and Withdraw to empty state. Initial unquoted PowerShell element references did not click; correctly quoted retry passed. Accumulated browser errors empty; browser closed. Web type check passed, final build completing. Native behavior still unverified.
+
+### Migration history aligned and final web build passed — 2 October 2026
+- Final npm run build:web PASS after slug navigation fix. Renamed local applied migrations to actual hosted MCP history versions: 20261002211052_shop_requests_phase_a.sql and 20261002211306_scheduled_delivery_recovery.sql; updated test imports. Prevents later CLI duplicate application. WhatsApp 20261002133050 remains unapplied. Only version/path edits since targeted SQL tests passed.
+
+### Combined push rejected; scope narrowing — 2 October 2026
+- Auto approval rejected bundled held WhatsApp changes and ambiguous old/new migration staging. No commit/push executed. Will exclude WhatsApp edits and broad scheduler draft from release commit; stage applied shop migration as an explicit rename and verify staged status. Held changes remain locally for Claude. Release recovery tests narrowed to shop-only; prior broad fake command assertions remain recorded.
+
+### Recovery test scope narrowed — 2 October 2026
+- Release recovery tests now cover only the deployed shop job/health/lost wake. Held WhatsApp/Fidel draft remains local and excluded from push. A delete/add patch was rejected before writing; corrected using validated anchors. Re-run pending.
+
+### Shop-only recovery tests passed — 2 October 2026
+- Narrowed release recovery tests PASS 3/3. Old broad case is excluded from production release; prior broad fake-command evidence remains local. Staging shop paths only, with an explicit migration rename; held WhatsApp source/test/migration excluded.
+
+## Copy-ready prompt for Claude Code
+
+Review the shop-only release in apps/web/src/components/shop-requests.tsx and dashboard/map/Profile/admin pages, apps/shopper/App.tsx and src/components/ShopRequests.tsx, shop search/notify/push/account/platform-health functions, and migrations 20261002211052_shop_requests_phase_a.sql and 20261002211306_scheduled_delivery_recovery.sql. Backend is live; website push and production Android/iOS OTA are in progress. Run powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1; prior full run passed 32 DB/recovery plus 23 pure tests, seven Deno checks and four app types; narrowed shop recovery passed 3/3 and npm run build:web passed. Review final release IDs/evidence below, and smoke signed-in website/native devices. Owner authorized the existing Google key; configured and HTTP 200 verified. Held WhatsApp changes remain local and broader recovery was rejected by approval review; no Meta or Fidel recovery activated. No further owner input for shop release; separate Meta prerequisites remain. Record your verdict in the handoff.

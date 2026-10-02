@@ -641,7 +641,7 @@ const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', ca
 /** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
  * grouped rows — security & privacy → notifications → support → legal → account.
  * The card, the name editor and the blocked list open inside the same sheet. */
-function SettingsSheet({ visible, session, userId, stampCode, onClose, initialView = 'root', cardLinking, onLinkCard }: { visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void; initialView?: SettingsView; cardLinking: CardLinking; onLinkCard: () => void }) {
+function SettingsSheet({ visible, session, userId, stampCode, onClose, initialView = 'root', cardLinking, onLinkCard, onViewRequested }: { visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void; initialView?: SettingsView; cardLinking: CardLinking; onLinkCard: () => void; onViewRequested: (id:string) => void }) {
   const [view, setView] = useState<SettingsView>('root')
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
@@ -730,7 +730,6 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
           {view === 'root' && (
             <>
-              <RequestedShopsList active={visible && view === 'root'} />
               <LinearGradient colors={[primary, '#c9542a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
                 <Pressable onPress={() => setView('name')} style={styles.settingsHeroRow}>
                   <View style={styles.settingsHeroAvatar}><Text style={styles.settingsHeroAvatarText}>{initialsOf(firstName)}</Text></View>
@@ -749,6 +748,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   <ChevronRightIcon color={primary} size={18} />
                 </Pressable>
               </LinearGradient>
+              <RequestedShopsList active={visible && view === 'root'} onViewShop={onViewRequested}/>
 
               {cardLinking.enabled && (
                 <SettingsGroup title="Payment cards">
@@ -2353,6 +2353,7 @@ function AppHome({ session }: { session: Session }) {
         initialView={settingsView}
         cardLinking={cardLinking}
         onLinkCard={() => void linkCardFromSettings()}
+        onViewRequested={id=>{const shop=businesses.find(b=>b.id===id);if(shop){setShowProfile(false);setSelected(shop)}}}
         onClose={() => {
           setShowProfile(false)
           setSettingsView('root')

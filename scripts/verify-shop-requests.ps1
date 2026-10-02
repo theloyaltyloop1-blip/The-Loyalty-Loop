@@ -10,6 +10,7 @@ function Invoke-Check {
 Invoke-Check 'node' @('--test',
   'apps/api/test/integration/shop-requests.test.mjs',
   'apps/api/test/integration/whatsapp-stage2.test.mjs',
+  'apps/api/test/integration/delivery-recovery.test.mjs',
   'apps/api/test/integration/fidel-manual-spend.test.mjs',
   'apps/api/test/integration/fidel-supabase-spend.test.mjs',
   'apps/api/test/integration/fidel-spend-tiers.test.mjs')
@@ -30,10 +31,11 @@ Invoke-Check $denoExecutable @('check','--no-config','--node-modules-dir=none',
   'supabase/functions/shop-request-search/index.ts',
   'supabase/functions/shop-request-notify/index.ts',
   'supabase/functions/send-user-push/index.ts',
-  'supabase/functions/delete-my-account/index.ts')
+  'supabase/functions/delete-my-account/index.ts',
+  'supabase/functions/platform-health/index.ts')
 Invoke-Check 'node' @('node_modules/typescript/bin/tsc','--noEmit','-p','apps/shopper/tsconfig.json')
 Invoke-Check 'node' @('node_modules/typescript/bin/tsc','--noEmit','-p','apps/retailer/tsconfig.json')
 Invoke-Check 'node' @('apps/web/node_modules/typescript/bin/tsc','--noEmit','-p','apps/web/tsconfig.app.json')
 Invoke-Check 'node' @('node_modules/typescript/bin/tsc','--noEmit','-p','apps/admin/tsconfig.json')
 Invoke-Check 'git' @('diff','--check')
-Write-Output 'PASS: 26 database/fake-provider tests, 23 pure/independent tests, six Deno entrypoints, four app type checks and diff check.'
+Write-Output 'PASS: 31 database/fake-provider/recovery tests, 23 pure/independent tests, seven Deno entrypoints, four app type checks and diff check.'

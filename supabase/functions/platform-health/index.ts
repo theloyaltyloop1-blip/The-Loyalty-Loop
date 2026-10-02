@@ -33,13 +33,14 @@ Deno.serve(async (req) => {
     const { count: emailFailures, error: emailError } = await admin
       .from("winback_email_log").select("id", { head: true, count: "exact" })
       .eq("status", "failed").gte("sent_at", sevenDays);
+    const {data:scheduled,error:scheduledError}=await admin.rpc('scheduled_jobs_health');
     const checks: Check[] = [
       { label: "Database", ok: !dbError, detail: dbError ? dbError.message : "Supabase database reachable" },
       { label: "Resend", ok: Boolean(Deno.env.get("RESEND_API_KEY")), detail: Deno.env.get("RESEND_API_KEY") ? "Email secret configured" : "RESEND_API_KEY is missing" },
       { label: "Groq AI", ok: Boolean(Deno.env.get("GROQ_API_KEY")), detail: Deno.env.get("GROQ_API_KEY") ? "AI secret configured" : "GROQ_API_KEY is missing" },
       { label: "Firecrawl", ok: Boolean(Deno.env.get("FIRECRAWL_API_KEY")), detail: Deno.env.get("FIRECRAWL_API_KEY") ? "Research secret configured" : "FIRECRAWL_API_KEY is missing" },
       { label: "Recent email delivery", ok: !emailError && (emailFailures ?? 0) === 0, detail: emailError ? emailError.message : emailFailures ? `${emailFailures} failed win-back email(s) in the last 7 days` : "No failed win-back emails in the last 7 days" },
-      { label: "Scheduled jobs", ok: false, detail: "No cron jobs configured yet" },
+      { label: "Scheduled jobs", ok: !scheduledError&&scheduled?.ok===true, detail: scheduledError?'Scheduled job health unavailable':scheduled?.detail??'No recent recovery runs' },
     ];
     return new Response(JSON.stringify({ checks }), { headers });
   } catch (error) {

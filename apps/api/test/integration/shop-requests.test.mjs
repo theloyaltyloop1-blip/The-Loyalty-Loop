@@ -17,7 +17,7 @@ test('Shop requests phase A: all ten plan acceptance scenarios',async t=>{
    returns bigint language plpgsql as $$ begin insert into net.wakes values(body);return 1;end $$;
    alter table businesses add column lat double precision,add column lng double precision,add column is_active boolean default true,add column approval_status text default 'approved';`);
   await db.query('insert into vault.decrypted_secrets values($1,$2),($3,$4)',['SHOP_REQUEST_SIGNING_SECRET',secret,'SHOP_REQUEST_NOTIFY_SECRET','disposable-notify']);
-  await db.query(await readFile(new URL('../../../../supabase/migrations/20261002133700_shop_requests_phase_a.sql',import.meta.url),'utf8'));
+  await db.query(await readFile(new URL('../../../../supabase/migrations/20261002211052_shop_requests_phase_a.sql',import.meta.url),'utf8'));
   const users=Array.from({length:12},()=>randomUUID());const admin=users[11];await db.query('insert into auth.users select unnest($1::uuid[])',[users]);await db.query('insert into test_admins values($1)',[admin]);
   const place=(id='cafe')=>({place_id:id,name:'Bean & Leaf',address:'Leeds, UK',postcode:'LS1 1AA',lat:53.8,lng:-1.55,website:'https://example.test',phone:'0113 000 0000',primary_type:'cafe',country:'GB'});
   const vote=async(uid,p=place(),token=null)=>as(db,'authenticated',uid,'select request_shop($1) result',[token??await signPlace(p,uid,secret)]);
@@ -27,8 +27,8 @@ test('Shop requests phase A: all ten plan acceptance scenarios',async t=>{
   const search=searchHandler({user:async jwt=>users.includes(jwt)?jwt:null,
    consume:async id=>(await as(db,'service_role',null,'select consume_shop_search($1) ok',[id])).rows[0].ok,
    listed:async p=>(await as(db,'service_role',null,'select shop_request_listed($1) id',[p])).rows[0].id,
-   mine:async id=>(await as(db,'authenticated',id,'select my_shop_requests() r')).rows[0].r},
-   async(_url,init)=>{calls++;assert.equal(init.headers['X-Goog-FieldMask'],PLACES_MASK);assert.equal(JSON.parse(init.body).regionCode,'GB');return Response.json({places:[fakePlace(place()),fakePlace({...place('foreign'),country:'US'}),fakePlace(place('listed'))]});},
+   mine:async id=>(await as(db,'authenticated',id,'select my_shop_requests() r')).rows[0].r,isAdmin:async id=>id===admin},
+   async(url,init)=>{calls++;if(init.method!=='POST'){assert.ok(!init.headers['X-Goog-FieldMask'].includes('website'));return Response.json(fakePlace(place(decodeURIComponent(url.split('/places/')[1].split('?')[0]))))}assert.equal(init.headers['X-Goog-FieldMask'],PLACES_MASK);assert.equal(JSON.parse(init.body).regionCode,'GB');return Response.json({places:[fakePlace(place()),fakePlace({...place('foreign'),country:'US'}),fakePlace(place('listed'))]});},
    name=>name==='GOOGLE_PLACES_API_KEY'?'fake-key':secret);
   const searchReq=uid=>new Request('http://fake',{method:'POST',headers:{Authorization:`Bearer ${uid}`,'Content-Type':'application/json'},body:JSON.stringify({query:'Bean Leeds',lat:53.8,lng:-1.55})});
   await t.test('1 idempotent votes',async()=>{await vote(users[0]);await vote(users[0]);assert.equal((await status()).request_count,1);});
@@ -61,7 +61,7 @@ test('Shop requests phase A: all ten plan acceptance scenarios',async t=>{
   await t.test('7 REST roles: only own votes, no contact fields/direct writes',async()=>{
    const rows=(await as(db,'authenticated',users[1],'select * from shop_requests')).rows;assert.ok(rows.every(r=>r.user_id===users[1]));
    await assert.rejects(as(db,'authenticated',users[1],'select * from requested_shops'),/permission denied/);await assert.rejects(as(db,'authenticated',users[1],"insert into shop_requests(place_id,user_id) values('cafe',$1)",[users[1]]),/permission denied/);
-   const own=(await as(db,'authenticated',users[1],'select my_shop_requests() r')).rows[0].r;assert.ok(!('phone' in own[0])&&!('website' in own[0]));
+   const own=(await as(db,'authenticated',users[1],'select my_shop_requests() r')).rows[0].r;for(const field of ['name','address','lat','lng','phone','website'])assert.ok(!(field in own[0])&&!(field in await status()));
    await assert.rejects(as(db,'authenticated',users[1],'select admin_shop_requests()'),/not allowed/);
    await db.query('grant update(google_place_id) on businesses to authenticated');
    await assert.rejects(as(db,'authenticated',users[1],"update businesses set google_place_id='forged-link' where id=$1",[business]),/Only an operator/);
@@ -84,10 +84,25 @@ test('Shop requests phase A: all ten plan acceptance scenarios',async t=>{
    await vote(users[8],place('email'));await as(db,'authenticated',admin,'select admin_set_shop_request_threshold(1)');
    let sends=0;const handler=notifyHandler({
     claim:async id=>(await as(db,'service_role',null,'select claim_shop_request_notify($1) r',[id])).rows[0].r,
-    current:async id=>status(id),finish:async(id,lease,sent)=>{await as(db,'service_role',null,'select finish_shop_request_notify($1,$2,$3)',[id,lease,sent]);},joined:async()=>[]
+    details:async id=>({...place(id),request_count:0,ready_at:''}),current:async id=>status(id),finish:async(id,lease,sent)=>{await as(db,'service_role',null,'select finish_shop_request_notify($1,$2,$3)',[id,lease,sent]);},joined:async()=>[]
    },async(_url,init)=>{sends++;const body=JSON.parse(init.body);assert.deepEqual(body.to,['operator@example.test']);assert.match(body.text,/1 local shoppers/);for(const uid of users)assert.ok(!JSON.stringify(body).includes(uid));assert.match(init.headers['Idempotency-Key'],/^shop-request-/);return Response.json({id:'fake-mail'});},name=>({SHOP_REQUEST_NOTIFY_SECRET:'disposable-notify',RESEND_API_KEY:'fake',SHOP_REQUEST_OPERATOR_EMAIL:'operator@example.test'})[name]);
    const req=(id,auth='disposable-notify')=>new Request('http://fake',{method:'POST',headers:{Authorization:`Bearer ${auth}`,'Content-Type':'application/json'},body:JSON.stringify({place_id:id})});
    assert.equal((await handler(req('email','wrong'))).status,401);await Promise.all([handler(req('email')),handler(req('email'))]);assert.equal(sends,1);await handler(req('email'));await handler(req('suppressed'));assert.equal(sends,1);
+  });
+  await t.test('11 details authorization, minimization and global budget',async()=>{
+   const req=(uid,ids)=>new Request('http://fake',{method:'POST',headers:{Authorization:`Bearer ${uid}`,'Content-Type':'application/json'},body:JSON.stringify({mode:'details',place_ids:ids})});
+   const before=calls;assert.equal((await search(req(users[0],['cafe']))).status,403);assert.equal(calls,before);
+   const r=await search(req(users[1],['cafe']));assert.equal(r.status,200);const body=await r.json();assert.deepEqual(Object.keys(body.details[0]).sort(),['address','name','place_id']);
+   assert.equal((await search(req(users[1],Array(21).fill('cafe')))).status,400);
+   assert.equal((await search(req(admin,['unrequested']))).status,200);
+   assert.ok(!PLACES_MASK.includes('website')&&!PLACES_MASK.includes('Phone'));
+   await db.query('update shop_request_settings set global_search_cap=(select searches from shop_search_global_usage where day=current_date)');
+   assert.equal((await search(searchReq(users[10]))).status,429);
+   await db.query('update shop_request_settings set global_search_cap=1000');
+  });
+  await t.test('12 joined push failure does not abandon later requesters',async()=>{
+   let calls=0;const handler=notifyHandler({joined:async()=>['one','two'],claim:async()=>null,current:async()=>null,details:async()=>null,finish:async()=>{}},async()=>{calls++;if(calls===1)throw Error('fake failure');return new Response('ok')},n=>n==='SHOP_REQUEST_NOTIFY_SECRET'?'fake':'http://fake');
+   const r=await handler(new Request('http://fake',{method:'POST',headers:{Authorization:'Bearer fake'},body:JSON.stringify({place_id:'cafe',mode:'joined'})}));assert.equal(calls,2);assert.equal(r.status,207);assert.deepEqual(await r.json(),{processed:1,failed:1});
   });
  }finally{await f.stop();}
 });

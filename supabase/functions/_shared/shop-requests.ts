@@ -6,7 +6,12 @@ export async function signPlace(place:Place,userId:string,secret:string,now=Date
   const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(payload)));
   return {payload,signature:[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('')};
 }
-export const PLACES_MASK='places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.websiteUri,places.nationalPhoneNumber,places.addressComponents';
+export const PLACES_MASK='places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.addressComponents';
+export const DETAILS_MASK='id,displayName,formattedAddress,location,primaryType,addressComponents';
+export async function placeDetails(id:string,fetchFn:typeof fetch,key:string,contacts=false):Promise<Place|null>{
+ const response=await fetchFn(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}?languageCode=en-GB`,{headers:{'X-Goog-Api-Key':key,'X-Goog-FieldMask':DETAILS_MASK+(contacts?',websiteUri,nationalPhoneNumber':'')},signal:AbortSignal.timeout(10000)});
+ if(!response.ok)throw Error('Details unavailable');return readPlace(await response.json());
+}
 type GooglePlace={id?:string;displayName?:{text?:string};formattedAddress?:string;location?:{latitude?:number;longitude?:number};websiteUri?:string;nationalPhoneNumber?:string;primaryType?:string;addressComponents?:{types?:string[];shortText?:string}[]};
 export function readPlace(p:GooglePlace):Place|null {
   if(p.addressComponents?.find(c=>c.types?.includes('country'))?.shortText!=='GB') return null;
@@ -17,7 +22,7 @@ export function readPlace(p:GooglePlace):Place|null {
     website:p.websiteUri?.startsWith('https://')||p.websiteUri?.startsWith('http://')?p.websiteUri.slice(0,2000):null,
     phone:p.nationalPhoneNumber?.slice(0,100)??null,primary_type:p.primaryType?.slice(0,100)??null};
 }
-export type SearchStore={user:(jwt:string)=>Promise<string|null>;consume:(id:string)=>Promise<boolean>;listed:(place:Place)=>Promise<string|null>;mine:(id:string)=>Promise<{place_id:string;count:number}[]>};
+export type SearchStore={user:(jwt:string)=>Promise<string|null>;consume:(id:string)=>Promise<boolean>;listed:(place:Place)=>Promise<string|null>;mine:(id:string)=>Promise<{place_id:string;count:number}[]>;isAdmin?:(id:string)=>Promise<boolean>};
 export const shopCors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'};
 export function searchHandler(store:SearchStore,fetchFn:typeof fetch,env:(name:string)=>string|undefined) {
  return async(req:Request):Promise<Response>=>{
@@ -28,10 +33,19 @@ export function searchHandler(store:SearchStore,fetchFn:typeof fetch,env:(name:s
    const jwt=req.headers.get('authorization')?.replace(/^Bearer /,'');const userId=jwt?await store.user(jwt):null;
    if(!userId)return json({error:'not authenticated'},401);
    const input=await req.json();const q=typeof input.query==='string'?input.query.trim():'';
-   if(q.length<2||q.length>200)return json({error:'Enter 2–200 characters'},400);
+   if(input.mode!=='details'&&(q.length<2||q.length>200))return json({error:'Enter 2–200 characters'},400);
    const key=env('GOOGLE_PLACES_API_KEY'),secret=env('SHOP_REQUEST_SIGNING_SECRET');
    if(!key||!secret)return json({error:'Shop search is not available yet'},503);
-   if(!await store.consume(userId))return json({error:'Daily search limit reached (30)'},429);
+   if(input.mode==='details'){
+    const admin=await store.isAdmin?.(userId)??false;
+    if(!Array.isArray(input.place_ids)||input.place_ids.length>(admin?50:20)||input.place_ids.some((id:unknown)=>typeof id!=='string'||id.length<1||id.length>255))return json({error:'Invalid requested shops'},400);
+    const ids=[...new Set(input.place_ids as string[])];
+    if(!admin){const own=new Set((await store.mine(userId)).map(p=>p.place_id));if(ids.some(id=>!own.has(id)))return json({error:'Not allowed'},403);}
+    // Charge each provider lookup, so batching cannot bypass the budget.
+    const details=[];for(const id of ids){if(!await store.consume(userId))return json({error:'Daily shop search limit reached'},429);const place=await placeDetails(id,fetchFn,key);if(place)details.push({place_id:place.place_id,name:place.name,address:place.address});}
+    return json({details,attribution:'Google Maps'});
+   }
+   if(!await store.consume(userId))return json({error:'Daily shop search limit reached'},429);
    const lat=input.lat,lng=input.lng;
    const location=typeof lat==='number'&&typeof lng==='number'&&Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180?
     {locationBias:{circle:{center:{latitude:lat,longitude:lng},radius:10000}}}:{};

@@ -1,6 +1,6 @@
 -- Shop requests phase A. Contact data is accessible only to privileged RPCs.
 alter table public.businesses add column google_place_id text;
-create index businesses_google_place_id_idx on public.businesses(google_place_id) where google_place_id is not null;
+create unique index businesses_google_place_id_idx on public.businesses(google_place_id) where google_place_id is not null;
 create function public.protect_business_google_place() returns trigger language plpgsql set search_path='' as $$
 begin
  if (tg_op='INSERT' and new.google_place_id is null) or (tg_op='UPDATE' and new.google_place_id is not distinct from old.google_place_id) then return new; end if;
@@ -9,9 +9,7 @@ begin
 end $$;
 create trigger protect_business_google_place before insert or update of google_place_id on public.businesses for each row execute function public.protect_business_google_place();
 create table public.requested_shops (
-  place_id text primary key, name text not null, address text not null, postcode text,
-  lat double precision not null check(lat between -90 and 90), lng double precision not null check(lng between -180 and 180),
-  website text, phone text, primary_type text,
+  place_id text primary key,
   request_count integer not null default 0 check(request_count>=0),
   status text not null default 'collecting' check(status in ('collecting','ready','contacted','joined','declined','suppressed')),
   ready_at timestamptz,contacted_at timestamptz,joined_at timestamptz,
@@ -27,7 +25,7 @@ create table public.shop_requests (
   created_at timestamptz not null default now(),primary key(place_id,user_id)
 );
 create index shop_requests_user_idx on public.shop_requests(user_id);
-create table public.shop_request_settings(id boolean primary key default true check(id),threshold integer not null default 5 check(threshold between 1 and 10000));
+create table public.shop_request_settings(id boolean primary key default true check(id),threshold integer not null default 5 check(threshold between 1 and 10000), global_search_cap integer not null default 1000 check(global_search_cap between 1 and 100000));
 insert into public.shop_request_settings default values;
 -- Counters survive withdrawal: deleting votes cannot reset the daily allowance.
 create table public.shop_request_usage(user_id uuid references auth.users on delete cascade, day date not null,
@@ -99,9 +97,7 @@ begin
  insert into public.shop_request_usage(user_id,day) values(uid,(now() at time zone 'UTC')::date) on conflict do nothing;
  select requests into used from public.shop_request_usage where user_id=uid and day=(now() at time zone 'UTC')::date for update;
  if used>=10 and not exists(select 1 from public.shop_requests where place_id=pid and user_id=uid) then raise exception 'daily request limit reached'; end if;
- insert into public.requested_shops(place_id,name,address,postcode,lat,lng,website,phone,primary_type)
- values(pid,place->>'name',place->>'address',place->>'postcode',(place->>'lat')::double precision,(place->>'lng')::double precision,
-  place->>'website',place->>'phone',place->>'primary_type') on conflict do nothing;
+ insert into public.requested_shops(place_id) values(pid) on conflict do nothing;
  perform 1 from public.requested_shops where place_id=pid for update;
  insert into public.shop_requests(place_id,user_id) values(pid,uid) on conflict do nothing;
  get diagnostics inserted=row_count;
@@ -119,17 +115,40 @@ begin
  return jsonb_build_object('requested',false,'count',(select request_count from public.requested_shops where place_id=p_place_id));
 end $$;
 create function public.my_shop_requests() returns jsonb language sql stable security definer set search_path='' as $$
- select coalesce(jsonb_agg(jsonb_build_object('place_id',s.place_id,'name',s.name,'address',s.address,'count',s.request_count,
+ select coalesce(jsonb_agg(jsonb_build_object('place_id',s.place_id,'count',s.request_count,
   'status',s.status,'business_id',s.joined_business_id) order by r.created_at desc),'[]'::jsonb)
  from public.shop_requests r join public.requested_shops s using(place_id) where r.user_id=auth.uid()
 $$;
+create table public.shop_search_global_usage(day date primary key, searches integer not null default 0);
+alter table public.shop_search_global_usage enable row level security;
+revoke all on public.shop_search_global_usage from public,anon,authenticated;
+grant all on public.shop_search_global_usage to service_role;
 create function public.consume_shop_search(p_user_id uuid) returns boolean language plpgsql security definer set search_path='' as $$
-declare n integer;
+declare user_n integer; global_n integer; cap integer; d date:=(now() at time zone 'UTC')::date;
 begin
- insert into public.shop_request_usage(user_id,day) values(p_user_id,(now() at time zone 'UTC')::date) on conflict do nothing;
- update public.shop_request_usage set searches=searches+1 where user_id=p_user_id and day=(now() at time zone 'UTC')::date and searches<30;
- get diagnostics n=row_count;return n=1;
+ select global_search_cap into cap from public.shop_request_settings;
+ insert into public.shop_search_global_usage values(d,0) on conflict do nothing;
+ select searches into global_n from public.shop_search_global_usage where day=d for update;
+ insert into public.shop_request_usage(user_id,day) values(p_user_id,d) on conflict do nothing;
+ select searches into user_n from public.shop_request_usage where user_id=p_user_id and day=d for update;
+ if user_n>=30 or global_n>=cap then return false; end if;
+ update public.shop_search_global_usage set searches=searches+1 where day=d;
+ update public.shop_request_usage set searches=searches+1 where user_id=p_user_id and day=d;
+ return true;
 end $$;
+-- Any delete, including Auth cascades and operator deletes, recounts atomically.
+create function public.recount_deleted_shop_requests() returns trigger language plpgsql security definer set search_path='' as $$
+begin perform public.recount_shop_requests(); return null; end $$;
+create trigger recount_deleted_shop_requests after delete on public.shop_requests for each statement execute function public.recount_deleted_shop_requests();
+revoke execute on function public.recount_deleted_shop_requests() from public,anon,authenticated;
+create function public.admin_retry_shop_request(p_place_id text) returns void language plpgsql security definer set search_path='' as $$
+begin
+ if not coalesce(public.has_role(auth.uid(),'admin'),false) then raise exception 'not allowed'; end if;
+ perform 1 from public.requested_shops where place_id=p_place_id and status='ready' and email_attempted_at is null for update;
+ if found then perform public.wake_shop_request_notify(p_place_id); end if;
+end $$;
+revoke execute on function public.admin_retry_shop_request(text) from public,anon,authenticated;
+grant execute on function public.admin_retry_shop_request(text) to authenticated;
 
 -- Internal join helper; permanent suppression and joined states cannot be reset.
 create function public.join_requested_shop(p_place_id text,p_business_id uuid) returns void language plpgsql security definer set search_path='' as $$
@@ -142,7 +161,7 @@ begin
  update public.businesses set google_place_id=p_place_id where id=p_business_id;
  for vote in select * from public.shop_requests where place_id=p_place_id and joined_notification_id is null loop
   insert into public.notifications(user_id,business_id,kind,title,body) values(vote.user_id,p_business_id,'system',
-    item.name||' just joined', 'You asked for it. Open their shop to see their rewards.') returning id into nid;
+    (select name from public.businesses where id=p_business_id)||' just joined', 'You asked for it. Open their shop to see their rewards.') returning id into nid;
   update public.shop_requests set joined_notification_id=nid where place_id=p_place_id and user_id=vote.user_id;
  end loop;
  perform public.wake_shop_request_notify(p_place_id,'joined');

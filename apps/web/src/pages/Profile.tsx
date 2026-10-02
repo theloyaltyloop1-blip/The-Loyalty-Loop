@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { getReferralCode, requestAccountDeletion } from '@/lib/engagement'
+import {RequestedShops} from '@/components/shop-requests'
 
 interface ProfileData {
   first_name: string | null
@@ -233,6 +234,7 @@ export function ProfilePage() {
         <LogOut className="h-4 w-4" /> Sign out
       </button>
       <button data-press-feedback onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
+      <RequestedShops/>
     </DashboardLayout>
   )
 }

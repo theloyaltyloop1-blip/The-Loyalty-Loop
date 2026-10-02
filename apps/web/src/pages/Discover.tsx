@@ -6,12 +6,14 @@ import { BusinessesMap } from '@/components/shop-map'
 import { SkeletonBlock } from '@/components/page-skeleton'
 import { fetchBusinesses, type Business } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
+import {AskShopDialog} from '@/components/shop-requests'
 
 export function DiscoverPage() {
   const navigate = useNavigate()
   const [businesses, setBusinesses] = React.useState<Business[]>([])
   const [selected, setSelected] = React.useState<Business | null>(null)
   const [query, setQuery] = React.useState('')
+  const [askOpen,setAskOpen]=React.useState(false)
   const [loading, setLoading] = React.useState(true)
 
   usePageMeta({ title: 'Shop map | The Loyalty Loop', description: 'Find local Loyalty Loop shops on the map.', path: '/dashboard/discover', robots: 'noindex,nofollow,noarchive' })
@@ -34,5 +36,7 @@ export function DiscoverPage() {
       </aside>
     </div>}
     {selected && <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-card p-5 shadow-sm"><div><p className="font-display text-xl text-foreground">{selected.name}</p><p className="mt-1 text-sm text-foreground/60">{selected.description || selected.address || 'A local Loyalty Loop shop.'}</p></div><button data-press-feedback onClick={() => navigate(`/dashboard/shop/${selected.slug}`)} className="h-10 rounded-full bg-foreground px-5 text-sm font-bold text-white">View shop</button></section>}
+    <button onClick={()=>setAskOpen(true)} className="mt-5 rounded-xl bg-primary px-5 py-3 font-semibold text-white">Can't find your favourite shop? Ask them to join</button>
+    <AskShopDialog open={askOpen} onOpenChange={setAskOpen} initialQuery={query}/>
   </DashboardLayout>
 }
