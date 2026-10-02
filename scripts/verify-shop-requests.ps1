@@ -39,4 +39,4 @@ Invoke-Check 'node' @('node_modules/typescript/bin/tsc','--noEmit','-p','apps/re
 Invoke-Check 'node' @('apps/web/node_modules/typescript/bin/tsc','--noEmit','-p','apps/web/tsconfig.app.json')
 Invoke-Check 'node' @('node_modules/typescript/bin/tsc','--noEmit','-p','apps/admin/tsconfig.json')
 Invoke-Check 'git' @('diff','--check')
-Write-Output 'PASS: 31 database/fake-provider/recovery tests, 23 pure/independent tests, seven Deno entrypoints, four app type checks and diff check.'
+Write-Output 'PASS: 37 database/fake-provider/recovery tests, 23 pure/independent tests, seven Deno entrypoints, four app type checks and diff check.'

@@ -20,7 +20,7 @@ test('Shop request review fixes: bounded notify, details budget, narrow delete l
    create function cron.schedule(n text,s text,c text) returns bigint language plpgsql as $$declare id bigint;begin insert into cron.job(jobname,schedule,command) values(n,s,c) on conflict(jobname) do update set schedule=s,command=c returning jobid into id;return id;end$$;`);
   await db.query(await migration('20261002211052_shop_requests_phase_a.sql'));
   await db.query((await migration('20261002211306_scheduled_delivery_recovery.sql')).replace('create extension if not exists pg_cron;',''));
-  await db.query(await migration('20261002230326_shop_request_review_fixes.sql'));
+  await db.query(await migration('20261002231854_shop_request_review_fixes.sql'));
   const users=Array.from({length:8},()=>randomUUID()),admin=users[7];
   await db.query('insert into auth.users select unnest($1::uuid[])',[users]);await db.query('insert into test_admins values($1)',[admin]);
   const place=id=>({place_id:id,name:'Shop '+id,address:'Leeds, UK',postcode:'LS1 1AA',lat:53.8,lng:-1.55,website:null,phone:null,primary_type:'cafe',country:'GB'});

@@ -23,7 +23,7 @@ test('Scheduled recovery commands on disposable PostgreSQL with fake cron/HTTP p
   // SQL commands/health queries against recorded jobs; no wall-clock scheduler.
   const cron=await migration('20261002211306_scheduled_delivery_recovery.sql');assert.match(cron,/create extension if not exists pg_cron;/);
   await db.query(cron.replace('create extension if not exists pg_cron;',''));
-  await db.query(await migration('20261002230326_shop_request_review_fixes.sql'));
+  await db.query(await migration('20261002231854_shop_request_review_fixes.sql'));
   const user=randomUUID();await db.query('insert into auth.users values($1)',[user]);
   const wake=async name=>{const {command}= (await db.query('select command from cron.job where jobname=$1',[name])).rows[0];await db.query(command);};
   await t.test('lost ready wake recovered; repeated sweeps send one operator email',async()=>{

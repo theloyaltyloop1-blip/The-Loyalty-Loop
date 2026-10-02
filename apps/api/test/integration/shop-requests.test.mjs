@@ -18,7 +18,7 @@ test('Shop requests phase A: all ten plan acceptance scenarios',async t=>{
    alter table businesses add column lat double precision,add column lng double precision,add column is_active boolean default true,add column approval_status text default 'approved';`);
   await db.query('insert into vault.decrypted_secrets values($1,$2),($3,$4)',['SHOP_REQUEST_SIGNING_SECRET',secret,'SHOP_REQUEST_NOTIFY_SECRET','disposable-notify']);
   await db.query(await readFile(new URL('../../../../supabase/migrations/20261002211052_shop_requests_phase_a.sql',import.meta.url),'utf8'));
-  await db.query(await readFile(new URL('../../../../supabase/migrations/20261002230326_shop_request_review_fixes.sql',import.meta.url),'utf8'));
+  await db.query(await readFile(new URL('../../../../supabase/migrations/20261002231854_shop_request_review_fixes.sql',import.meta.url),'utf8'));
   const users=Array.from({length:12},()=>randomUUID());const admin=users[11];await db.query('insert into auth.users select unnest($1::uuid[])',[users]);await db.query('insert into test_admins values($1)',[admin]);
   const place=(id='cafe')=>({place_id:id,name:'Bean & Leaf',address:'Leeds, UK',postcode:'LS1 1AA',lat:53.8,lng:-1.55,website:'https://example.test',phone:'0113 000 0000',primary_type:'cafe',country:'GB'});
   const vote=async(uid,p=place(),token=null)=>as(db,'authenticated',uid,'select request_shop($1) result',[token??await signPlace(p,uid,secret)]);
