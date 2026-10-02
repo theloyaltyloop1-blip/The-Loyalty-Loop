@@ -166,7 +166,7 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
   }
   const userId = contact.user_id;
   await admin.from("whatsapp_contacts").update({ last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
-  if (await recentCount(admin, phone, "inbound", ["question"], 24) >= DAILY_QUESTION_LIMIT) {
+  if (await recentCount(admin, phone, "inbound", ["question"], 24) > DAILY_QUESTION_LIMIT) {
     if (!await recentCount(admin, phone, "outbound", ["bot_limit"], 24)) await sendText(admin, phone, LIMIT_REPLY, "bot_limit", null, userId);
     return "question";
   }
@@ -205,7 +205,7 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
 async function approvedShops(admin: Admin): Promise<Shop[]> {
   const { data } = await admin.from("businesses")
     .select("id,name,slug,category,lat,lng")
-    .eq("is_active", true).eq("approval_status", "approved")
+    .eq("is_active", true).eq("approval_status", "approved").eq("whatsapp_onboarding_enabled", true)
     .limit(2000);
   return (data ?? []) as Shop[];
 }
@@ -220,6 +220,7 @@ async function linkedUser(admin: Admin, phone: string): Promise<{ userId: string
 async function joinByChat(admin: Admin, phone: string, query: string): Promise<string | null> {
   const { userId, optedOut } = await linkedUser(admin, phone);
   if (optedOut) return null;
+  if (await recentCount(admin, phone, "outbound", ["join"], 0.5)) return null;
   const matches = matchShops(query, await approvedShops(admin));
   if (!matches.length) {
     await sendText(admin, phone, NO_SHOP_FOUND, "join", null, userId);
@@ -305,7 +306,7 @@ async function processText(admin: Admin, phone: string, message: string): Promis
       return "logout";
     }
     const now = new Date().toISOString();
-    await admin.from("whatsapp_contacts").update({ user_id: null }).eq("phone_e164", phone);
+    await admin.from("whatsapp_contacts").update({ user_id: null, logged_out_at: now }).eq("phone_e164", phone);
     await admin.from("whatsapp_handoff_links").update({ expires_at: now })
       .eq("phone_e164", phone).is("claimed_at", null).gt("expires_at", now);
     await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "idle", pending_first_name: null, pending_email: null });
@@ -334,20 +335,21 @@ async function processText(admin: Admin, phone: string, message: string): Promis
   if (startMatch) {
     let businessId: string | null = null;
     if (startMatch[1]) {
-      const { data: business } = await admin.from("businesses").select("id").eq("slug", startMatch[1].toLowerCase()).eq("is_active", true).eq("approval_status", "approved").maybeSingle();
+      const { data: business } = await admin.from("businesses").select("id").eq("slug", startMatch[1].toLowerCase()).eq("is_active", true).eq("approval_status", "approved").eq("whatsapp_onboarding_enabled", true).maybeSingle();
       businessId = business?.id ?? null;
     }
     let linkedUserId = contact.user_id;
     // After someone has logged out here, never re-link by phone number alone
     // (the phone may have changed hands): they confirm their email instead.
-    const loggedOutBefore = !linkedUserId && await recentCount(admin, phone, "outbound", ["logout"], 24 * 365 * 10) > 0;
+    const { data: logoutContact } = await admin.from("whatsapp_contacts").select("logged_out_at").eq("phone_e164", phone).single();
+    const loggedOutBefore = !linkedUserId && Boolean(logoutContact?.logged_out_at);
     if (!linkedUserId && !loggedOutBefore) {
       const { data: foundUserId } = await admin.rpc("find_whatsapp_user_by_phone", { _phone: phone });
       linkedUserId = foundUserId ?? null;
       if (linkedUserId) await admin.from("whatsapp_contacts").update({ user_id: linkedUserId, opted_out_at: null }).eq("phone_e164", phone);
     }
     if (linkedUserId) {
-      await admin.from("whatsapp_contacts").update({ opted_out_at: null, last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
+      await admin.from("whatsapp_contacts").update({ opted_out_at: null, logged_out_at: null, last_inbound_at: new Date().toISOString() }).eq("phone_e164", phone);
       await linkedCustomerReply(admin, phone, linkedUserId, businessId);
       return "start";
     }
@@ -412,25 +414,21 @@ Deno.serve(async (request: Request) => {
       const lng = item.type === "location" ? item.location?.longitude : undefined;
       const location = typeof lat === "number" && typeof lng === "number" ? { lat, lng } : null;
       if (!phone || (!text && !location) || !item.id) continue;
-      const { data: alreadyHandled, error: duplicateLookupError } = await admin
-        .from("whatsapp_message_log")
-        .select("id")
-        .eq("provider_message_id", item.id)
-        .maybeSingle();
-      if (duplicateLookupError) throw duplicateLookupError;
-      if (alreadyHandled) continue;
+      const commandKind = text && isStop(text) ? 'stop' : text && isLogout(text) ? 'logout' : text && /^start\b/i.test(text) ? 'start' : 'question';
+      const { data: reserved, error: reserveError } = await admin.rpc('reserve_whatsapp_inbound', {p_id:item.id,p_phone:phone,p_kind:commandKind});
+      if(reserveError) throw Error('inbound reservation failed');
+      if(!reserved) continue;
+      try {
       const kind = location
         ? await replyNearby(admin, phone, location.lat, location.lng)
         : await processText(admin, phone, text!);
       if (!kind) continue;
-      const { error } = await admin.from("whatsapp_message_log").insert({
-        direction: "inbound", provider_message_id: item.id, phone_e164: phone, message_kind: kind, provider_payload: { type: item.type },
-      });
-      if (error && error.code !== "23505") throw error;
+      await admin.from("whatsapp_message_log").update({message_kind:kind,provider_payload:{type:item.type}}).eq('provider_message_id',item.id);
+      } catch { console.error('whatsapp-webhook reserved command failed'); }
     }
     return json({ ok: true });
   } catch (error) {
-    console.error("whatsapp-webhook", error instanceof Error ? error.message : "unknown error");
+    console.error("whatsapp-webhook request failed");
     return json({ ok: false }, 500);
   }
 });
