@@ -8,6 +8,7 @@ import { PageSkeleton } from '@/components/page-skeleton'
 import { ShopCard } from '@/components/shop-card'
 import { fetchBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
 import {AskShopDialog} from '@/components/shop-requests'
+import { trendingShops } from '@/lib/trending'
 
 const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   Café: Coffee,
@@ -83,6 +84,7 @@ export function Home() {
     (category === 'All' || business.category === category) &&
     `${business.name} ${business.category ?? ''} ${business.address ?? ''} ${business.postcode ?? ''}`.toLowerCase().includes(search)
   )
+  const trending = trendingShops(businesses, filtered, { fallback: 2 })
 
   return (
     <DashboardLayout>
@@ -133,14 +135,18 @@ export function Home() {
         <div><p role="status" className="text-foreground/50">No shops match. Try another search or category.</p><button onClick={()=>setAskOpen(true)} className="mt-4 rounded-xl bg-primary px-5 py-3 font-semibold text-white">Can't find your favourite shop? Ask them to join</button></div>
       ) : (
         <>
-          <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-foreground/60 mb-4">
-            <Sparkles className="h-4 w-4 text-primary" /> Trending nearby
-          </p>
-          <div className="flex gap-4 overflow-x-auto pb-2 mb-10">
-            {filtered.slice(0, 2).map((business, index) => (
-              <div key={business.id} className="stagger-card" style={{ animationDelay: `${index * 45}ms` }}><TrendingCard business={business} /></div>
-            ))}
-          </div>
+          {trending.length > 0 && (
+            <>
+              <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-foreground/60 mb-4">
+                <Sparkles className="h-4 w-4 text-primary" /> Trending nearby
+              </p>
+              <div className="flex gap-4 overflow-x-auto pb-2 mb-10">
+                {trending.map((business, index) => (
+                  <div key={business.id} className="stagger-card" style={{ animationDelay: `${index * 45}ms` }}><TrendingCard business={business} /></div>
+                ))}
+              </div>
+            </>
+          )}
 
           <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/60 mb-4">Nearby</p>
           <div className="grid gap-5 md:grid-cols-2">

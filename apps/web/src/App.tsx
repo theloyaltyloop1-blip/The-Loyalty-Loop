@@ -43,6 +43,7 @@ const NotFound = lazy(() => import('@/pages/NotFound').then((m) => ({ default: m
 const Help = lazy(() => import('@/pages/Help').then((m) => ({ default: m.Help })))
 const AccessPanel = lazy(() => import('@/pages/AccessPanel').then((m) => ({ default: m.AccessPanel })))
 const ShopRequests = lazy(() => import('@/pages/ShopRequests').then((m) => ({ default: m.ShopRequests })))
+const TrendingAdmin = lazy(() => import('@/pages/TrendingAdmin').then((m) => ({ default: m.TrendingAdmin })))
 const BrandWorkspace = lazy(() => import('@/pages/BrandWorkspace').then((m) => ({ default: m.BrandWorkspace })))
 const WhatsAppOnboarding = lazy(() => import('@/pages/WhatsAppOnboarding').then((m) => ({ default: m.WhatsAppOnboarding })))
 const WhatsAppCard = lazy(() => import('@/pages/WhatsAppCard').then((m) => ({ default: m.WhatsAppCard })))
@@ -106,6 +107,7 @@ function App() {
                 <Route path="/dashboard/admin" element={<Navigate to="/access" replace />} />
                 <Route path="/access" element={<AccessPanel />} />
                 <Route path="/admin/shop-requests" element={<ShopRequests />} />
+                <Route path="/admin/trending" element={<TrendingAdmin />} />
                 <Route path="/join" element={<Signup asOwner />} />
                 <Route path="/brand" element={<BrandWorkspace />} />
                 <Route path="/owner" element={<OwnerAnalytics />} />
