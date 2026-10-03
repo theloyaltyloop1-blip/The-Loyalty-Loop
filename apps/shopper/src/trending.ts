@@ -1,7 +1,7 @@
 // Shops an admin picked for "Trending", in the admin's order. Until an admin
 // has picked any shop, keep the old behaviour: the first few shops listed.
 // A pick needs an admin-set position, so an owner flipping `trending` alone
-// (possible before 20261002233000 is applied) can't promote their shop.
+// (possible before 20261003004334 was applied) can't promote their shop.
 // Kept identical to apps/web/src/lib/trending.ts (tested together).
 type TrendingFields = { trending?: boolean | null; trending_position?: number | null }
 

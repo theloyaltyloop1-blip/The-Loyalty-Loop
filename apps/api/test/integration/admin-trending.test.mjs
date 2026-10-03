@@ -23,7 +23,7 @@ test('Admin-chosen Trending shops on disposable PostgreSQL',async t=>{
      using (owner_id = auth.uid() or public.has_role(auth.uid(),'admin'))
      with check (owner_id = auth.uid() or public.has_role(auth.uid(),'admin'));
    grant select, update on businesses to authenticated;`);
-  await db.query(await readFile(new URL('../../../../supabase/migrations/20261002233000_admin_trending_shops.sql',import.meta.url),'utf8'));
+  await db.query(await readFile(new URL('../../../../supabase/migrations/20261003004334_admin_trending_shops.sql',import.meta.url),'utf8'));
   const [owner,admin,other]=[randomUUID(),randomUUID(),randomUUID()];
   await db.query('insert into auth.users select unnest($1::uuid[])',[[owner,admin,other]]);
   await db.query('insert into test_admins values($1)',[admin]);
