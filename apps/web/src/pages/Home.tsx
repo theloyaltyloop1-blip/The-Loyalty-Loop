@@ -9,6 +9,7 @@ import { HomeCollection } from '@/components/home-collection'
 import { AskShopDialog } from '@/components/shop-requests'
 import { fetchBusinesses, fetchMyMemberships, type Business, type Membership, type RewardCatalogItem } from '@/lib/businesses'
 import { trendingShops } from '@/lib/trending'
+import { useUserLocation } from '@/lib/use-user-location'
 
 export function Home() {
   const { session, loading, rolesLoading, primaryRole } = useAuth()
@@ -21,6 +22,7 @@ export function Home() {
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
   const [fetching, setFetching] = React.useState(true)
   const [loadError, setLoadError] = React.useState<string | null>(null)
+  const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
 
   React.useEffect(() => {
     if (!session?.user) return
@@ -107,7 +109,7 @@ export function Home() {
 
       {fetching && !businesses.length ? <p role="status" className="rounded-2xl bg-[#DCE6D2] px-5 py-6 text-[#24331F]">Finding your local favourites…</p>
         : loadError ? <div role="alert" className="rounded-2xl bg-[#F8DCCB] px-5 py-6 text-[#6E2C0F]"><p>{loadError}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-white">Refresh <ArrowRight className="h-4 w-4" aria-hidden="true" /></button></div>
-          : <HomeCollection businesses={filtered} featured={featured} memberships={memberships} catalog={catalog} filtered={category !== 'All' || Boolean(search)} />}
+          : <HomeCollection businesses={filtered} featured={featured} memberships={memberships} catalog={catalog} filtered={category !== 'All' || Boolean(search)} location={userLocation} locationStatus={locationStatus} onUseLocation={locate} />}
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#F8DCCB] px-5 py-5 text-[#6E2C0F] sm:px-7">
         <p className="font-semibold">Can’t find your favourite shop?</p>

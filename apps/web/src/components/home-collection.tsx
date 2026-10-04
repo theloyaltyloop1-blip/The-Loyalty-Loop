@@ -3,8 +3,14 @@ import { ArrowRight, Check, MapPin, Store } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Business, Membership, RewardCatalogItem } from '@/lib/businesses'
 import { getHomeProgress } from '@/lib/home-progress'
+import { formatMiles, nearestFirst, type Coords } from '@/lib/distance'
+import type { LocationStatus } from '@/lib/use-user-location'
 
-function Photo({ business, hero = false }: { business: Business; hero?: boolean }) {
+// Only the closest shops get a photo card. The rest wait behind a button, as quiet rows.
+const PHOTO_CARDS = 6
+const ROWS_PER_TAP = 8
+
+function Photo({ business, hero = false, distance }: { business: Business; hero?: boolean; distance?: string }) {
   const [failedLogo, setFailedLogo] = useState(false)
   const [failedCover, setFailedCover] = useState(false)
   return (
@@ -20,22 +26,54 @@ function Photo({ business, hero = false }: { business: Business; hero?: boolean 
         onError={() => setFailedCover(true)}
         className={'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025] ' + (failedCover ? 'hidden' : '')}
       />}
+      {!hero && distance && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm"><MapPin className="h-3 w-3 text-primary" aria-hidden="true" />{distance}</span>}
       {hero && business.address && <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-background/95 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm"><MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />{business.postcode || business.address}</span>}
     </div>
   )
 }
 
-export function HomeCollection({ businesses, featured, memberships, catalog, filtered }: {
+function Mark({ business }: { business: Business }) {
+  const [failed, setFailed] = useState(false)
+  return (
+    <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl font-display text-lg font-bold text-[#F1F4EC]" style={{ backgroundColor: business.brand_color || '#3E5235' }} aria-hidden="true">
+      {business.logo_url && !failed
+        ? <img src={business.logo_url} alt="" onError={() => setFailed(true)} className="h-full w-full bg-background object-contain p-1" />
+        : business.name.trim().charAt(0).toUpperCase() || <Store className="h-5 w-5" />}
+    </span>
+  )
+}
+
+function LocationNote({ status, onUseLocation }: { status: LocationStatus; onUseLocation: () => void }) {
+  const button = 'inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold text-foreground ring-1 ring-foreground/10 transition-colors hover:bg-[#DCE6D2] focus-visible:outline-3 focus-visible:outline-primary'
+  if (status === 'ask') return <button type="button" onClick={onUseLocation} className={button}><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Show closest first</button>
+  if (status === 'unavailable') return <button type="button" onClick={onUseLocation} className={button}><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Couldn’t find you. Try again</button>
+  if (status === 'locating') return <p role="status" className="text-sm font-medium text-muted-foreground">Finding the closest shops…</p>
+  if (status === 'ready') return <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground"><MapPin className="h-4 w-4 text-primary" aria-hidden="true" />Closest first</p>
+  if (status === 'denied') return <p className="max-w-xs text-sm text-muted-foreground sm:text-right">Location is off for this site. Allow it in your browser settings to see the closest shops first.</p>
+  return null
+}
+
+export function HomeCollection({ businesses, featured, memberships, catalog, filtered, location, locationStatus, onUseLocation }: {
   businesses: Business[]
   featured: Business | undefined
   memberships: Membership[]
   catalog: RewardCatalogItem[]
   filtered: boolean
+  location: Coords | null
+  locationStatus: LocationStatus
+  onUseLocation: () => void
 }) {
   const [showAll, setShowAll] = useState(false)
+  const [moreRows, setMoreRows] = useState(0)
   const membershipByBusiness = new Map(memberships.map((membership) => [membership.business_id, membership]))
   const joined = businesses.filter((business) => membershipByBusiness.has(business.id))
-  const discoveries = businesses.filter((business) => business.id !== featured?.id)
+  // Shops already on your card list live under "Your regulars", so they aren't repeated here.
+  const discoveries = businesses.filter((business) => business.id !== featured?.id && !membershipByBusiness.has(business.id))
+  const ranked = location ? nearestFirst(discoveries, location) : discoveries.map((shop) => ({ shop, miles: null as number | null }))
+  const nearby = ranked.slice(0, PHOTO_CARDS)
+  const rest = ranked.slice(PHOTO_CARDS)
+  const hiddenRows = Math.max(0, rest.length - moreRows)
+  const nextBatch = Math.min(ROWS_PER_TAP, hiddenRows)
   const featuredProgress = featured ? getHomeProgress(featured, membershipByBusiness.get(featured.id), catalog) : null
   return <>
     {featured && featuredProgress && <Link
@@ -77,13 +115,26 @@ export function HomeCollection({ businesses, featured, memberships, catalog, fil
     </section>}
 
     {discoveries.length > 0 && <section aria-labelledby="home-discovery-heading" className="mt-10 sm:mt-14">
-      <h2 id="home-discovery-heading" className="mb-4 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{filtered ? 'More matching shops' : 'Find your next favourite'}</h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {discoveries.map((business) => <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`Explore ${business.name}${business.category ? `, ${business.category}` : ''}`} className="group overflow-hidden rounded-2xl bg-card text-foreground shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker focus-visible:outline-3 focus-visible:outline-primary">
-          <Photo business={business} />
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+        <h2 id="home-discovery-heading" className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{filtered ? 'More matching shops' : 'Find your next favourite'}</h2>
+        <LocationNote status={locationStatus} onUseLocation={onUseLocation} />
+      </div>
+      <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-3">
+        {nearby.map(({ shop: business, miles }) => <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`Explore ${business.name}${business.category ? `, ${business.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`} className="group w-[78%] shrink-0 snap-start overflow-hidden rounded-2xl bg-card text-foreground shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker focus-visible:outline-3 focus-visible:outline-primary sm:w-auto">
+          <Photo business={business} distance={miles !== null ? formatMiles(miles) : undefined} />
           <div className="flex items-center justify-between gap-3 p-4"><div className="min-w-0"><p className="truncate font-display text-lg font-bold">{business.name}</p><p className="mt-1 truncate text-sm text-muted-foreground">{business.category || 'Local independent'}</p></div><ArrowRight className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /></div>
         </Link>)}
       </div>
+      {moreRows > 0 && <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {rest.slice(0, moreRows).map(({ shop: business, miles }) => <li key={business.id}>
+          <Link to={`/dashboard/shop/${business.slug}`} aria-label={`Explore ${business.name}${business.category ? `, ${business.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`} className="flex min-h-16 items-center gap-3 rounded-2xl bg-card px-3 py-2.5 text-foreground ring-1 ring-foreground/5 transition-colors hover:bg-[#DCE6D2]/60 focus-visible:outline-3 focus-visible:outline-primary">
+            <Mark business={business} />
+            <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{business.name}</span><span className="block truncate text-sm text-muted-foreground">{[business.category || 'Local independent', miles !== null ? formatMiles(miles) : null].filter(Boolean).join(' \u00b7 ')}</span></span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          </Link>
+        </li>)}
+      </ul>}
+      {hiddenRows > 0 && <button type="button" onClick={() => setMoreRows((count) => count + ROWS_PER_TAP)} className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-full bg-card px-5 text-sm font-semibold text-foreground ring-1 ring-foreground/10 transition-colors hover:bg-[#DCE6D2] focus-visible:outline-3 focus-visible:outline-primary">{`Show ${nextBatch} more ${nextBatch === 1 ? 'shop' : 'shops'}`}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>}
     </section>}
 
     {!featured && !joined.length && !discoveries.length && <p role="status" className="rounded-2xl bg-[#DCE6D2] px-5 py-6 text-[#24331F]">{filtered ? 'No shops match. Try another search or category.' : 'No local shops yet. Check back soon.'}</p>}
