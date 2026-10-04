@@ -1,5 +1,6 @@
 // WhatsApp message wording. Pure functions, so they run under Deno and in
-// Node tests. Every shop is on £ spend rewards; stamps and points are gone.
+// Node tests. Shops earn by £ spend or, while Fidel is still being built, by
+// stamps / points / visits (reward_model 'stamp_legacy').
 
 export type Tier = { title: string; spend_threshold_pence: number | null };
 export type ShopProgress = {
@@ -7,7 +8,24 @@ export type ShopProgress = {
   progressPence: number;
   thresholdPence: number | null;
   tiers: Tier[];
+  // Set for stamp / points / visits shops, e.g. "3 of 10 stamps".
+  stampLine?: string | null;
 };
+
+type StampSource = {
+  reward_model?: string | null;
+  loyalty_type?: string | null;
+  loyalty_config?: { stamps_required?: number } | null;
+};
+type StampCounts = { stamp_count?: number | null; points_balance?: number | null; visit_count?: number | null };
+
+// "3 of 10 stamps" for a stamp-model shop; null for a £ spend shop.
+export function stampProgressText(business: StampSource, counts: StampCounts): string | null {
+  if (business.reward_model === "spend_threshold") return null;
+  const unit = business.loyalty_type === "points" ? "points" : business.loyalty_type === "tiered" ? "visits" : "stamps";
+  const have = unit === "points" ? counts.points_balance ?? 0 : unit === "visits" ? counts.visit_count ?? 0 : counts.stamp_count ?? 0;
+  return `${have} of ${business.loyalty_config?.stamps_required ?? 10} ${unit}`;
+}
 
 export function pounds(pence: number): string {
   const value = Math.abs(pence) / 100;
@@ -31,6 +49,7 @@ export function nextTier(shop: ShopProgress): { title: string; amountPence: numb
 }
 
 export function progressLine(shop: ShopProgress): string {
+  if (shop.stampLine) return `• ${shop.name}: ${shop.stampLine}`;
   const tier = nextTier(shop);
   if (!tier) return `• ${shop.name}: ${pounds(Math.max(shop.progressPence, 0))} spent`;
   const left = tier.amountPence - shop.progressPence;

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -25,6 +25,18 @@ import {
   type BusinessPhoto,
 } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
+
+const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  Café: Coffee,
+  Restaurant: Coffee,
+  Barber: Scissors,
+}
+
+const UNIT_LABEL: Record<string, string> = {
+  stamp_card: 'stamp',
+  points: 'point',
+  tiered: 'visit',
+}
 
 const poundsLabel = (pence: number) => `£${pence % 100 === 0 ? pence / 100 : (pence / 100).toFixed(2)}`
 
@@ -209,6 +221,13 @@ export function ShopDetail() {
   const rewardSubtitle = (membership ? nextTier : firstTier)?.description ?? ''
   const remainingPence = Math.max(0, targetPence - progress)
 
+  // Stamp / points / visits shops (reward_model 'stamp_legacy').
+  const spendShop = business.reward_model === 'spend_threshold'
+  const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
+  const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
+  const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
+  const stampProgress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
+
   async function handleJoin() {
     if (!session?.user || !business) return
     setJoining(true)
@@ -310,10 +329,12 @@ export function ShopDetail() {
           <span className="inline-block rounded-full bg-black/5 text-foreground/70 text-xs font-semibold px-3 py-1 mb-3">
             Your reward
           </span>
-          <p className="text-xl font-display font-bold text-foreground">{firstTier?.title ?? 'Free reward'}</p>
-          <p className="text-sm text-foreground/50 mb-1">{rewardSubtitle}</p>
+          <p className="text-xl font-display font-bold text-foreground">{spendShop ? firstTier?.title ?? 'Free reward' : catalog[0]?.title ?? 'Free reward'}</p>
+          <p className="text-sm text-foreground/50 mb-1">{spendShop ? rewardSubtitle : catalog[0]?.description ?? ''}</p>
           <p className="text-sm text-foreground/50 mb-6">
-            Spend {poundsLabel(firstTier?.spend_threshold_pence ?? targetPence)} here to unlock it.
+            {spendShop
+              ? `Spend ${poundsLabel(firstTier?.spend_threshold_pence ?? targetPence)} here to unlock it.`
+              : `Collect ${stampsRequired} ${unit}${stampsRequired === 1 ? '' : 's'} to unlock it.`}
           </p>
           <button data-press-feedback
             onClick={handleJoin}
@@ -328,12 +349,82 @@ export function ShopDetail() {
       ) : (
         <div className="loyalty-card-panel rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6" style={{ viewTransitionName: 'loyalty-card' }}>
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-display font-bold text-foreground">Your progress</h2>
+            <h2 className="text-xl font-display font-bold text-foreground">
+              {spendShop
+                ? 'Your progress'
+                : business.loyalty_type === 'points'
+                  ? 'Your points'
+                  : business.loyalty_type === 'tiered'
+                    ? 'Your visits'
+                    : 'Your stamp card'}
+            </h2>
             <p className="text-sm font-semibold text-foreground/60">
-              {poundsLabel(progress)} / {poundsLabel(targetPence)} · {rewardTitle}
+              {spendShop
+                ? `${poundsLabel(progress)} / ${poundsLabel(targetPence)} · ${rewardTitle}`
+                : `${stampProgress} / ${stampsRequired} · ${catalog[0]?.title ?? 'Free reward'}`}
             </p>
           </div>
 
+          {!spendShop ? (
+            <>
+          {business.loyalty_type === 'points' ? (
+            <div className="mb-8">
+              <div className="h-4 rounded-full bg-black/5 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-[width] duration-300 ease-in-out"
+                  style={{
+                    width: `${Math.min(100, (stampProgress / stampsRequired) * 100)}%`,
+                    backgroundColor: business.brand_color,
+                  }}
+                />
+              </div>
+              <p className="text-sm text-foreground/50 mt-2">
+                {Math.max(0, stampsRequired - stampProgress)} more point{stampsRequired - stampProgress === 1 ? '' : 's'} to{' '}
+                {rewardTitle.toLowerCase()}.
+              </p>
+            </div>
+          ) : (
+          <div className="flex flex-wrap gap-3 mb-8">
+            {Array.from({ length: stampsRequired }).map((_, i) => {
+              const isLast = i === stampsRequired - 1
+              const filled = i < stampProgress
+              if (isLast) {
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div
+                      className="h-16 w-16 rounded-full border-2 border-dashed flex items-center justify-center"
+                      style={{ borderColor: business.brand_color, color: business.brand_color }}
+                    >
+                      <Gift className="h-5 w-5" />
+                    </div>
+                    <span
+                      className="text-[0.5625rem] font-extrabold uppercase tracking-wide"
+                      style={{ color: business.brand_color }}
+                    >
+                      Free {rewardTitle.replace(/^free\s+/i, '')}
+                    </span>
+                  </div>
+                )
+              }
+              return (
+                <div
+                  key={i}
+                  data-filled={filled}
+                  className="loyalty-stamp h-16 w-16 rounded-full border flex items-center justify-center"
+                  style={
+                    filled
+                      ? { backgroundColor: business.brand_color, borderColor: business.brand_color }
+                      : { borderColor: 'rgba(0,0,0,0.12)' }
+                  }
+                >
+                  <StampIcon className={'h-5 w-5 transition-[color,transform] duration-200 ease-in-out ' + (filled ? 'text-white scale-100' : 'text-foreground/20 scale-90')} />
+                </div>
+              )
+            })}
+          </div>
+          )}
+            </>
+          ) : (
           <div className="mb-8">
             <div className="h-4 rounded-full bg-black/5 overflow-hidden">
               <div
@@ -348,6 +439,7 @@ export function ShopDetail() {
               Spend {poundsLabel(remainingPence)} more to unlock {rewardTitle}.
             </p>
           </div>
+          )}
 
           <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6">
             <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
@@ -358,8 +450,9 @@ export function ShopDetail() {
               </p>
               <p className="font-semibold text-foreground mb-1">Show this to staff</p>
               <p className="text-sm text-foreground/50 max-w-sm">
-                They scan the code, or type the manual code above, and add what you spent. Rewards are
-                added to your wallet automatically.
+                {spendShop
+                  ? 'They scan the code, or type the manual code above, and add what you spent. Rewards are added to your wallet automatically.'
+                  : `They scan the code to add a ${unit}, or type the manual code above. ${Math.max(0, stampsRequired - stampProgress)} ${unit}${Math.max(0, stampsRequired - stampProgress) === 1 ? '' : 's'} to your next reward.`}
               </p>
             </div>
           </div>
@@ -388,16 +481,18 @@ export function ShopDetail() {
           <Gift className="h-5 w-5 text-primary" /> What you can earn
         </p>
         <div className="flex flex-col gap-2">
-          {(tiers.length ? tiers : [null]).map((tier) => (
+          {(spendShop ? (tiers.length ? tiers : [null]) : [null]).map((tier) => (
             <div key={tier?.id ?? 'default'} className="rounded-xl bg-black/5 flex items-center gap-4 p-4">
               <span className="h-10 w-10 rounded-full bg-[#EFE1C8] flex items-center justify-center shrink-0">
                 <Lock className="h-4 w-4 text-foreground/60" />
               </span>
               <div>
-                <p className="font-semibold text-foreground">{tier?.title ?? 'Free reward'}</p>
-                {tier?.description && <p className="text-sm text-foreground/50">{tier.description}</p>}
+                <p className="font-semibold text-foreground">{spendShop ? tier?.title ?? 'Free reward' : catalog[0]?.title ?? 'Free reward'}</p>
+                {(spendShop ? tier?.description : catalog[0]?.description) && <p className="text-sm text-foreground/50">{spendShop ? tier?.description : catalog[0]?.description}</p>}
                 <p className="text-xs text-foreground/40 mt-0.5">
-                  Unlocks after spending {poundsLabel(tier?.spend_threshold_pence ?? targetPence)}
+                  {spendShop
+                    ? `Unlocks after spending ${poundsLabel(tier?.spend_threshold_pence ?? targetPence)}`
+                    : `${stampsRequired} ${unit}s`}
                 </p>
               </div>
             </div>

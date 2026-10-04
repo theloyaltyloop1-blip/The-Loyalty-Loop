@@ -7,6 +7,8 @@ import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import {
+  awardProgress,
+  sendVisitThankYou,
   sendUserPush,
   updateWalletPass,
   findRewardByCode,
@@ -25,6 +27,12 @@ import {
   type SpendSummary,
   type RecentSpend,
 } from '@/lib/businesses'
+
+const UNIT_LABEL: Record<string, string> = {
+  stamp_card: 'stamp',
+  points: 'point',
+  tiered: 'visit',
+}
 
 type ScanMode = 'award' | 'redeem'
 
@@ -95,6 +103,190 @@ function CameraScanner({ onResult, active, scanCycle = 0 }: { onResult: (value: 
     </div>
   )
 }
+
+function StampPanel({ businessId, unit }: { businessId: string; unit: string }) {
+  const [cameraOn, setCameraOn] = React.useState(true)
+  const [scanCycle, setScanCycle] = React.useState(0)
+  const [code, setCode] = React.useState('')
+  const [match, setMatch] = React.useState<ScannedMemberDetails | null>(null)
+  const [matchedUserId, setMatchedUserId] = React.useState<string | null>(null)
+  const [amount, setAmount] = React.useState(1)
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [success, setSuccess] = React.useState<string | null>(null)
+
+  function reset() {
+    setCode('')
+    setMatch(null)
+    setMatchedUserId(null)
+    setError(null)
+  }
+
+  async function handleLookup() {
+    if (!code.trim()) return
+    setCameraOn(false)
+    setBusy(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const result = await lookupUserByStampCode(code)
+      if (!result) {
+        setError('No customer found with that code.')
+        setMatch(null)
+        setMatchedUserId(null)
+        return
+      }
+      const details = await fetchScannedMemberDetails(businessId, result.id)
+      if (!details) {
+        setError('This customer has not joined this shop yet.')
+        setMatch(null)
+        setMatchedUserId(null)
+        return
+      }
+      setMatch(details)
+      setMatchedUserId(result.id)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Lookup failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleQrResult(value: string) {
+    const m = value.match(/^loyaltyloop:customer:(.+)$/)
+    if (!m) {
+      setError('That QR code is not a Loyalty Loop customer card.')
+      setScanCycle((cycle) => cycle + 1)
+      return
+    }
+    setError(null)
+    setSuccess(null)
+    setBusy(true)
+    try {
+      const details = await fetchScannedMemberDetails(businessId, m[1])
+      if (!details) {
+        setMatchedUserId(null)
+        setError('This customer has not joined this shop yet.')
+        setScanCycle((cycle) => cycle + 1)
+        return
+      }
+      setMatch(details)
+      setMatchedUserId(m[1])
+      // Stop the preview once a customer has been identified so the award
+      // controls and their details stay clearly visible. It reopens after a
+      // successful award for the next person in the queue.
+      setCameraOn(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load customer details')
+      setScanCycle((cycle) => cycle + 1)
+    }
+    finally { setBusy(false) }
+  }
+
+  async function handleAward() {
+    if (!matchedUserId) return
+    setBusy(true)
+    setError(null)
+    try {
+      await awardProgress(businessId, matchedUserId, amount)
+      void sendVisitThankYou(businessId, matchedUserId, amount)
+      void sendUserPush(businessId, matchedUserId)
+      void updateWalletPass(businessId, matchedUserId)
+      setSuccess(`Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`)
+      reset()
+      setScanCycle((cycle) => cycle + 1)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not award — is this customer a member of your shop?')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="relative flex flex-col gap-4">
+      <div className="flex items-center justify-center">
+        <button data-press-feedback
+          onClick={() => setCameraOn((c) => !c)}
+          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-foreground"
+        >
+          {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
+          {cameraOn ? 'Camera ready' : 'Start camera'}
+        </button>
+      </div>
+
+      <CameraScanner active={cameraOn} onResult={handleQrResult} scanCycle={scanCycle} />
+
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-px bg-black/10" />
+        <span className="text-xs font-bold uppercase tracking-wide text-foreground/30">manual code instead</span>
+        <div className="flex-1 h-px bg-black/10" />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-primary"
+          placeholder="Customer's manual code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
+          onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+        />
+        <button data-press-feedback
+          onClick={handleLookup}
+          disabled={busy || !code.trim()}
+          className="h-12 rounded-xl bg-foreground text-white font-bold px-5 disabled:opacity-40"
+        >
+          Find
+        </button>
+      </div>
+
+      {match && (
+        <aside className="rounded-2xl border border-black/5 bg-black/[0.045] px-5 py-5 lg:ml-auto lg:w-[19rem]">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/45">Member information</p>
+          <p className="mt-2 text-lg font-semibold text-foreground">
+            {match.first_name || match.last_name ? `${match.first_name ?? ''} ${match.last_name ?? ''}`.trim() : 'Customer found'}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-sm text-foreground/70">
+            <span>Email: {match.email ?? 'Not available'}</span><span>Joined: {new Date(match.joined_at).toLocaleDateString()}</span>
+            <span>Last visit: {match.last_activity_at ? new Date(match.last_activity_at).toLocaleDateString() : 'Not yet'}</span><span>{match.stamp_count} stamps · {match.points_balance} points · {match.visit_count} visits</span>
+          </div>
+        </aside>
+      )}
+
+      {matchedUserId && (
+        <>
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-1.5">Amount to award</p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={50}
+                className="h-12 w-24 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-primary"
+                value={amount}
+                onChange={(e) => setAmount(Math.max(1, Math.min(50, Number(e.target.value))))}
+              />
+              <span className="text-sm text-foreground/50">{unit}{amount === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+          <button data-press-feedback
+            onClick={handleAward}
+            disabled={busy}
+            className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <Check className="h-4 w-4" /> {busy ? 'Awarding…' : `Award ${amount} ${unit}${amount === 1 ? '' : 's'}`}
+          </button>
+          <button data-press-feedback onClick={reset} className="text-sm font-semibold text-foreground/50 self-center">
+            Cancel
+          </button>
+        </>
+      )}
+
+      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {success && <p className="text-sm text-fun-green font-semibold text-center">{success}</p>}
+    </div>
+  )
+}
+
 
 /** Records a purchase in £ for the scanned customer (ARCH_PLAN.md §4.10–4.11).
  * The server enforces the shop's cap, the linked-card payment question and
@@ -538,6 +730,9 @@ export function OwnerScan() {
   const isOwner = Boolean(business)
   const activeStaff = !isOwner ? staffBusinesses.find((s) => s.business_id === staffBizId) ?? staffBusinesses[0] : null
   const activeBusinessId = isOwner ? business!.id : activeStaff?.business_id
+  const loyaltyType = isOwner ? business!.loyalty_type : activeStaff?.business.loyalty_type
+  const unit = UNIT_LABEL[loyaltyType ?? 'stamp_card'] ?? 'stamp'
+  const spendShop = (isOwner ? business!.reward_model : activeStaff?.business.reward_model) === 'spend_threshold'
   const canScan = isOwner || Boolean(activeStaff?.can_scan_stamps)
   const canRedeem = isOwner || Boolean(activeStaff?.can_redeem_rewards)
 
@@ -554,7 +749,7 @@ export function OwnerScan() {
     <OwnerLayout>
       <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Scan</p>
       <h1 className="text-3xl font-display font-extrabold text-foreground mb-6 flex items-center gap-3">
-        <ScanLine className="h-7 w-7 text-primary" /> Purchases & rewards
+        <ScanLine className="h-7 w-7 text-primary" /> {spendShop ? 'Purchases & rewards' : 'Award & redeem'}
       </h1>
 
       {!activeBusinessId ? (
@@ -598,13 +793,15 @@ export function OwnerScan() {
                       }
                     >
                       {key === 'award' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      {key === 'award' ? 'Add purchase' : 'Redeem reward'}
+                      {key === 'award' ? (spendShop ? 'Add purchase' : `Add ${unit}`) : 'Redeem reward'}
                     </button>
                   ))}
               </div>
 
               <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
-                {mode === 'award' && canScan && session && <SpendPanel businessId={activeBusinessId} staffUserId={session.user.id} />}
+                {mode === 'award' && canScan && session && (spendShop
+                  ? <SpendPanel businessId={activeBusinessId} staffUserId={session.user.id} />
+                  : <StampPanel businessId={activeBusinessId} unit={unit} />)}
                 {mode === 'redeem' && canRedeem && <RedeemPanel businessId={activeBusinessId} />}
               </div>
             </>

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { isLogout, isStop, nextTier, pounds, progressLine, welcomeBack } from './whatsapp-messages.ts';
+import { isLogout, isStop, nextTier, pounds, progressLine, stampProgressText, welcomeBack } from './whatsapp-messages.ts';
 
 test('LOGOUT and its variants are recognised on their own only', () => {
   for (const t of ['LOGOUT', 'logout', 'Log out', ' sign out ', 'SIGNOUT', 'unlink']) assert.equal(isLogout(t), true, t);
@@ -49,4 +49,15 @@ test('welcome back lists shops, caps at ten and always gives the card link', () 
 test('STOP and its variants are recognised on their own only', () => {
   for (const t of ['STOP', 'stop', ' Stop ', 'unsubscribe', 'opt out']) assert.equal(isStop(t), true, t);
   for (const t of ['stop please send more', 'nonstop', 'START']) assert.equal(isStop(t), false, t);
+});
+
+test("stamp shops show a stamp count, £ shops show none", () => {
+  const stampShop = { reward_model: "stamp_legacy", loyalty_type: "stamp_card", loyalty_config: { stamps_required: 8 } };
+  assert.equal(stampProgressText(stampShop, { stamp_count: 3 }), "3 of 8 stamps");
+  assert.equal(stampProgressText({ ...stampShop, loyalty_type: "points" }, { points_balance: 12 }), "12 of 8 points");
+  assert.equal(stampProgressText({ reward_model: "spend_threshold" }, { stamp_count: 3 }), null);
+  assert.equal(
+    progressLine({ name: "Cafe", progressPence: 0, thresholdPence: 2000, tiers: [], stampLine: "3 of 8 stamps" }),
+    "• Cafe: 3 of 8 stamps",
+  );
 });

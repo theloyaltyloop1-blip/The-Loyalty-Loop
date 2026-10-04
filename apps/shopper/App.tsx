@@ -1054,8 +1054,8 @@ function ShopDetail({
       .from('reward_catalog')
       .select('id,title,description,stamp_threshold,spend_threshold_pence')
       .eq('business_id', business.id)
-      .order('spend_threshold_pence')
-      .order('stamp_threshold')
+      .order(spendShop ? 'spend_threshold_pence' : 'stamp_threshold')
+      .order(spendShop ? 'stamp_threshold' : 'spend_threshold_pence')
       .then(({ data, error }) => {
         if (!active) return
         if (error) {
@@ -1068,7 +1068,7 @@ function ShopDetail({
     return () => {
       active = false
     }
-  }, [business.id])
+  }, [business.id, spendShop])
 
   useEffect(() => {
     let active = true

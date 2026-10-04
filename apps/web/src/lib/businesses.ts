@@ -152,6 +152,8 @@ export async function createBusiness(
     lat?: number | null
     lng?: number | null
     brand_color: string
+    loyalty_type?: Business['loyalty_type']
+    stamps_required?: number
   }
 ): Promise<Business> {
   const { data, error } = await supabase
@@ -167,8 +169,11 @@ export async function createBusiness(
       lat: values.lat ?? null,
       lng: values.lng ?? null,
       brand_color: values.brand_color,
-      // Every shop earns by spend (ARCH_PLAN.md §4.11); rewards unlock at £ amounts.
-      reward_model: 'spend_threshold',
+      // Stamps for now, while Fidel card linking is still being built; the
+      // £ spend model stays available per shop (reward_model).
+      reward_model: 'stamp_legacy',
+      loyalty_type: values.loyalty_type ?? 'stamp_card',
+      loyalty_config: { stamps_required: values.stamps_required ?? 10 },
     })
     .select()
     .single()
@@ -289,7 +294,7 @@ export async function fetchRewardCatalog(businessId: string): Promise<RewardCata
 
 export async function addRewardCatalogItem(
   businessId: string,
-  item: { title: string; description: string | null; spend_threshold_pence: number; sort_order: number }
+  item: { title: string; description: string | null; stamp_threshold?: number; spend_threshold_pence?: number; sort_order: number }
 ): Promise<RewardCatalogItem> {
   const { data, error } = await supabase
     .from('reward_catalog')
@@ -1028,7 +1033,7 @@ export interface MyStaffMembership {
   can_scan_stamps: boolean
   can_redeem_rewards: boolean
   can_respond_reviews: boolean
-  business: Pick<Business, 'id' | 'name' | 'slug' | 'brand_color' | 'logo_url' | 'loyalty_type'>
+  business: Pick<Business, 'id' | 'name' | 'slug' | 'brand_color' | 'logo_url' | 'loyalty_type' | 'reward_model'>
 }
 
 /** The shops the current user is an active staff member of — self-select is
@@ -1036,7 +1041,7 @@ export interface MyStaffMembership {
 export async function fetchMyStaffBusinesses(userId: string): Promise<MyStaffMembership[]> {
   const { data, error } = await supabase
     .from('staff_members')
-    .select('business_id,can_scan_stamps,can_redeem_rewards,can_respond_reviews,business:businesses(id,name,slug,brand_color,logo_url,loyalty_type)')
+    .select('business_id,can_scan_stamps,can_redeem_rewards,can_respond_reviews,business:businesses(id,name,slug,brand_color,logo_url,loyalty_type,reward_model)')
     .eq('user_id', userId)
     .eq('status', 'active')
   if (error) throw error

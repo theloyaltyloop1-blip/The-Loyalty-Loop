@@ -982,7 +982,15 @@ function RewardsPage({
   const [description, setDescription] = useState("");
   // Rewards unlock at £ amounts (ARCH_PLAN.md §4.11); the biggest one starts a
   // new round. The database keeps the shop's cycle length in step.
+  const spendShop = business.reward_model === "spend_threshold";
   const [amount, setAmount] = useState("20");
+  const [threshold, setThreshold] = useState("10");
+  const unit =
+    business.loyalty_type === "points"
+      ? "points"
+      : business.loyalty_type === "tiered"
+        ? "visits"
+        : "stamps";
   const [busy, setBusy] = useState(false);
   const [signupReward, setSignupReward] = useState(
     business.loyalty_config?.signup_reward_title || "",
@@ -1006,10 +1014,10 @@ function RewardsPage({
       .from("reward_catalog")
       .select("*")
       .eq("business_id", business.id)
-      .order("spend_threshold_pence", { nullsFirst: false });
+      .order(spendShop ? "spend_threshold_pence" : "stamp_threshold", { nullsFirst: false });
     if (error) return Alert.alert("Could not load rewards", error.message);
     setItems((data || []) as RewardItem[]);
-  }, [business.id, preview]);
+  }, [business.id, preview, spendShop]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -1018,17 +1026,19 @@ function RewardsPage({
       return Alert.alert("Add a reward name", "For example: Free coffee.");
     const cleaned = amount.replace(/[£,\s]/g, "");
     const pence = /^\d+(\.\d{1,2})?$/.test(cleaned) ? Math.round(Number(cleaned) * 100) : 0;
-    if (pence < 100 || pence > 1_000_000)
-      return Alert.alert("Check the amount", "Enter how much customers spend to unlock it, between £1 and £10,000.");
-    if (items.some((item) => item.spend_threshold_pence === pence))
-      return Alert.alert("Check the amount", "You already have a reward at that amount.");
+    if (spendShop) {
+      if (pence < 100 || pence > 1_000_000)
+        return Alert.alert("Check the amount", "Enter how much customers spend to unlock it, between £1 and £10,000.");
+      if (items.some((item) => item.spend_threshold_pence === pence))
+        return Alert.alert("Check the amount", "You already have a reward at that amount.");
+    }
     setBusy(true);
     const { error } = await supabase.from("reward_catalog").insert({
       business_id: business.id,
       title: title.trim(),
       description: description.trim() || null,
-      spend_threshold_pence: pence,
-      stamp_threshold: 10,
+      ...(spendShop ? { spend_threshold_pence: pence } : {}),
+      stamp_threshold: spendShop ? 10 : Math.max(1, Number(threshold) || 1),
       sort_order: items.length,
     });
     setBusy(false);
@@ -1036,6 +1046,7 @@ function RewardsPage({
     setTitle("");
     setDescription("");
     setAmount("");
+    setThreshold("10");
     void load();
   }
   // Stored on businesses.loyalty_config; the membership trigger hands it to a
@@ -1101,12 +1112,21 @@ function RewardsPage({
           placeholder="Short description (optional)"
           multiline
         />
-        <Field
-          value={amount}
-          onChangeText={(value) => setAmount(value.replace(/[^0-9.]/g, ""))}
-          placeholder="Spend needed to unlock it in £, e.g. 20"
-          keyboardType="decimal-pad"
-        />
+        {spendShop ? (
+          <Field
+            value={amount}
+            onChangeText={(value) => setAmount(value.replace(/[^0-9.]/g, ""))}
+            placeholder="Spend needed to unlock it in £, e.g. 20"
+            keyboardType="decimal-pad"
+          />
+        ) : (
+          <Field
+            value={threshold}
+            onChangeText={setThreshold}
+            placeholder={`${unit.charAt(0).toUpperCase()}${unit.slice(1)} needed to unlock it, e.g. 10`}
+            keyboardType="number-pad"
+          />
+        )}
         <PrimaryButton label="Add reward" onPress={add} busy={busy} />
       </Section>
       <Text style={styles.sectionTitle}>Current rewards</Text>
@@ -1119,9 +1139,11 @@ function RewardsPage({
             <View style={{ flex: 1 }}>
               <Text style={styles.listTitle}>{item.title}</Text>
               <Text style={styles.muted}>
-                {item.spend_threshold_pence
-                  ? `Unlocks after spending £${(item.spend_threshold_pence / 100).toFixed(2)}`
-                  : "No amount set yet"}
+                {spendShop
+                  ? item.spend_threshold_pence
+                    ? `Unlocks after spending £${(item.spend_threshold_pence / 100).toFixed(2)}`
+                    : "No amount set yet"
+                  : `Unlocks at ${item.stamp_threshold} ${unit}`}
                 {item.description ? ` · ${item.description}` : ""}
               </Text>
             </View>
@@ -1136,9 +1158,9 @@ function RewardsPage({
         ))
       ) : (
         <Text style={styles.empty}>
-          No rewards yet. Until you add one, customers get a generic "Free
-          reward" each time they spend £
-          {((business.reward_threshold_pence ?? 2000) / 100).toFixed(2)}.
+          {spendShop
+            ? `No rewards yet. Until you add one, customers get a generic "Free reward" each time they spend £${((business.reward_threshold_pence ?? 2000) / 100).toFixed(2)}.`
+            : `No rewards yet. Until you add one, customers get a generic "Free reward" after ${business.loyalty_config?.stamps_required || 10} ${unit}.`}
         </Text>
       )}
       <Section>
@@ -1147,8 +1169,9 @@ function RewardsPage({
           <Text style={styles.cardTitle}>Sign-up reward</Text>
         </View>
         <Text style={styles.muted}>
-          Given to new customers the moment they join your card, before they
-          spend anything. Leave empty for none.
+          {spendShop
+            ? "Given to new customers the moment they join your card, before they spend anything. Leave empty for none."
+            : `Given to new customers the moment they join your card, before their first ${unit === "points" ? "point" : unit.slice(0, -1)}. Leave empty for none.`}
         </Text>
         <Field
           value={signupReward}
@@ -1745,7 +1768,9 @@ function TutorialPage({ business, onBack, onNavigate }: PageProps) {
     {
       number: "3",
       title: "Create a reward",
-      body: "Set what customers unlock and how much they spend to get it, such as a free coffee at £20.",
+      body: business.reward_model === "spend_threshold"
+        ? "Set what customers unlock and how much they spend to get it, such as a free coffee at £20."
+        : "Set a reward customers can unlock, such as a free coffee after 10 stamps.",
       action: "Create a reward",
       destination: "rewards",
     },
@@ -1758,9 +1783,11 @@ function TutorialPage({ business, onBack, onNavigate }: PageProps) {
     },
     {
       number: "5",
-      title: "Record the first purchase",
-      body: "Open Scan, scan the customer QR code or enter their manual code, then enter what they spent.",
-      action: "Open Scan",
+      title: business.reward_model === "spend_threshold" ? "Record the first purchase" : "Award the first stamp",
+      body: business.reward_model === "spend_threshold"
+        ? "Open Scan, scan the customer QR code or enter their manual code, then enter what they spent."
+        : "Open Stamps, scan the customer QR code or enter their manual code, then award their progress.",
+      action: business.reward_model === "spend_threshold" ? "Open Scan" : "Open Stamps",
       destination: "scan",
     },
     {
