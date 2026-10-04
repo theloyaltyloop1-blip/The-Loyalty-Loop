@@ -73,9 +73,9 @@ export function ShopMap({
     return (
       <div
         style={{ height }}
-        className="rounded-2xl border border-black/10 bg-black/5 flex items-center justify-center text-sm text-foreground/40"
+        className="rounded-2xl border border-border bg-secondary flex items-center justify-center text-sm text-muted-foreground"
       >
-        Map unavailable — no Google Maps API key configured.
+        Map unavailable. No Google Maps API key is configured.
       </div>
     )
   }
@@ -83,18 +83,18 @@ export function ShopMap({
     return (
       <div
         style={{ height }}
-        className="rounded-2xl border border-black/10 bg-black/5 flex items-center justify-center text-sm text-foreground/40"
+        className="rounded-2xl border border-border bg-secondary flex items-center justify-center text-sm text-muted-foreground"
       >
         Could not load the map.
       </div>
     )
   }
   if (!isLoaded) {
-    return <div style={{ height }} className="rounded-2xl border border-black/10 bg-black/5 animate-pulse" />
+    return <div style={{ height }} className="rounded-2xl border border-border bg-secondary animate-pulse" />
   }
 
   return (
-    <div style={{ height, borderRadius: 16, overflow: 'hidden' }} className="border border-black/10">
+    <div style={{ height, borderRadius: 16, overflow: 'hidden' }} className="border border-border">
       <GoogleMap
         mapContainerStyle={{ height: '100%', width: '100%' }}
         center={{ lat, lng }}
@@ -128,12 +128,12 @@ export function ShopMap({
 export function BusinessesMap({ businesses, onSelect, height = 560 }: { businesses: Business[]; onSelect: (business: Business) => void; height?: number }) {
   const { isLoaded, loadError } = useGoogleMapsLoader()
   const locatedBusinesses = businesses.filter((business) => business.lat != null && business.lng != null)
-  if (!GOOGLE_MAPS_API_KEY) return <MapUnavailable height={height} message="Map unavailable — no Google Maps API key configured." />
+  if (!GOOGLE_MAPS_API_KEY) return <MapUnavailable height={height} message="Map unavailable. No Google Maps API key is configured." />
   if (loadError) return <MapUnavailable height={height} message="Could not load the map." />
-  if (!isLoaded) return <div style={{ height }} className="rounded-2xl bg-black/5 animate-pulse" />
-  return <div style={{ height, borderRadius: 16, overflow: 'hidden' }} className="border border-black/10"><GoogleMap mapContainerStyle={{ height: '100%', width: '100%' }} center={DEFAULT_MAP_CENTER} zoom={13} options={{ clickableIcons: false, gestureHandling: 'greedy', streetViewControl: false, mapTypeControl: false }} onLoad={(map) => { if (!locatedBusinesses.length) return; if (locatedBusinesses.length === 1) { map.setCenter({ lat: locatedBusinesses[0].lat!, lng: locatedBusinesses[0].lng! }); map.setZoom(15); return }; const bounds = new google.maps.LatLngBounds(); locatedBusinesses.forEach((business) => bounds.extend({ lat: business.lat!, lng: business.lng! })); map.fitBounds(bounds, 56) }}>{locatedBusinesses.map((business) => <Marker key={business.id} position={{ lat: business.lat!, lng: business.lng! }} icon={businessPinIcon(business)} title={business.name} onClick={() => onSelect(business)} />)}</GoogleMap></div>
+  if (!isLoaded) return <div style={{ height }} className="rounded-2xl bg-secondary animate-pulse" />
+  return <div style={{ height, borderRadius: 16, overflow: 'hidden' }} className="border border-border"><GoogleMap mapContainerStyle={{ height: '100%', width: '100%' }} center={DEFAULT_MAP_CENTER} zoom={13} options={{ clickableIcons: false, gestureHandling: 'greedy', streetViewControl: false, mapTypeControl: false }} onLoad={(map) => { if (!locatedBusinesses.length) return; if (locatedBusinesses.length === 1) { map.setCenter({ lat: locatedBusinesses[0].lat!, lng: locatedBusinesses[0].lng! }); map.setZoom(15); return }; const bounds = new google.maps.LatLngBounds(); locatedBusinesses.forEach((business) => bounds.extend({ lat: business.lat!, lng: business.lng! })); map.fitBounds(bounds, 56) }}>{locatedBusinesses.map((business) => <Marker key={business.id} position={{ lat: business.lat!, lng: business.lng! }} icon={businessPinIcon(business)} title={business.name} onClick={() => onSelect(business)} />)}</GoogleMap></div>
 }
 
 function MapUnavailable({ height, message }: { height: number; message: string }) {
-  return <div style={{ height }} className="rounded-2xl border border-black/10 bg-black/5 flex items-center justify-center px-6 text-center text-sm text-foreground/40">{message}</div>
+  return <div style={{ height }} className="rounded-2xl border border-border bg-secondary flex items-center justify-center px-6 text-center text-sm text-muted-foreground">{message}</div>
 }

@@ -21,10 +21,10 @@ type PlatformAnnouncement = AnnouncementTargets & {
 
 const TARGET_OPTIONS: { key: keyof AnnouncementTargets; label: string }[] = [
   { key: 'target_website', label: 'Website' },
-  { key: 'target_shopper_ios', label: 'Shopper — iOS' },
-  { key: 'target_shopper_android', label: 'Shopper — Android' },
-  { key: 'target_retailer_ios', label: 'Retailer — iOS' },
-  { key: 'target_retailer_android', label: 'Retailer — Android' },
+  { key: 'target_shopper_ios', label: 'Shopper (iOS)' },
+  { key: 'target_shopper_android', label: 'Shopper (Android)' },
+  { key: 'target_retailer_ios', label: 'Retailer (iOS)' },
+  { key: 'target_retailer_android', label: 'Retailer (Android)' },
 ]
 
 const EMPTY_TARGETS: AnnouncementTargets = {
@@ -68,8 +68,8 @@ function AnnouncementComposer({ onPublished }: { onPublished: () => void }) {
   }
 
   return <section className="rounded-2xl bg-white/6 p-6">
-    <h2 className="font-display text-xl font-bold">Platform announcement</h2>
-    <p className="mt-1 text-sm text-white/55">Shows as a banner on whichever surfaces you pick below — shoppers/owners also get it in their inbox with a push, if their app is one of the targets.</p>
+    <h2 className="font-display text-xl font-semibold tracking-tight">Platform announcement</h2>
+    <p className="mt-1 text-sm text-white/55">Shows as a banner on whichever surfaces you pick below. Shoppers/owners also get it in their inbox with a push, if their app is one of the targets.</p>
     <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" maxLength={160} />
     <textarea className="mt-2 w-full rounded-xl border border-white/15 bg-black/20 p-3 text-sm text-white" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Message" maxLength={1000} />
     <div className="mt-3 flex flex-wrap gap-2">
@@ -102,7 +102,7 @@ function AnnouncementList({ items, onChanged }: { items: PlatformAnnouncement[];
     }
   }
   return <section className="rounded-2xl bg-white/6 p-6 lg:col-span-2">
-    <h2 className="font-display text-xl font-bold">Recent announcements</h2>
+    <h2 className="font-display text-xl font-semibold tracking-tight">Recent announcements</h2>
     <div className="mt-4 grid gap-3">
       {items.length ? items.map((item) => <article key={item.id} className={'rounded-xl border p-4 ' + (item.is_active ? 'border-white/10 bg-white/5' : 'border-white/5 bg-white/[0.02] opacity-60')}>
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -128,9 +128,9 @@ export function AccessTools() {
   React.useEffect(() => { loadAnnouncements() }, [loadAnnouncements])
   const act = async (work: () => PromiseLike<unknown>, success: string) => { try { await work(); setMessage(success) } catch (error) { setMessage(error instanceof Error ? error.message : 'Action failed') } }
   return <div className="grid gap-5 lg:grid-cols-2">
-    <section className="rounded-2xl bg-white/6 p-6"><h2 className="font-display text-xl font-bold">Roles</h2><input className={input} value={email} onChange={e => setEmail(e.target.value)} placeholder="Account email"/><select className={input} value={role} onChange={e => setRole(e.target.value)}><option value="consumer">Consumer</option><option value="business_owner">Business owner</option><option value="staff">Staff</option><option value="admin">Admin</option></select><div className="mt-3 flex gap-2"><button data-press-feedback onClick={() => act(() => supabase.rpc('admin_set_role', { _email: email, _role: role, _grant: true }), 'Role granted.')} className="rounded-xl bg-fun-green px-4 py-2 text-sm font-bold">Grant</button><button data-press-feedback onClick={() => act(() => supabase.rpc('admin_set_role', { _email: email, _role: role, _grant: false }), 'Role revoked.')} className="rounded-xl border border-red-400/50 px-4 py-2 text-sm font-bold text-red-300">Revoke</button></div></section>
-    <section className="rounded-2xl bg-white/6 p-6"><h2 className="font-display text-xl font-bold">Loyalty override</h2><input className={input} value={businessId} onChange={e => setBusinessId(e.target.value)} placeholder="Business UUID"/><input className={input} type="number" min="1" value={threshold} onChange={e => setThreshold(Number(e.target.value))}/><button data-press-feedback onClick={() => act(() => supabase.rpc('admin_override_loyalty_threshold', { _business_id: businessId, _threshold: threshold }), 'Threshold updated and audited.')} className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold">Override threshold</button></section>
-    <section className="rounded-2xl bg-white/6 p-6"><h2 className="font-display text-xl font-bold">Transfer shop ownership</h2><p className="mt-1 text-sm text-white/60">The recipient must already have an account. This action is recorded in the audit log.</p><select className={input} value={transferBusinessId} onChange={e => setTransferBusinessId(e.target.value)}><option value="">Choose a shop</option>{businesses.map(business => <option key={business.id} value={business.id}>{business.name}</option>)}</select><input className={input} type="email" value={newOwnerEmail} onChange={e => setNewOwnerEmail(e.target.value)} placeholder="New owner account email"/><button data-press-feedback disabled={!transferBusinessId || !newOwnerEmail.trim()} onClick={() => { if (!window.confirm('Transfer this shop to the new owner? The previous owner will lose business access unless they own another shop.')) return; void act(() => adminTransferBusinessOwnership(transferBusinessId, newOwnerEmail), 'Shop ownership transferred and recorded.') }} className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50">Transfer ownership</button></section>
+    <section className="rounded-2xl bg-white/6 p-6"><h2 className="font-display text-xl font-semibold tracking-tight">Roles</h2><input className={input} value={email} onChange={e => setEmail(e.target.value)} placeholder="Account email"/><select className={input} value={role} onChange={e => setRole(e.target.value)}><option value="consumer">Consumer</option><option value="business_owner">Business owner</option><option value="staff">Staff</option><option value="admin">Admin</option></select><div className="mt-3 flex gap-2"><button data-press-feedback onClick={() => act(() => supabase.rpc('admin_set_role', { _email: email, _role: role, _grant: true }), 'Role granted.')} className="rounded-xl bg-fun-green px-4 py-2 text-sm font-bold">Grant</button><button data-press-feedback onClick={() => act(() => supabase.rpc('admin_set_role', { _email: email, _role: role, _grant: false }), 'Role revoked.')} className="rounded-xl border border-red-400/50 px-4 py-2 text-sm font-bold text-red-300">Revoke</button></div></section>
+    <section className="rounded-2xl bg-white/6 p-6"><h2 className="font-display text-xl font-semibold tracking-tight">Loyalty override</h2><input className={input} value={businessId} onChange={e => setBusinessId(e.target.value)} placeholder="Business UUID"/><input className={input} type="number" min="1" value={threshold} onChange={e => setThreshold(Number(e.target.value))}/><button data-press-feedback onClick={() => act(() => supabase.rpc('admin_override_loyalty_threshold', { _business_id: businessId, _threshold: threshold }), 'Threshold updated and audited.')} className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold">Override threshold</button></section>
+    <section className="rounded-2xl bg-white/6 p-6"><h2 className="font-display text-xl font-semibold tracking-tight">Transfer shop ownership</h2><p className="mt-1 text-sm text-white/60">The recipient must already have an account. This action is recorded in the audit log.</p><select className={input} value={transferBusinessId} onChange={e => setTransferBusinessId(e.target.value)}><option value="">Choose a shop</option>{businesses.map(business => <option key={business.id} value={business.id}>{business.name}</option>)}</select><input className={input} type="email" value={newOwnerEmail} onChange={e => setNewOwnerEmail(e.target.value)} placeholder="New owner account email"/><button data-press-feedback disabled={!transferBusinessId || !newOwnerEmail.trim()} onClick={() => { if (!window.confirm('Transfer this shop to the new owner? The previous owner will lose business access unless they own another shop.')) return; void act(() => adminTransferBusinessOwnership(transferBusinessId, newOwnerEmail), 'Shop ownership transferred and recorded.') }} className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50">Transfer ownership</button></section>
     <AnnouncementComposer onPublished={loadAnnouncements} />
     {message && <p className="text-sm text-[#5ACA64] lg:col-span-2">{message}</p>}
     <AnnouncementList items={announcements} onChanged={loadAnnouncements} />

@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Users, ShoppingBag, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
-import { BarePageSkeleton } from '@/components/page-skeleton'
+import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useOwner } from '@/lib/owner-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -69,7 +69,7 @@ function Delta({ current, prev }: { current: number; prev: number }) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span tabIndex={0} className="flex items-center gap-1 text-xs font-bold text-foreground/40 outline-none">
+          <span tabIndex={0} className="flex items-center gap-1 text-xs font-bold text-muted-foreground outline-none">
             <Minus className="h-3.5 w-3.5" /> flat
           </span>
         </TooltipTrigger>
@@ -81,7 +81,7 @@ function Delta({ current, prev }: { current: number; prev: number }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span tabIndex={0} className={'flex items-center gap-1 text-xs font-bold outline-none ' + (up ? 'text-fun-green' : 'text-red-500')}>
+        <span tabIndex={0} className={'flex items-center gap-1 text-xs font-bold outline-none ' + (up ? 'text-fun-green' : 'text-destructive')}>
           {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
           {up ? '+' : ''}
           {pct}%
@@ -92,40 +92,47 @@ function Delta({ current, prev }: { current: number; prev: number }) {
   )
 }
 
+const TILE_TONES = {
+  sage: 'bg-sage text-sage-ink',
+  peach: 'bg-peach text-peach-ink',
+  amber: 'bg-amber text-amber-ink',
+  card: 'bg-card text-foreground ring-1 ring-foreground/8',
+} as const
+
 function StatTile({
   icon: Icon,
   label,
   hint,
   value,
   prev,
-  color,
+  tone,
 }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   label: string
   hint?: string
   value: number
   prev: number
-  color: string
+  tone: keyof typeof TILE_TONES
 }) {
   const displayedValue = useCountUp(value)
   return (
-    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="h-9 w-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + '22' }}>
-          <Icon className="h-4.5 w-4.5" style={{ color }} />
+    <div className={'rounded-2xl p-5 ' + TILE_TONES[tone]}>
+      <div className="flex items-center justify-between mb-4">
+        <span className="h-10 w-10 rounded-full bg-card flex items-center justify-center text-foreground">
+          <Icon className="h-5 w-5" />
         </span>
-        <Delta current={value} prev={prev} />
+        <span className="rounded-full bg-card px-2 py-1"><Delta current={value} prev={prev} /></span>
       </div>
-      <p className="text-3xl font-display font-extrabold text-foreground" aria-label={`${value} ${label}`}>{displayedValue}</p>
+      <p className="text-4xl font-display font-bold tracking-tight tabular-nums" aria-label={`${value} ${label}`}>{displayedValue}</p>
       {hint ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <p tabIndex={0} className="text-sm text-foreground/50 mt-0.5 w-fit underline decoration-dotted decoration-foreground/30 underline-offset-2 outline-none">{label}</p>
+            <p tabIndex={0} className="text-sm opacity-80 mt-1 w-fit underline decoration-dotted underline-offset-2 outline-none">{label}</p>
           </TooltipTrigger>
           <TooltipContent side="bottom">{hint}</TooltipContent>
         </Tooltip>
       ) : (
-        <p className="text-sm text-foreground/50 mt-0.5">{label}</p>
+        <p className="text-sm opacity-80 mt-1">{label}</p>
       )}
     </div>
   )
@@ -143,7 +150,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
       const s = await fetchAnalyticsAiSummary(businessId, period, stats, totals)
       setSummary(s)
     } catch {
-      setError('AI summary unavailable right now — the coach may still be getting set up.')
+      setError('AI summary unavailable right now. The coach may still be getting set up.')
     } finally {
       setLoading(false)
     }
@@ -155,19 +162,19 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [generate])
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-[#FFF3E4] to-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 border border-accent/20">
+    <div className="rounded-2xl bg-peach p-6">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="h-4 w-4 text-primary" />
-        <p className="font-display font-bold text-foreground">What changed in the last {period} days</p>
+        <p className="font-display text-lg font-semibold tracking-tight text-peach-ink">What changed in the last {period} days</p>
       </div>
       {loading ? (
-        <p className="text-sm text-foreground/40">Thinking…</p>
+        <p className="text-sm text-muted-foreground">Thinking…</p>
       ) : error ? (
-        <p className="text-sm text-foreground/50">{error}</p>
+        <p className="text-sm text-muted-foreground">{error}</p>
       ) : (
-        <p className="text-sm text-foreground/80 leading-relaxed">{summary}</p>
+        <p className="max-w-[70ch] text-peach-ink/90 leading-relaxed">{summary}</p>
       )}
-      <button data-press-feedback onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-primary-hover disabled:opacity-40">
+      <button data-press-feedback onClick={generate} disabled={loading} className="mt-4 rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-card/80 disabled:opacity-40">
         Regenerate
       </button>
     </div>
@@ -193,33 +200,33 @@ function DeepBusinessReportCard({
       const r = await fetchDeepBusinessReport(businessId)
       onReport(r)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Web research is unavailable right now — it may still be getting set up.')
+      setError(e instanceof Error ? e.message : 'Web research is unavailable right now. It may still be getting set up.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
+    <div className="rounded-2xl bg-card ring-1 ring-foreground/8 p-6">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
         <div className="flex items-center gap-2">
           <Search className="h-4 w-4 text-primary" />
-          <p className="font-display font-bold text-foreground">Deep business report</p>
+          <p className="font-display text-lg font-semibold tracking-tight text-foreground">Deep business report</p>
         </div>
         <button data-press-feedback
           onClick={handleResearch}
           disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-foreground text-white text-sm font-bold px-4 h-9 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-foreground text-background text-sm font-semibold px-4 h-10 transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading ? 'Researching…' : report ? 'Refresh research' : 'Research my shop online'}
         </button>
       </div>
-      <p className="text-sm text-foreground/50 mb-4">
+      <p className="text-sm text-muted-foreground mb-4">
         Scans Google reviews and your shop's web presence, then writes up what customers are saying and where
         to improve.
       </p>
 
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p className="text-sm text-destructive mb-3">{error}</p>}
 
       {report && (
         <>
@@ -232,7 +239,7 @@ function DeepBusinessReportCard({
                   href={s.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-xs font-semibold text-primary-hover bg-white border border-black/10 rounded-full px-3 py-1.5 hover:border-primary/50"
+                  className="flex items-center gap-1 text-xs font-semibold text-foreground bg-secondary rounded-full px-3 py-1.5 transition-colors hover:bg-sage"
                 >
                   {s.title.length > 40 ? s.title.slice(0, 40) + '…' : s.title} <ExternalLink className="h-3 w-3" />
                 </a>
@@ -268,46 +275,47 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
       const reply = await sendCoachMessage(businessId, next, stats)
       setMessages([...next, { role: 'assistant', content: reply }])
     } catch {
-      setError('The coach is unavailable right now — it may still be getting set up.')
+      setError('The coach is unavailable right now. It may still be getting set up.')
     } finally {
       setSending(false)
     }
   }
 
   return (
-    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
+    <div className="rounded-2xl bg-card ring-1 ring-foreground/8 p-6">
       <div className="flex items-center gap-2 mb-4">
         <MessageCircle className="h-4 w-4 text-primary" />
-        <p className="font-display font-bold text-foreground">Business coach</p>
+        <p className="font-display text-lg font-semibold tracking-tight text-foreground">Business coach</p>
       </div>
 
       <div ref={scrollRef} className="flex flex-col gap-3 max-h-80 overflow-y-auto mb-4 pr-1">
         {messages.length === 0 && (
-          <p className="text-sm text-foreground/40">
-            Ask anything — "How do I get more repeat visits?", "Is my reward threshold too high?"...
+          <p className="text-sm text-muted-foreground">
+            Ask anything, like "How do I get more repeat visits?", "Is my reward threshold too high?"...
           </p>
         )}
         {messages.map((m, i) => (
           <div
             key={i}
             className={
-              'rounded-xl px-4 py-2.5 text-sm max-w-[90%] ' +
+              'rounded-2xl px-4 py-2.5 text-sm max-w-[90%] ' +
               (m.role === 'user'
-                ? 'bg-primary text-white self-end'
-                : 'bg-white text-foreground self-start border border-black/5')
+                ? 'bg-primary text-primary-foreground self-end'
+                : 'bg-secondary text-foreground self-start')
             }
           >
             {m.content}
           </div>
         ))}
-        {sending && <div className="rounded-xl px-4 py-2.5 text-sm bg-white text-foreground/40 self-start">Thinking…</div>}
+        {sending && <div className="rounded-2xl px-4 py-2.5 text-sm bg-secondary text-muted-foreground self-start">Thinking…</div>}
       </div>
 
-      {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+      {error && <p className="text-xs text-destructive mb-2">{error}</p>}
 
       <div className="flex items-center gap-2">
         <input
-          className="h-11 flex-1 rounded-full border border-black/10 bg-white px-4 text-sm outline-none focus:border-primary"
+          aria-label="Ask the coach"
+          className="h-11 flex-1 rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Ask the coach…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -316,7 +324,8 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
         <button data-press-feedback
           onClick={handleSend}
           disabled={sending || !input.trim()}
-          className="h-11 w-11 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-40 shrink-0"
+          aria-label="Send"
+          className="h-11 w-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground flex items-center justify-center disabled:opacity-40 shrink-0"
         >
           <Send className="h-4 w-4" />
         </button>
@@ -361,19 +370,16 @@ export function OwnerAnalytics() {
   return (
     <OwnerLayout>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Analytics</p>
-          <h1 className="text-3xl font-display font-extrabold text-foreground">Know your customers</h1>
-        </div>
+        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground sm:text-4xl">Know your customers</h1>
         {business && (
-          <div className="flex items-center gap-1 bg-card rounded-full p-1 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center gap-1 bg-card rounded-full p-1 ring-1 ring-foreground/8">
             {PERIODS.map((p) => (
               <button data-press-feedback
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={
-                  'px-4 h-9 rounded-full text-sm font-bold transition-colors duration-150 ease-out ' +
-                  (period === p ? 'bg-primary text-white' : 'text-foreground/50 hover:text-foreground')
+                  'px-4 h-9 rounded-full text-sm font-semibold tabular-nums transition-colors duration-200 ease-out ' +
+                  (period === p ? 'bg-peach text-peach-ink' : 'text-muted-foreground hover:text-foreground')
                 }
               >
                 {p}d
@@ -384,27 +390,27 @@ export function OwnerAnalytics() {
       </div>
 
       {!business ? (
-        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-foreground/50">Set up a shop to see analytics.</p>
+        <div className="rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink">
+          <p>Set up a shop to see analytics.</p>
         </div>
       ) : statsLoading || !stats || !totals ? (
-        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-foreground/40">Loading stats…</p>
+        <div role="status" aria-label="Loading stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" />
         </div>
       ) : (
         <Tabs value={view} onValueChange={(v) => setView(v as 'simplified' | 'detailed')}>
-          <TabsList variant="line" className="mb-6 border-b border-black/10">
-            <TabsTrigger value="simplified" className="capitalize">simplified</TabsTrigger>
-            <TabsTrigger value="detailed" className="capitalize">detailed</TabsTrigger>
+          <TabsList variant="line" className="mb-6 border-b border-border">
+            <TabsTrigger value="simplified">Simplified</TabsTrigger>
+            <TabsTrigger value="detailed">Detailed</TabsTrigger>
           </TabsList>
 
           <TabsContent value="simplified">
             <div className="flex flex-col gap-6">
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} color="#3B82C4" />
-                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} color="#E8703B" />
-                <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} color="#8E5FC2" />
-                <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} color="#3FA34D" />
+                <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} tone="sage" />
+                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} tone="peach" />
+                <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} tone="amber" />
+                <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} tone="card" />
               </div>
               <AiSummaryCard businessId={business.id} period={period} stats={stats} totals={totals} />
               <DeepBusinessReportCard businessId={business.id} report={webResearch} onReport={setWebResearch} />
@@ -415,15 +421,15 @@ export function OwnerAnalytics() {
           <TabsContent value="detailed">
             <div className="flex flex-col gap-6">
               <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} color="#3B82C4" />
-                <StatTile icon={Users} label="Active members" hint="Members who made a purchase in this period" value={stats.active_members} prev={stats.active_members_prev} color="#1B3A4B" />
-                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} color="#E8703B" />
-                <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} color="#8E5FC2" />
-                <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} color="#3FA34D" />
+                <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} tone="sage" />
+                <StatTile icon={Users} label="Active members" hint="Members who made a purchase in this period" value={stats.active_members} prev={stats.active_members_prev} tone="card" />
+                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} tone="peach" />
+                <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} tone="amber" />
+                <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} tone="card" />
               </div>
 
-              <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
-                <p className="font-display font-bold text-foreground mb-4">All-time totals</p>
+              <div className="rounded-2xl bg-card ring-1 ring-foreground/8 p-6">
+                <p className="font-display text-lg font-semibold tracking-tight text-foreground mb-4">All-time totals</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
                     ['Members', totals.total_members],
@@ -432,16 +438,16 @@ export function OwnerAnalytics() {
                     ['Rewards redeemed', totals.total_rewards_redeemed],
                   ].map(([label, value]) => (
                     <div key={label as string}>
-                      <p className="text-2xl font-display font-extrabold text-foreground">{value}</p>
-                      <p className="text-xs text-foreground/50">{label}</p>
+                      <p className="text-3xl font-display font-bold tracking-tight tabular-nums text-foreground">{value}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
-                <p className="font-display font-bold text-foreground mb-4">This period vs. the last {period} days</p>
-                <div className="flex flex-col divide-y divide-black/5">
+              <div className="rounded-2xl bg-card ring-1 ring-foreground/8 p-6">
+                <p className="font-display text-lg font-semibold tracking-tight text-foreground mb-4">This period vs. the last {period} days</p>
+                <div className="flex flex-col divide-y divide-border">
                   {[
                     ['New members', stats.new_members, stats.new_members_prev],
                     ['Active members', stats.active_members, stats.active_members_prev],
@@ -452,7 +458,7 @@ export function OwnerAnalytics() {
                     <div key={label as string} className="flex items-center justify-between py-3 text-sm">
                       <span className="text-foreground/70">{label}</span>
                       <div className="flex items-center gap-4">
-                        <span className="text-foreground/40">
+                        <span className="tabular-nums text-muted-foreground">
                           {prev} → {cur}
                         </span>
                         <Delta current={cur as number} prev={prev as number} />

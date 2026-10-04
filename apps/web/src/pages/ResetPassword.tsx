@@ -2,8 +2,7 @@ import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
+import { AuthLayout, AuthInput } from '@/components/auth-layout'
 
 export function ResetPassword() {
   const navigate = useNavigate()
@@ -34,29 +33,28 @@ export function ResetPassword() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <h1 className="text-3xl mb-6 text-center">Choose a new password</h1>
-        {done ? (
-          <p className="text-center">Password updated. Redirecting to sign in…</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              type="password"
-              placeholder="New password (min. 8 characters)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete="new-password"
-            />
-            {error && <p className="text-destructive text-sm font-medium">{error}</p>}
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Saving…' : 'Save new password'}
-            </Button>
-          </form>
-        )}
-      </Card>
-    </div>
+    <AuthLayout title="Choose a new password">
+      {done ? (
+        <p className="rounded-xl bg-sage px-4 py-3 text-sage-ink">Password updated. Redirecting to sign in…</p>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <AuthInput
+            type="password"
+            label="New password"
+            aria-describedby="password-help"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
+          <p id="password-help" className="-mt-2 text-sm text-muted-foreground">At least 8 characters.</p>
+          {error && <p className="text-destructive text-sm font-medium">{error}</p>}
+          <Button type="submit" size="lg" disabled={loading}>
+            {loading ? 'Saving…' : 'Save new password'}
+          </Button>
+        </form>
+      )}
+    </AuthLayout>
   )
 }

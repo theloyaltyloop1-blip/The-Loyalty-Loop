@@ -73,19 +73,19 @@ export function Login() {
           />
           Remember me for 6 months
         </label>
-        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
         <button data-press-feedback
           type="submit"
           disabled={loading}
-          className="h-14 rounded-lg bg-foreground text-white font-bold text-lg disabled:opacity-50"
+          className="h-12 rounded-full bg-primary text-primary-foreground font-semibold text-base transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {loading ? 'Signing in…' : 'Log in'}
         </button>
       </form>
 
       <AuthLinks>
-        <AuthLinkLine prompt="New here? –" linkText="Sign up as a customer" to="/signup" />
-        <AuthLinkLine prompt="Run a shop? –" linkText="Sign up as a Loyalty Loop Retailer" to="/signup/owner" />
+        <AuthLinkLine prompt="New here?" linkText="Sign up as a customer" to="/signup" />
+        <AuthLinkLine prompt="Run a shop?" linkText="Sign up as a Loyalty Loop Retailer" to="/signup/owner" />
         <AuthMinorLink linkText="Forgot your password?" to="/forgot-password" />
       </AuthLinks>
     </AuthLayout>

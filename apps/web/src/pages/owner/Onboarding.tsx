@@ -6,7 +6,7 @@ import { useOwner } from '@/lib/owner-context'
 import { createBusiness, addRewardCatalogItem, type Business } from '@/lib/businesses'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
@@ -24,7 +24,7 @@ type RewardDraft = { title: string; description: string; stamp_threshold: number
 const EMPTY_REWARD: RewardDraft = { title: '', description: '', stamp_threshold: 10 }
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-foreground placeholder:text-foreground/35 outline-none focus:border-primary'
+  'h-12 w-full rounded-xl border border-input bg-background px-4 text-foreground placeholder:text-muted-foreground outline-none transition-[border-color,box-shadow] focus:border-primary focus:ring-3 focus:ring-primary/20'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -148,18 +148,18 @@ export function OwnerOnboarding() {
       setBusinessId(target.id)
       navigate('/owner')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not create your shop — try again.')
+      setError(e instanceof Error ? e.message : 'Could not create your shop. Try again.')
     } finally {
       setCreating(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-dvh bg-background flex items-center justify-center px-4 py-10 sm:p-6">
       <div className="w-full max-w-xl">
         <div className="flex items-center gap-2 justify-center mb-8">
-          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
-          <span className="font-display font-extrabold text-lg text-foreground">The Loyalty Loop</span>
+          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />
+          <span className="font-display font-semibold text-lg tracking-tight text-foreground">The Loyalty Loop</span>
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-8">
@@ -167,35 +167,35 @@ export function OwnerOnboarding() {
             <React.Fragment key={s.key}>
               <div
                 className={
-                  'h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm border-2 ' +
+                  'h-11 w-11 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-300 ' +
                   (i < step
-                    ? 'bg-fun-green border-fun-green text-white'
+                    ? 'bg-olive text-olive-ink'
                     : i === step
-                      ? 'bg-primary border-primary text-white'
-                      : 'bg-white border-black/10 text-foreground/30')
+                      ? 'bg-primary text-primary-foreground ring-4 ring-peach'
+                      : 'bg-card text-muted-foreground ring-1 ring-foreground/10')
                 }
               >
                 {i < step ? <Check className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={'h-0.5 w-10 ' + (i < step ? 'bg-fun-green' : 'bg-black/10')} />
+                <div className={'h-1 w-8 rounded-full transition-colors duration-300 sm:w-12 ' + (i < step ? 'bg-olive' : 'bg-foreground/10')} />
               )}
             </React.Fragment>
           ))}
         </div>
 
-        <div className="rounded-3xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8">
-          <h1 className="text-2xl font-display font-extrabold text-foreground mb-1">
+        <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 shadow-[0_24px_60px_rgb(28_38_32/0.08)] sm:p-9">
+          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">
             {step === 0 && "Let's set up your shop"}
             {step === 1 && 'Where are you?'}
             {step === 2 && 'Make it yours'}
             {step === 3 && (resumeBusiness ? `Add rewards for ${resumeBusiness.name}` : 'What can customers unlock?')}
           </h1>
-          <p className="text-sm text-foreground/50 mb-6">
-            {step === 0 && 'The basics — you can change all of this later.'}
+          <p className="text-muted-foreground mb-7">
+            {step === 0 && 'The basics. You can change all of this later.'}
             {step === 1 && "Shown to customers on your shop page. It's fine to skip this and add it later."}
-            {step === 2 && 'Pick a brand color and how customers will earn rewards.'}
-            {step === 3 && 'Add at least one reward — this is what customers are collecting for. You can add more from Settings later.'}
+            {step === 2 && 'Pick a brand colour and how customers will earn rewards.'}
+            {step === 3 && 'Add at least one reward. This is what customers are collecting for. You can add more from Settings later.'}
           </p>
 
           {step === 0 && (
@@ -259,7 +259,7 @@ export function OwnerOnboarding() {
 
               <div className="mb-4">
                 <span className="block text-sm font-semibold text-foreground mb-1.5">
-                  Pin location {geocoding && <span className="text-foreground/40 font-normal">(finding address…)</span>}
+                  Pin location {geocoding && <span className="text-muted-foreground font-normal">(finding address…)</span>}
                 </span>
                 <ShopMap
                   lat={form.lat ?? DEFAULT_MAP_CENTER.lat}
@@ -272,9 +272,9 @@ export function OwnerOnboarding() {
                     setForm((f) => ({ ...f, lat, lng }))
                   }}
                 />
-                <p className="text-xs text-foreground/40 mt-1.5">
+                <p className="text-xs text-muted-foreground mt-1.5">
                   {form.lat != null
-                    ? 'Drag the pin or click the map to fine-tune — this is what customers will see on your shop page.'
+                    ? 'Drag the pin or click the map to fine-tune. This is what customers will see on your shop page.'
                     : 'Enter an address above to auto-place the pin, or click the map to set it manually.'}
                 </p>
               </div>
@@ -296,7 +296,7 @@ export function OwnerOnboarding() {
               </div>
 
               <p className="text-sm font-semibold text-foreground mb-1">Loyalty program type</p>
-              <p className="text-xs text-foreground/40 mb-3">You can change this any time.</p>
+              <p className="text-xs text-muted-foreground mb-3">You can change this any time.</p>
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {[
                   { value: 'stamp_card' as const, title: 'Stamps' },
@@ -309,8 +309,8 @@ export function OwnerOnboarding() {
                     className={
                       'rounded-xl border-2 py-3 font-bold text-sm ' +
                       (form.loyalty_type === opt.value
-                        ? 'border-primary bg-white text-foreground'
-                        : 'border-black/10 bg-white/40 text-foreground/60')
+                        ? 'border-primary bg-card text-foreground'
+                        : 'border-border bg-white/40 text-muted-foreground')
                     }
                   >
                     {opt.title}
@@ -334,14 +334,14 @@ export function OwnerOnboarding() {
           {step === 3 && (
             <>
               {rewards.map((reward, index) => (
-                <div key={index} className="rounded-2xl border border-black/10 bg-white/60 p-4 mb-3">
+                <div key={index} className="rounded-2xl bg-sage p-4 mb-3 text-sage-ink">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-foreground">Reward {rewards.length > 1 ? index + 1 : ''}</span>
+                    <span className="text-sm font-semibold text-foreground">Reward {rewards.length > 1 ? index + 1 : ''}</span>
                     {rewards.length > 1 && (
                       <button data-press-feedback
                         type="button"
                         onClick={() => setRewards((list) => list.filter((_, i) => i !== index))}
-                        className="flex items-center gap-1 text-xs font-semibold text-foreground/50 hover:text-red-600"
+                        className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Remove
                       </button>
@@ -385,13 +385,13 @@ export function OwnerOnboarding() {
             </>
           )}
 
-          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+          {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">
             <button data-press-feedback
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0 || Boolean(resumeBusiness)}
-              className="flex items-center gap-1.5 text-sm font-semibold text-foreground/50 disabled:opacity-0"
+              className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground disabled:opacity-0"
             >
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
@@ -400,7 +400,7 @@ export function OwnerOnboarding() {
               <button data-press-feedback
                 onClick={goNext}
                 disabled={!canContinue}
-                className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
               >
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
@@ -408,7 +408,7 @@ export function OwnerOnboarding() {
               <button data-press-feedback
                 onClick={handleCreate}
                 disabled={creating || !canContinue}
-                className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
               >
                 {creating ? 'Creating…' : 'Go live'} <Check className="h-4 w-4" />
               </button>
@@ -416,8 +416,8 @@ export function OwnerOnboarding() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-foreground/40 mt-4">
-          Your shop goes live the moment you finish — no waiting for approval. You can add a logo, cover photo
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          Your shop goes live the moment you finish, with no waiting for approval. You can add a logo, cover photo
           and gallery from Settings afterwards.
         </p>
       </div>

@@ -15,6 +15,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 
+import { useKeyboardHeight } from './KeyboardAware'
+
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
 const BACKDROP_INTENSITY = 40
 
@@ -53,6 +55,7 @@ export function Sheet({
   dragAreaHeight?: number
 }) {
   const reducedMotion = useReducedMotion()
+  const keyboardHeight = useKeyboardHeight()
   const [mounted, setMounted] = useState(visible)
   const screenHeight = Dimensions.get('window').height
   const travel = useSharedValue(screenHeight)
@@ -139,7 +142,7 @@ export function Sheet({
       statusBarTranslucent
       navigationBarTranslucent
     >
-      <View style={styles.host}>
+      <View style={[styles.host, keyboardHeight > 0 && { paddingBottom: keyboardHeight }]}>
         {backdrop && (
           <AnimatedBlurView
             tint="dark"

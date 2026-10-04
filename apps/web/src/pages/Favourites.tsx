@@ -30,15 +30,15 @@ export function FavouritesPage() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-3xl font-display font-extrabold text-foreground mb-6">Shops you’ve saved</h1>
+      <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-8 sm:text-4xl">Shops you’ve saved</h1>
 
       {fetching ? (
-        <div role="status" aria-live="polite" className="grid gap-5 sm:grid-cols-2"><span className="sr-only">Loading favourite shops</span><SkeletonBlock className="h-64" /><SkeletonBlock className="h-64" /></div>
+        <div role="status" aria-live="polite" className="grid gap-5 sm:grid-cols-2"><span className="sr-only">Loading favourite shops</span><SkeletonBlock className="h-28" /><SkeletonBlock className="h-28" /></div>
       ) : businesses.length === 0 ? (
-        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <Heart className="h-8 w-8 text-foreground/20 mx-auto mb-3" />
-          <p className="text-foreground/50">
-            No favourites yet — tap the heart on a shop's page to save it here.
+        <div className="rounded-3xl bg-peach px-6 py-12 text-center text-peach-ink">
+          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-card"><Heart className="h-7 w-7 text-primary" /></span>
+          <p className="mx-auto max-w-sm">
+            No favourites yet. Tap the heart on a shop's page to save it here.
           </p>
         </div>
       ) : (

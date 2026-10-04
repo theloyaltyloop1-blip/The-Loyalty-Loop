@@ -1,21 +1,22 @@
 import * as React from 'react'
-import { NavLink, Navigate } from 'react-router-dom'
-import { Home, Map, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
+import { NavLink, Navigate, Link } from 'react-router-dom'
+import { Home, Map, Megaphone, Gift, Heart, User, LogOut, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },
   { label: 'Map', to: '/dashboard/discover', icon: Map },
   { label: 'News', to: '/dashboard/news', icon: Megaphone },
   { label: 'Rewards', to: '/dashboard/rewards', icon: Gift },
-  { label: 'Activity', to: '/dashboard/activity', icon: History },
-  { label: 'Inbox', to: '/dashboard/inbox', icon: Bell },
   { label: 'Favourites', to: '/dashboard/favourites', icon: Heart },
   { label: 'Profile', to: '/dashboard/profile', icon: User },
 ]
+
+const navClass = ({ isActive }: { isActive: boolean }) =>
+  'flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97] ' +
+  (isActive ? 'bg-peach text-peach-ink' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { signOut, primaryRole } = useAuth()
@@ -25,62 +26,58 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (primaryRole === 'staff') return <Navigate to="/owner/scan" replace />
 
   return (
-    <div className="min-h-screen bg-background md:flex">
+    <div className="min-h-dvh bg-background">
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      <aside className="border-b border-foreground/10 bg-card/80 backdrop-blur-xl p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto md:border-b-0 md:border-r md:p-5">
-        <div className="flex items-center gap-2 px-2 md:mb-8">
-          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
-          <span className="font-display text-base text-foreground">The Loyalty Loop</span>
+      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
+          <Link to="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="The Loyalty Loop home">
+            <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />
+            <span className="hidden font-display text-[17px] font-semibold tracking-tight sm:inline">The Loyalty Loop</span>
+          </Link>
+          <nav aria-label="Customer navigation" className="hidden flex-1 items-center justify-center gap-1 lg:flex">
+            {NAV_ITEMS.map(({ label, to, icon: Icon, end }) => (
+              <NavLink key={to} to={to} end={end} className={navClass}>
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <NavLink
+            to="/dashboard/inbox"
+            aria-label="Inbox"
+            title="Inbox"
+            className={({ isActive }) =>
+              'ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full transition-[background-color,color,transform] duration-200 active:scale-[0.95] lg:ml-0 ' +
+              (isActive ? 'bg-peach text-peach-ink' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')
+            }
+          >
+            <Bell className="h-5 w-5" aria-hidden="true" />
+          </NavLink>
+          <button
+            data-press-feedback
+            onClick={signOut}
+            className="flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
+          </button>
         </div>
-
-        <nav aria-label="Customer navigation" className="mt-3 flex gap-1 overflow-x-auto pb-1 md:mt-0 md:flex-col md:overflow-visible md:pb-0">
+        <nav aria-label="Customer navigation" className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-3 sm:px-6 lg:hidden [scrollbar-width:none]">
           {NAV_ITEMS.map(({ label, to, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                'flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97] md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-base ' +
-                (isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground/70 hover:bg-foreground/5')
-              }
-            >
-              <Icon className="h-5 w-5" />
+            <NavLink key={to} to={to} end={end} className={navClass}>
+              <Icon className="h-4 w-4" aria-hidden="true" />
               {label}
             </NavLink>
           ))}
-          <button data-press-feedback onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground/60 hover:bg-black/5 md:hidden">
-            <LogOut className="h-4 w-4" /> Sign out
-          </button>
-
         </nav>
+      </header>
 
-      </aside>
-
-      <main id="main-content" tabIndex={-1} className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10">
         {children}
-        <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-foreground/50">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
-            <span>© {new Date().getFullYear()} The Loyalty Loop</span>
-          </div>
+        <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
+          <p className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</p>
           <LegalFooterLinks />
         </footer>
       </main>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button data-press-feedback
-            aria-label="Security"
-            className="fixed h-12 w-12 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.95] md:h-14 md:w-14"
-            style={{
-              bottom: 'calc(1rem + env(safe-area-inset-bottom))',
-              right: 'calc(1rem + env(safe-area-inset-right))',
-            }}
-          >
-            <Shield className="h-6 w-6" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="left">Security</TooltipContent>
-      </Tooltip>
     </div>
   )
 }

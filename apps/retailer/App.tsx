@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -49,7 +50,8 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
-import { colors } from "@loyalty-loop/design-tokens";
+import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
+import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
 import { SuccessCheck } from "./src/components/SuccessCheck";
 import {
@@ -63,10 +65,12 @@ import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, se
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
 
+const FONT_DISPLAY = fonts.nativeDisplay;
+
 function BusinessLanding({ onContinue }: { onContinue: () => void }) {
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.auth}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.auth}>
         <View style={styles.mark}>
           <Text style={styles.markText}>↻</Text>
         </View>
@@ -95,7 +99,7 @@ function BusinessLanding({ onContinue }: { onContinue: () => void }) {
           New business? Create your loyalty programme on The Loyalty Loop
           website.
         </Text>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -111,12 +115,12 @@ function BusinessOnboarding({ onComplete }: { onComplete: () => void }) {
   const finish = async (analyticsAllowed: boolean) => { await completeOnboarding(analyticsAllowed); onComplete(); };
   return <SafeAreaView style={styles.safe}>
     <StatusBar barStyle="dark-content" />
-    <ScrollView contentContainerStyle={styles.onboarding}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.onboarding}>
     <View style={styles.onboardingMark}><Text style={styles.markText}>↻</Text></View>
     <Text style={styles.eyebrow}>{current.eyebrow}</Text><Text style={styles.onboardingTitle}>{current.title}</Text><Text style={styles.copy}>{current.copy}</Text>
     <View style={styles.onboardingDots}>{slides.map((_, index) => <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />)}</View>
     {step < slides.length - 1 ? <><Button title="Continue" onPress={() => setStep(step + 1)} /><Pressable onPress={() => setStep(slides.length - 1)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Skip introduction</Text></Pressable></> : <View style={styles.onboardingConsent}><Text style={styles.section}>Help improve the business app?</Text><Text style={styles.copy}>Allow anonymous feature-use analytics. No customer data, QR codes, emails or message content is recorded.</Text><Button title="Allow anonymous analytics" onPress={() => void finish(true)} /><Pressable onPress={() => void finish(false)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Continue without analytics</Text></Pressable></View>}
-  </ScrollView></SafeAreaView>;
+  </KeyboardAwareScrollView></SafeAreaView>;
 }
 
 type Business = {
@@ -202,7 +206,7 @@ const PREVIEW_STATS: DashboardStats = {
   dormantMembers: 52,
 };
 function formatDate(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Date(value).toLocaleDateString();
 }
 type DailyPoint = {
@@ -464,7 +468,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
   }
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.auth}
         keyboardShouldPersistTaps="handled"
       >
@@ -488,7 +492,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="First name"
-                placeholderTextColor="#111111"
+                placeholderTextColor="#737B74"
                 autoCapitalize="words"
               />
               <TextInput
@@ -496,7 +500,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Surname"
-                placeholderTextColor="#111111"
+                placeholderTextColor="#737B74"
                 autoCapitalize="words"
               />
             </>
@@ -506,7 +510,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
             value={email}
             onChangeText={setEmail}
             placeholder="Business email address"
-            placeholderTextColor="#111111"
+            placeholderTextColor="#737B74"
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -515,7 +519,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
             value={password}
             onChangeText={setPassword}
             placeholder={signup ? "Password (8+ characters)" : "Password"}
-            placeholderTextColor="#111111"
+            placeholderTextColor="#737B74"
             secureTextEntry
           />
           <Button
@@ -538,7 +542,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
         >
           <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -563,7 +567,7 @@ function ShopPicker({
       </View>
     );
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.shopPicker}
@@ -596,7 +600,7 @@ function ShopPicker({
           </Text>
         </Pressable>
       ))}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -776,7 +780,7 @@ function StampsScreen({
     const confirmed = await new Promise<boolean>((resolve) => {
       const big = amountPence * 2 >= cap;
       Alert.alert(
-        big ? `${pounds(amountPence)} — is that right?` : `Add ${pounds(amountPence)} for ${name}?`,
+        big ? `${pounds(amountPence)}. Is that right?` : `Add ${pounds(amountPence)} for ${name}?`,
         big ? `That's a large amount for one purchase. Check it before adding it for ${name}.` : undefined,
         [
           { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
@@ -1264,7 +1268,7 @@ function StampsScreen({
                 <Text style={styles.memberInfoValue}>
                   {[matched.first_name, matched.last_name]
                     .filter(Boolean)
-                    .join(" ") || "—"}
+                    .join(" ") || "-"}
                 </Text>
               </View>
               <View style={styles.memberInfoRow}>
@@ -1515,7 +1519,7 @@ function MembersPage({ business }: { business: Business }) {
         value={search}
         onChangeText={setSearch}
         placeholder="Search members"
-        placeholderTextColor="#73766E"
+        placeholderTextColor="#6B736C"
       />
       {loading ? (
         <ActivityIndicator color={green} style={{ marginTop: 30 }} />
@@ -1726,7 +1730,7 @@ function AnalyticsPage({
         The last {period} days visualised:
       </Text>
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Activity — purchases & visitors</Text>
+        <Text style={styles.chartTitle}>Activity: purchases & visitors</Text>
         <MiniLineChart
           data={dailySeries}
           aKey="stamps"
@@ -1734,11 +1738,11 @@ function AnalyticsPage({
           aLabel="Purchases"
           bLabel="Visitors"
           aColor={orange}
-          bColor="#8B7FD6"
+          bColor="#3E5235"
         />
       </View>
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Customers — new & old</Text>
+        <Text style={styles.chartTitle}>Customers: new & old</Text>
         <MiniLineChart
           data={dailySeries}
           aKey="newCustomers"
@@ -1746,7 +1750,7 @@ function AnalyticsPage({
           aLabel="New"
           bLabel="Returning"
           aColor="#3FA34D"
-          bColor="#20211E"
+          bColor="#1C2620"
         />
       </View>
       <View style={styles.insightCard}>
@@ -1836,7 +1840,7 @@ function NewsPage({ business }: { business: Business }) {
           value={title}
           onChangeText={setTitle}
           placeholder="Headline"
-          placeholderTextColor="#6F726B"
+          placeholderTextColor="#6B736C"
           maxLength={120}
         />
         <TextInput
@@ -1844,7 +1848,7 @@ function NewsPage({ business }: { business: Business }) {
           value={body}
           onChangeText={setBody}
           placeholder="What would you like customers to know?"
-          placeholderTextColor="#6F726B"
+          placeholderTextColor="#6B736C"
           multiline
           textAlignVertical="top"
           maxLength={2000}
@@ -1901,13 +1905,13 @@ function NewsPage({ business }: { business: Business }) {
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const SETTINGS_TILES = {
-  blue: { bg: "#E3EDFB", fg: "#2F6FD6" },
-  purple: { bg: "#ECE6FA", fg: "#6F4FD0" },
-  amber: { bg: "#FDECCD", fg: "#C77C12" },
-  green: { bg: "#E0F2E4", fg: "#2F8A4C" },
-  teal: { bg: "#DCF1F1", fg: "#1F8A8A" },
-  slate: { bg: "#E8E7EC", fg: "#5B5F6C" },
-  orange: { bg: "#FDE6D9", fg: "#D9612F" },
+  blue: { bg: "#DCE6D2", fg: "#3E5235" },
+  purple: { bg: "#F3E3D3", fg: "#8A4A2B" },
+  amber: { bg: "#FBE7BF", fg: "#8A5A00" },
+  green: { bg: "#DCEBD9", fg: "#2F7A3F" },
+  teal: { bg: "#D7E6E0", fg: "#2E6656" },
+  slate: { bg: "#E6E8E2", fg: "#545C55" },
+  orange: { bg: "#FDE2D2", fg: "#C4531F" },
   red: { bg: "#F8DCD8", fg: "#B73B32" },
 } as const;
 type SettingsTile = keyof typeof SETTINGS_TILES;
@@ -2077,7 +2081,7 @@ function BusinessSettings({
       if (error) throw error;
       if (!data?.length) {
         throw new Error(
-          "Nothing was saved — only the shop owner can change these details.",
+          "Nothing was saved. Only the shop owner can change these details.",
         );
       }
       await onChanged();
@@ -2155,7 +2159,7 @@ function BusinessSettings({
                     style={styles.settingsInput}
                     value={name}
                     onChangeText={setName}
-                    placeholderTextColor="#6F726B"
+                    placeholderTextColor="#6B736C"
                   />
                   <Text style={styles.fieldLabel}>Category</Text>
                   <TextInput
@@ -2163,7 +2167,7 @@ function BusinessSettings({
                     value={category}
                     onChangeText={setCategory}
                     placeholder="Cafe, salon, restaurant…"
-                    placeholderTextColor="#6F726B"
+                    placeholderTextColor="#6B736C"
                   />
                   <Text style={styles.fieldLabel}>Description</Text>
                   <TextInput
@@ -2171,7 +2175,7 @@ function BusinessSettings({
                     value={description}
                     onChangeText={setDescription}
                     placeholder="Tell customers what makes you special"
-                    placeholderTextColor="#6F726B"
+                    placeholderTextColor="#6B736C"
                     multiline
                     textAlignVertical="top"
                   />
@@ -2180,7 +2184,7 @@ function BusinessSettings({
                     style={styles.settingsInput}
                     value={address}
                     onChangeText={setAddress}
-                    placeholderTextColor="#6F726B"
+                    placeholderTextColor="#6B736C"
                   />
                   <View style={styles.twoColumns}>
                     <View style={{ flex: 1 }}>
@@ -2189,7 +2193,7 @@ function BusinessSettings({
                         style={styles.settingsInput}
                         value={postcode}
                         onChangeText={setPostcode}
-                        placeholderTextColor="#6F726B"
+                        placeholderTextColor="#6B736C"
                         autoCapitalize="characters"
                       />
                     </View>
@@ -2199,7 +2203,7 @@ function BusinessSettings({
                         style={styles.settingsInput}
                         value={phone}
                         onChangeText={setPhone}
-                        placeholderTextColor="#6F726B"
+                        placeholderTextColor="#6B736C"
                         keyboardType="phone-pad"
                       />
                     </View>
@@ -2282,19 +2286,19 @@ function BusinessSettings({
             <Text style={styles.fieldLabel}>Shop name</Text>
             <Text style={styles.readOnlyValue}>{business.name}</Text>
             <Text style={styles.fieldLabel}>Category</Text>
-            <Text style={styles.readOnlyValue}>{business.category || "—"}</Text>
+            <Text style={styles.readOnlyValue}>{business.category || "-"}</Text>
             <Text style={styles.fieldLabel}>Description</Text>
-            <Text style={styles.readOnlyValue}>{business.description || "—"}</Text>
+            <Text style={styles.readOnlyValue}>{business.description || "-"}</Text>
             <Text style={styles.fieldLabel}>Address</Text>
-            <Text style={styles.readOnlyValue}>{business.address || "—"}</Text>
+            <Text style={styles.readOnlyValue}>{business.address || "-"}</Text>
             <View style={styles.twoColumns}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Postcode</Text>
-                <Text style={styles.readOnlyValue}>{business.postcode || "—"}</Text>
+                <Text style={styles.readOnlyValue}>{business.postcode || "-"}</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Phone</Text>
-                <Text style={styles.readOnlyValue}>{business.phone || "—"}</Text>
+                <Text style={styles.readOnlyValue}>{business.phone || "-"}</Text>
               </View>
             </View>
           </View>
@@ -2530,7 +2534,7 @@ function confirmDeleteAccount(userId: string) {
   };
   Alert.alert(
     "Delete your account?",
-    "This permanently deletes your login and personal data. Every shop you own — including its customers' loyalty progress, rewards and reviews — is deleted too. This cannot be undone.",
+    "This permanently deletes your login and personal data. Every shop you own (including its customers' loyalty progress, rewards and reviews) is deleted too. This cannot be undone.",
     [
       { text: "Cancel", style: "cancel" },
       {
@@ -2593,7 +2597,7 @@ function SpendProgramSetup({
       sort_order: index,
     }));
     if (rows.some((row) => !row.title)) {
-      Alert.alert("Add a reward", "Every reward needs a name — for example: Free coffee.");
+      Alert.alert("Add a reward", "Every reward needs a name, for example: Free coffee.");
       return;
     }
     if (rows.some((row) => row.spend_threshold_pence === null)) {
@@ -2623,7 +2627,7 @@ function SpendProgramSetup({
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
         <View style={styles.mark}>
           <Gift size={30} color="#e4b666" />
         </View>
@@ -2636,7 +2640,7 @@ function SpendProgramSetup({
               enter the amount, and linked cards count automatically where available.
             </Text>
             <Text style={styles.copy}>
-              You choose what customers unlock and how much they spend to get it — for example, a free
+              You choose what customers unlock and how much they spend to get it, for example a free
               coffee at £20 and a free lunch at £50.
             </Text>
             <Button title="Continue" onPress={() => setStep(1)} />
@@ -2657,7 +2661,7 @@ function SpendProgramSetup({
                   value={reward.title}
                   onChangeText={(value) => updateReward(index, { title: value })}
                   placeholder="e.g. Free coffee"
-                  placeholderTextColor="#111111"
+                  placeholderTextColor="#737B74"
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Details (optional)</Text>
                 <TextInput
@@ -2665,7 +2669,7 @@ function SpendProgramSetup({
                   value={reward.description}
                   onChangeText={(value) => updateReward(index, { description: value })}
                   placeholder="Anything customers should know"
-                  placeholderTextColor="#111111"
+                  placeholderTextColor="#737B74"
                   multiline
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks after spending (£)</Text>
@@ -2675,7 +2679,7 @@ function SpendProgramSetup({
                   onChangeText={(value) => updateReward(index, { amount: value.replace(/[^0-9.]/g, "") })}
                   keyboardType="decimal-pad"
                   placeholder="20"
-                  placeholderTextColor="#111111"
+                  placeholderTextColor="#737B74"
                 />
                 {rewards.length > 1 && (
                   <Pressable onPress={() => setRewards((list) => list.filter((_, i) => i !== index))} style={styles.onboardingSkip}>
@@ -2700,7 +2704,7 @@ function SpendProgramSetup({
             <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />
           ))}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -2752,7 +2756,7 @@ function StampProgramSetup({
       sort_order: index,
     }));
     if (rows.some((row) => !row.title)) {
-      Alert.alert("Add a reward", "Every reward needs a name — for example: Free coffee.");
+      Alert.alert("Add a reward", "Every reward needs a name, for example: Free coffee.");
       return;
     }
     setSaving(true);
@@ -2820,7 +2824,7 @@ function StampProgramSetup({
                 onChangeText={(value) => setThreshold(value.replace(/[^0-9]/g, ""))}
                 keyboardType="number-pad"
                 placeholder="10"
-                placeholderTextColor="#111111"
+                placeholderTextColor="#737B74"
               />
             </View>
             <Button title="Continue" onPress={() => setStep(2)} />
@@ -2833,7 +2837,7 @@ function StampProgramSetup({
           <>
             <Text style={styles.hero}>What can customers{"\n"}unlock?</Text>
             <Text style={styles.copy}>
-              Add at least one reward. Bigger rewards can unlock at a higher number of {unit} — you can add more later in Settings.
+              Add at least one reward. Bigger rewards can unlock at a higher number of {unit}. You can add more later in Settings.
             </Text>
             {rewards.map((reward, index) => (
               <View key={index} style={styles.card}>
@@ -2843,7 +2847,7 @@ function StampProgramSetup({
                   value={reward.title}
                   onChangeText={(value) => updateReward(index, { title: value })}
                   placeholder="e.g. Free coffee"
-                  placeholderTextColor="#111111"
+                  placeholderTextColor="#737B74"
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Details (optional)</Text>
                 <TextInput
@@ -2851,7 +2855,7 @@ function StampProgramSetup({
                   value={reward.description}
                   onChangeText={(value) => updateReward(index, { description: value })}
                   placeholder="Anything customers should know"
-                  placeholderTextColor="#111111"
+                  placeholderTextColor="#737B74"
                   multiline
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks at ({unit})</Text>
@@ -2861,7 +2865,7 @@ function StampProgramSetup({
                   onChangeText={(value) => updateReward(index, { threshold: value.replace(/[^0-9]/g, "") })}
                   keyboardType="number-pad"
                   placeholder={String(thresholdNumber)}
-                  placeholderTextColor="#111111"
+                  placeholderTextColor="#737B74"
                 />
                 {rewards.length > 1 && (
                   <Pressable onPress={() => setRewards((list) => list.filter((_, i) => i !== index))} style={styles.onboardingSkip}>
@@ -2946,7 +2950,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
         <View style={styles.mark}>
           <Text style={styles.markText}>↻</Text>
         </View>
@@ -2962,7 +2966,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={name}
             onChangeText={setName}
             placeholder="e.g. Bean & Bird"
-            placeholderTextColor="#111111"
+            placeholderTextColor="#737B74"
           />
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Category</Text>
           <View style={styles.categoryRow}>
@@ -2985,7 +2989,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={address}
             onChangeText={setAddress}
             placeholder="12 Balham High Road"
-            placeholderTextColor="#111111"
+            placeholderTextColor="#737B74"
           />
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Postcode (optional)</Text>
           <TextInput
@@ -2993,7 +2997,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={postcode}
             onChangeText={setPostcode}
             placeholder="SW12 9AA"
-            placeholderTextColor="#111111"
+            placeholderTextColor="#737B74"
             autoCapitalize="characters"
           />
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Phone (optional)</Text>
@@ -3002,12 +3006,12 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={phone}
             onChangeText={setPhone}
             placeholder="020 0000 0000"
-            placeholderTextColor="#111111"
+            placeholderTextColor="#737B74"
             keyboardType="phone-pad"
           />
         </View>
         <Button title={saving ? "Creating…" : "Continue"} onPress={create} disabled={saving} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -3265,14 +3269,14 @@ function Dashboard({
         <View key={notice.id} style={styles.platformBanner}>
           <Text style={styles.platformBannerText}>
             {notice.title}
-            {notice.body ? <Text style={styles.platformBannerBody}> — {notice.body}</Text> : null}
+            {notice.body ? <Text style={styles.platformBannerBody}>: {notice.body}</Text> : null}
           </Text>
           <Pressable onPress={() => setDismissedNoticeIds((prev) => new Set(prev).add(notice.id))} hitSlop={8}>
             <X size={16} color="#fff" />
           </Pressable>
         </View>
       ))}
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.screen}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -3353,7 +3357,7 @@ function Dashboard({
             </>
           ))
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       <View style={styles.tabs}>
         {nav.map(({ id, icon: Icon, label }) => (
           <Pressable
@@ -3367,7 +3371,7 @@ function Dashboard({
             <Icon
               size={21}
               strokeWidth={tab === id ? 2.5 : 1.9}
-              color={tab === id ? orange : "#5F625B"}
+              color={tab === id ? orange : "#59615A"}
             />
             <Text
               numberOfLines={1}
@@ -3383,6 +3387,9 @@ function Dashboard({
 }
 
 export default function App() {
+  // Brand display font. Rendering does not wait for it: titles fall back to the
+  // system font for a frame on first launch, then switch once loaded.
+  useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold });
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -3533,9 +3540,9 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   onboarding: { flexGrow: 1, padding: 28, justifyContent: "center" },
   onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: green, alignItems: "center", justifyContent: "center", marginBottom: 42 },
-  onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontWeight: "800", lineHeight: 44, letterSpacing: -1.1 },
+  onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#d5c6ae" },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#CBD1C3" },
   onboardingDotActive: { width: 26, backgroundColor: orange },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: "center", padding: 16 },
@@ -3550,7 +3557,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 28,
   },
-  markText: { color: "#e4b666", fontSize: 34, fontWeight: "800" },
+  markText: { color: "#e4b666", fontSize: 34, fontFamily: FONT_DISPLAY },
   eyebrow: {
     color: orange,
     fontWeight: "800",
@@ -3561,18 +3568,18 @@ const styles = StyleSheet.create({
   hero: {
     color: green,
     fontSize: 37,
-    fontWeight: "800",
+    fontFamily: FONT_DISPLAY,
     lineHeight: 44,
     letterSpacing: -1,
   },
   title: {
     color: green,
     fontSize: 30,
-    fontWeight: "800",
+    fontFamily: FONT_DISPLAY,
     lineHeight: 36,
     letterSpacing: -0.7,
   },
-  copy: { color: "#657060", fontSize: 16, lineHeight: 24, marginTop: 9 },
+  copy: { color: "#5C6B4F", fontSize: 16, lineHeight: 24, marginTop: 9 },
   setupOptionCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -3586,7 +3593,7 @@ const styles = StyleSheet.create({
   setupOptionCardActive: { backgroundColor: orange, borderColor: orange },
   setupOptionTitle: { color: green, fontSize: 16, fontWeight: "800" },
   setupOptionTitleActive: { color: "#fff" },
-  setupOptionBlurb: { color: "#657060", fontSize: 13, marginTop: 2 },
+  setupOptionBlurb: { color: "#5C6B4F", fontSize: 13, marginTop: 2 },
   setupOptionBlurbActive: { color: "rgba(255,255,255,0.85)" },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   categoryChip: {
@@ -3601,14 +3608,14 @@ const styles = StyleSheet.create({
   categoryChipText: { color: green, fontWeight: "800", fontSize: 13 },
   categoryChipTextActive: { color: "#fff" },
   small: {
-    color: "#7a8178",
+    color: "#6F776F",
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
     marginTop: 22,
   },
   authHelpLink: { alignSelf: "center", marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
-  authHelpLinkText: { color: "#7a8178", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  authHelpLinkText: { color: "#6F776F", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
   card: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -3678,7 +3685,7 @@ const styles = StyleSheet.create({
   overviewNumber: {
     color: "#fff",
     fontSize: 48,
-    fontWeight: "800",
+    fontFamily: FONT_DISPLAY,
     marginVertical: 9,
   },
   section: { fontSize: 19, fontWeight: "800", color: green, marginTop: 8 },
@@ -3693,28 +3700,28 @@ const styles = StyleSheet.create({
   cameraSheet: { flex: 1 },
   spendBanner: { backgroundColor: "#e0f2e4", borderRadius: 18, padding: 14, marginTop: 16 },
   spendBannerText: { color: "#1f5c33", fontSize: 15, fontWeight: "800", textAlign: "center" },
-  spendProgress: { color: "#657060", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
-  spendAmount: { fontSize: 46, fontWeight: "900", color: green, textAlign: "center", marginTop: 4 },
-  spendCap: { color: "#8a8378", fontSize: 13, textAlign: "center", marginBottom: 12 },
+  spendProgress: { color: "#5C6B4F", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
+  spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: green, textAlign: "center", marginTop: 4 },
+  spendCap: { color: "#737B74", fontSize: 13, textAlign: "center", marginBottom: 12 },
   keypad: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginBottom: 14 },
   keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center" },
-  keypadKeyText: { fontSize: 24, fontWeight: "800", color: green },
+  keypadKeyText: { fontSize: 24, fontFamily: FONT_DISPLAY, color: green },
   recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.12)" },
   recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80 },
-  recentTime: { flex: 1, color: "#8a8378", fontSize: 14 },
+  recentTime: { flex: 1, color: "#737B74", fontSize: 14 },
   recentUndo: { color: orange, fontSize: 14, fontWeight: "800" },
   paySheet: { backgroundColor: cream, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
   paySheetHandle: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.18)", marginBottom: 16 },
-  paySheetTitle: { fontSize: 21, fontWeight: "900", color: green },
-  paySheetCopy: { color: "#657060", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
+  paySheetTitle: { fontSize: 21, fontFamily: FONT_DISPLAY, color: green },
+  paySheetCopy: { color: "#5C6B4F", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
   paySheetQuestion: { fontSize: 16, fontWeight: "800", color: green, marginTop: 18 },
   paySheetButtons: { gap: 10, marginTop: 12 },
-  paySheetNote: { color: "#8a8378", fontSize: 13, textAlign: "center", marginTop: 12 },
+  paySheetNote: { color: "#737B74", fontSize: 13, textAlign: "center", marginTop: 12 },
   cameraWrap: { flex: 1, padding: 20, backgroundColor: "#111" },
   cameraTitle: {
     color: "#fff",
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: FONT_DISPLAY,
     marginBottom: 18,
   },
   camera: { flex: 1, borderRadius: 20, overflow: "hidden", marginBottom: 20 },
@@ -3722,25 +3729,25 @@ const styles = StyleSheet.create({
     width: "31%",
     minHeight: 132,
     borderWidth: 2,
-    borderColor: "#22231F",
+    borderColor: "#26302A",
     borderRadius: 20,
     padding: 14,
     backgroundColor: "rgba(255,255,255,.52)",
     justifyContent: "space-between",
     marginBottom: 12,
   },
-  statIcon: { fontSize: 20, color: orange, fontWeight: "900" },
+  statIcon: { fontSize: 20, color: orange, fontFamily: FONT_DISPLAY },
   statValue: {
     fontSize: 28,
     color: "#171815",
-    fontWeight: "900",
+    fontFamily: FONT_DISPLAY,
     marginTop: 12,
     letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#5E625A",
+    color: "#59615A",
     fontWeight: "700",
   },
   welcomeRow: {
@@ -3759,7 +3766,7 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 34,
     lineHeight: 40,
-    fontWeight: "900",
+    fontFamily: FONT_DISPLAY,
     color: "#151613",
     letterSpacing: -1,
   },
@@ -3773,7 +3780,7 @@ const styles = StyleSheet.create({
   homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
   setupCard: {
     borderWidth: 2,
-    borderColor: "#22231F",
+    borderColor: "#26302A",
     borderRadius: 22,
     padding: 18,
     backgroundColor: "rgba(255,255,255,.55)",
@@ -3781,7 +3788,7 @@ const styles = StyleSheet.create({
   },
   setupTitle: {
     fontSize: 20,
-    fontWeight: "900",
+    fontFamily: FONT_DISPLAY,
     color: "#191A17",
     marginBottom: 13,
   },
@@ -3802,9 +3809,9 @@ const styles = StyleSheet.create({
   },
   checkDone: { borderColor: orange, backgroundColor: "#F8C9B6" },
   checkMark: { fontSize: 13, fontWeight: "900", color: "#8C3820" },
-  checkText: { fontSize: 14, fontWeight: "700", color: "#30312D" },
+  checkText: { fontSize: 14, fontWeight: "700", color: "#333C35" },
   checkTextDone: { color: "#8A8C85", textDecorationLine: "line-through" },
-  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#191A18", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#1C2620", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
   setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
   setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
@@ -3819,7 +3826,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#8B7FD6",
+    backgroundColor: "#3E5235",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3829,7 +3836,7 @@ const styles = StyleSheet.create({
   reportButtonBlack: {
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#191A18",
+    backgroundColor: "#1C2620",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3840,7 +3847,7 @@ const styles = StyleSheet.create({
   cameraStartButton: {
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#191A18",
+    backgroundColor: "#1C2620",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
@@ -3854,8 +3861,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(20,20,18,.07)",
   },
-  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#4E514A", flexShrink: 0, marginRight: 12 },
-  memberInfoValue: { flex: 1, fontSize: 13, color: "#20211E", fontWeight: "700", textAlign: "right" },
+  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#4B544D", flexShrink: 0, marginRight: 12 },
+  memberInfoValue: { flex: 1, fontSize: 13, color: "#1C2620", fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
     borderRadius: 32,
@@ -3876,7 +3883,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 34,
     lineHeight: 40,
-    fontWeight: "900",
+    fontFamily: FONT_DISPLAY,
     letterSpacing: -0.8,
     color: "#171815",
   },
@@ -3918,19 +3925,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  memberName: { fontSize: 16, fontWeight: "900", color: "#1B1C19" },
-  memberMeta: { fontSize: 12, color: "#73766E", marginTop: 3 },
+  memberName: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
+  memberMeta: { fontSize: 12, color: "#6B736C", marginTop: 3 },
   memberProgress: {
     fontSize: 20,
-    fontWeight: "900",
-    color: "#1B1C19",
+    fontFamily: FONT_DISPLAY,
+    color: "#1C2620",
     textAlign: "right",
   },
-  memberUnit: { fontSize: 10, color: "#73766E", textAlign: "right" },
+  memberUnit: { fontSize: 10, color: "#6B736C", textAlign: "right" },
   emptyState: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#73766E",
+    color: "#6B736C",
     textAlign: "center",
     paddingVertical: 36,
   },
@@ -3948,8 +3955,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  periodActive: { backgroundColor: "#191A18" },
-  periodText: { fontSize: 12, fontWeight: "800", color: "#666961" },
+  periodActive: { backgroundColor: "#1C2620" },
+  periodText: { fontSize: 12, fontWeight: "800", color: "#626A63" },
   periodTextActive: { color: "#fff" },
   analyticsHeading: {
     fontSize: 18,
@@ -3968,7 +3975,7 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     borderWidth: 2,
-    borderColor: "#22231F",
+    borderColor: "#26302A",
     borderRadius: 20,
     padding: 16,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3977,17 +3984,17 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#191A18",
+    color: "#1C2620",
     marginBottom: 10,
   },
   chartWrap: { height: 80, width: "100%" },
   chartLegendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   chartLegendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11, fontWeight: "800", color: "#5E625A" },
+  legendLabel: { fontSize: 11, fontWeight: "800", color: "#59615A" },
   insightCard: {
     borderRadius: 22,
-    backgroundColor: "#1A1A18",
+    backgroundColor: "#1C2620",
     padding: 20,
     marginTop: 10,
     marginBottom: 15,
@@ -4001,24 +4008,24 @@ const styles = StyleSheet.create({
   insightTitle: {
     fontSize: 20,
     lineHeight: 26,
-    fontWeight: "900",
+    fontFamily: FONT_DISPLAY,
     color: "#fff",
     marginTop: 9,
   },
   insightCopy: { fontSize: 14, lineHeight: 21, color: "#D7D4CC", marginTop: 9 },
   totalCard: {
     borderWidth: 2,
-    borderColor: "#22231F",
+    borderColor: "#26302A",
     borderRadius: 20,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.55)",
     marginBottom: 16,
   },
-  totalTitle: { fontSize: 16, fontWeight: "900", color: "#1B1C19" },
-  totalLine: { fontSize: 13, color: "#666961", marginTop: 7 },
+  totalTitle: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
+  totalLine: { fontSize: 13, color: "#626A63", marginTop: 7 },
   composeCard: {
     borderWidth: 2,
-    borderColor: "#22231F",
+    borderColor: "#26302A",
     borderRadius: 22,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -4051,7 +4058,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 9, fontWeight: "900", color: "#454840" },
   newsBody: { fontSize: 13, lineHeight: 19, color: "#62655E", marginTop: 8 },
   newsDate: { fontSize: 11, color: "#85877F", marginTop: 10 },
-  navIcon: { fontSize: 21, lineHeight: 23, color: "#5F625B" },
+  navIcon: { fontSize: 21, lineHeight: 23, color: "#59615A" },
   navIconActive: { color: orange },
   tabPressed: { opacity: 0.55, transform: [{ scale: 0.94 }] },
   settingsHero: {
@@ -4071,8 +4078,8 @@ const styles = StyleSheet.create({
   settingsTitle: {
     fontSize: 29,
     lineHeight: 34,
-    fontWeight: "900",
-    color: "#191A18",
+    fontFamily: FONT_DISPLAY,
+    color: "#1C2620",
     letterSpacing: -0.7,
     maxWidth: 250,
   },
@@ -4093,7 +4100,7 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
   },
   settingsAvatarImage: { width: "100%", height: "100%" },
-  settingsAvatarLetter: { color: "#fff", fontSize: 21, fontWeight: "900" },
+  settingsAvatarLetter: { color: "#fff", fontSize: 21, fontFamily: FONT_DISPLAY },
   groupLabel: {
     fontSize: 11,
     fontWeight: "900",
@@ -4122,14 +4129,14 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#4E514A",
+    color: "#4B544D",
     marginTop: 8,
     marginBottom: 7,
   },
   settingsInput: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#F3EEE4",
+    backgroundColor: "#EDEFE9",
     borderWidth: 1,
     borderColor: "rgba(20,20,18,.08)",
     paddingHorizontal: 14,
@@ -4153,18 +4160,18 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#F3EEE4",
+    backgroundColor: "#EDEFE9",
     borderWidth: 1,
     borderColor: "rgba(20,20,18,.08)",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#4E514A",
+    color: "#4B544D",
     fontSize: 15,
   },
   fieldHelp: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: "#6F726B",
+    color: "#6B736C",
     marginTop: 2,
     marginBottom: 6,
   },
@@ -4189,8 +4196,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: "#1B1C19" },
-  tierMeta: { fontSize: 12, color: "#72756D", marginTop: 2 },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: "#1C2620" },
+  tierMeta: { fontSize: 12, color: "#6B736C", marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",
@@ -4206,7 +4213,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#1A1A18" },
+  segmentActive: { backgroundColor: "#1C2620" },
   segmentText: { fontSize: 13, fontWeight: "800", color: "#65685F" },
   segmentTextActive: { color: "#fff" },
   stepper: {
@@ -4224,7 +4231,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#EEE8DC",
   },
-  stepperText: { fontSize: 22, fontWeight: "700", color: "#191A18" },
+  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#1C2620" },
   stepperInput: {
     flex: 1,
     textAlign: "center",
@@ -4247,7 +4254,7 @@ const styles = StyleSheet.create({
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#1A1A18",
+    backgroundColor: "#1C2620",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -4271,11 +4278,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#1B1C19" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#1C2620" },
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#72756D",
+    color: "#6B736C",
     marginTop: 3,
   },
   dangerText: { color: "#B73B32" },
@@ -4294,7 +4301,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     flexDirection: "row",
-    backgroundColor: "#FFFDF8",
+    backgroundColor: "#FCFCFA",
     borderTopWidth: 1,
     borderTopColor: "rgba(20,20,18,.08)",
     paddingTop: 8,

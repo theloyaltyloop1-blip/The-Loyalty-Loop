@@ -20,6 +20,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated'
@@ -31,7 +32,8 @@ import * as Updates from 'expo-updates'
 import * as Notifications from 'expo-notifications'
 import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
-import { colors } from '@loyalty-loop/design-tokens'
+import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
+import { colors, fonts } from '@loyalty-loop/design-tokens'
 import { hasSupabaseConfig, supabase } from './src/supabase'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
@@ -47,6 +49,8 @@ import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests
 import { trendingShops } from './src/trending'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
 import logo from './assets/brand/loyalty-loop-logo.png'
+
+const FONT_DISPLAY = fonts.nativeDisplay
 
 const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
 
@@ -139,7 +143,7 @@ function SearchBar({ value, onChangeText, accessibilityLabel }: { value: string;
       <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#857d70" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
       {value.length > 0 && (
         <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
-          <CloseIcon color="#8a8378" size={16} />
+          <CloseIcon color="#737B74" size={16} />
         </Pressable>
       )}
     </View>
@@ -419,7 +423,7 @@ function AppHeader({ onOpenProfile }: { onOpenProfile: () => void }) {
 function ShopperLanding({ onContinue }: { onContinue: () => void }) {
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.auth}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.auth}>
         <View style={styles.mark}>
           <Image source={logo} style={styles.markImage} />
         </View>
@@ -436,7 +440,7 @@ function ShopperLanding({ onContinue }: { onContinue: () => void }) {
         </View>
         <Button title="Start collecting" onPress={onContinue} />
         <Text style={styles.small}>Already collecting? Sign in or create an account on the next screen.</Text>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   )
 }
@@ -535,7 +539,7 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
         <View style={styles.mark}>
           <Image source={logo} style={styles.markImage} />
         </View>
@@ -567,10 +571,10 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
             <View style={styles.dividerLine} />
           </View>
           {mode === 'signUp' && (
-            <TextInput value={name} onChangeText={setName} placeholder="First name" placeholderTextColor="#8a8378" style={styles.input} autoCapitalize="words" />
+            <TextInput value={name} onChangeText={setName} placeholder="First name" placeholderTextColor="#737B74" style={styles.input} autoCapitalize="words" />
           )}
-          <TextInput value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor="#8a8378" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
-          <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor="#8a8378" style={styles.input} secureTextEntry />
+          <TextInput value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor="#737B74" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
+          <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor="#737B74" style={styles.input} secureTextEntry />
           <Button title={busy ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Create shopper account'} onPress={submit} disabled={busy} />
           <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
             <Text style={styles.link}>{mode === 'signIn' ? 'New here? Create an account' : 'Already have an account? Sign in'}</Text>
@@ -580,7 +584,7 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
         <Pressable onPress={() => void Linking.openURL('https://www.the-loyalty-loop.com/help')} style={styles.authHelpLink}>
           <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   )
 }
@@ -627,14 +631,14 @@ const openUrl = (url: string) => void Linking.openURL(url)
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const TILES = {
-  blue: { bg: '#e3edfb', fg: '#2f6fd6' },
-  purple: { bg: '#ece6fa', fg: '#6f4fd0' },
-  rose: { bg: '#fbe3e8', fg: '#c93b5e' },
-  amber: { bg: '#fdeccd', fg: '#c77c12' },
-  green: { bg: '#e0f2e4', fg: '#2f8a4c' },
-  teal: { bg: '#dcf1f1', fg: '#1f8a8a' },
-  slate: { bg: '#e8e7ec', fg: '#5b5f6c' },
-  orange: { bg: '#fde6d9', fg: primary },
+  blue: { bg: '#DCE6D2', fg: '#3E5235' },
+  purple: { bg: '#F3E3D3', fg: '#8A4A2B' },
+  rose: { bg: '#F8DCCB', fg: '#B5431C' },
+  amber: { bg: '#FBE7BF', fg: '#8A5A00' },
+  green: { bg: '#DCEBD9', fg: '#2F7A3F' },
+  teal: { bg: '#D7E6E0', fg: '#2E6656' },
+  slate: { bg: '#E6E8E2', fg: '#545C55' },
+  orange: { bg: '#FDE2D2', fg: primary },
   red: { bg: '#f8dcd8', fg: '#b54439' },
 } as const
 type Tile = keyof typeof TILES
@@ -648,7 +652,7 @@ function SettingsRow({ icon, tile = 'slate', title, detail, onPress, right, dang
         <Text style={[styles.settingsRowTitle, danger && styles.settingsRowTitleDanger]}>{title}</Text>
         {detail ? <Text style={styles.settingsRowDetail} numberOfLines={2}>{detail}</Text> : null}
       </View>
-      {right ?? (onPress ? <ChevronRightIcon color="#b3ab9d" size={18} /> : null)}
+      {right ?? (onPress ? <ChevronRightIcon color="#A3AAA2" size={18} /> : null)}
     </Pressable>
   )
 }
@@ -748,7 +752,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <Text style={styles.sheetTitle}>{SETTINGS_TITLES.root}</Text>
           ) : (
             <Pressable onPress={() => setView('root')} hitSlop={10} style={styles.sheetBack}>
-              <ChevronLeftIcon size={18} color="#8a8378" />
+              <ChevronLeftIcon size={18} color="#737B74" />
               <Text style={styles.sheetTitle}>{SETTINGS_TITLES[view]}</Text>
             </Pressable>
           )}
@@ -756,7 +760,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <CloseIcon />
           </Pressable>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView pad={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
           {view === 'root' && (
             <>
               <LinearGradient colors={[primary, '#c9542a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
@@ -839,7 +843,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <>
               <View style={styles.settingsCard}>
                 <Text style={styles.settingsFieldLabel}>First name</Text>
-                <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#b3ab9d" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
+                <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#A3AAA2" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
                 <Text style={styles.settingsFieldHelp}>Shops see this name when they record a purchase or you leave a review.</Text>
               </View>
               <View style={styles.settingsCard}>
@@ -917,7 +921,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               )}
             </View>
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
       {/* Nested inside the settings sheet so it presents on top of it. */}
       <RequestedShopsSheet visible={visible && showRequests} onClose={() => setShowRequests(false)} onViewShop={id => { setShowRequests(false); onViewRequested(id) }} />
@@ -1307,7 +1311,7 @@ function ShopDetail({
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.screen}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.screen}>
         <Pressable onPress={onBack} style={styles.backRow}>
           <ChevronLeftIcon size={18} />
           <Text style={styles.back}>Back</Text>
@@ -1477,7 +1481,7 @@ function ShopDetail({
                 value={reviewBody}
                 onChangeText={setReviewBody}
                 placeholder="What did you enjoy?"
-                placeholderTextColor="#8a8378"
+                placeholderTextColor="#737B74"
                 multiline
                 maxLength={2000}
                 style={styles.reviewInput}
@@ -1523,7 +1527,7 @@ function ShopDetail({
             </View>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
       <SuccessCheck visible={showStampSuccess} onFinished={() => setShowStampSuccess(false)} />
     </SafeAreaView>
   )
@@ -1823,7 +1827,7 @@ function PlatformBanner({ notices, dismissedIds, onDismiss }: { notices: Platfor
           <View style={{ flex: 1 }}>
             <Text style={styles.platformBannerText}>
               {notice.title}
-              {notice.body ? <Text style={styles.platformBannerBody}> — {notice.body}</Text> : null}
+              {notice.body ? <Text style={styles.platformBannerBody}>: {notice.body}</Text> : null}
             </Text>
           </View>
           <Pressable onPress={() => onDismiss(notice.id)} hitSlop={8}>
@@ -1843,7 +1847,7 @@ function NewsTab({ announcements }: { announcements: Announcement[] }) {
   return (
     <>
       <Text style={styles.pageTitle}>News from your shops</Text>
-      {announcements.length === 0 && <Text style={styles.empty}>No announcements yet — check back soon.</Text>}
+      {announcements.length === 0 && <Text style={styles.empty}>No announcements yet. Check back soon.</Text>}
       {announcements.map((a) => (
         <View key={a.id} style={styles.newsCard}>
           <Text style={styles.announcementFrom}>{a.business?.name || 'The Loyalty Loop team'}</Text>
@@ -1990,7 +1994,7 @@ function DiscoverTab({
       ) : photos.length === 0 ? (
         <View style={[styles.discoverEmpty, { height: feedHeight }]}>
           <ReelsIcon color={primary} size={30} />
-          <Text style={styles.discoverEmptyText}>No shop photos yet — check back soon.</Text>
+          <Text style={styles.discoverEmptyText}>No shop photos yet. Check back soon.</Text>
         </View>
       ) : (
         <FlatList
@@ -2409,6 +2413,9 @@ function AppHome({ session }: { session: Session }) {
 // ---------------------------------------------------------------------
 
 export default function App() {
+  // Brand display font. Rendering does not wait for it: titles fall back to the
+  // system font for a frame on first launch, then switch once loaded.
+  useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold })
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -2513,9 +2520,9 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   onboarding: { flex: 1, padding: 28, justifyContent: 'center' },
   onboardingLogo: { width: 66, height: 66, resizeMode: 'contain', marginBottom: 44 },
-  onboardingTitle: { color: foreground, fontSize: 38, fontWeight: '800', lineHeight: 44, letterSpacing: -1.1 },
+  onboardingTitle: { color: foreground, fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: 'row', gap: 8, marginTop: 34, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#d5c6ae' },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#CBD1C3' },
   onboardingDotActive: { width: 26, backgroundColor: primary },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: 'center', padding: 16 },
@@ -2525,16 +2532,16 @@ const styles = StyleSheet.create({
   markImage: { width: 46, height: 46, resizeMode: 'contain' },
 
   eyebrow: { color: primary, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 10 },
-  hero: { color: foreground, fontSize: 36, fontWeight: '800', lineHeight: 42, letterSpacing: -1 },
-  title: { color: foreground, fontSize: 26, fontWeight: '800', lineHeight: 31, letterSpacing: -0.5 },
-  copy: { color: '#5c564c', fontSize: 16, lineHeight: 24, marginTop: 16 },
-  description: { color: '#5c564c', fontSize: 15, lineHeight: 22, marginTop: 8 },
+  hero: { color: foreground, fontSize: 36, fontFamily: FONT_DISPLAY, lineHeight: 42, letterSpacing: -1 },
+  title: { color: foreground, fontSize: 26, fontFamily: FONT_DISPLAY, lineHeight: 31, letterSpacing: -0.5 },
+  copy: { color: '#545C55', fontSize: 16, lineHeight: 24, marginTop: 16 },
+  description: { color: '#545C55', fontSize: 15, lineHeight: 22, marginTop: 8 },
   landingTitle: { color: foreground, fontSize: 16, fontWeight: '800', marginTop: 3 },
-  landingCopy: { color: '#5c564c', fontSize: 13, lineHeight: 19, marginBottom: 8 },
+  landingCopy: { color: '#545C55', fontSize: 13, lineHeight: 19, marginBottom: 8 },
 
-  card: { backgroundColor: card, borderRadius: 20, padding: 18, marginTop: 26, gap: 12, shadowColor: '#1a1a1a', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
-  input: { backgroundColor: '#f4efe4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: foreground, fontSize: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#ecd5bf', paddingHorizontal: 14, marginBottom: 4, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  card: { backgroundColor: card, borderRadius: 20, padding: 18, marginTop: 26, gap: 12, shadowColor: '#1C2620', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
+  input: { backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: foreground, fontSize: 16 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#F8DCCB', paddingHorizontal: 14, marginBottom: 4, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   searchInput: { flex: 1, paddingVertical: 14, color: foreground, fontSize: 16 },
   askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 14, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
   askShopIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
@@ -2547,7 +2554,7 @@ const styles = StyleSheet.create({
   googleButtonText: { color: foreground, fontWeight: '800', fontSize: 15 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.1)' },
-  dividerText: { color: '#8a8378', fontSize: 12, fontWeight: '700' },
+  dividerText: { color: '#737B74', fontSize: 12, fontWeight: '700' },
 
   button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 15, marginTop: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', shadowColor: primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: foreground, marginTop: 18 },
@@ -2556,9 +2563,9 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.6 },
   link: { color: primary, textAlign: 'center', fontWeight: '700', marginTop: 8 },
-  small: { color: '#8a8378', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 22 },
+  small: { color: '#737B74', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 22 },
   authHelpLink: { alignSelf: 'center', marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
-  authHelpLinkText: { color: '#8a8378', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  authHelpLinkText: { color: '#737B74', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 6, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
@@ -2567,7 +2574,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '800', color: foreground },
   headerProfileButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: card },
 
-  pageTitle: { fontSize: 26, fontWeight: '800', color: foreground, letterSpacing: -0.5, marginBottom: 16, marginTop: 4 },
+  pageTitle: { fontSize: 26, fontFamily: FONT_DISPLAY, color: foreground, letterSpacing: -0.5, marginBottom: 16, marginTop: 4 },
 
   // Category pills
   pillRow: { gap: 8, paddingBottom: 22 },
@@ -2577,7 +2584,7 @@ const styles = StyleSheet.create({
   pillTextActive: { color: '#fff' },
 
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-  sectionEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#8a8378' },
+  sectionEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#737B74' },
   sparkle: { color: primary, fontSize: 13 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: foreground },
 
@@ -2585,9 +2592,9 @@ const styles = StyleSheet.create({
   announcementRow: { gap: 12, paddingBottom: 26 },
   announcementCard: { width: 240, backgroundColor: card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   announcementBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(232,112,59,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  announcementFrom: { fontSize: 11, fontWeight: '700', color: '#8a8378', textTransform: 'uppercase', letterSpacing: 0.4 },
+  announcementFrom: { fontSize: 11, fontWeight: '700', color: '#737B74', textTransform: 'uppercase', letterSpacing: 0.4 },
   announcementTitle: { fontSize: 15, fontWeight: '800', color: foreground, marginTop: 4 },
-  announcementBody: { fontSize: 13, color: '#5c564c', marginTop: 4, lineHeight: 18 },
+  announcementBody: { fontSize: 13, color: '#545C55', marginTop: 4, lineHeight: 18 },
 
   // Trending grid
   trendingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
@@ -2601,13 +2608,13 @@ const styles = StyleSheet.create({
   nearbyLogo: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   logoLetter: { color: '#fff', fontWeight: '800', fontSize: 17 },
   shopName: { fontSize: 15, fontWeight: '800', color: foreground },
-  muted: { color: '#8a8378', fontSize: 12.5, lineHeight: 18, marginTop: 2 },
-  empty: { color: '#8a8378', fontSize: 15, lineHeight: 22, marginTop: 12 },
+  muted: { color: '#737B74', fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  empty: { color: '#737B74', fontSize: 15, lineHeight: 22, marginTop: 12 },
 
   // Map
   mapWrap: { height: 320, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 20 },
   mapPlaceholder: { backgroundColor: card, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', padding: 22, alignItems: 'center', gap: 10, marginBottom: 20 },
-  mapPlaceholderText: { textAlign: 'center', color: '#5c564c', fontSize: 13.5, lineHeight: 19 },
+  mapPlaceholderText: { textAlign: 'center', color: '#545C55', fontSize: 13.5, lineHeight: 19 },
 
   // News
   newsCard: { backgroundColor: card, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
@@ -2623,53 +2630,53 @@ const styles = StyleSheet.create({
   joinCard: { backgroundColor: card, borderRadius: 22, padding: 26, marginTop: 20, alignItems: 'center' },
   joinTitle: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center', marginBottom: 12 },
   rewardPill: { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
-  rewardPillText: { fontSize: 11, fontWeight: '700', color: '#6b6459' },
+  rewardPillText: { fontSize: 11, fontWeight: '700', color: '#5F6760' },
   rewardTitleLarge: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center' },
   rewardTierList: { alignSelf: 'stretch', gap: 8, marginTop: 2 },
-  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4efe4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
   rewardTierThreshold: { color: foreground, fontSize: 13, fontWeight: '800' },
   rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 14 },
 
   loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#6b6459' },
+  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#5F6760' },
   bar: { height: 9, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.07)', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },
-  qrText: { color: '#6b6459', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
-  manualCodeLabel: { color: '#8a8378', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
+  qrText: { color: '#5F6760', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
+  manualCodeLabel: { color: '#737B74', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
   manualCode: { color: foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 5 },
-  securityCard: { backgroundColor: '#f4efe4', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
-  securityCopy: { color: '#5c564c', fontSize: 13, lineHeight: 19, marginTop: 5 },
+  securityCard: { backgroundColor: '#EDEFE9', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
+  securityCopy: { color: '#545C55', fontSize: 13, lineHeight: 19, marginTop: 5 },
   securityButton: { alignSelf: 'flex-start', marginTop: 13, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: 'rgba(79,100,56,0.12)' },
   securityButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
   lockScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
   lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 22 },
-  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1a1a1a', borderRadius: 999, height: 46, marginTop: 18 },
+  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1C2620', borderRadius: 999, height: 46, marginTop: 18 },
   walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Visit and contact details
   visitSection: { marginTop: 28 },
-  mapEmbed: { height: 150, marginTop: 10, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#efe8db' },
+  mapEmbed: { height: 150, marginTop: 10, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#E7EAE2' },
   nativeMap: { flex: 1 },
   shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
   shopNotifyTitle: { fontSize: 14, fontWeight: '700', color: foreground },
-  shopNotifyCopy: { color: '#8a8378', fontSize: 12, marginTop: 1, lineHeight: 16 },
+  shopNotifyCopy: { color: '#737B74', fontSize: 12, marginTop: 1, lineHeight: 16 },
   settingsSheet: { paddingHorizontal: 18, maxHeight: '80%' },
   settingsSheetScroll: { paddingBottom: 20, gap: 20 },
   sheetBack: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   settingsHero: { borderRadius: 24, padding: 16, gap: 14, shadowColor: primary, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
   settingsHeroRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   settingsHeroAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.75)', alignItems: 'center', justifyContent: 'center' },
-  settingsHeroAvatarText: { color: '#fff', fontWeight: '900', fontSize: 20 },
-  settingsHeroName: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  settingsHeroAvatarText: { color: '#fff', fontFamily: FONT_DISPLAY, fontSize: 20 },
+  settingsHeroName: { color: '#fff', fontSize: 20, fontFamily: FONT_DISPLAY },
   settingsHeroEmail: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 },
   settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 11 },
   settingsHeroButtonIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
   settingsHeroButtonTitle: { color: foreground, fontWeight: '800', fontSize: 15 },
-  settingsHeroButtonCopy: { color: '#8a8378', fontSize: 12.5, marginTop: 1 },
+  settingsHeroButtonCopy: { color: '#737B74', fontSize: 12.5, marginTop: 1 },
   settingsGroup: { gap: 8 },
-  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#8a8378', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 6 },
+  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#737B74', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 6 },
   settingsCard: { backgroundColor: card, borderRadius: 18, overflow: 'hidden' },
   settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
   settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.12)' },
@@ -2678,15 +2685,15 @@ const styles = StyleSheet.create({
   settingsRowBody: { flex: 1 },
   settingsRowTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
   settingsRowTitleDanger: { color: '#b54439' },
-  settingsRowDetail: { color: '#8a8378', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
-  settingsFooter: { textAlign: 'center', color: '#b3ab9d', fontSize: 12, marginTop: 4 },
-  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: '#8a8378', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 14, paddingTop: 14 },
+  settingsRowDetail: { color: '#737B74', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+  settingsFooter: { textAlign: 'center', color: '#A3AAA2', fontSize: 12, marginTop: 4 },
+  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: '#737B74', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 14, paddingTop: 14 },
   settingsInput: { fontSize: 17, color: foreground, paddingHorizontal: 14, paddingVertical: 12 },
-  settingsFieldHelp: { color: '#8a8378', fontSize: 12.5, paddingHorizontal: 14, paddingBottom: 14, lineHeight: 17 },
-  settingsEmpty: { color: '#5c564c', fontSize: 14, lineHeight: 20, padding: 16 },
+  settingsFieldHelp: { color: '#737B74', fontSize: 12.5, paddingHorizontal: 14, paddingBottom: 14, lineHeight: 17 },
+  settingsEmpty: { color: '#545C55', fontSize: 14, lineHeight: 20, padding: 16 },
   cardScreen: { backgroundColor: card, borderRadius: 24, padding: 24, alignItems: 'center' },
   cardQr: { backgroundColor: '#fff', padding: 16, borderRadius: 20 },
-  cardName: { fontSize: 20, fontWeight: '800', color: foreground, marginTop: 18 },
+  cardName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: foreground, marginTop: 18 },
   pinWrap: { alignItems: 'center', width: 60, height: 66, paddingTop: 6 },
   pinHalo: { position: 'absolute', top: 0, width: 56, height: 56, borderRadius: 28, opacity: 0.22 },
   pinBody: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
@@ -2695,7 +2702,7 @@ const styles = StyleSheet.create({
   pinInitial: { fontWeight: '900', fontSize: 14, letterSpacing: -0.5 },
   pinTail: { width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 11, borderLeftColor: 'transparent', borderRightColor: 'transparent', marginTop: -4 },
   pinShadow: { width: 16, height: 5, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.2)', marginTop: 1 },
-  mapAddress: { color: '#6b6459', fontSize: 13, lineHeight: 19, marginTop: 9 },
+  mapAddress: { color: '#5F6760', fontSize: 13, lineHeight: 19, marginTop: 9 },
   directionsButton: { alignSelf: 'flex-start', marginTop: 11, borderRadius: 999, backgroundColor: 'rgba(79,100,56,0.12)', paddingHorizontal: 14, paddingVertical: 10 },
   directionsButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
   contactList: { marginTop: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', borderRadius: 18, overflow: 'hidden', backgroundColor: card },
@@ -2706,10 +2713,10 @@ const styles = StyleSheet.create({
   // Shop gallery — a tall, photo-first scrolling feed.
   gallerySection: { marginTop: 30 },
   galleryHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
-  gallerySubheading: { color: '#8a8378', fontSize: 12.5, marginTop: 3 },
+  gallerySubheading: { color: '#737B74', fontSize: 12.5, marginTop: 3 },
   galleryCount: { color: primary, fontSize: 12, fontWeight: '800' },
   shortsFeed: { gap: 14, marginTop: 12 },
-  shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: '#e7dfd2', position: 'relative' },
+  shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: '#DFE3DA', position: 'relative' },
   shortImage: { width: '100%', height: '100%' },
   shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 14, justifyContent: 'flex-end', backgroundColor: 'rgba(20,20,18,0.42)' },
   shortIndex: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
@@ -2717,12 +2724,12 @@ const styles = StyleSheet.create({
 
   // Reviews
   reviewsSection: { marginTop: 30 },
-  reviewHint: { color: '#6b6459', fontSize: 13.5, lineHeight: 20, marginTop: 9 },
+  reviewHint: { color: '#5F6760', fontSize: 13.5, lineHeight: 20, marginTop: 9 },
   reviewComposer: { backgroundColor: card, borderRadius: 18, padding: 16, marginTop: 13, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
   reviewComposerTitle: { fontSize: 15, fontWeight: '800', color: foreground },
   starRow: { flexDirection: 'row', gap: 4, marginTop: 9 },
   starButton: { paddingVertical: 3, paddingRight: 3 },
-  star: { fontSize: 29, lineHeight: 34, color: '#d7d0c4' },
+  star: { fontSize: 29, lineHeight: 34, color: '#CDD2CA' },
   starSelected: { color: accent },
   reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.12)', backgroundColor: '#fff', color: foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 13, paddingVertical: 11, textAlignVertical: 'top' },
   deleteReview: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 14 },
@@ -2730,22 +2737,22 @@ const styles = StyleSheet.create({
   reviewItem: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.09)', paddingTop: 14 },
   reviewHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   reviewAuthor: { fontSize: 14, fontWeight: '800', color: foreground },
-  reviewDate: { color: '#8a8378', fontSize: 11.5 },
+  reviewDate: { color: '#737B74', fontSize: 11.5 },
   reviewStars: { color: accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
-  reviewBody: { color: '#5c564c', fontSize: 13.5, lineHeight: 20, marginTop: 6 },
+  reviewBody: { color: '#545C55', fontSize: 13.5, lineHeight: 20, marginTop: 6 },
   reviewReply: { marginTop: 10, marginLeft: 6, paddingLeft: 12, borderLeftWidth: 3 },
   reviewReplyTitle: { color: ink, fontSize: 13, fontWeight: '800' },
   reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  reviewModLink: { color: '#8a8378', fontSize: 12, fontWeight: '600' },
-  reviewModDot: { color: '#c9c2b6', fontSize: 12 },
+  reviewModLink: { color: '#737B74', fontSize: 12, fontWeight: '600' },
+  reviewModDot: { color: '#BEC4BC', fontSize: 12 },
   blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
-  blockRowText: { color: '#5c564c', fontSize: 13 },
+  blockRowText: { color: '#545C55', fontSize: 13 },
   blockRowUnblock: { color: primary, fontSize: 13, fontWeight: '700' },
-  spendHint: { color: '#8a8378', fontSize: 12.5, lineHeight: 17, marginTop: 8 },
+  spendHint: { color: '#737B74', fontSize: 12.5, lineHeight: 17, marginTop: 8 },
   cardsExplainer: { backgroundColor: '#e0f2e4', borderRadius: 18, padding: 16, gap: 4 },
   cardsExplainerTitle: { fontSize: 15, fontWeight: '800', color: '#1f5c33', marginBottom: 2 },
   cardsExplainerLine: { fontSize: 13.5, color: '#2f5a3b', lineHeight: 19 },
-  cardsHelp: { color: '#8a8378', fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
+  cardsHelp: { color: '#737B74', fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
   autoEarnCard: { backgroundColor: '#fdeccd', borderRadius: 18, padding: 16, marginTop: 14, gap: 8 },
   autoEarnRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   autoEarnTitle: { fontSize: 15, fontWeight: '800', color: '#7a4a0c' },
@@ -2756,14 +2763,14 @@ const styles = StyleSheet.create({
   // Rewards
   reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   rewardShop: { color: primary, fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  rewardTitle: { color: foreground, fontSize: 21, fontWeight: '800', marginTop: 6 },
+  rewardTitle: { color: foreground, fontSize: 21, fontFamily: FONT_DISPLAY, marginTop: 6 },
   rewardQr: { alignItems: 'center', marginTop: 16 },
 
   // Favourites
   favouriteCard: { backgroundColor: card, borderRadius: 20, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   favouriteTopRow: { marginBottom: 12 },
   favouriteLogo: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  categoryLabel: { fontSize: 11, fontWeight: '700', color: '#8a8378', letterSpacing: 0.6, marginTop: 4 },
+  categoryLabel: { fontSize: 11, fontWeight: '700', color: '#737B74', letterSpacing: 0.6, marginTop: 4 },
   favouriteDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.07)', marginVertical: 14 },
   favouriteBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   favouriteTapRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -2779,12 +2786,12 @@ const styles = StyleSheet.create({
   deleteAccount: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
   sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 16 },
   sheetHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  sheetTitle: { fontSize: 13, fontWeight: '800', color: '#8a8378', letterSpacing: 0.6, textTransform: 'uppercase' },
+  sheetTitle: { fontSize: 13, fontWeight: '800', color: '#737B74', letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // Bottom tab bar
   tabs: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', backgroundColor: card, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.07)', paddingTop: 10, paddingBottom: 24 },
   tab: { flex: 1, alignItems: 'center', gap: 3 },
-  tabText: { color: '#8a8378', fontWeight: '700', fontSize: 11 },
+  tabText: { color: '#737B74', fontWeight: '700', fontSize: 11 },
   tabTextActive: { color: primary },
 
   // Discover feed
@@ -2810,5 +2817,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
   discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: background, paddingHorizontal: 40 },
-  discoverEmptyText: { color: '#6b6459', fontSize: 14, textAlign: 'center' },
+  discoverEmptyText: { color: '#5F6760', fontSize: 14, textAlign: 'center' },
 })

@@ -54,8 +54,8 @@ type TabKey = (typeof TABS)[number]['key']
 
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6 mb-5">
-      {title && <h3 className="font-display font-bold text-foreground mb-4">{title}</h3>}
+    <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 mb-5 sm:p-7">
+      {title && <h3 className="font-display text-xl font-semibold tracking-tight text-foreground mb-5">{title}</h3>}
       {children}
     </div>
   )
@@ -71,7 +71,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-foreground placeholder:text-foreground/35 outline-none focus:border-primary'
+  'h-12 w-full rounded-xl border border-input bg-background px-4 text-foreground placeholder:text-muted-foreground outline-none transition-[border-color,box-shadow] focus:border-primary focus:ring-3 focus:ring-primary/20'
 
 function BrandImageUpload({
   label,
@@ -110,7 +110,7 @@ function BrandImageUpload({
       <p className="text-sm font-semibold text-foreground mb-1.5">{label}</p>
       <div
         onClick={() => inputRef.current?.click()}
-        className="h-32 rounded-xl border-2 border-dashed border-black/15 flex flex-col items-center justify-center gap-1 text-foreground/40 text-sm cursor-pointer overflow-hidden bg-white/40 hover:border-primary/50 transition-colors duration-150 ease-out"
+        className="h-32 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground text-sm cursor-pointer overflow-hidden bg-white/40 hover:border-primary/50 transition-colors duration-150 ease-out"
         style={
           currentUrl
             ? { backgroundImage: `url(${currentUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -134,11 +134,11 @@ function BrandImageUpload({
       <button data-press-feedback
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="mt-2 flex items-center gap-2 rounded-full border border-black/15 px-4 h-9 text-sm font-semibold text-foreground disabled:opacity-40"
+        className="mt-2 flex items-center gap-2 rounded-full border border-border px-4 h-9 text-sm font-semibold text-foreground disabled:opacity-40"
       >
         <Upload className="h-3.5 w-3.5" /> {uploading ? 'Uploading…' : currentUrl ? 'Replace' : 'Upload'}
       </button>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
     </div>
   )
 }
@@ -167,7 +167,7 @@ function OpeningHoursEditor({ hours, onChange }: { hours: OpeningHours; onChange
               onClick={() => onChange({ ...hours, [key]: { ...day, closed: !day.closed } })}
               className={
                 'rounded-full px-3 h-8 text-xs font-bold ' +
-                (day.closed ? 'bg-black/5 text-foreground/40' : 'bg-[#DFF3E3] text-fun-green')
+                (day.closed ? 'bg-secondary text-muted-foreground' : 'bg-sage text-sage-ink')
               }
             >
               {day.closed ? 'Closed' : 'Open'}
@@ -178,14 +178,14 @@ function OpeningHoursEditor({ hours, onChange }: { hours: OpeningHours; onChange
                   type="time"
                   value={day.open}
                   onChange={(e) => onChange({ ...hours, [key]: { ...day, open: e.target.value } })}
-                  className="h-8 rounded-lg border border-black/10 bg-white px-2 text-sm"
+                  className="h-9 rounded-lg border border-input bg-card px-2 text-sm"
                 />
-                <span className="text-foreground/30">–</span>
+                <span className="text-muted-foreground">to</span>
                 <input
                   type="time"
                   value={day.close}
                   onChange={(e) => onChange({ ...hours, [key]: { ...day, close: e.target.value } })}
-                  className="h-8 rounded-lg border border-black/10 bg-white px-2 text-sm"
+                  className="h-9 rounded-lg border border-input bg-card px-2 text-sm"
                 />
               </>
             )}
@@ -229,8 +229,8 @@ function GalleryTab({ businessId }: { businessId: string }) {
 
   return (
     <SectionCard title="Gallery">
-      <p className="text-sm text-foreground/50 mb-4">
-        Extra photos shown on your shop page — your space, your food, your work. PNG, JPEG, WEBP or GIF, up to 5MB
+      <p className="text-sm text-muted-foreground mb-4">
+        Extra photos shown on your shop page: your space, your food, your work. PNG, JPEG, WEBP or GIF, up to 5MB
         each.
       </p>
       {loadingPhotos ? (
@@ -257,7 +257,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
           <button data-press-feedback
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="rounded-xl border-2 border-dashed border-black/15 aspect-square flex flex-col items-center justify-center gap-1 text-foreground/40 hover:border-primary/50 transition-colors duration-150 ease-out disabled:opacity-50"
+            className="rounded-xl border-2 border-dashed border-border aspect-square flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 transition-colors duration-150 ease-out disabled:opacity-50"
           >
             <ImageIcon className="h-5 w-5" />
             <span className="text-xs font-semibold">{uploading ? 'Uploading…' : 'Add photo'}</span>
@@ -271,7 +271,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         className="hidden"
         onChange={(e) => handleUpload(e.target.files?.[0])}
       />
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </SectionCard>
   )
 }
@@ -354,8 +354,8 @@ function ProfileTab() {
   return (
     <>
       <SectionCard>
-        <p className="text-xs font-bold uppercase tracking-wide text-foreground/40 mb-3">Storefront preview</p>
-        <div className="rounded-2xl overflow-hidden border border-black/10">
+        <p className="text-sm font-semibold text-foreground mb-3">Storefront preview</p>
+        <div className="rounded-2xl overflow-hidden border border-border">
           <div
             className="h-40 relative bg-cover bg-center"
             style={{
@@ -363,7 +363,7 @@ function ProfileTab() {
               backgroundImage: business.cover_url ? `url(${business.cover_url})` : undefined,
             }}
           >
-            <span className="absolute -bottom-5 left-5 h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow overflow-hidden">
+            <span className="absolute -bottom-5 left-5 h-12 w-12 rounded-xl bg-card flex items-center justify-center shadow overflow-hidden">
               {business.logo_url ? (
                 <img src={business.logo_url} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -371,15 +371,15 @@ function ProfileTab() {
               )}
             </span>
           </div>
-          <div className="bg-white pt-8 pb-4 px-5">
-            <p className="font-display font-bold text-foreground">{form.name || business.name}</p>
-            <p className="text-sm text-foreground/50">{form.category}</p>
+          <div className="bg-card pt-8 pb-4 px-5">
+            <p className="font-display text-lg font-semibold tracking-tight text-foreground">{form.name || business.name}</p>
+            <p className="text-sm text-muted-foreground">{form.category}</p>
           </div>
         </div>
       </SectionCard>
 
       <SectionCard title="Brand images">
-        <p className="text-sm text-foreground/50 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           A logo is shown as your shop's image across The Loyalty Loop (home feed, loyalty card, announcements).
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -452,7 +452,7 @@ function ProfileTab() {
 
         <div className="mt-4">
           <span className="block text-sm font-semibold text-foreground mb-1.5">
-            Pin location {geocoding && <span className="text-foreground/40 font-normal">(finding address…)</span>}
+            Pin location {geocoding && <span className="text-muted-foreground font-normal">(finding address…)</span>}
           </span>
           <ShopMap
             lat={form.lat ?? DEFAULT_MAP_CENTER.lat}
@@ -465,9 +465,9 @@ function ProfileTab() {
               setForm((f) => ({ ...f, lat, lng }))
             }}
           />
-          <p className="text-xs text-foreground/40 mt-1.5">
+          <p className="text-xs text-muted-foreground mt-1.5">
             {form.lat != null
-              ? 'Drag the pin or click the map to fine-tune — this is what customers will see on your shop page.'
+              ? 'Drag the pin or click the map to fine-tune. This is what customers will see on your shop page.'
               : 'Enter an address above to auto-place the pin, or click the map to set it manually.'}
           </p>
         </div>
@@ -504,7 +504,7 @@ function ProfileTab() {
       <button data-press-feedback
         onClick={handleSave}
         disabled={saving}
-        className="rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50 mb-5"
+        className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50 mb-5"
       >
         {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
       </button>
@@ -586,8 +586,8 @@ function StampLoyaltyTab() {
   return (
     <>
       <SectionCard title="Sign-up reward">
-        <p className="text-sm text-foreground/50 mb-3">
-          Something free just for joining your loyalty card — shown on your shop page so customers know what
+        <p className="text-sm text-muted-foreground mb-3">
+          Something free just for joining your loyalty card, shown on your shop page so customers know what
           to expect before they sign up.
         </p>
         <input
@@ -600,7 +600,7 @@ function StampLoyaltyTab() {
 
       <SectionCard title="Brand & loyalty">
         <p className="text-sm font-semibold text-foreground mb-1">Loyalty program type</p>
-        <p className="text-sm text-foreground/50 mb-3">How will customers earn rewards? You can change this any time.</p>
+        <p className="text-sm text-muted-foreground mb-3">How will customers earn rewards? You can change this any time.</p>
         <div className="grid sm:grid-cols-3 gap-3 mb-6">
           {[
             { value: 'stamp_card' as const, title: 'Stamps', desc: 'Classic punch card. One stamp per visit, fills a grid.' },
@@ -612,11 +612,11 @@ function StampLoyaltyTab() {
               onClick={() => setLoyaltyType(opt.value)}
               className={
                 'text-left rounded-xl border-2 p-4 transition-colors duration-150 ease-out ' +
-                (loyaltyType === opt.value ? 'border-primary bg-white' : 'border-black/10 bg-white/40')
+                (loyaltyType === opt.value ? 'border-primary bg-card' : 'border-border bg-white/40')
               }
             >
               <p className="font-bold text-foreground mb-1">{opt.title}</p>
-              <p className="text-xs text-foreground/50">{opt.desc}</p>
+              <p className="text-xs text-muted-foreground">{opt.desc}</p>
             </button>
           ))}
         </div>
@@ -634,7 +634,7 @@ function StampLoyaltyTab() {
                 type="color"
                 value={brandColor}
                 onChange={(e) => setBrandColor(e.target.value)}
-                className="h-10 w-10 rounded-lg border border-black/10"
+                className="h-10 w-10 rounded-lg border border-border"
               />
               <input className={inputClass} value={brandColor} onChange={(e) => setBrandColor(e.target.value)} />
             </div>
@@ -654,8 +654,8 @@ function StampLoyaltyTab() {
               ))}
             </div>
 
-            <p className="text-xs font-bold uppercase tracking-wide text-foreground/40 mb-2">Card preview</p>
-            <div className="rounded-xl border border-black/10 bg-white p-4 max-w-[220px]">
+            <p className="text-sm font-semibold text-foreground mb-2">Card preview</p>
+            <div className="rounded-xl border border-border bg-card p-4 max-w-[220px]">
               <div
                 className="h-11 w-11 rounded-lg flex items-center justify-center text-white font-display font-bold mb-3"
                 style={{ backgroundColor: brandColor }}
@@ -663,12 +663,12 @@ function StampLoyaltyTab() {
                 {business.name.charAt(0).toUpperCase()}
               </div>
               <p className="font-bold text-sm text-foreground">{business.name}</p>
-              <p className="text-[0.625rem] uppercase text-foreground/40 mb-2">{business.category}</p>
+              <p className="text-xs text-muted-foreground mb-2">{business.category}</p>
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1 text-foreground/60">
+                <span className="flex items-center gap-1 text-muted-foreground">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: brandColor }} /> Tap to join
                 </span>
-                <span className="font-bold text-primary-hover">View →</span>
+                <span className="font-semibold text-primary">View →</span>
               </div>
             </div>
           </div>
@@ -682,15 +682,15 @@ function StampLoyaltyTab() {
                 value={stampsRequired}
                 onChange={(e) => setStampsRequired(Number(e.target.value))}
               />
-              <span className="text-xs text-foreground/40 mt-1 block">
+              <span className="text-xs text-muted-foreground mt-1 block">
                 Used for shops without a reward catalogue. If you add catalogue tiers below, customers earn
                 each tier's reward instead.
               </span>
             </Field>
 
             <p className="text-sm font-semibold text-foreground mb-1.5">{unit} icon</p>
-            <p className="text-xs text-foreground/40 mb-2">
-              Pick a preset or type your own emoji — this is what fills each slot on the card.
+            <p className="text-xs text-muted-foreground mb-2">
+              Pick a preset or type your own emoji. This is what fills each slot on the card.
             </p>
             <div className="flex flex-wrap gap-2 mb-2">
               {STAMP_ICON_PRESETS.map((icon) => (
@@ -699,7 +699,7 @@ function StampLoyaltyTab() {
                   onClick={() => setStampIcon(icon)}
                   className={
                     'h-9 w-9 rounded-lg border-2 flex items-center justify-center text-lg ' +
-                    (icon === stampIcon ? 'border-primary' : 'border-black/10')
+                    (icon === stampIcon ? 'border-primary' : 'border-border')
                   }
                 >
                   {icon}
@@ -712,7 +712,7 @@ function StampLoyaltyTab() {
               onChange={(e) => setStampIcon(e.target.value)}
             />
 
-            <p className="text-xs font-bold uppercase tracking-wide text-foreground/40 mb-2">Card preview</p>
+            <p className="text-sm font-semibold text-foreground mb-2">Card preview</p>
             <div className="flex gap-1.5 flex-wrap">
               {Array.from({ length: Math.min(stampsRequired, 5) }).map((_, i) => (
                 <div
@@ -729,9 +729,9 @@ function StampLoyaltyTab() {
       </SectionCard>
 
       <SectionCard>
-        <h3 className="font-display font-bold text-foreground mb-1">Reward catalogue *</h3>
-        <p className="text-sm text-foreground/50 mb-4">
-          Tell customers what they can earn — shown on your shop page before they join. Required: add at
+        <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-1">Reward catalogue *</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Tell customers what they can earn, shown on your shop page before they join. Required: add at
           least one reward here to unlock scanning.
         </p>
 
@@ -740,17 +740,17 @@ function StampLoyaltyTab() {
             {catalog.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-black/10 bg-white/60 px-4 py-3"
+                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3"
               >
                 <div>
                   <p className="font-semibold text-foreground">{r.title}</p>
-                  <p className="text-xs text-foreground/50">
+                  <p className="text-xs text-muted-foreground">
                     {r.description} · {r.stamp_threshold} {unit.toLowerCase()}{r.stamp_threshold === 1 ? '' : 's'}
                   </p>
                 </div>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button data-press-feedback onClick={() => handleDeleteReward(r.id)} aria-label={`Delete ${r.title}`} className="text-foreground/40 hover:text-red-600">
+                    <button data-press-feedback onClick={() => handleDeleteReward(r.id)} aria-label={`Delete ${r.title}`} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
@@ -789,7 +789,7 @@ function StampLoyaltyTab() {
           </Field>
           <button data-press-feedback
             onClick={handleAddReward}
-            className="h-12 rounded-full bg-primary text-white font-bold px-5 flex items-center gap-1.5 whitespace-nowrap"
+            className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-5 flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Add
           </button>
@@ -799,7 +799,7 @@ function StampLoyaltyTab() {
       <button data-press-feedback
         onClick={handleSave}
         disabled={saving}
-        className="rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
+        className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
         {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
       </button>
@@ -880,8 +880,8 @@ function SpendLoyaltyTab() {
   return (
     <>
       <SectionCard title="Sign-up reward">
-        <p className="text-sm text-foreground/50 mb-3">
-          Something free just for joining your loyalty card — shown on your shop page so customers know what
+        <p className="text-sm text-muted-foreground mb-3">
+          Something free just for joining your loyalty card, shown on your shop page so customers know what
           to expect before they sign up.
         </p>
         <input
@@ -906,7 +906,7 @@ function SpendLoyaltyTab() {
                 type="color"
                 value={brandColor}
                 onChange={(e) => setBrandColor(e.target.value)}
-                className="h-10 w-10 rounded-lg border border-black/10"
+                className="h-10 w-10 rounded-lg border border-border"
               />
               <input className={inputClass} value={brandColor} onChange={(e) => setBrandColor(e.target.value)} />
             </div>
@@ -926,8 +926,8 @@ function SpendLoyaltyTab() {
               ))}
             </div>
 
-            <p className="text-xs font-bold uppercase tracking-wide text-foreground/40 mb-2">Card preview</p>
-            <div className="rounded-xl border border-black/10 bg-white p-4 max-w-[220px]">
+            <p className="text-sm font-semibold text-foreground mb-2">Card preview</p>
+            <div className="rounded-xl border border-border bg-card p-4 max-w-[220px]">
               <div
                 className="h-11 w-11 rounded-lg flex items-center justify-center text-white font-display font-bold mb-3"
                 style={{ backgroundColor: brandColor }}
@@ -935,19 +935,19 @@ function SpendLoyaltyTab() {
                 {business.name.charAt(0).toUpperCase()}
               </div>
               <p className="font-bold text-sm text-foreground">{business.name}</p>
-              <p className="text-[0.625rem] uppercase text-foreground/40 mb-2">{business.category}</p>
+              <p className="text-xs text-muted-foreground mb-2">{business.category}</p>
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1 text-foreground/60">
+                <span className="flex items-center gap-1 text-muted-foreground">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: brandColor }} /> Tap to join
                 </span>
-                <span className="font-bold text-primary-hover">View →</span>
+                <span className="font-semibold text-primary">View →</span>
               </div>
             </div>
           </div>
 
           <div>
             <p className="text-sm font-semibold text-foreground mb-1">How customers earn</p>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Customers earn by spending. Staff scan their QR code and enter what they spent, and linked cards
               count automatically where available. When they reach a reward's amount it's added to their
               wallet; after your biggest reward their progress starts a new round, carrying over anything extra.
@@ -957,9 +957,9 @@ function SpendLoyaltyTab() {
       </SectionCard>
 
       <SectionCard>
-        <h3 className="font-display font-bold text-foreground mb-1">Rewards *</h3>
-        <p className="text-sm text-foreground/50 mb-4">
-          What customers earn and how much they spend to unlock it — shown on your shop page before they
+        <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-1">Rewards *</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          What customers earn and how much they spend to unlock it, shown on your shop page before they
           join. Add a bigger reward at a higher amount if you like. Required: add at least one reward to
           unlock scanning.
         </p>
@@ -969,11 +969,11 @@ function SpendLoyaltyTab() {
             {catalog.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-black/10 bg-white/60 px-4 py-3"
+                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3"
               >
                 <div>
                   <p className="font-semibold text-foreground">{r.title}</p>
-                  <p className="text-xs text-foreground/50">
+                  <p className="text-xs text-muted-foreground">
                     {r.description ? `${r.description} · ` : ''}
                     {r.spend_threshold_pence != null
                       ? `Unlocks after spending ${poundsLabel(r.spend_threshold_pence)}`
@@ -982,7 +982,7 @@ function SpendLoyaltyTab() {
                 </div>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button data-press-feedback onClick={() => handleDeleteReward(r.id)} aria-label={`Delete ${r.title}`} className="text-foreground/40 hover:text-red-600">
+                    <button data-press-feedback onClick={() => handleDeleteReward(r.id)} aria-label={`Delete ${r.title}`} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
@@ -1021,18 +1021,18 @@ function SpendLoyaltyTab() {
           </Field>
           <button data-press-feedback
             onClick={handleAddReward}
-            className="h-12 rounded-full bg-primary text-white font-bold px-5 flex items-center gap-1.5 whitespace-nowrap"
+            className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-5 flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Add
           </button>
         </div>
-        {rewardError && <p className="text-sm text-red-600 mt-3">{rewardError}</p>}
+        {rewardError && <p className="text-sm text-destructive mt-3">{rewardError}</p>}
       </SectionCard>
 
       <button data-press-feedback
         onClick={handleSave}
         disabled={saving}
-        className="rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
+        className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
         {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
       </button>
@@ -1085,7 +1085,7 @@ function WinbackTab() {
   return (
     <>
       <SectionCard title="Send win-back emails">
-        <p className="text-sm text-foreground/50 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           Emails members who haven't visited in a while, with a one-off coupon code, to bring them back.
           Skips anyone already emailed in the last 30 days or opted out of promos.
         </p>
@@ -1102,38 +1102,38 @@ function WinbackTab() {
           <button data-press-feedback
             onClick={handleSend}
             disabled={sending}
-            className="h-12 rounded-full bg-primary text-white font-bold px-6 flex items-center gap-2 disabled:opacity-50"
+            className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 flex items-center gap-2 disabled:opacity-50"
           >
             <Send className="h-4 w-4" /> {sending ? 'Sending…' : 'Send now'}
           </button>
         </div>
         {result && <p className="text-sm text-fun-green font-semibold mt-3">{result}</p>}
-        {error && <p className="text-sm text-red-600 font-semibold mt-3">{error}</p>}
+        {error && <p className="text-sm text-destructive font-semibold mt-3">{error}</p>}
       </SectionCard>
 
       <SectionCard title="Send history">
         {loadingLog ? (
           <div role="status" aria-label="Loading email history" className="space-y-2"><span className="sr-only">Loading email history</span><SkeletonBlock className="h-14" /><SkeletonBlock className="h-14" /></div>
         ) : log.length === 0 ? (
-          <p className="text-sm text-foreground/40">No win-back emails sent yet.</p>
+          <p className="text-sm text-muted-foreground">No win-back emails sent yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {log.map((entry) => (
               <div
                 key={entry.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-black/10 bg-white/60 px-4 py-3 text-sm"
+                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3 text-sm"
               >
                 <div>
                   <p className="font-semibold text-foreground">{entry.recipient_email}</p>
-                  <p className="text-xs text-foreground/50">
+                  <p className="text-xs text-muted-foreground">
                     {entry.days_inactive} days inactive · code {entry.coupon_code} ·{' '}
                     {new Date(entry.sent_at).toLocaleDateString()}
                   </p>
                 </div>
                 <span
                   className={
-                    'text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ' +
-                    (entry.status === 'sent' ? 'bg-[#DFF3E3] text-fun-green' : 'bg-red-50 text-red-600')
+                    'text-xs font-bold px-2.5 py-1 rounded-full ' +
+                    (entry.status === 'sent' ? 'bg-sage text-sage-ink' : 'bg-destructive/10 text-destructive')
                   }
                 >
                   {entry.status}
@@ -1205,29 +1205,29 @@ function VerificationTab() {
             <StatusIcon className="h-5 w-5" style={{ color: meta.color }} />
           </span>
           <div>
-            <p className="font-display font-bold text-foreground">{meta.label}</p>
-            <p className="text-xs text-foreground/50">
+            <p className="font-display text-lg font-semibold tracking-tight text-foreground">{meta.label}</p>
+            <p className="text-xs text-muted-foreground">
               {status === 'verified' && business.verification_document_label
                 ? `Verified from ${business.verification_document_label}`
                 : status === 'pending'
                   ? 'An admin will review your document soon.'
                   : status === 'rejected'
-                    ? business.verification_rejection_reason ?? 'Your submission was rejected — resubmit below.'
+                    ? business.verification_rejection_reason ?? 'Your submission was rejected. Resubmit below.'
                     : 'Upload a document to earn the verified badge.'}
             </p>
           </div>
         </div>
-        <p className="text-sm text-foreground/50">
+        <p className="text-sm text-muted-foreground">
           A verified badge shows customers your shop is a real, checked business. It doesn't affect whether your
-          shop is live — that already happened when you finished onboarding.
+          shop is live. That already happened when you finished onboarding.
         </p>
       </SectionCard>
 
       {canSubmit && (
         <SectionCard title="Submit proof of business">
-          <p className="text-sm text-foreground/50 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             A VAT certificate, Companies House certificate, or a recent utility bill in your business's name.
-            PNG, JPEG, WEBP or PDF, up to 10MB. Stored privately — only you and Loyalty Loop admins can see it.
+            PNG, JPEG, WEBP or PDF, up to 10MB. Stored privately. Only you and Loyalty Loop admins can see it.
           </p>
           <Field label="What is this document?">
             <input
@@ -1246,15 +1246,15 @@ function VerificationTab() {
           />
           <button data-press-feedback
             onClick={() => inputRef.current?.click()}
-            className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-11 text-sm font-semibold text-foreground mb-4"
+            className="flex items-center gap-2 rounded-full border border-border px-4 h-11 text-sm font-semibold text-foreground mb-4"
           >
             <FileCheck className="h-4 w-4" /> {file ? file.name : 'Choose file'}
           </button>
-          {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+          {error && <p className="text-sm text-destructive mb-3">{error}</p>}
           <button data-press-feedback
             onClick={handleSubmit}
             disabled={submitting || !file || !label.trim()}
-            className="rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
+            className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
           >
             {submitting ? 'Submitting…' : 'Submit for review'}
           </button>
@@ -1280,7 +1280,7 @@ function PermissionToggle({
       onClick={onToggle}
       className={
         'flex items-center gap-2 rounded-full border-2 px-3.5 h-9 text-sm font-semibold transition-colors duration-150 ease-out ' +
-        (active ? 'border-primary bg-primary/10 text-primary-hover' : 'border-black/10 text-foreground/40')
+        (active ? 'border-primary bg-primary/10 text-primary-hover' : 'border-border text-muted-foreground')
       }
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -1314,8 +1314,8 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
 
   return (
     <SectionCard title="Invite staff">
-      <p className="text-sm text-foreground/50 mb-4">
-        You set their initial password — they can sign in immediately with the same login screen as owners, no
+      <p className="text-sm text-muted-foreground mb-4">
+        You set their initial password. They can sign in immediately with the same login screen as owners, no
         confirmation email needed. Re-inviting a revoked email reuses the same account.
       </p>
       <div className="grid sm:grid-cols-3 gap-4">
@@ -1361,11 +1361,11 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
           onToggle={() => setPerms({ ...perms, can_respond_reviews: !perms.can_respond_reviews })}
         />
       </div>
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p className="text-sm text-destructive mb-3">{error}</p>}
       <button data-press-feedback
         onClick={handleInvite}
         disabled={submitting}
-        className="flex items-center gap-2 rounded-full bg-primary text-white font-bold px-6 h-12 disabled:opacity-50"
+        className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
         <UserPlus className="h-4 w-4" /> {submitting ? 'Adding…' : 'Add staff member'}
       </button>
@@ -1393,20 +1393,20 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
   const revoked = staff.status === 'revoked'
 
   return (
-    <div className="rounded-xl border border-black/10 bg-white/60 px-4 py-3">
+    <div className="rounded-xl border border-border bg-background px-4 py-3">
       <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
         <div>
           <p className="font-semibold text-foreground">
-            {staff.name} {revoked && <span className="text-xs font-bold text-red-600 uppercase ml-1">Revoked</span>}
+            {staff.name} {revoked && <span className="text-xs font-semibold text-destructive ml-1">Revoked</span>}
           </p>
-          <p className="text-xs text-foreground/50">{staff.invited_email}</p>
+          <p className="text-xs text-muted-foreground">{staff.invited_email}</p>
         </div>
         <button data-press-feedback
           onClick={toggleStatus}
           disabled={busy}
           className={
             'rounded-full px-4 h-9 text-sm font-bold disabled:opacity-50 ' +
-            (revoked ? 'bg-fun-green text-white' : 'border border-red-300 text-red-600')
+            (revoked ? 'bg-fun-green text-white' : 'border border-destructive/30 text-destructive')
           }
         >
           {revoked ? 'Reactivate' : 'Revoke access'}
@@ -1458,7 +1458,7 @@ function StaffTab() {
         {loadingStaff ? (
           <div role="status" aria-label="Loading staff" className="space-y-3"><span className="sr-only">Loading staff</span><SkeletonBlock className="h-20" /><SkeletonBlock className="h-20" /></div>
         ) : staff.length === 0 ? (
-          <p className="text-sm text-foreground/40">No staff added yet.</p>
+          <p className="text-sm text-muted-foreground">No staff added yet.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {staff.map((s) => (
@@ -1477,13 +1477,13 @@ function HelpTab() {
   return (
     <>
       <SectionCard title="Help & support">
-        <p className="text-sm text-foreground/60">Send a message straight to the Loyalty Loop team. You can choose a priority and follow replies from the same place.</p>
-        <Link to="/owner/support" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white">
+        <p className="text-sm text-muted-foreground">Send a message straight to the Loyalty Loop team. You can choose a priority and follow replies from the same place.</p>
+        <Link to="/owner/support" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors px-5 py-3 text-sm font-semibold text-primary-foreground">
           <MessageSquare className="h-4 w-4" /> Contact support
         </Link>
       </SectionCard>
       <SectionCard title="Quick answers">
-        <div className="grid gap-3 text-sm text-foreground/65">
+        <div className="grid gap-3 text-sm text-muted-foreground">
           <p><strong className="text-foreground">Record a purchase:</strong> open Scan from the owner menu, scan the customer QR code or enter their code, then enter what they spent.</p>
           <p><strong className="text-foreground">Update your card:</strong> use Loyalty & rewards to change your rewards and how much customers spend to unlock them.</p>
           <p><strong className="text-foreground">Your shop:</strong> {business?.is_active ? 'Your shop is live for customers.' : 'Your shop is currently deactivated and hidden from customers.'}</p>
@@ -1558,43 +1558,43 @@ function DangerTab() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border border-amber-300 bg-amber-50 p-6">
-        <h3 className="font-display text-lg font-bold text-amber-950">{business.is_active ? 'Deactivate shop' : 'Reactivate shop'}</h3>
-        <p className="mt-2 text-sm text-amber-950/70">{business.is_active ? 'Deactivation hides your shop and stops new customer joins. Your data stays safely in place, and you can reactivate it at any time.' : 'Reactivating makes your shop available to customers again.'}</p>
-        <button data-press-feedback onClick={() => setActive(!business.is_active)} disabled={busy} className="mt-4 rounded-xl border border-amber-500 px-4 py-2 text-sm font-bold text-amber-900 disabled:opacity-50">
+      <section className="rounded-3xl bg-amber/30 p-6 sm:p-7">
+        <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">{business.is_active ? 'Deactivate shop' : 'Reactivate shop'}</h3>
+        <p className="mt-2 text-sm text-foreground/75">{business.is_active ? 'Deactivation hides your shop and stops new customer joins. Your data stays safely in place, and you can reactivate it at any time.' : 'Reactivating makes your shop available to customers again.'}</p>
+        <button data-press-feedback onClick={() => setActive(!business.is_active)} disabled={busy} className="mt-4 rounded-full bg-card px-5 py-2.5 text-sm font-semibold text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary disabled:opacity-50">
           {busy ? 'Saving…' : business.is_active ? 'Deactivate shop' : 'Reactivate shop'}
         </button>
       </section>
 
-      <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
-        <h3 className="font-display text-lg font-bold text-red-800">Delete shop permanently</h3>
-        <p className="mt-2 text-sm text-red-800/75">This permanently removes the shop, its members’ loyalty activity, rewards, reviews and related shop data. This cannot be undone.</p>
+      <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
+        <h3 className="font-display text-lg font-semibold tracking-tight text-destructive">Delete shop permanently</h3>
+        <p className="mt-2 text-sm text-foreground/75">This permanently removes the shop, its members’ loyalty activity, rewards, reviews and related shop data. This cannot be undone.</p>
         {!confirmingDelete ? (
-          <button data-press-feedback onClick={() => setConfirmingDelete(true)} className="mt-4 rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 dark:text-red-300">Delete shop…</button>
+          <button data-press-feedback onClick={() => setConfirmingDelete(true)} className="mt-4 rounded-full border border-destructive/30 px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">Delete shop…</button>
         ) : (
           <div className="mt-4 max-w-md">
-            <label className="block text-sm font-semibold text-red-900">Type <span className="font-bold">{business.name}</span> to confirm</label>
-            <input value={deleteName} onChange={(e) => setDeleteName(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-red-300 bg-white px-3 outline-none focus:border-red-600" />
-            <div className="mt-3 flex gap-2"><button data-press-feedback onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-xl px-4 py-2 text-sm font-bold text-red-800">Cancel</button></div>
+            <label className="block text-sm font-semibold text-foreground">Type <span className="font-bold">{business.name}</span> to confirm</label>
+            <input value={deleteName} onChange={(e) => setDeleteName(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-destructive/30 bg-card px-3.5 outline-none focus:border-destructive focus:ring-3 focus:ring-destructive/20" />
+            <div className="mt-3 flex gap-2"><button data-press-feedback onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-full px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">Cancel</button></div>
           </div>
         )}
-        {error && <p className="mt-3 text-sm font-medium text-red-700 dark:text-red-300">{error}</p>}
+        {error && <p className="mt-3 text-sm font-medium text-destructive">{error}</p>}
       </section>
 
-      <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
-        <h3 className="font-display text-lg font-bold text-red-800">Transfer shop, then delete account</h3>
-        <p className="mt-2 text-sm text-red-800/75">You cannot delete an owner account while it owns a shop. Transfer this shop to an existing Loyalty Loop account, or delete the shop and its customer data above.</p>
-        <label className="mt-4 block text-sm font-semibold text-red-900" htmlFor="new-owner-email">New owner’s account email</label>
+      <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
+        <h3 className="font-display text-lg font-semibold tracking-tight text-destructive">Transfer shop, then delete account</h3>
+        <p className="mt-2 text-sm text-foreground/75">You cannot delete an owner account while it owns a shop. Transfer this shop to an existing Loyalty Loop account, or delete the shop and its customer data above.</p>
+        <label className="mt-4 block text-sm font-semibold text-foreground" htmlFor="new-owner-email">New owner’s account email</label>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <input id="new-owner-email" type="email" value={newOwnerEmail} onChange={(event) => setNewOwnerEmail(event.target.value)} placeholder="owner@example.com" className="h-11 flex-1 rounded-xl border border-red-300 bg-white px-3 outline-none focus:border-red-600" />
-          <button data-press-feedback onClick={transferShop} disabled={transferring || !newOwnerEmail.trim()} className="rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 dark:text-red-300 disabled:opacity-40">{transferring ? 'Transferring…' : 'Transfer shop'}</button>
+          <input id="new-owner-email" type="email" value={newOwnerEmail} onChange={(event) => setNewOwnerEmail(event.target.value)} placeholder="owner@example.com" className="h-11 flex-1 rounded-xl border border-destructive/30 bg-card px-3.5 outline-none focus:border-destructive focus:ring-3 focus:ring-destructive/20" />
+          <button data-press-feedback onClick={transferShop} disabled={transferring || !newOwnerEmail.trim()} className="rounded-full border border-destructive/30 px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40">{transferring ? 'Transferring…' : 'Transfer shop'}</button>
         </div>
       </section>
 
-      {businesses.length === 0 && <section className="rounded-2xl border border-red-300 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
-        <h3 className="font-display text-lg font-bold text-red-800">Delete account permanently</h3>
-        <p className="mt-2 text-sm text-red-800/75">All shops have been resolved. This permanently deletes your login and personal account data.</p>
-        <button data-press-feedback onClick={deleteAccount} disabled={deletingAccount} className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
+      {businesses.length === 0 && <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
+        <h3 className="font-display text-lg font-semibold tracking-tight text-destructive">Delete account permanently</h3>
+        <p className="mt-2 text-sm text-foreground/75">All shops have been resolved. This permanently deletes your login and personal account data.</p>
+        <button data-press-feedback onClick={deleteAccount} disabled={deletingAccount} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
       </section>}
     </div>
   )
@@ -1620,12 +1620,12 @@ export function OwnerSettings() {
       <OwnerLayout>
         <SkeletonBlock className="h-9 w-52 mb-2" />
         <SkeletonBlock className="h-5 w-40 mb-6" />
-        <div className="flex gap-1 border-b border-black/10 mb-6 pb-3">
+        <div className="flex gap-1.5 mb-7">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonBlock key={i} className="h-8 w-24" />)}
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl bg-card p-5 shadow-sm">
+            <div key={i} className="rounded-2xl bg-card p-5 ring-1 ring-foreground/8">
               <SkeletonBlock className="h-5 w-2/3" />
               <SkeletonBlock className="mt-3 h-4 w-full" />
               <SkeletonBlock className="mt-2 h-4 w-4/5" />
@@ -1638,18 +1638,20 @@ export function OwnerSettings() {
 
   return (
     <OwnerLayout>
-      <h1 className="text-3xl font-display font-extrabold text-foreground mb-5">Shop settings</h1>
+      <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-6 sm:text-4xl">Shop settings</h1>
 
-      <div className="flex flex-wrap gap-1 border-b border-black/10 mb-6">
+      <div role="tablist" aria-label="Settings sections" className="-mx-1 mb-7 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button data-press-feedback
             key={key}
             onClick={() => selectTab(key)}
+            role="tab"
+            aria-selected={tab === key}
             className={
-              'flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors duration-150 ease-out ' +
+              'flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200 ease-out ' +
               (tab === key
-                ? 'border-foreground text-foreground'
-                : 'border-transparent text-foreground/40 hover:text-foreground/70')
+                ? key === 'danger' ? 'bg-destructive/12 text-destructive' : 'bg-peach text-peach-ink'
+                : 'bg-card text-muted-foreground ring-1 ring-foreground/8 hover:text-foreground')
             }
           >
             <Icon className="h-4 w-4" /> {label}
@@ -1658,15 +1660,15 @@ export function OwnerSettings() {
       </div>
 
       {ownerLoading ? null : !business ? (
-        <section className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30 p-6">
-          <h2 className="font-display text-xl font-bold text-red-800">Delete account</h2>
-          <p className="mt-2 text-sm text-red-800/75">You have no shops assigned to this account. Deleting it permanently removes your login and personal data.</p>
+        <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
+          <h2 className="font-display text-xl font-semibold tracking-tight text-destructive">Delete account</h2>
+          <p className="mt-2 text-sm text-foreground/75">You have no shops assigned to this account. Deleting it permanently removes your login and personal data.</p>
           <button data-press-feedback onClick={async () => {
             const status = await canDeleteCurrentAccount()
             if (!status.can_delete) return window.alert(status.reason ?? 'Resolve ownership first.')
             if (!window.confirm('Delete your account and personal data? This cannot be undone.')) return
             await requestAccountDeletion(); await signOut()
-          }} disabled={businesses.length > 0} className="mt-4 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">Delete account permanently</button>
+          }} disabled={businesses.length > 0} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40">Delete account permanently</button>
         </section>
       ) : (
         <>

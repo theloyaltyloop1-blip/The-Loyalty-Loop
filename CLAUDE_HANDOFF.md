@@ -11,6 +11,33 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Anti-AI-look redesign, phase 1: web tokens + landing (2026-10-04) - Claude
+
+- User asked to rebuild the websites and apps because they look AI-made, using the `design-taste-frontend` (Taste) and `redesign-existing-projects` skills. Design read: redesign (overhaul visuals, keep content, routes and nav labels) of a consumer loyalty site for UK shoppers and shop owners. Dials: website 6/5/4; product screens density 5.
+- `apps/web/src/index.css`: cream `#F7ECDC` + Libre Baskerville/DM Sans replaced by a neutral olive-tinted palette (bg `#F3F4EF`, ink `#1C2620`) and self-hosted Bricolage Grotesque (display) + Geist (body) via `@fontsource-variable/*` (new deps in `apps/web/package.json`). Primary orange darkened to `#C4531F` so white button text passes AA (old `#E8703B` failed). New dark palette; dark primary uses dark text (`--color-primary-foreground`). This reskins every web screen.
+- `apps/web/src/pages/Landing.tsx` + `landing.css` rewritten: no eyebrows, no 01/02/03 card row, no dark band mid-page, FAQ answers visible instead of an accordion, hero card stack with stamp-fill motion (reduced-motion gated), em dashes removed. Shop names on the hero cards are illustrative. `index.html` title/theme-color updated.
+- New `apps/web/src/assets/loyalty-loop-mark.png`: same logo with the cream background keyed out; used by `loop-mark.tsx`, `auth-layout.tsx`, `dashboard-layout.tsx`, `owner-layout.tsx`. `Onboarding.tsx` and `Tools.tsx` still import the old PNG (both have uncommitted user changes, left for the screen pass).
+- Checks actually run: `npx tsc -b` clean; landing checked in the local dev server at 1440px and 375px, light and dark, no horizontal overflow, hero headline 2 lines. NOT built for production, NOT deployed, nothing committed. Shopper/retailer apps untouched so far.
+- Open: ~180 em/en dashes remain in web UI strings; remaining web screens only have the token reskin; native apps still on the old palette (`packages/design-tokens/tokens.ts`); landing has no real photography (needs shop photos from the user).
+- 2026-10-04 follow-up (user approved the direction, asked for more colour and the brag video): landing now uses brand colour fields (olive block behind the hero cards, amber/orange back cards, olive video panel, sage business panel, coloured step icons and FAQ rules; dark-mode tints added). New video section plays `apps/web/public/video/loyalty-loop.mp4` (1.3 MB, 21s, click to play, `preload="none"`, poster `loyalty-loop-poster.jpg`). The video was re-themed to the new palette/fonts and re-rendered from `brag-output/composition/` (`hyperframes check` passed). Checks: `npx tsc -b` clean; headless Chrome screenshots at 1440px; 375px overflow check in the dev server. Not deployed. Noticed: the live platform announcement banner text ("Live Launch — We Will Be...") is Title Case with an em dash; it comes from admin data, not code.
+- 2026-10-04 rollout (user: "every page, no check-ins"): web primitives restyled (pill buttons, 20px cards, 12px inputs, calmer menus), radius scale retuned in `index.css`, brand colour-field tokens added (`olive/sage/peach/amber/orange` + `-ink`). Shopper layout is now a top bar (sidebar removed); the floating "Security" button was removed because it had no action. Owner sidebar now olive. Auth pages share a new split layout with visible field labels (`AuthInput` turns `placeholder` into a label). All em/en dashes removed from web UI strings; eyebrows, flat shadows, pure white and decorative gradients swept. Rebuilt: Home, shop card, Rewards, Inbox, Favourites, News, Profile, Help, 404, cookie banner, shop requests, ShopDetail (two-column; Share button now works). Per user request, Activity moved into Profile (`ActivityFeed`; `/dashboard/activity` redirects to `/dashboard/profile#activity`) and Inbox is a bell icon in the header. Checks: `npx tsc -b` clean after each step; headless screenshots of public pages only (dashboard pages need sign-in, not visually verified).
+- 2026-10-04 rollout complete (all apps, nothing deployed or committed):
+  - Web: every page restyled. Also Discover, Analytics (stat tiles now sage/peach/amber instead of blue/purple), Scan, Settings (pill tabs, danger zone on destructive tokens), Onboarding, Tools (poster uses the transparent mark), Tutorial, Reviews, Announcements, Support, Notifications, admin console + Trending + Shop requests (re-tinted dark), WhatsApp pages, AuthCallback, Brand workspace. Low-contrast `text-foreground/30-65` mapped to `text-muted-foreground`. Checks: `npx tsc -b` clean, `npm run build` OK, `npm run lint` warnings only (pre-existing), headless screenshots of public pages.
+  - Native (shopper, retailer, admin): `packages/design-tokens/tokens.ts` updated (new palette + colour fields + `fonts.nativeDisplay`). Both apps load `@expo-google-fonts/bricolage-grotesque` via `useFonts` in `App` (non-blocking; expo-font is already in every SDK 54 binary) and big titles use it. Warm greys/near-blacks mapped to olive-tinted neutrals, settings tile colours moved to the logo family (shopper settings hero gradient kept: the user approved it 2026-09-12), dashes removed, admin WebView shell re-tinted. Checks: `npx tsc --noEmit` clean in shopper, retailer, admin. NOT run on a device or simulator; react-native-web cannot render these apps.
+  - Risk: this working tree is on `main` at 20252e4, but production moved to `fe3c603` (back-to-stamps, released from a worktree). The redesign touches the same files (e.g. ShopDetail, owner Settings/Scan, shopper/retailer App.tsx). Merge onto fe3c603 before any release and re-run checks.
+  - Next actions: (1) user reviews the redesign locally; (2) Codex merges the working tree onto `fe3c603`, resolves conflicts in favour of back-to-stamps logic + redesign styling, re-runs tsc/build, then ships web via Vercel and JS via `eas update` (shopper, retailer, admin) once the user approves; (3) user tests fonts/colours on a real phone after the OTA.
+- Done 2026-10-04: web, shopper, retailer and admin restyled (see rollout notes above).
+
+## Keyboard avoidance on text fields (2026-10-03) — Claude
+
+- Added `src/components/KeyboardAware.tsx` to both apps (`useKeyboardHeight`, `KeyboardAwareScrollView`). `Sheet.tsx` in both apps now lifts by the keyboard height. Input screens in `apps/shopper/App.tsx` and `apps/retailer/App.tsx` use the new scroll view (the shopper settings sheet uses `pad={false}`).
+- JS only, so it can ship via `eas update`. Checks: `tsc --noEmit` clean in both apps. NOT yet exercised on a device or emulator.
+- Next: user to test on a phone after an OTA (auth, shop-detail, retailer forms, sheets with inputs). Owner: user, then Codex to publish OTA.
+
+## Business coach prompt refresh (2026-10-03) — Claude
+
+Changed `supabase/functions/business-coach-chat/index.ts` only: the prompt no longer says the shop runs a `stamp_card` programme; it now states stamps are gone and rewards are spend-based (using `businesses.reward_threshold_pence`), explains the shop-request flow (search by name or typed address, email to the team once the threshold is met, no guarantee), lists current owner tools, and restricts the coach to shop marketing, retention, rewards and app help. Checks: static read only; `deno` is not installed here, so no type-check or run. **Deployed 2026-10-03** as `business-coach-chat` version 22, ACTIVE, `verify_jwt: true` (unchanged). Not yet tested against the live model. Next action (user or Codex): ask the coach "I have no stamps" on a test shop to confirm the answer.
+
 ## Current status (2026-09-29): R1–R4 approved; deployment runbook awaits Claude check
 
 One additive migration, lifecycle/account/orphan Edge changes and 15 desired-behaviour scenarios are complete locally. Final checks: 35/35 pure tests; 15/15 new scenarios plus all three required existing integration suites and the existing spend-tier suite; both app TypeScript checks; strict shared-helper TypeScript. Claude's subsequent implementation review approved staged deployment and completed Deno checking successfully. The deployment runbook is now written in docs/DEPLOY_R1-R4_RUNBOOK.md and awaits Claude's document review, then product-owner deployment authorization. Nothing deployed and no live data/provider API accessed. Unknown-metadata age-based orphan deletion is deferred because the created timestamp was not confirmed. See the final entries and copy-ready prompt for files, deviations and exact commands.
@@ -875,7 +902,7 @@ against, not follow-up work.
 - Meta prerequisites for stage 2 going live (product owner): approve the `spend_progress` and `reward_ready` Utility templates (en_GB), finish business verification, and switch to a real UK number. Stage 2 can be fully built and tested against a fake Graph API before then.
 - Order: Codex first finishes the pending independent review of `9b92125`/`e066b1b`/`008381b` (part A), then builds stage 2 locally (part B). Claude reviews before any deploy.
 
-## Copy-ready prompt for Codex
+## Historical WhatsApp prompt for Codex — superseded by current review task
 
 Read CLAUDE_HANDOFF.md ("WhatsApp D1 APPROVED; stage 2 handed to Codex") and docs/WHATSAPP_PLAN.md (stage 2 and D1, now approved). Do part A, then part B. Update CLAUDE_HANDOFF.md after each completed item.
 
@@ -1188,6 +1215,266 @@ Updated IMPLEMENTATION_TIMELINE.md and docs/SHOP_REQUESTS_PLAN.md to mark websit
 ### Current Claude review prompt replaced — 2 October 2026
 Replaced the single final Claude Code prompt with released paths, exact verification commands/results, acceptance criteria, live publication status and remaining physical-device/delivery limits. Shop configuration input is complete; separate WhatsApp/Fidel gates remain.
 
+### Live operator-email test (2 October 2026) — Claude, owner approved
+- The owner asked to test the shop-request email using their own existing request (assumed to be Squeezed Balham). Production held one requested shop with one vote. No fake accounts or fake votes were created.
+- Set `shop_request_settings.threshold` to 1 and ran `recount_shop_requests()`. The shop moved `collecting→ready` at 21:48:29 UTC. The trigger woke `shop-request-notify`: `email_attempted_at` 21:48:31, `email_sent_at` 21:48:31 (Resend accepted it), `notify_error` null. **Threshold restored to 5** immediately afterwards and confirmed. This is the first live evidence of the operator email.
+- That shop stays `ready` (sticky by design) and won't be emailed again. Owner: don't forward its pitch to the real shop, because it is based on one request.
+- Copy bug: with a count of 1 the pitch reads "1 local shoppers have asked". Fix the singular/plural wording (owner: Codex, P3).
+- Codex's review prompt below is still open for Claude; this test doesn't answer it.
+
+### Release documentation committed — 2 October 2026
+Documentation-only commit 8622802 records verified website/backend and both production OTAs. Owner reports no search visible in mobile apps; investigating the entry point before final completion.
+
+### Mobile search entry points inspected after owner report — 2 October 2026
+Owner reports no search on installed Android/iPhone apps. Verified the published source includes Home search directly below Discover local rewards and Map search below Shops near you; Ask them to join appears for no matches. Both new OTA records are verified, but device receipt is not. Explained download/reopen behavior; no native build or further UI change made on an unverified device report.
+
+### Final release documentation pushed — 2 October 2026
+Pushed documentation commit 8622802 to origin/main successfully. Production application source remains 1d98558; both native OTA IDs are independently verified. Subsequent living notes retain the owner mobile-search report and physical-device receipt limitation locally. No additional app publication is required by this documentation-only push.
+
+### Final Claude action updated for mobile report — 2 October 2026
+Single final prompt now prioritizes verifying physical-device OTA receipt and Home/Map search because owner reports search absent. Release metadata is confirmed; no device receipt or production email/push delivery claim. Review commands/results and held WhatsApp scope remain explicit.
+
+### Review: live shop-request release 1d98558 (2 October 2026) — Claude
+
+**Verdict: ACCEPTED as live; no rollback needed. Two P1/P2 cost-and-availability fixes are due soon (F1, F2).** The core protections are verified both in code and on the live database. Physical-device behaviour is still unverified (see "Phones" below). Nothing was deployed, published or written live by this review, apart from the owner-approved email test recorded above.
+
+**Checks actually run:**
+- Exact release in an isolated worktree of `1d98558` (held WhatsApp edits excluded): `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1` → exit 0: 31/31 database/fake-provider/recovery tests, 23/23 pure tests, seven Deno entrypoints, shopper/retailer/web/admin type checks and the diff check. Two orphaned embedded-Postgres `io_worker` processes from this run stalled the runner for about 6 minutes; I stopped only those two, after which it completed (the same Windows issue Codex recorded). `npm run build:web` → PASS (only the pre-existing chunk-size warning).
+- Live read-only SQL:
+  - `requested_shops` has only `place_id`, count, status, timestamps and email/lease fields (no Places details).
+  - Threshold 5 and global search cap 1,000.
+  - The only client policy is `shop_requests_read_own`; the only client grant is SELECT on `shop_requests`.
+  - `anon` can execute none of the shop functions. `authenticated` can execute only `request_shop`, `withdraw_shop_request`, `my_shop_requests` and the two admin-guarded RPCs.
+  - The unique index on `businesses.google_place_id` is present.
+  - The cron job `shop-request-delivery-recovery` is active, its last runs succeeded each minute, and `scheduled_jobs_health()` returns ok.
+- EAS (read-only):
+  - Channel `production` → branch `production`, which holds both OTA groups for runtime 1.0.0 at commit 1d98558.
+  - Channel `preview` → branch `preview`, whose latest update is 30 September.
+  - Recent builds: iOS build 10 and Android builds 120/121 are store builds on the production profile (production channel). Android build 119 of 23 September is an **internal preview APK** (preview channel).
+- Deployed `shop-request-notify` (version 1) source matches 1d98558 (spot check).
+- Live operator email: one email sent and confirmed (see the email-test entry above).
+
+**Verified:**
+- B1 ID-only storage, with details fetched only when needed, never stored, and owner/admin-scoped.
+- No website or phone fields in the search mask.
+- The HMAC token is bound to the user, the place, the expiry and GB.
+- Persistent per-user (30) and global (1,000) search caps.
+- One collecting→ready wake.
+- A one-shot email claim with an idempotency key.
+- Joined pushes: one claim per requester; failures no longer abort the loop.
+- The join push title uses `businesses.name`.
+- Delete-trigger recount.
+- The admin retry is admin-guarded.
+- Shopper copy uses friendly statuses and generic errors, and the list sits below the profile hero.
+
+**Findings:**
+- **F1 (P1, cost runaway). A Places failure makes the email retry forever.**
+  - `shop-request-notify` fetches Place Details (with contact fields, the priciest SKU) *before* claiming. If details fail (place ID obsolete or not found, or `readPlace` rejects the result), it returns 502 without claiming.
+  - The minute sweep then retries **every minute indefinitely**: about 1,440 uncounted Place Details calls a day per stuck shop (up to 20 shops per sweep), and the operator never gets an email.
+  - Fix: add `notify_attempts` and `next_attempt_at` with backoff (for example 1 min, 10 min, 1 h, 6 h; give up after 5). After the final attempt, claim and send the email anyway, using the place ID and a Google Maps link (`https://www.google.com/maps/place/?q=place_id:<id>`) instead of details.
+- **F2 (P2, availability and cost). Viewing your requests spends the search allowance.**
+  - Every time the website Profile loads, or the phone app's Settings opens, it hydrates up to 20 names, charging each one to the user's 30/day **and** the global 1,000/day.
+  - A user with 10 requests who opens Settings three times exhausts their own search for the day. A few hundred such views exhaust the global cap, which breaks shop search for **everyone** until midnight UTC.
+  - Fix: a separate details budget, so details don't count against the search caps; an in-memory per-session cache in both apps, never persisted; and hydrate only when the list is visible. On mobile, put the list behind a "Shops you've asked for" row that opens a pop-up sheet, which matches the owner's design preference.
+- **F3 (P2, deadlock).** Two concurrent withdrawals of different shops, or a withdrawal during an account deletion, can deadlock. Each locks its own shop row, then the statement-level `recount_deleted_shop_requests` locks **all** shop rows in `place_id` order; Postgres aborts one transaction. The user sees "Could not withdraw", and a retry works. Every delete also recounts every shop.
+  - Fix: use `REFERENCING OLD TABLE` and recount only the affected place IDs, in sorted order. Drop `withdraw_shop_request`'s explicit pre-lock, or lock in the same order.
+- **F4 (P3).**
+  - With a count of 1 the pitch says "1 local shoppers have asked" (seen live).
+  - Admin details lookups count against the admin's personal 30/day, so the admin page will hydrate only about 30 names a day.
+  - On mobile, "Ask them to join" appears only after a search with no matches. The website also has an always-visible "Ask a shop to join" link; add the same to mobile Home.
+
+**Phones ("mobile search missing"):**
+- The search box is in the release code on both Home and Map, and it is styled (`styles.input`).
+- Expo downloads an update at launch and applies it on the **next** launch, so store and TestFlight builds show it only after the app has been fully closed and reopened twice.
+- An Android phone running the **preview APK (build 119)** listens to the `preview` channel and will **not** receive this production update.
+- Owner: confirm which build each phone runs, and force-close and reopen twice. If it's the preview APK, either install the Play/TestFlight build, or have Codex republish this update group to the `preview` branch.
+- Physical receipt, the Home/Map entry points, and signed-in request/push smoke tests remain **unverified by Claude** (no device access).
+
+**Next actions:**
+- (Codex) Fix F1 and F2 first, then F3 and F4, with tests. Ship the backend migration and functions, then a phone update and a website push. Claude re-reviews.
+- (Owner) Check the phone build and channel, and restart twice. Then do a signed-in request on the phone. Confirm the Google key has a daily quota and is restricted to Places API (New).
+- (Claude) Re-review F1–F4. WhatsApp B2/B3 local edits are still held for Claude's review; WhatsApp, Fidel jobs and phase B stay inactive.
+
+### F1-F4 review and scope confirmed — 3 October 2026
+Read Claude review and owner screenshot: placeholder contrast is too low. Owner authorizes forward-only shop fixes, production OTA and preview republish; build 119 preview mapping is documented. Held WhatsApp changes remain excluded. Created forward migration 20261002230326; nothing applied. Handoff helper stopped on duplicate prompt headings before writing: inspected headings and renamed only the historical WhatsApp prompt heading, preserving its text. CLI initially hit sandbox telemetry permissions; help/create succeeded with escalation.
+
+### F1 implementation and singular email copy completed locally — 3 October 2026
+Forward migration adds atomic attempt reservations, notify_attempts/next_attempt_at, 1m/10m/1h/6h delays and five-attempt ceiling. Notify reserves before provider work and falls back to a Places-ID/Maps-link email after third details failure or final attempt; existing one-shot email claim retained. Email subject/pitch singular wording fixed with fallback copy (F4 portion). Applied migrations unchanged. Tests pending; nothing deployed.
+
+### Admin-chosen Trending shops — designed (3 October 2026) — Claude
+- **Update: the owner asked Claude to build this itself. Claude is implementing it now; Codex skips it.**
+- Owner request: "allow me to decide what shops are in the trending page through admin settings."
+- Current state, checked live (read-only):
+  - `businesses.trending boolean default false` already exists, but no app reads it: 0 shops have it set, out of 11 approved and active.
+  - The website shows the first 2 shops as "Trending nearby" (`filtered.slice(0,2)` in apps/web/src/pages/Home.tsx).
+  - The phone app shows the first 4 (`filtered.slice(0,4)` in apps/shopper/App.tsx `HomeTab`). Both apps load businesses with `select('*')`.
+- **Security gap found:** `enforce_businesses_update_scope` does not protect `trending`, and `authenticated` holds UPDATE on that column. So any owner can switch Trending on for their own shop through the API today. It is harmless only because nothing reads the flag yet; it must be closed in the same release.
+- Design:
+  1. **Forward migration:**
+     - Add `businesses.trending_position smallint` (null when not trending).
+     - Use `create or replace` on `enforce_businesses_update_scope` so `trending` and `trending_position` are admin-only, keeping every existing rule unchanged.
+     - Add an admin-guarded `security definer` RPC `admin_set_trending(p_business_ids uuid[])`:
+       - It checks `has_role(auth.uid(),'admin')`.
+       - It accepts only approved, active shops; at most 12, with no duplicates.
+       - In one transaction it clears everyone else's flag, then sets `trending=true` and `trending_position=1..n` in the given order.
+     - Execute is granted to `authenticated` only (the check happens inside the RPC); revoked from `anon`.
+     - A shop that later becomes inactive or unapproved simply drops out, because the apps only list active, approved shops.
+  2. **Admin page `/admin/trending`, linked from the Access panel next to "Shop requests":**
+     - Shows every approved, active shop as a colourful card with an on/off toggle.
+     - Chosen shops form an ordered list with up/down buttons, and the page shows a live preview of what the website and the phone app will display.
+     - One **Save** calls the RPC.
+     - It notes that the phone app shows the first 4.
+  3. **Both apps:**
+     - Trending = shops with `trending=true`, sorted by `trending_position`, after the current category and search filters are applied.
+     - If the admin has chosen **none**, keep today's behaviour (first shops). If picks exist but the filters exclude them all, hide the Trending section.
+     - The website shows all picks in its existing horizontal scroll row; the phone app shows the first 4.
+     - The phone change is JS-only, so it ships as an OTA, not a build.
+  4. **Tests:**
+     - An owner can't change `trending` or `trending_position` (direct update fails).
+     - Non-admins can't call the RPC.
+     - The RPC rejects inactive, unapproved, duplicate and more-than-12 lists.
+     - Ordering is saved exactly, and saving clears earlier picks.
+     - Pure UI selection logic: picks after filtering, fallback when there are no picks, the section hidden when the filters exclude all picks.
+- Owner: Codex builds it after F1–F4 (it touches the same Home files). Claude reviews.
+
+### F1–F3 backend and tests completed locally (3 October 2026) — Claude (Codex out of usage)
+- Extended the unapplied forward migration `20261002230326_shop_request_review_fixes.sql`, which already held Codex's F1 attempt and backoff work.
+  - **F2:** new `details` counters on `shop_request_usage` and `shop_search_global_usage`, plus `shop_request_settings.global_details_cap` (default 2,000). New `consume_shop_details(user,count,admin)` (service_role only) reserves a whole batch or nothing: 60 a day per user; admins skip only the personal cap. `shop-request-search` details mode now uses it, so it never touches the 30/day or 1,000/day search caps. One failing place no longer hides the others.
+  - **F3:** the delete trigger now uses `REFERENCING OLD TABLE` and recounts only the affected place IDs, in sorted order. `withdraw_shop_request` drops its shop pre-lock and its duplicate recount, keeping the user-row lock.
+- Tests:
+  - New `apps/api/test/integration/shop-request-fixes.test.mjs` (5 subtests): bounded Places failure (3 details calls, one Maps-link fallback email, never swept again); the 1m/10m/1h/6h schedule and five-attempt ceiling; repeated details views leave all 30 searches; global caps and the admin 50 page size; withdrawals and account deletion finish under `lock_timeout`.
+  - Negative check: with F3 removed, the lock test fails with a lock timeout.
+  - Existing shop and recovery tests updated for the reservation step and singular copy. Test 11 used `current_date` while the budget uses the UTC day, so it failed after midnight UTC (time-zone flake, fixed).
+  - Results: `node --test` → 6/6 new tests, 13/13 shop tests, 3/3 recovery tests.
+- Not yet done: app changes, the verification-script update, the clean-worktree run. Nothing applied or deployed.
+
+### F2 clients, F4 and mobile search visibility completed locally (3 October 2026) — Claude
+- **Phone app** (`apps/shopper/src/components/ShopRequests.tsx`, `apps/shopper/App.tsx`):
+  - The inline Settings list is replaced by a colourful "Shop requests → Shops you've asked for" row. It opens `RequestedShopsSheet`, a pop-up sheet nested inside Settings.
+  - Names load only while that sheet is open, and only for IDs not already in a module-level in-memory cache. The cache is cleared on sign-out and never persisted.
+  - The status shows as a coloured badge.
+- **Search bar** (owner screenshot: grey and hard to notice): Home and Map now use a white, outlined `SearchBar` with an orange search icon, a soft shadow, a darker placeholder (`#857d70`) and a clear button. The ask-a-shop sheet input also gets the darker placeholder.
+- **F4 mobile:** Home always shows a peach "Ask a shop to join" card under the list. It reads "Can't find your favourite shop?" when nothing matches, and it passes the current query.
+- **Website:**
+  - `RequestedShops` (Profile) fetches names only when the section scrolls into view (IntersectionObserver), using the shared in-memory `shopNameCache` and `hydrateShopNames`.
+  - The admin `/admin/shop-requests` page shows 50 shops per page and fetches names only for the visible page (the admin limit is 50; it no longer touches the admin's personal search cap). The count wording is singular/plural.
+- **F4 email:** Codex's singular subject and pitch are kept ("1 local shopper has asked"), and tests assert them.
+- `scripts/verify-shop-requests.ps1` now includes `shop-request-fixes.test.mjs`.
+- Checks: shopper `tsc --noEmit` passed; web `tsc --noEmit` passed. No device run is possible here, so the phone layout is **unverified on a device**.
+
+### Admin-chosen Trending shops built (3 October 2026) — Claude
+- Built at the owner's request. Local commits `bc1f129` (website, admin page, migration, tests) and `a7339e2` (phone app wiring), on top of `6d50da4`. **Not pushed, no OTA, migration not applied.**
+- Files:
+  - Migration: `supabase/migrations/20261002233000_admin_trending_shops.sql`
+  - Shared rule: `apps/web/src/lib/trending.ts`, and an identical `apps/shopper/src/trending.ts`
+  - Admin page: `apps/web/src/pages/TrendingAdmin.tsx` (`/admin/trending`, linked from the Access panel)
+  - Edits: `apps/web/src/pages/Home.tsx`, `App.tsx`, `AccessPanel.tsx`, `lib/businesses.ts`; `apps/shopper/App.tsx` (`HomeTab`, plus the Business type)
+  - Tests: `apps/api/test/integration/admin-trending.test.mjs` and `apps/api/test/trending.test.mjs`
+- Behaviour:
+  - The admin picks up to 12 approved, active shops and orders them. The website shows every pick in its scroll row; the phone app shows the first 4.
+  - With no picks, both apps show the first shops as before. Picks the current filters exclude hide the section.
+  - The migration adds `trending_position` (1–12), makes `trending` and `trending_position` admin-only in `enforce_businesses_update_scope` (this closes the live owner self-promotion gap), and adds the admin-guarded `admin_set_trending(uuid[])`.
+  - Defence in depth: the apps ignore `trending` unless an admin-set position exists, so shipping the app code before the migration is harmless. Until the migration is applied, `/admin/trending` shows "Could not load shops", because it reads `trending_position`.
+- Checks actually run:
+  - `node --test apps/api/test/trending.test.mjs`: 8/8.
+  - `node --test apps/api/test/integration/admin-trending.test.mjs`: 5/5 (owners blocked, non-admins and anon blocked, exact ordering and replacement, invalid lists rejected with the previous list kept).
+  - Web and shopper `tsc --noEmit`: pass. `npm run build:web`: pass.
+  - Local browser harness with fake admin and fake shops: add, reorder and save sent `admin_set_trending` with the exact order, reloaded the saved state, and showed no sideways scrolling at 375 px. Screenshots timed out, so the check was by page text and measurement.
+  - Not run on a device, and not run signed in on the live site.
+- **Release gate:** applying `20261002233000` to production was blocked by Claude Code's permission check (production change). It **needs the owner's explicit approval** before anyone applies it. After it's applied, rename the local file to the hosted version number, as was done for earlier migrations.
+- The website and phone code ship with the next `main` push and OTA, and are safe before the migration (see defence in depth above).
+- **Update (3 October):** the owner gave permission in chat to apply the migration and push. Claude Code's permission check still blocked both: the migration apply, and `git push` to `main`. The check requires a saved permission rule, not chat approval.
+  - Nothing went live: no migration, no push, no OTA.
+  - Separately verified: on top of `origin/main` 47ac3a1 (the other session's pushed F1–F4 plus its migration alignment), the two Trending commits cherry-pick cleanly. Web/shopper `tsc` pass, `build:web` passes, trending tests 8/8 and admin-trending 5/5. That temporary worktree was removed.
+  - Local `main` still holds `bc1f129` and `a7339e2` after `6d50da4`, and has diverged from `origin/main` (47ac3a1). Resync before the next push.
+  - The owner decides how to proceed.
+- **RELEASED (3 October):** the owner added allow rules to `.claude/settings.local.json` (Supabase `apply_migration` and `Bash(git push:*)`).
+  - Migration applied live as hosted version **20261003004334**. Verified read-only: `trending_position` is smallint, the guard covers both fields, `anon` cannot execute `admin_set_trending` and `authenticated` can, and 0 shops are trending.
+  - Pushed `47ac3a1..34017f7` to `main`: the cherry-picked Trending commits, plus a rename of the migration file to `20261003004334_admin_trending_shops.sql`. Before the push, trending tests passed 8/8 and admin-trending 5/5 on that tree.
+  - Vercel production `dpl_8K3c2LuD4oWJbAhgF9Z8rY6aiWW9` is READY and aliased to www.the-loyalty-loop.com. `/admin/trending` returns 200.
+  - **Phone app: no OTA yet.** Phone Trending needs a shopper OTA; ask the owner first.
+  - Local `main` still holds the pre-rename `bc1f129` and `a7339e2` and has diverged from `origin/main`. When the working tree is clean, resync to `origin/main`; a rebase drops the duplicate commits.
+
+### F1–F4 released to production (3 October 2026) — Claude, owner-authorised shop release
+- **Source on origin/main:** `6d50da4` (F1–F4 + mobile search bar) and `47ac3a1` (migration renamed to the hosted version). Pushed as a fast-forward from `8622802`.
+  - The other session's Trending commits went into local `main` between mine. My commit had first picked up their Trending hunks in `apps/shopper/App.tsx` (an import of the uncommitted `src/trending.ts`); I amended them out before verification.
+  - Local `main` = `6d50da4` → `bc1f129` → `a7339e2` → `20252e4`. `20252e4` is the same change as `47ac3a1`. Before the next push, run `git rebase origin/main` on main; the duplicate drops itself.
+- **Verification** (clean worktree `.claude/worktrees/shop-f1f4` at `6d50da4`, held WhatsApp edits absent, node_modules linked):
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1` → EXIT 0: node tests 37/37 and 23/23, seven Deno entrypoints, four tsc projects, diff check.
+  - Two orphaned embedded-Postgres `io_worker` processes (PIDs 16580 and 28452) stalled the run after the database tests. I stopped only those two, and the run finished.
+  - `npm run build:web` → EXIT 0 (only the existing chunk-size warning).
+  - After the rename, the three database test files were re-run: 22/22.
+- **Database:**
+  - MCP `apply_migration shop_request_review_fixes` → hosted version `20261002231854`. Local file renamed to match.
+  - Readback: the trigger is `REFERENCING OLD TABLE AS deleted_shop_requests`; `begin_shop_request_notify` and `consume_shop_details` are executable by service_role only (anon and authenticated false); `global_details_cap` is 2000. The single live shop (ready, already emailed) is unchanged.
+  - Security advisor: no findings for the new functions.
+- **Edge functions** (Supabase CLI `functions deploy --use-api` from the worktree): `shop-request-notify` **v2** (verify_jwt false, as before) and `shop-request-search` **v2** (verify_jwt true). Unauthenticated POSTs to both return 401.
+- **Website:** Vercel production deployment `dpl_F19VoTpTECVfGDduaGWvjnEoxxST` for commit `47ac3a1` is **READY**.
+- **Shopper OTA** (EAS, `--environment production`, runtime 1.0.0, commit `47ac3a1`, from the worktree):
+  - `--platform all` failed on the **web** bundle and published nothing, so I published per native platform, as last release did.
+  - Android group `6c27e009-6f4e-428b-8e79-100b33ffaab9` (update `01a0fef2-0d15-7db8-9357-9a539ef70824`).
+  - iOS group `e3963b94-2d3f-400d-8689-8eb28ad6acd6` (update `01a0fef3-7efc-7db8-9aec-267ccf80a6aa`).
+  - Android group republished to the **preview** branch as group `32432308-2643-46b2-80aa-262adea799ed` (update `01a0fef3-c9a8-76b2-acf0-5768322569c0`), for preview APK build 119. Build 119 lacks `fidel-react-native`, but `card-linking.ts` loads it lazily and only where present, and production store builds 120/121 already run the same code.
+  - iOS was not republished to preview: no iOS preview build is known.
+  - `update:list` readback confirms all three groups.
+  - Worktree tooling, not app code: Metro couldn't follow the linked `node_modules`. The worktree got its own top-level `node_modules` folder (links per entry, `@loyalty-loop/design-tokens` pointing at the worktree package) and a real copy of `apps/shopper/node_modules` (expo-sqlite only). I copied the gitignored public `apps/shopper/.env` (EXPO_PUBLIC_* only). The worktree tree stayed clean.
+- **Not done or unverified:**
+  - No device run: the search bar, requests sheet and Home card are unverified on a phone.
+  - No signed-in live request, details-budget or withdrawal smoke test. No live operator email under the new backoff.
+  - WhatsApp, Fidel jobs and phase B were not touched. Held WhatsApp edits are still uncommitted.
+  - **Trending is not released:** commits `bc1f129` and `a7339e2` are unpushed, migration `20261002233000` is not applied and needs your explicit approval, and its tests are not yet in the verification script.
+
+## Back to stamps while Fidel is built (2026-10-04) — Claude, product owner asked
+
+Request: "go back to stamps for now, just while I have to still be building Fidel". Decisions: full revert, live; stamp counts restored as stored. Design: per-shop `businesses.reward_model` stays the switch (`stamp_legacy` vs `spend_threshold`); both models now work in every surface, so £ spend can return later with one column change. No £ data is deleted.
+
+- **Migration written, NOT applied:** `supabase/migrations/20261004120000_back_to_stamps.sql`. Moves every shop except Pure Elegant Dry Cleaners (already on spend before the 2026-09-25 switchover) to `stamp_legacy`, defaults new shops to `stamp_legacy`. Keeps `refuse_stamps_at_spend_shops` (it only blocks stamps at spend shops). Live read-only check: all 11 shops on `spend_threshold`; catalogue `stamp_threshold` values were never touched by the switchover (all 10); `handle_stamp_transaction` still reads `reward_catalog.stamp_threshold`.
+- **Code (uncommitted, not shipped):**
+  - Retailer app: `App.tsx` (dashboard labels, stamp/spend counts, Settings loyalty-type picker back for stamp shops, `StampProgramSetup` vs `SpendProgramSetup`, nav label), `src/owner-pages.tsx` (RewardsPage stamp/£ forms, tutorial copy).
+  - Shopper app: `App.tsx` catalogue ordering follows the shop's model (it already had stamp rendering).
+  - Website: `lib/businesses.ts` (`createBusiness` now sets `stamp_legacy`, staff query includes `reward_model`), `pages/owner/Scan.tsx` (`StampPanel` restored beside `SpendPanel`), `pages/owner/Onboarding.tsx` (restored to the pre-switchover file), `pages/owner/Settings.tsx` (`StampLoyaltyTab` restored; `LoyaltyTab` chooses), `pages/ShopDetail.tsx` (stamp grid/points bar for stamp shops), `lib/analytics.ts` (counts `stamp` and `spend`), `pages/WhatsAppCard.tsx`.
+  - Edge functions: `whatsapp-handoff` selects `reward_model`; `_shared/whatsapp-messages.ts`, `_shared/whatsapp-bot.ts`, `whatsapp-webhook/index.ts` show "3 of 10 stamps" for stamp shops via `stampProgressText`. **Do not deploy `whatsapp-webhook` yet:** the file also holds Codex's unreviewed STOP-handling edit.
+- **Checks actually run:** `tsc --noEmit` clean for retailer, shopper and web (`tsconfig.app.json`); `node --test` whatsapp-messages (8, incl. new stamp test), whatsapp-bot and wallet-progress pass. **Not run:** browser or device check of any screen, `apps/api` integration tests, any production write.
+- **Not done / open:**
+  1. Ship order (owner must approve; main is ahead 3 / behind 4 and holds unpushed Trending commits, see the 2026-10-02 notes): website deploy and shopper + retailer OTAs first, then apply the migration, then smoke-test one stamp shop end to end.
+  2. Wallet passes already branch on `reward_model`; existing passes refresh on next update only.
+  3. £ progress earned 25 Sep to now at stamp shops stays stored but hidden.
+  4. Landing, Help, Activity, Profile and store copy still say "spend / purchases" in places; a wording pass is needed.
+  5. Fidel card-link UI and manual-spend settings still appear only for spend shops; reconcile when Fidel returns.
+## Back-to-stamps release blocked at safety tag (2026-10-04) — Codex
+
+- Owner authorization: live stamp revert, production website then shopper/retailer production OTAs (runtime 1.0.0), then the specific stamp migration and live smoke test. No new native build. Do not deploy whatsapp-webhook; its STOP edit and other held WhatsApp changes need review. Unrelated commits require owner approval before push.
+- Read CLAUDE.md, AGENTS.md, the current handoff including the back-to-stamps section, IMPLEMENTATION_TIMELINE.md and the architecture context. Inspected working-tree status and current history without changing application files.
+- Step 0 failed: `git tag spend-rewards-2026-10-04` exited 1: `fatal: cannot lock ref 'refs/tags/spend-rewards-2026-10-04': unable to create directory for .git/refs/tags/spend-rewards-2026-10-04`. This session's filesystem permissions explicitly give read-only access to the project .git directory. No automatic approval review rejection occurred; no escalation or retry was attempted, following the owner's stop-on-failure instruction.
+- Current HEAD: `20252e409a27b9b35313b706aaf189284a63238b`. The tag did not exist before the attempt and was not created or pushed. Branch stamps-while-fidel was not created. No rebase, staging, commit, push, build, tsc, pure/integration test, deployment, OTA or hosted migration was performed. Production stamp behavior and device smoke remain unverified. Existing prototype checks above are historical evidence, not checks run in this release attempt.
+- Changed path in this attempt: CLAUDE_HANDOFF.md only. Existing application edits, held WhatsApp changes, untracked files and documentation deletions were preserved. No milestone completed; sequence unchanged, so IMPLEMENTATION_TIMELINE.md was not edited.
+- Next owner actions: owner to provide a session with Git write permission or create and push the safety tag on the recorded HEAD; release implementer then creates stamps-while-fidel, reconciles against origin/main without pushing unrelated Trending commits, isolates the approved stamp files and runs every required check before continuing the authorized release sequence. Stop on any failure.
+- Rollback to retain for the eventual release: set businesses.reward_model to spend_threshold for the affected shops, then republish the prior production OTA groups or merge spend-rewards-2026-10-04 after it exists. Also verify website rollback and the new-shop default: the proposed migration changes that default to stamp_legacy, so reverting existing rows alone does not restore spend defaults for future shops. No rollback was needed or executed in this attempt.
+
+## Back-to-stamps release prepared; production push blocked (2026-10-04) — Claude
+
+Supersedes the Codex "blocked at safety tag" note above: Claude had Git write access, so steps 0-3 are done.
+
+- **Safety tag:** `spend-rewards-2026-10-04` is pushed at `34017f7` (origin/main, the live £ spend version, Vercel `dpl_8K3c2LuD4oWJbAhgF9Z8rY6aiWW9`). This is not Codex's recorded `20252e4`: local main only duplicates the Trending commits and its three commits drop out on rebase.
+- **Branch:** `stamps-while-fidel`, commit `fe3c603` on top of `34017f7`, pushed. Built in `.claude/worktrees/shop-f1f4` so held WhatsApp edits and other uncommitted Codex work in the main checkout are excluded (`whatsapp-webhook` is not in the commit). Contents: migration `20261004120000_back_to_stamps.sql`, retailer/shopper/web stamp restore, WhatsApp stamp lines in `_shared` and `whatsapp-handoff`, new test `apps/api/test/integration/back-to-stamps.test.mjs`.
+- **Checks run on that commit:** tsc clean for retailer, shopper and web (`tsconfig.app.json`); `npm run build:web` OK; WhatsApp and wallet unit tests 16/16; `back-to-stamps` test passes; `spend-switchover` and `fidel-spend-tiers` pass. The embedded fixture has no stamp award trigger, so reward issue at the threshold was read from the live `handle_stamp_transaction`, not executed. No device or browser check.
+- **Blocked:** `git push origin stamps-while-fidel:main` (fast-forward, triggers the Vercel production deploy) was refused by the permission classifier as a production deploy. Nothing past the branch push has happened: no website deploy, no OTA, no edge deploy, no migration.
+- **Remaining, in order (owner approval needed for the push):** push to `main`; confirm the Vercel deployment READY; shopper and retailer production OTAs from the worktree (per platform, `--environment production`, runtime 1.0.0); deploy `whatsapp-handoff`; apply the migration; read back `reward_model` per shop (expect `stamp_legacy` except Pure Elegant Dry Cleaners); smoke-test one stamp shop on web and phone.
+- **Rollback:** set `businesses.reward_model` back to `spend_threshold` for the affected shops, and `alter column reward_model set default 'spend_threshold'` (reverting rows alone leaves new shops on stamps); republish the prior OTA groups (Android `6c27e009-6f4e-428b-8e79-100b33ffaab9`, iOS `e3963b94-2d3f-400d-8689-8eb28ad6acd6`) or redeploy Vercel `dpl_8K3c2LuD4oWJbAhgF9Z8rY6aiWW9`; the tag marks the code.
+
+## Back-to-stamps RELEASED to production (2026-10-04) — Claude
+
+The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) after the classifier refused Claude's push; Claude did the rest.
+
+- **Website:** Vercel `dpl_HzP4mUFjiJVSnHvLSP8n8FwxvYL2` READY for `fe3c603`.
+- **Shopper OTAs** (production channel, runtime 1.0.0, commit `fe3c603`, from `.claude/worktrees/shop-f1f4`): Android group `7bd1a6c8-5195-4e50-ad87-86c05ba4020a`, iOS group `f0888d69-abbe-4b31-9fe7-ff4e9ff51c80`.
+- **Retailer OTAs** (same): Android group `473ed466-7789-4034-b70c-e5ba9833be8d`, iOS group `899fc01b-7a55-491b-b87a-0e325b85c3e1`. The worktree's `apps/retailer/node_modules` was a junction Metro cannot follow, so it was replaced by a real copy; public `.env` copied (EXPO_PUBLIC keys only).
+- **Migration** applied through MCP as hosted version `20261004001549` (`back_to_stamps`). Readback: every shop `stamp_legacy` except Pure Elegant Dry Cleaners (`spend_threshold`); column default `stamp_legacy`; each shop still has its reward row. Local file renamed to match and pushed to the branch only (`3ce72dd`; `main` still has the `20261004120000` name, so merge the branch before any `db push`).
+- **Edge function:** `whatsapp-handoff` v14 deployed (verify_jwt false). `whatsapp-webhook` not deployed (held STOP edit).
+- **Not verified:** the live smoke test (a rolled-back stamp award in SQL) was refused by the classifier, so no stamp was awarded in production by Claude. No device or browser check. The owner should: open a stamp shop in both apps after force-closing twice, scan one stamp on the Developer Test Shop, confirm the count and the wallet pass.
+- **Rollback:** `update public.businesses set reward_model='spend_threshold'` and `alter table public.businesses alter column reward_model set default 'spend_threshold'`; republish the previous OTA groups (shopper Android `6c27e009-6f4e-428b-8e79-100b33ffaab9`, iOS `e3963b94-2d3f-400d-8689-8eb28ad6acd6`; retailer groups from the 2026-10-02 release) or redeploy Vercel `dpl_8K3c2LuD4oWJbAhgF9Z8rY6aiWW9`; code tag `spend-rewards-2026-10-04` at `34017f7`.
+- **Open:** £ progress earned 25 Sep-4 Oct at stamp shops is stored but hidden; landing/help/store copy still says spend in places; local `main` still diverges from `origin/main` and holds Codex's uncommitted work; reconcile before the next release.
+
 ## Copy-ready prompt for Claude Code
 
-Review released shop phase A commit 1d98558: apps/web/src/components/shop-requests.tsx and Home/Discover/Profile/ShopRequests pages; apps/shopper/App.tsx and src/components/ShopRequests.tsx; supabase/functions/shop-request-search, shop-request-notify, send-user-push, delete-my-account and platform-health; migrations 20261002211052_shop_requests_phase_a.sql and 20261002211306_scheduled_delivery_recovery.sql. Website/backend and production Android/iOS OTAs are live, runtime 1.0.0; exact IDs are in CLAUDE_HANDOFF.md. Run powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-shop-requests.ps1 (exact release PASS: 31 database/fake-provider/recovery plus 23 pure tests, seven Deno checks, four app types) and npm run build:web (PASS). Verify ID-only Places retention, threshold 5, one operator email, one joined push per requester, own-request RLS, quota and signed tokens; smoke signed-in website and physical devices. Restore shop-only test context when assessing evidence: held WhatsApp edits are local and unapplied. No product-owner configuration input remains for shop requests; device/live delivery confirmation remains unverified and separate Meta prerequisites remain. Record verdict without activating WhatsApp/Fidel or phase B.
+Review the shipped back-to-stamps release (CLAUDE_HANDOFF.md, "Back-to-stamps RELEASED to production") and the held `supabase/functions/whatsapp-webhook/index.ts` STOP edit, which is still undeployed. Check that stamp shops behave correctly end to end from code and database readback, list any remaining spend-only wording, and record findings in CLAUDE_HANDOFF.md.

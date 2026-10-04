@@ -3,7 +3,7 @@ import { NavLink, Link, Navigate } from 'react-router-dom'
 import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench, BookOpen } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
@@ -20,7 +20,7 @@ const OWNER_NAV_ITEMS = [
 ]
 
 // A staff-only account (no shop of their own) only ever needs the scan
-// screen — Settings/Analytics/Announcements etc. are all owner-only pages
+// screen. Settings/Analytics/Announcements etc. are all owner-only pages
 // server-side anyway, so there's nothing else for them to do here.
 const STAFF_NAV_ITEMS = [{ label: 'Scan', to: '/owner/scan', icon: ScanLine, end: true }]
 
@@ -32,7 +32,7 @@ function BusinessSwitcher() {
     if (!business) return null
     const trigger = (
       <button data-press-feedback
-        className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-card px-4 py-3 font-semibold text-foreground transition-[transform,border-color] duration-150 ease-out active:scale-[0.98] hover:border-black/20"
+        className="w-full flex items-center justify-between gap-2 rounded-xl bg-olive-ink/10 px-3.5 py-3 font-semibold text-olive-ink transition-[transform,background-color] duration-200 ease-out active:scale-[0.98] hover:bg-olive-ink/15"
       >
         <span className="flex items-center gap-2 truncate">
           <span
@@ -63,9 +63,9 @@ function BusinessSwitcher() {
 
   if (staffBusinesses.length > 0) {
     return (
-      <div className="mb-6 rounded-2xl border border-black/10 bg-card px-4 py-3">
-        <p className="text-[0.625rem] font-bold uppercase tracking-wide text-foreground/40 mb-1">Working at</p>
-        <p className="font-semibold text-foreground truncate">
+      <div className="mb-6 rounded-xl bg-olive-ink/10 px-3.5 py-3">
+        <p className="text-xs text-olive-ink/70 mb-0.5">Working at</p>
+        <p className="font-semibold text-olive-ink truncate">
           {staffBusinesses.length === 1 ? staffBusinesses[0].business.name : `${staffBusinesses.length} shops`}
         </p>
       </div>
@@ -89,12 +89,12 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
   if (!loading && business && needsRewardSetup) return <Navigate to="/owner/onboarding" replace />
 
   return (
-    <div className="min-h-screen bg-background md:flex">
+    <div className="min-h-dvh bg-background md:flex">
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      <aside className="border-b border-foreground/10 bg-card/80 backdrop-blur-xl p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto md:border-b-0 md:border-r md:p-5">
+      <aside className="bg-olive text-olive-ink p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-6">
-          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
-          <span className="font-display text-base text-foreground">The Loyalty Loop</span>
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-olive-ink"><img src={loyaltyLoopLogo} alt="" className="h-7 w-7 object-contain" /></span>
+          <span className="font-display text-[17px] font-semibold tracking-tight">The Loyalty Loop</span>
         </div>
 
         <div className="mt-3 md:mt-0"><BusinessSwitcher /></div>
@@ -106,15 +106,15 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               to={to}
               end={end}
               className={({ isActive }) =>
-                'flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97] md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-base ' +
-                (isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground/70 hover:bg-foreground/5')
+                'flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-200 ease-out active:scale-[0.97] md:gap-3 md:rounded-xl md:px-3.5 md:py-2.5 md:text-[15px] ' +
+                (isActive ? 'bg-peach text-peach-ink' : 'text-olive-ink/75 hover:bg-olive-ink/10 hover:text-olive-ink')
               }
             >
               <Icon className="h-5 w-5" />
               {label}
             </NavLink>
           ))}
-          <button data-press-feedback onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground/60 hover:bg-black/5 md:hidden">
+          <button data-press-feedback onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-olive-ink/70 hover:bg-olive-ink/10 md:hidden">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </nav>
@@ -123,7 +123,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           {(isOwner || staffBusinesses.length === 0) && (
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors duration-150 ease-out"
+              className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[15px] font-semibold text-olive-ink/65 hover:bg-olive-ink/10 hover:text-olive-ink transition-colors duration-200 ease-out"
             >
               <ArrowLeftRight className="h-5 w-5" />
               Switch to customer view
@@ -131,7 +131,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           )}
           <button data-press-feedback
             onClick={signOut}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-foreground/50 hover:bg-black/5 transition-colors duration-150 ease-out"
+            className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[15px] font-semibold text-olive-ink/65 hover:bg-olive-ink/10 hover:text-olive-ink transition-colors duration-200 ease-out"
           >
             <LogOut className="h-5 w-5" />
             Sign out
@@ -139,9 +139,9 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main id="main-content" tabIndex={-1} className="w-full flex-1 p-4 sm:p-6 md:max-w-6xl md:p-10">
+      <main id="main-content" tabIndex={-1} className="w-full min-w-0 flex-1 px-4 py-6 sm:px-6 md:max-w-6xl md:px-10 md:py-10">
         {children}
-        <footer className="mt-12 border-t border-black/10 pt-5 text-xs text-foreground/50">
+        <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           <div className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</div>
           <LegalFooterLinks />
         </footer>

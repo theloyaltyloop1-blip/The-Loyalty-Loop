@@ -38,12 +38,15 @@ import {
 } from "lucide-react-native";
 import { mergeReplyInputs } from "./review-reply-inputs";
 import { supabase } from "./supabase";
+import { fonts } from "@loyalty-loop/design-tokens";
+
+const FONT_DISPLAY = fonts.nativeDisplay;
 
 const orange = "#E8703B";
-const ink = "#20211E";
+const ink = "#1C2620";
 const muted = "#676A63";
 const cream = "#F8EAD8";
-const card = "#FFFDF8";
+const card = "#FCFCFA";
 
 export type NativeOwnerPage =
   | "ai"
@@ -256,7 +259,7 @@ function Field({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#74776F"
+      placeholderTextColor="#6B736C"
       multiline={multiline}
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
@@ -666,7 +669,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                 value={coachInput}
                 onChangeText={setCoachInput}
                 placeholder="Ask the coach…"
-                placeholderTextColor="#74776F"
+                placeholderTextColor="#6B736C"
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
               />
               <Pressable
@@ -1467,8 +1470,8 @@ function ReviewAiSettingsCard({ businessId }: { businessId: string }) {
       </View>
       <Text style={styles.body}>Every review gets a thoughtful reply written from your shop’s details.</Text>
       <Toggle value={settings.enabled} onChange={(enabled) => setSettings({ ...settings, enabled })} title="Write replies with AI" detail="Drafts a reply as soon as a customer reviews you." />
-      <Toggle value={settings.auto_post_positive} disabled={!settings.enabled} onChange={(auto_post_positive) => setSettings({ ...settings, auto_post_positive })} title="Post 4★ and 5★ replies automatically" detail="1–3★ replies always wait for you to check." />
-      <Field value={settings.sign_off ?? ""} onChangeText={(sign_off) => setSettings({ ...settings, sign_off })} placeholder="Sign-off (optional), e.g. — Sam and the team" />
+      <Toggle value={settings.auto_post_positive} disabled={!settings.enabled} onChange={(auto_post_positive) => setSettings({ ...settings, auto_post_positive })} title="Post 4★ and 5★ replies automatically" detail="1-3★ replies always wait for you to check." />
+      <Field value={settings.sign_off ?? ""} onChangeText={(sign_off) => setSettings({ ...settings, sign_off })} placeholder="Sign-off (optional), e.g. Sam and the team" />
       {changed ? <PrimaryButton label="Save AI settings" onPress={() => void save()} busy={busy} /> : null}
     </View>
   );
@@ -1866,7 +1869,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: "#30312D",
+    borderColor: "#333C35",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: card,
@@ -1877,11 +1880,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: muted,
   },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: "900", color: ink },
+  title: { fontSize: 28, lineHeight: 34, fontFamily: FONT_DISPLAY, color: ink },
   section: {
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "#30312D",
+    borderColor: "#333C35",
     borderRadius: 24,
     padding: 18,
     marginBottom: 16,
@@ -1977,13 +1980,13 @@ const styles = StyleSheet.create({
     width: "48%",
     minHeight: 118,
     borderWidth: 1.5,
-    borderColor: "#30312D",
+    borderColor: "#333C35",
     borderRadius: 19,
     backgroundColor: card,
     padding: 14,
     marginBottom: 12,
   },
-  metricValue: { fontSize: 29, fontWeight: "900", color: ink },
+  metricValue: { fontSize: 29, fontFamily: FONT_DISPLAY, color: ink },
   metricLabel: { color: muted, fontWeight: "700", fontSize: 12, marginTop: 3 },
   metricChange: {
     color: "#2D7A43",
@@ -2043,15 +2046,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoImage: { width: "100%", height: "100%" },
-  logoLetter: { fontSize: 23, fontWeight: "900", color: ink },
-  previewName: { fontSize: 20, fontWeight: "900", color: ink, marginTop: 13 },
+  logoLetter: { fontSize: 23, fontFamily: FONT_DISPLAY, color: ink },
+  previewName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: ink, marginTop: 13 },
   listCard: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 11,
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "#30312D",
+    borderColor: "#333C35",
     borderRadius: 20,
     padding: 15,
     marginBottom: 11,

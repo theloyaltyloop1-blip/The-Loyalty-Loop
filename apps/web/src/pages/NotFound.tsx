@@ -11,17 +11,20 @@ export function NotFound() {
     robots: 'noindex,nofollow,noarchive',
   })
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center gap-6 px-4 text-center bg-background">
-      <LoopMark className="h-14 w-14" />
-      <div>
-        <h1 className="font-display text-3xl font-extrabold text-foreground">Page not found</h1>
-        <p className="mt-2 text-foreground/60 max-w-sm">
+    <div className="grid min-h-dvh place-items-center bg-background px-4 py-10">
+      <div className="w-full max-w-lg rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink sm:px-12">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-card">
+          <LoopMark className="h-11 w-11" />
+        </span>
+        <h1 className="mt-6 font-display text-3xl font-bold tracking-tight sm:text-4xl">Page not found</h1>
+        <p className="mx-auto mt-3 max-w-sm text-sage-ink/80">
           That page doesn’t exist or may have moved. Let’s get you back on track.
         </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Button asChild size="lg"><Link to="/">Back to home</Link></Button>
+          <Button asChild size="lg" variant="outline"><Link to="/help">Visit the help centre</Link></Button>
+        </div>
       </div>
-      <Link to="/">
-        <Button>Back to home</Button>
-      </Link>
     </div>
   )
 }

@@ -41,10 +41,10 @@ export function PlatformAnnouncementBanner() {
 
   if (!items.length) return null
 
-  return <div className="sticky top-0 z-[60] flex flex-col gap-1 bg-primary px-4 py-2 text-sm font-semibold text-white sm:px-6">
+  return <div className="sticky top-0 z-[60] flex flex-col gap-1 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground sm:px-6">
     {items.map((item) => (
       <div key={item.id} className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
-        <p>{item.title}{item.body ? <span className="font-normal opacity-90"> — {item.body}</span> : null}</p>
+        <p>{item.title}{item.body ? <span className="font-normal opacity-90">: {item.body}</span> : null}</p>
         <button data-press-feedback type="button" onClick={() => dismiss(item.id)} aria-label="Dismiss announcement" className="shrink-0 rounded-full p-1 hover:bg-white/15">
           <X className="h-4 w-4" />
         </button>

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { BrowserQRCodeReader } from '@zxing/browser'
-import { Camera, CameraOff, Check, Gift, ScanLine, X } from 'lucide-react'
+import { Camera, CameraOff, Check, Gift, ScanLine } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
@@ -196,7 +196,7 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
       reset()
       setScanCycle((cycle) => cycle + 1)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not award — is this customer a member of your shop?')
+      setError(e instanceof Error ? e.message : 'Could not award. Is this customer a member of your shop?')
     } finally {
       setBusy(false)
     }
@@ -207,7 +207,7 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
       <div className="flex items-center justify-center">
         <button data-press-feedback
           onClick={() => setCameraOn((c) => !c)}
-          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-foreground"
+          className="flex items-center gap-2 rounded-full px-4 h-10 font-semibold text-sm text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary"
         >
           {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {cameraOn ? 'Camera ready' : 'Start camera'}
@@ -217,14 +217,14 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
       <CameraScanner active={cameraOn} onResult={handleQrResult} scanCycle={scanCycle} />
 
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-foreground/30">manual code instead</span>
-        <div className="flex-1 h-px bg-black/10" />
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-sm text-muted-foreground">or type the manual code</span>
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-primary"
+          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
@@ -233,16 +233,16 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
         <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-xl bg-foreground text-white font-bold px-5 disabled:opacity-40"
+          className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Find
         </button>
       </div>
 
       {match && (
-        <aside className="rounded-2xl border border-black/5 bg-black/[0.045] px-5 py-5 lg:ml-auto lg:w-[19rem]">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/45">Member information</p>
-          <p className="mt-2 text-lg font-semibold text-foreground">
+        <aside className="rounded-2xl bg-sage px-5 py-5 text-sage-ink lg:ml-auto lg:w-[19rem]">
+          <p className="text-sm text-sage-ink/75">Member information</p>
+          <p className="mt-1 font-display text-lg font-semibold tracking-tight">
             {match.first_name || match.last_name ? `${match.first_name ?? ''} ${match.last_name ?? ''}`.trim() : 'Customer found'}
           </p>
           <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-sm text-foreground/70">
@@ -261,27 +261,27 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
                 type="number"
                 min={1}
                 max={50}
-                className="h-12 w-24 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-primary"
+                className="h-12 w-24 rounded-xl border border-input bg-background px-4 font-bold tabular-nums outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
                 value={amount}
                 onChange={(e) => setAmount(Math.max(1, Math.min(50, Number(e.target.value))))}
               />
-              <span className="text-sm text-foreground/50">{unit}{amount === 1 ? '' : 's'}</span>
+              <span className="text-sm text-muted-foreground">{unit}{amount === 1 ? '' : 's'}</span>
             </div>
           </div>
           <button data-press-feedback
             onClick={handleAward}
             disabled={busy}
-            className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+            className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Check className="h-4 w-4" /> {busy ? 'Awarding…' : `Award ${amount} ${unit}${amount === 1 ? '' : 's'}`}
           </button>
-          <button data-press-feedback onClick={reset} className="text-sm font-semibold text-foreground/50 self-center">
+          <button data-press-feedback onClick={reset} className="text-sm font-semibold text-muted-foreground self-center">
             Cancel
           </button>
         </>
       )}
 
-      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
       {success && <p className="text-sm text-fun-green font-semibold text-center">{success}</p>}
     </div>
   )
@@ -456,7 +456,7 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
       <div className="flex items-center justify-center">
         <button data-press-feedback
           onClick={() => setCameraOn((c) => !c)}
-          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-foreground"
+          className="flex items-center gap-2 rounded-full px-4 h-10 font-semibold text-sm text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary"
         >
           {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {cameraOn ? 'Camera ready' : 'Start camera'}
@@ -466,14 +466,14 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
       <CameraScanner active={cameraOn} onResult={handleQrResult} scanCycle={scanCycle} />
 
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-foreground/30">manual code instead</span>
-        <div className="flex-1 h-px bg-black/10" />
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-sm text-muted-foreground">or type the manual code</span>
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-primary"
+          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
@@ -482,16 +482,16 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
         <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-xl bg-foreground text-white font-bold px-5 disabled:opacity-40"
+          className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Find
         </button>
       </div>
 
       {match && (
-        <aside className="rounded-2xl border border-black/5 bg-black/[0.045] px-5 py-5 lg:ml-auto lg:w-[19rem]">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/45">Member information</p>
-          <p className="mt-2 text-lg font-semibold text-foreground">
+        <aside className="rounded-2xl bg-sage px-5 py-5 text-sage-ink lg:ml-auto lg:w-[19rem]">
+          <p className="text-sm text-sage-ink/75">Member information</p>
+          <p className="mt-1 font-display text-lg font-semibold tracking-tight">
             {match.first_name || match.last_name ? `${match.first_name ?? ''} ${match.last_name ?? ''}`.trim() : 'Customer found'}
           </p>
           <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-sm text-foreground/70">
@@ -512,56 +512,56 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
           <div>
             <p className="text-sm font-semibold text-foreground mb-1.5">Amount spent</p>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-foreground/60">£</span>
+              <span className="text-lg font-bold text-muted-foreground">£</span>
               <input
                 inputMode="decimal"
-                className="h-12 w-36 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-primary"
+                className="h-12 w-36 rounded-xl border border-input bg-background px-4 font-bold tabular-nums outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               />
-              <span className="text-sm text-foreground/50">up to {formatPounds(cap)} per entry</span>
+              <span className="text-sm text-muted-foreground">up to {formatPounds(cap)} per entry</span>
             </div>
           </div>
           {askPayment ? (
-            <div className="rounded-2xl border border-black/10 bg-white p-4 flex flex-col gap-2">
+            <div className="rounded-2xl bg-peach p-4 text-peach-ink flex flex-col gap-2">
               <p className="font-semibold text-foreground">This customer has a linked card</p>
-              <p className="text-sm text-foreground/60">If they paid with it, their reward updates automatically, so there's nothing to do. How did they pay?</p>
-              <button data-press-feedback onClick={() => handleAdd('cash')} disabled={busy} className="h-11 rounded-full bg-primary text-white font-bold disabled:opacity-50">Cash</button>
-              <button data-press-feedback onClick={() => handleAdd('unlinked_card')} disabled={busy} className="h-11 rounded-full bg-primary text-white font-bold disabled:opacity-50">A different card</button>
-              <button data-press-feedback onClick={() => setAskPayment(false)} className="h-11 rounded-full border border-black/15 font-bold text-foreground">They used their linked card</button>
+              <p className="text-sm text-muted-foreground">If they paid with it, their reward updates automatically, so there's nothing to do. How did they pay?</p>
+              <button data-press-feedback onClick={() => handleAdd('cash')} disabled={busy} className="h-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold disabled:opacity-50">Cash</button>
+              <button data-press-feedback onClick={() => handleAdd('unlinked_card')} disabled={busy} className="h-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold disabled:opacity-50">A different card</button>
+              <button data-press-feedback onClick={() => setAskPayment(false)} className="h-11 rounded-full bg-card font-semibold text-foreground transition-colors hover:bg-card/80">They used their linked card</button>
               {summary && summary.manualToday > 0 && (
-                <p className="text-xs text-foreground/50 text-center">{summary.manualToday} of 3 manual entries used today for this customer.</p>
+                <p className="text-xs text-muted-foreground text-center">{summary.manualToday} of 3 manual entries used today for this customer.</p>
               )}
             </div>
           ) : (
             <button data-press-feedback
               onClick={() => handleAdd()}
               disabled={busy || amountPence < 1}
-              className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+              className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Check className="h-4 w-4" /> {busy ? 'Adding…' : amountPence ? `Add ${formatPounds(amountPence)}` : 'Type the amount'}
             </button>
           )}
-          <button data-press-feedback onClick={reset} className="text-sm font-semibold text-foreground/50 self-center">
+          <button data-press-feedback onClick={reset} className="text-sm font-semibold text-muted-foreground self-center">
             Cancel
           </button>
         </>
       )}
 
-      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
       {success && <p className="text-sm text-fun-green font-semibold text-center">{success}</p>}
 
       {recent.length > 0 && (
-        <div className="rounded-2xl border border-black/10 bg-white p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-foreground/45 mb-2">Your recent entries</p>
+        <div className="rounded-2xl bg-secondary p-4">
+          <p className="text-sm font-semibold text-foreground mb-2">Your recent entries</p>
           {recent.map((entry) => {
             const minutesLeft = Math.max(0, Math.ceil((10 * 60 * 1000 - (now - new Date(entry.created_at).getTime())) / 60000))
             return (
-              <div key={entry.id} className="flex items-center gap-3 py-2 border-t border-black/5 first:border-t-0">
-                <span className="font-bold text-foreground w-20">{formatPounds(entry.value)}</span>
-                <span className="flex-1 text-sm text-foreground/50">
+              <div key={entry.id} className="flex items-center gap-3 py-2 border-t border-border first:border-t-0">
+                <span className="font-bold tabular-nums text-foreground w-20">{formatPounds(entry.value)}</span>
+                <span className="flex-1 text-sm text-muted-foreground">
                   {new Date(entry.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 {minutesLeft > 0 && (
@@ -656,7 +656,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
       <div className="flex items-center justify-center">
         <button data-press-feedback
           onClick={() => setCameraOn((c) => !c)}
-          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-foreground"
+          className="flex items-center gap-2 rounded-full px-4 h-10 font-semibold text-sm text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary"
         >
           {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {cameraOn ? 'Stop camera' : 'Scan reward QR'}
@@ -666,14 +666,14 @@ function RedeemPanel({ businessId }: { businessId: string }) {
       <CameraScanner active={cameraOn} onResult={handleQrResult} />
 
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-foreground/30">or manual code</span>
-        <div className="flex-1 h-px bg-black/10" />
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-sm text-muted-foreground">or type the manual code</span>
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-primary"
+          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Reward's short code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -682,19 +682,19 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-xl bg-foreground text-white font-bold px-5 disabled:opacity-40"
+          className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Find
         </button>
       </div>
 
       {reward && (
-        <div className="rounded-xl bg-black/5 px-4 py-3 flex items-center gap-3">
-          <Gift className="h-5 w-5 text-[#8E5FC2] shrink-0" />
+        <div className="rounded-2xl bg-amber px-4 py-3 text-amber-ink flex items-center gap-3">
+          <Gift className="h-5 w-5 text-primary shrink-0" />
           <div>
             <p className="font-semibold text-foreground">{reward.title}</p>
-            {alreadyRedeemed && <p className="text-xs text-red-600 font-semibold">Already redeemed</p>}
-            {!alreadyRedeemed && expired && <p className="text-xs text-red-600 font-semibold">Expired</p>}
+            {alreadyRedeemed && <p className="text-xs text-destructive font-semibold">Already redeemed</p>}
+            {!alreadyRedeemed && expired && <p className="text-xs text-destructive font-semibold">Expired</p>}
           </div>
         </div>
       )}
@@ -703,13 +703,13 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         <button data-press-feedback
           onClick={handleRedeem}
           disabled={busy}
-          className="h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+          className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <Check className="h-4 w-4" /> {busy ? 'Redeeming…' : 'Redeem reward'}
         </button>
       )}
 
-      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
       {success && <p className="text-sm text-fun-green font-semibold text-center">{success}</p>}
     </div>
   )
@@ -747,22 +747,23 @@ export function OwnerScan() {
 
   return (
     <OwnerLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-foreground/40 mb-1">Scan</p>
-      <h1 className="text-3xl font-display font-extrabold text-foreground mb-6 flex items-center gap-3">
-        <ScanLine className="h-7 w-7 text-primary" /> {spendShop ? 'Purchases & rewards' : 'Award & redeem'}
+      
+      <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-6 flex items-center gap-3 sm:text-4xl">
+        <span className="grid h-11 w-11 place-items-center rounded-full bg-peach text-peach-ink"><ScanLine className="h-6 w-6" /></span> {spendShop ? 'Purchases & rewards' : 'Award & redeem'}
       </h1>
 
       {!activeBusinessId ? (
-        <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-foreground/50">
+        <div className="rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink">
+          <p>
             {isOwner ? 'Set up a shop first.' : "You're not an active staff member at any shop yet."}
           </p>
         </div>
       ) : (
-        <div className="max-w-md">
+        <div className="max-w-lg">
           {!isOwner && staffBusinesses.length > 1 && (
             <select
-              className="h-11 w-full rounded-xl border border-black/10 bg-white px-4 mb-4 font-semibold text-foreground outline-none focus:border-primary"
+              aria-label="Shop"
+              className="h-11 w-full rounded-xl border border-input bg-card px-4 mb-4 font-semibold text-foreground outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
               value={activeBusinessId}
               onChange={(e) => setStaffBizId(e.target.value)}
             >
@@ -775,12 +776,12 @@ export function OwnerScan() {
           )}
 
           {!canScan && !canRedeem ? (
-            <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 text-center">
-              <p className="text-foreground/50">You don't have permission to scan or redeem at this shop yet.</p>
+            <div className="rounded-3xl bg-sage px-6 py-10 text-center text-sage-ink">
+              <p>You don't have permission to scan or redeem at this shop yet.</p>
             </div>
           ) : (
             <>
-              <div className="flex gap-1 bg-card rounded-full p-1 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+              <div className="flex gap-1 bg-card rounded-full p-1 mb-6 ring-1 ring-foreground/8">
                 {(['award', 'redeem'] as const)
                   .filter((key) => (key === 'award' ? canScan : canRedeem))
                   .map((key) => (
@@ -788,17 +789,17 @@ export function OwnerScan() {
                       key={key}
                       onClick={() => setMode(key)}
                       className={
-                        'flex-1 h-10 rounded-full text-sm font-bold capitalize transition-colors duration-150 ease-out flex items-center justify-center gap-1.5 ' +
-                        (mode === key ? 'bg-primary text-white' : 'text-foreground/50')
+                        'flex-1 h-10 rounded-full text-sm font-semibold transition-colors duration-200 ease-out flex items-center justify-center gap-1.5 ' +
+                        (mode === key ? 'bg-peach text-peach-ink' : 'text-muted-foreground hover:text-foreground')
                       }
                     >
-                      {key === 'award' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      {key === 'award' ? <Check className="h-4 w-4" /> : <Gift className="h-4 w-4" />}
                       {key === 'award' ? (spendShop ? 'Add purchase' : `Add ${unit}`) : 'Redeem reward'}
                     </button>
                   ))}
               </div>
 
-              <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-6">
+              <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 sm:p-7">
                 {mode === 'award' && canScan && session && (spendShop
                   ? <SpendPanel businessId={activeBusinessId} staffUserId={session.user.id} />
                   : <StampPanel businessId={activeBusinessId} unit={unit} />)}

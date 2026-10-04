@@ -11,9 +11,9 @@ export function OwnerComingSoon({ title }: { title: string }) {
 
   return (
     <OwnerLayout>
-      <h1 className="text-3xl font-display font-extrabold text-foreground mb-6">{title}</h1>
-      <div className="rounded-2xl bg-card shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-        <p className="text-foreground/50">Coming soon.</p>
+      <h1 className="text-3xl font-display font-bold tracking-tight text-foreground sm:text-4xl mb-6">{title}</h1>
+      <div className="rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink">
+        <p>Coming soon.</p>
       </div>
     </OwnerLayout>
   )

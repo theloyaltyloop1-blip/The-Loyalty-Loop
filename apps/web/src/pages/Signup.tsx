@@ -120,23 +120,23 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           minLength={8}
           autoComplete="new-password"
         />
-        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
         <button data-press-feedback
           type="submit"
           disabled={loading}
-          className="h-14 rounded-lg bg-foreground text-white font-bold text-lg disabled:opacity-50"
+          className="h-12 rounded-full bg-primary text-primary-foreground font-semibold text-base transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {loading ? 'Creating account…' : asOwner ? 'Create shop account' : 'Sign up'}
         </button>
       </form>
 
       <AuthLinks>
-        <AuthLinkLine prompt="Already registered? –" linkText="Log in" to="/login" />
+        <AuthLinkLine prompt="Already registered?" linkText="Log in" to="/login" />
         {asOwner ? (
-          <AuthLinkLine prompt="Just here to earn rewards? –" linkText="Sign up as a customer" to="/signup" />
+          <AuthLinkLine prompt="Just here to earn rewards?" linkText="Sign up as a customer" to="/signup" />
         ) : (
           <AuthLinkLine
-            prompt="Signing up as business? –"
+            prompt="Signing up as a business?"
             linkText="Sign up as a Loyalty Loop Retailer"
             to="/signup/owner"
           />
