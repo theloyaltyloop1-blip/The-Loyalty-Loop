@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { startFidelDatabase } from './fidel-fixture.mjs';
 
-// 20261004120000_back_to_stamps.sql after the 2026-09-25 switchover: shops return
+// 20261004001549_back_to_stamps.sql after the 2026-09-25 switchover: shops return
 // to stamps (Pure Elegant stays on £), nothing is deleted, stamps work again.
 
 const migrations = (name) => new URL(`../../../../supabase/migrations/${name}`, import.meta.url);
@@ -30,7 +30,7 @@ test('back to stamps moves shops to stamps, keeps Pure Elegant and all data, and
     assert.equal((await client.query('select reward_model m from public.businesses where id=$1', [cafe])).rows[0].m, 'spend_threshold');
     await assert.rejects(client.query("insert into public.transactions(user_id, business_id, type, value) values ($1, $2, 'stamp', 1)", [customer, cafe]), /shop_uses_spend_rewards/);
 
-    await client.query(await readFile(migrations('20261004120000_back_to_stamps.sql'), 'utf8'));
+    await client.query(await readFile(migrations('20261004001549_back_to_stamps.sql'), 'utf8'));
     const model = async (id) => (await client.query('select reward_model m from public.businesses where id=$1', [id])).rows[0].m;
     assert.equal(await model(cafe), 'stamp_legacy');
     assert.equal(await model(pure), 'spend_threshold', 'Pure Elegant stays on £');
