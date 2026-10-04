@@ -14,7 +14,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "10"
+      "buildNumber": "11"
     },
     "android": {
       "package": "com.theloyaltyloop.shopper",
@@ -52,6 +52,12 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "Allow The Loyalty Loop to use Face ID to unlock your app."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow The Loyalty Loop to use your location to show the closest shops first. Your location stays on your phone."
         }
       ]
     ],

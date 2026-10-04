@@ -20,6 +20,9 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { HomeCollection, homeStyles } from './src/components/HomeCollection'
+import { useUserLocation } from './src/use-user-location'
+import type { HomeTier } from './src/home-progress'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -1619,70 +1622,35 @@ function NearbyRow({ business, onPress }: { business: Business; onPress: () => v
   )
 }
 
-function HomeTab({
-  businesses,
-  announcements,
-  onSelect,
-  onAsk,
-}: {
-  businesses: Business[]
-  announcements: Announcement[]
-  onSelect: (business: Business) => void
-  onAsk: (query: string) => void
+function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk }: {
+  businesses: Business[]; memberships: Membership[]; catalog: HomeTier[];
+  announcements: Announcement[]; loading: boolean; onSelect: (business: Business) => void; onAsk: (query: string) => void;
 }) {
   const [category, setCategory] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const filtered = businesses.filter((b) => (!category || (b.category || 'Other') === category) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const filtered = businesses.filter(b => (!category || (b.category || 'Other') === category) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
-
-  return (
-    <>
-      <Text style={styles.pageTitle}>Discover local rewards</Text>
-      <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
-      <CategoryPills businesses={businesses} selected={category} onSelect={setCategory} />
-
-      {announcements.length > 0 && (
-        <>
-          <View style={styles.sectionHeaderRow}>
-            <MegaphoneIcon color={foreground} size={14} />
-            <Text style={styles.sectionEyebrow}>LATEST ANNOUNCEMENTS</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.announcementRow}>
-            {announcements.map((a) => (
-              <AnnouncementCard key={a.id} announcement={a} />
-            ))}
-          </ScrollView>
-        </>
-      )}
-
-      {trending.length > 0 && (
-        <>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sparkle}>✦</Text>
-            <Text style={styles.sectionEyebrow}>TRENDING NEARBY</Text>
-          </View>
-          <View style={styles.trendingGrid}>
-            {trending.map((b) => (
-              <TrendingCard key={b.id} business={b} onPress={() => onSelect(b)} />
-            ))}
-          </View>
-        </>
-      )}
-
-      <Text style={[styles.sectionEyebrow, { marginTop: 24, marginBottom: 12 }]}>NEARBY</Text>
-      {filtered.map((b) => (
-        <NearbyRow key={b.id} business={b} onPress={() => onSelect(b)} />
-      ))}
-      <Pressable accessibilityRole="button" onPress={() => onAsk(query)} style={({ pressed }) => [styles.askShopCard, pressed && { opacity: 0.85 }]}>
-        <View style={styles.askShopIcon}><MegaphoneIcon color="#fff" size={18} /></View>
-        <View style={styles.settingsRowBody}>
-          <Text style={styles.askShopTitle}>{filtered.length === 0 ? "Can't find your favourite shop?" : 'Ask a shop to join'}</Text>
-          <Text style={styles.askShopCopy}>Tell them local shoppers want them on The Loyalty Loop</Text>
-        </View>
-        <ChevronRightIcon color={primary} size={18} />
-      </Pressable>
-    </>
-  )
+  const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
+  return <>
+    <Text style={homeStyles.title}>Make a{ '\n' }local stop.</Text>
+    <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
+    <CategoryPills businesses={businesses} selected={category} onSelect={setCategory} />
+    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || !!query.trim()} onSelect={onSelect} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
+    {announcements.length > 0 && <>
+      <Text style={homeStyles.sectionHeading}>From your local shops</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.announcementRow}>
+        {announcements.map(a => <AnnouncementCard key={a.id} announcement={a} />)}
+      </ScrollView>
+    </>}
+    <Pressable accessibilityRole="button" onPress={() => onAsk(query)} style={({ pressed }) => [styles.askShopCard, pressed && { opacity: 0.85 }]}>
+      <View style={styles.askShopIcon}><MegaphoneIcon color="#fff" size={18} /></View>
+      <View style={styles.settingsRowBody}>
+        <Text style={styles.askShopTitle}>{filtered.length === 0 ? "Can't find your favourite shop?" : 'Ask a shop to join'}</Text>
+        <Text style={styles.askShopCopy}>Tell them local shoppers want them on The Loyalty Loop</Text>
+      </View>
+      <ChevronRightIcon color={primary} size={18} />
+    </Pressable>
+  </>
 }
 
 // ---------------------------------------------------------------------
@@ -2146,6 +2114,7 @@ function AppHome({ session }: { session: Session }) {
   const [tab, setTab] = useState<Tab>('home')
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [memberships, setMemberships] = useState<Membership[]>([])
+  const [homeCatalog, setHomeCatalog] = useState<HomeTier[]>([])
   const [rewards, setRewards] = useState<Reward[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [platformNotices, setPlatformNotices] = useState<PlatformNotice[]>([])
@@ -2228,7 +2197,7 @@ function AppHome({ session }: { session: Session }) {
     setLoading(true)
     try {
       const platformTargetColumn = Platform.OS === 'ios' ? 'target_shopper_ios' : 'target_shopper_android'
-      const [shops, memberRows, earned, news, favs, profile, notices] = await Promise.all([
+      const [shops, memberRows, earned, news, favs, profile, notices, catalogRows] = await Promise.all([
         supabase.from('businesses').select('*').eq('is_active', true).order('created_at'),
         supabase.from('memberships').select('*').eq('user_id', userId),
         supabase
@@ -2249,6 +2218,7 @@ function AppHome({ session }: { session: Session }) {
           .eq('is_active', true)
           .eq(platformTargetColumn, true)
           .order('created_at', { ascending: false }),
+        supabase.from('reward_catalog').select('business_id,title,stamp_threshold,spend_threshold_pence'),
       ])
       if (shops.error) throw shops.error
       if (memberRows.error) throw memberRows.error
@@ -2256,6 +2226,7 @@ function AppHome({ session }: { session: Session }) {
       if (news.error) throw news.error
       if (favs.error) throw favs.error
       setPlatformNotices(notices.error ? [] : ((notices.data || []) as PlatformNotice[]))
+      setHomeCatalog(catalogRows.error ? [] : (catalogRows.data || []))
       setBusinesses(shops.data || [])
       setMemberships(memberRows.data || [])
       setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business })))
@@ -2378,7 +2349,7 @@ function AppHome({ session }: { session: Session }) {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
-          {tab === 'home' && <HomeTab businesses={businesses} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
+          {tab === 'home' && <HomeTab businesses={businesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
           {tab === 'map' && <MapTab businesses={businesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
