@@ -96,6 +96,8 @@
 .lp-biz-copy p { margin-top: 20px; font-size: 17px; line-height: 1.65; color: var(--lp-muted); max-width: 46ch; }
 .lp-biz-copy .lp-biz-note { margin: 12px 0 32px; font-weight: 600; color: var(--lp-ink); }
 .lp-biz-preview { position: relative; padding-bottom: 36px; }
+.lp-biz-film { grid-column: 1 / -1; }
+.lp-biz-video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; background: #F3F4EF; box-shadow: 0 24px 48px rgb(10 16 8 / .2); }
 .lp-record { background: var(--color-card); border: 1px solid var(--lp-line); border-radius: 20px; padding: 26px; max-width: 360px; box-shadow: 0 18px 40px rgb(28 38 32 / .10); }
 .lp-record-label { font-family: var(--font-display); font-size: 20px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 18px; }
 .lp-record-code, .lp-record-amount { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 16px; border-radius: 12px; background: var(--color-background); margin-bottom: 10px; font-size: 14px; color: var(--lp-muted); }

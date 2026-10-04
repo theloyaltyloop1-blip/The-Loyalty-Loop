@@ -138,6 +138,11 @@ export function Landing() {
               </div>
               <StoreBadges app="business" className="lp-badges" />
             </div>
+            <div className="lp-biz-film">
+              <video className="lp-biz-video" controls playsInline preload="none" poster="/video/loyalty-loop-business-poster.jpg" aria-label="The Loyalty Loop for Business in 21 seconds: scan a customer's QR code, enter the amount, and they earn a reward">
+                <source src="/video/loyalty-loop-business.mp4" type="video/mp4" />
+              </video>
+            </div>
           </div>
         </section>
 
