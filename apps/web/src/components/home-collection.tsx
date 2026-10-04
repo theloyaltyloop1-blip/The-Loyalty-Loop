@@ -1,0 +1,91 @@
+import { useState } from 'react'
+import { ArrowRight, Check, MapPin, Store } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import type { Business, Membership, RewardCatalogItem } from '@/lib/businesses'
+import { getHomeProgress } from '@/lib/home-progress'
+
+function Photo({ business, hero = false }: { business: Business; hero?: boolean }) {
+  const [failedLogo, setFailedLogo] = useState(false)
+  const [failedCover, setFailedCover] = useState(false)
+  return (
+    <div className={'relative overflow-hidden ' + (hero ? 'h-64 sm:h-80' : 'h-36 sm:h-40')} style={{ backgroundColor: business.brand_color || '#DCE6D2' }}>
+      <div className="absolute inset-0 grid place-items-center text-[#F1F4EC]/80" style={{ backgroundColor: business.brand_color || '#3E5235' }} aria-hidden="true">
+        {business.logo_url && !failedLogo
+          ? <img src={business.logo_url} alt="" onError={() => setFailedLogo(true)} className="h-20 w-20 rounded-2xl bg-background object-contain p-2" />
+          : <span className="font-display text-6xl font-bold">{business.name.trim().charAt(0).toUpperCase() || <Store />}</span>}
+      </div>
+      {business.cover_url && <img
+        src={business.cover_url}
+        alt=""
+        onError={() => setFailedCover(true)}
+        className={'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025] ' + (failedCover ? 'hidden' : '')}
+      />}
+      {hero && business.address && <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-background/95 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm"><MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />{business.postcode || business.address}</span>}
+    </div>
+  )
+}
+
+export function HomeCollection({ businesses, featured, memberships, catalog, filtered }: {
+  businesses: Business[]
+  featured: Business | undefined
+  memberships: Membership[]
+  catalog: RewardCatalogItem[]
+  filtered: boolean
+}) {
+  const [showAll, setShowAll] = useState(false)
+  const membershipByBusiness = new Map(memberships.map((membership) => [membership.business_id, membership]))
+  const joined = businesses.filter((business) => membershipByBusiness.has(business.id))
+  const discoveries = businesses.filter((business) => business.id !== featured?.id)
+  const featuredProgress = featured ? getHomeProgress(featured, membershipByBusiness.get(featured.id), catalog) : null
+  return <>
+    {featured && featuredProgress && <Link
+      to={`/dashboard/shop/${featured.slug}`}
+      aria-label={`Explore ${featured.name}${featured.category ? `, ${featured.category}` : ''}`}
+      className="group block overflow-hidden rounded-3xl bg-[#3E5235] text-[#F1F4EC] shadow-sticker transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker-lifted focus-visible:outline-3 focus-visible:outline-primary"
+    >
+      <Photo business={featured} hero />
+      <div className="p-5 sm:p-7">
+        <p className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{featured.name}</p>
+        <p className="mt-1 text-sm text-[#F1F4EC]/85">{featured.description || featured.category || 'A local favourite'}</p>
+        <div className="mt-5 flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-[#DCE6D2] px-4 py-3 text-[#24331F] sm:rounded-full sm:px-5">
+          <span className="min-w-0 text-sm font-semibold">{featuredProgress.title || `${featuredProgress.label} towards a reward`}</span>
+          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+        </div>
+      </div>
+    </Link>}
+
+    {joined.length > 0 && <section aria-labelledby="home-membership-heading" className="mt-10 sm:mt-14">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <h2 id="home-membership-heading" className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Your regulars. Your rewards.</h2>
+        {joined.length > 3 && <button type="button" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-3 focus-visible:outline-primary">{showAll ? 'Show fewer' : `See all ${joined.length}`}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {(showAll ? joined : joined.slice(0, 3)).map((business, index) => {
+          const progress = getHomeProgress(business, membershipByBusiness.get(business.id), catalog)
+          const background = index % 3 === 0 ? '#3E5235' : index % 3 === 1 ? '#F8DCCB' : '#DCE6D2'
+          const ink = index % 3 === 0 ? '#F1F4EC' : index % 3 === 1 ? '#6E2C0F' : '#24331F'
+          return <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`${business.name}. ${progress.label}. View loyalty card.`} className="block rounded-2xl p-5 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker-lifted focus-visible:outline-3 focus-visible:outline-primary" style={{ backgroundColor: background, color: ink }}>
+            <p className="font-display text-xl font-bold tracking-tight">{business.name}</p>
+            <p className="mt-1 text-sm">{progress.reward}</p>
+            {progress.target && !progress.spend && progress.target <= 12
+              ? <div className="mt-5 flex flex-wrap gap-2" role="img" aria-label={progress.label}>{Array.from({ length: progress.target }, (_, stamp) => <span key={stamp} aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full border text-xs font-bold" style={{ borderColor: ink, backgroundColor: stamp < progress.value ? ink : 'transparent', color: background }}>{stamp < progress.value && <Check className="h-3.5 w-3.5" aria-hidden="true" />}</span>)}</div>
+              : progress.target ? <div className="mt-6" role="progressbar" aria-label={`${business.name} loyalty progress`} aria-valuemin={0} aria-valuemax={progress.target} aria-valuenow={Math.min(progress.value, progress.target)} aria-valuetext={progress.label}><div className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: index % 3 === 0 ? '#617257' : `${ink}35` }}><div className="h-full rounded-full transition-[width] duration-300 ease-out" style={{ width: `${progress.fraction * 100}%`, backgroundColor: ink }} /></div></div> : <p className="mt-6 text-sm">Keep collecting to discover your next reward.</p>}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-semibold">{progress.label}</span><span className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold" style={{ backgroundColor: index % 3 === 0 ? '#F1F4EC' : '#C4531F', color: index % 3 === 0 ? '#3E5235' : '#FFFFFF' }}>View card <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></div>
+          </Link>
+        })}
+      </div>
+    </section>}
+
+    {discoveries.length > 0 && <section aria-labelledby="home-discovery-heading" className="mt-10 sm:mt-14">
+      <h2 id="home-discovery-heading" className="mb-4 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{filtered ? 'More matching shops' : 'Find your next favourite'}</h2>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {discoveries.map((business) => <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`Explore ${business.name}${business.category ? `, ${business.category}` : ''}`} className="group overflow-hidden rounded-2xl bg-card text-foreground shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker focus-visible:outline-3 focus-visible:outline-primary">
+          <Photo business={business} />
+          <div className="flex items-center justify-between gap-3 p-4"><div className="min-w-0"><p className="truncate font-display text-lg font-bold">{business.name}</p><p className="mt-1 truncate text-sm text-muted-foreground">{business.category || 'Local independent'}</p></div><ArrowRight className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /></div>
+        </Link>)}
+      </div>
+    </section>}
+
+    {!featured && !joined.length && !discoveries.length && <p role="status" className="rounded-2xl bg-[#DCE6D2] px-5 py-6 text-[#24331F]">{filtered ? 'No shops match. Try another search or category.' : 'No local shops yet. Check back soon.'}</p>}
+  </>
+}
