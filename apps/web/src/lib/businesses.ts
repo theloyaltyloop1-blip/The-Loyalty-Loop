@@ -68,6 +68,8 @@ export interface Membership {
   points_balance: number
   reward_progress_pence: number
   promos_opted_out: boolean
+  visit_count?: number | null
+  last_activity_at?: string | null
 }
 
 export async function fetchBusinesses(): Promise<Business[]> {

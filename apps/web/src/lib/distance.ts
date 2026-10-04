@@ -43,3 +43,30 @@ export function nearestFirst<T extends Located>(shops: T[], from: Coords): { sho
   })
   return ranked.map(({ shop, miles }) => ({ shop, miles }))
 }
+
+// Which shop gets the big card at the top of home: the one this person visits most,
+// and for someone with no visits yet, the one closest to them.
+// Returns null when neither is known, so the caller can fall back to the admin's Trending pick.
+type Visits = { business_id: string; visit_count?: number | null; last_activity_at?: string | null }
+export type FeaturedReason = 'visited' | 'closest'
+
+export function pickFeatured<T extends Located & { id: string }>(
+  shops: T[],
+  memberships: Visits[],
+  from: Coords | null,
+): { shop: T; reason: FeaturedReason } | null {
+  const byShop = new Map(memberships.map((membership) => [membership.business_id, membership]))
+  const visitsTo = (shop: T) => byShop.get(shop.id)?.visit_count ?? 0
+  const ranked = from ? nearestFirst(shops, from) : null
+  const milesTo = new Map(ranked ? ranked.map(({ shop, miles }) => [shop.id, miles ?? Infinity]) : [])
+  const lastSeen = (shop: T) => Date.parse(byShop.get(shop.id)?.last_activity_at ?? '') || 0
+
+  const visited = shops
+    .filter((shop) => visitsTo(shop) > 0)
+    .sort((a, b) => visitsTo(b) - visitsTo(a) || (milesTo.get(a.id) ?? Infinity) - (milesTo.get(b.id) ?? Infinity) || lastSeen(b) - lastSeen(a))
+  if (visited.length) return { shop: visited[0], reason: 'visited' }
+
+  const nearest = ranked?.[0]
+  if (nearest && nearest.miles !== null) return { shop: nearest.shop, reason: 'closest' }
+  return null
+}
