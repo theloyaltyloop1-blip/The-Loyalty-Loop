@@ -60,7 +60,8 @@ export const fixtureSql = String.raw`
   create table public.businesses (
     id uuid primary key,
     owner_id uuid not null references auth.users(id),
-    name text not null default 'Test shop'
+    name text not null default 'Test shop',
+    is_active boolean not null default true
   );
   create table public.memberships (
     id uuid primary key default gen_random_uuid(),

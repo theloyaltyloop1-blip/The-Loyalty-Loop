@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import { Camera, CameraOff, Check, Gift, ScanLine } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import { parseRewardQr } from '@/lib/reward-qr'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
@@ -430,7 +431,7 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
       // failure (e.g. the connection dropped) keeps clientRef, so retrying can
       // never credit the purchase twice.
       const raw = (e as { message?: string } | null)?.message ?? ''
-      if (/amount_out_of_range|not_a_member|shop_not_spend_based|linked_customer_payment_method_required|manual_daily_limit_reached|manual_too_soon|not_allowed|invalid_/.test(raw)) {
+      if (/business is inactive|amount_out_of_range|not_a_member|shop_not_spend_based|linked_customer_payment_method_required|manual_daily_limit_reached|manual_too_soon|not_allowed|invalid_/.test(raw)) {
         clientRef.current = null
       }
       setError(message)
@@ -608,8 +609,8 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
   async function handleQrResult(value: string) {
     setCameraOn(false)
-    const m = value.match(/^loyaltyloop:reward:(.+)$/)
-    if (!m) {
+    const token = parseRewardQr(value)
+    if (!token) {
       setError('That QR code is not a Loyalty Loop reward.')
       return
     }
@@ -617,7 +618,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
     setError(null)
     setSuccess(null)
     try {
-      const result = await findRewardByToken(businessId, m[1])
+      const result = await findRewardByToken(businessId, token)
       if (!result) {
         setError('That reward was not found at this shop.')
         return
@@ -642,7 +643,9 @@ function RedeemPanel({ businessId }: { businessId: string }) {
       setReward(null)
       setCode('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not redeem this reward.')
+      setError(e instanceof Error && e.message.includes('business is inactive')
+        ? 'This shop is inactive. Ask the owner to reactivate it before redeeming a reward.'
+        : e instanceof Error ? e.message : 'Could not redeem this reward.')
     } finally {
       setBusy(false)
     }
@@ -747,7 +750,7 @@ export function OwnerScan() {
 
   return (
     <OwnerLayout>
-      
+
       <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-6 flex items-center gap-3 sm:text-4xl">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-peach text-peach-ink"><ScanLine className="h-6 w-6" /></span> {spendShop ? 'Purchases & rewards' : 'Award & redeem'}
       </h1>

@@ -423,6 +423,7 @@ export function parsePoundsToPence(value: string): number | null {
 export function spendErrorMessage(error: unknown): string {
   const e = error as { message?: string; details?: string } | null
   const message = e?.message ?? ''
+  if (message.includes('business is inactive')) return 'This shop is inactive. Ask the owner to reactivate it before adding a purchase.'
   if (message.includes('amount_out_of_range')) {
     const cap = Number(e?.details)
     return Number.isFinite(cap) && cap > 0

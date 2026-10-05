@@ -52,6 +52,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { parseRewardQr } from "./src/reward-qr";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
 import { SuccessCheck } from "./src/components/SuccessCheck";
 import {
@@ -389,6 +390,9 @@ function spendRefusal(error: { message?: string; details?: string } | null): str
 // (CARD_LINKING_PLAN.md §3.6). Turn its error codes into staff-friendly copy.
 function manualEntryRefusal(error: { message?: string; details?: string } | null): string | null {
   const message = error?.message ?? "";
+  if (message.includes("business is inactive")) {
+    return "This shop is inactive. Ask the owner to reactivate it before adding a purchase.";
+  }
   if (message.includes("manual_daily_limit_reached")) {
     return "This customer has had 3 manual entries here today.";
   }
@@ -903,8 +907,8 @@ function StampsScreen({
   }
 
   async function parse(value: string) {
-    const rewardMatch = value.match(/^loyaltyloop:reward:(.+)$/);
-    if (rewardMatch) {
+    const rewardToken = parseRewardQr(value);
+    if (rewardToken) {
       if (mode !== "reward") {
         Alert.alert("Reward QR code", "Switch to Reward mode before redeeming this QR code.");
         return;
@@ -916,7 +920,7 @@ function StampsScreen({
           .from("rewards")
           .select("id,title,user_id,redeemed_at,expires_at")
           .eq("business_id", business.id)
-          .eq("qr_token", rewardMatch[1])
+          .eq("qr_token", rewardToken)
           .maybeSingle();
         if (error) throw error;
         if (!reward) throw new Error("That reward does not belong to this shop.");
@@ -1063,7 +1067,9 @@ function StampsScreen({
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
         "Could not redeem",
-        e instanceof Error ? e.message : "Please try again.",
+        e instanceof Error && e.message.includes("business is inactive")
+          ? "This shop is inactive. Ask the owner to reactivate it before redeeming a reward."
+          : e instanceof Error ? e.message : "Please try again.",
       );
     } finally {
       setBusy(false);

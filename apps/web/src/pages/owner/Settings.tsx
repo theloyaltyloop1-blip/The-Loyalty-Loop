@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
@@ -1500,6 +1501,7 @@ function DangerTab() {
   const [busy, setBusy] = React.useState(false)
   const [deleteName, setDeleteName] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
+  const [activationSuccess, setActivationSuccess] = React.useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = React.useState(false)
   const [newOwnerEmail, setNewOwnerEmail] = React.useState('')
   const [transferring, setTransferring] = React.useState(false)
@@ -1509,10 +1511,20 @@ function DangerTab() {
   const shop = business
 
   async function setActive(isActive: boolean) {
-    setBusy(true); setError(null)
+    if (busy) return
+    setError(null); setActivationSuccess(null)
+    if (!window.confirm(isActive ? 'Reactivate your shop and make it visible to customers again?' : 'Deactivate your shop? It will be hidden from customers. Your data will be kept.')) return
+    setBusy(true)
     try {
-      const updated = await updateBusiness(shop.id, { is_active: isActive })
+      const { data, error: rpcError } = await supabase.rpc(
+        isActive ? 'reactivate_my_business' : 'deactivate_my_business',
+        { _business_id: shop.id },
+      )
+      if (rpcError) throw new Error(rpcError.message)
+      const updated = Array.isArray(data) ? data[0] : data
+      if (!updated || updated.id !== shop.id || updated.is_active !== isActive) throw new Error('Could not confirm the shop activation change. Refresh and try again.')
       updateLocalBusiness(updated)
+      setActivationSuccess(isActive ? 'Your shop is active again.' : 'Your shop has been deactivated.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update your shop.')
     } finally { setBusy(false) }
@@ -1564,6 +1576,8 @@ function DangerTab() {
         <button data-press-feedback onClick={() => setActive(!business.is_active)} disabled={busy} className="mt-4 rounded-full bg-card px-5 py-2.5 text-sm font-semibold text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary disabled:opacity-50">
           {busy ? 'Saving…' : business.is_active ? 'Deactivate shop' : 'Reactivate shop'}
         </button>
+        {error && <p role="alert" className="mt-3 text-sm font-medium text-destructive">{error}</p>}
+        {activationSuccess && <p role="status" className="mt-3 text-sm text-foreground">{activationSuccess}</p>}
       </section>
 
       <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
