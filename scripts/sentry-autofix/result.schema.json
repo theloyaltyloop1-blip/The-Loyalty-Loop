@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["outcome", "summary", "regression_test"],
+  "properties": {
+    "outcome": { "type": "string", "enum": ["fixed", "insufficient_evidence", "out_of_scope"] },
+    "summary": { "type": "string" },
+    "regression_test": { "type": "string" }
+  }
+}

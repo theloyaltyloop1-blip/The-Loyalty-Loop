@@ -189,3 +189,11 @@ Update 2 October 2026: Claude reviewed phase A and WhatsApp stage 2. Both are ap
 ## Shop requests production release — 2 October 2026
 
 Owner authorized website and Android/iOS shopper release. ID-only Places architecture and request screens are live: shop-only commit 1d98558 pushed, Vercel production READY, shop migration/functions and minute recovery deployed. Exact release verification passed 54 tests (31 database/fake-provider/recovery and 23 pure), seven Deno checks, four app type checks and web build. Real Places key and hosted cron checked. Production Android update 01a0fe87-975c-7622-8419-715c16b25716 and iOS update 01a0fe8e-19c7-78ee-a200-3be8517c6916 independently verified on production channel, runtime 1.0.0. Device receipt and signed-in live request/email/push smoke remain unverified; Claude reviews release evidence next. WhatsApp/Fidel scheduler activation remains a separate held release, with local review fixes restored.
+
+## Sentry automatic repair — local milestone complete — 6 October 2026
+
+- Codex is the sole implementation/activation owner (user explicitly removed Claude from this task). Product owner authorized automatic deployment of eligible passing fixes.
+- Signed production webhook, GitHub Codex repair workflow, canonical Sentry lookup, one-attempt-per-issue/release claim, independent before/after regression verification, bounded deployment policy and protected-CI automatic merge are implemented locally. Existing Vercel Git integration is the website release path.
+- Verified: 18/18 contract and disposable-Git verifier tests, web TypeScript/production build, source lint (existing warnings), workflow YAML/Vercel JSON and whitespace checks. Live Sentry delivery, GitHub Node 22 run, model call, merge and production endpoint remain unverified.
+- Activation remains pending: Sentry internal integration/read credential, OpenAI API key, GitHub dispatch/publication credentials, workflow registration/default branch alignment and strict protected-branch CI/auto-merge settings. Existing Vercel value is the ingestion DSN only. See docs/SENTRY_AUTOFIX.md.
+- Next owner: Codex publishes the concrete implementation and completes activation once account credentials/settings can be configured. No Claude sign-off; Fidel/WhatsApp/mobile release milestones unchanged.

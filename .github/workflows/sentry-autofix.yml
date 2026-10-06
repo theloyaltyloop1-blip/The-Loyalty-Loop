@@ -1,0 +1,178 @@
+name: Sentry automatic repair
+on:
+  workflow_dispatch:
+    inputs:
+      issue_id: { description: 'Sentry numeric issue ID', required: true, type: string }
+      event_id: { description: 'Sentry 32-character event ID', required: true, type: string }
+      project_id: { description: 'Sentry numeric project ID', required: true, type: string }
+      release: { description: 'Production 40-character commit SHA', required: true, type: string }
+permissions:
+  contents: read
+concurrency:
+  group: sentry-${{ github.event.client_payload.issue_id || inputs.issue_id }}-${{ github.event.client_payload.release || inputs.release }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: vars.SENTRY_AUTOFIX_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      claimed: ${{ steps.claim.outputs.claimed }}
+      branch: ${{ steps.context.outputs.branch }}
+      base: ${{ steps.context.outputs.base_sha }}
+      issue: ${{ steps.context.outputs.issue_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Read current baseline
+        run: echo "BASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Fetch and minimize canonical Sentry evidence
+        id: context
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_PROJECT_ID: ${{ vars.SENTRY_PROJECT_ID }}
+          SENTRY_API_HOST: ${{ vars.SENTRY_API_HOST }}
+        run: node scripts/sentry-autofix/prepare.mjs
+      - name: Claim one attempt per issue and production release
+        id: claim
+        uses: actions/github-script@v7
+        env:
+          REPAIR_BRANCH: ${{ steps.context.outputs.branch }}
+          BASE_SHA: ${{ steps.context.outputs.base_sha }}
+        with:
+          script: |
+            try {
+              await github.rest.git.createRef({ ...context.repo,
+                ref: `refs/heads/${process.env.REPAIR_BRANCH}`, sha: process.env.BASE_SHA });
+              core.setOutput('claimed', 'true');
+            } catch (error) {
+              if (error.status !== 422) throw error;
+              await github.rest.git.getRef({ ...context.repo, ref: `heads/${process.env.REPAIR_BRANCH}` });
+              core.setOutput('claimed', 'false');
+              core.summary.addRaw('This issue/release was already claimed. No second paid repair attempt.').write();
+            }
+      - uses: actions/upload-artifact@v4
+        if: steps.claim.outputs.claimed == 'true'
+        with:
+          name: sentry-context
+          path: .sentry-context.json
+          include-hidden-files: true
+          retention-days: 1
+
+  repair:
+    needs: prepare
+    if: needs.prepare.outputs.claimed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.base }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci
+        working-directory: apps/web
+      - uses: actions/download-artifact@v4
+        with: { name: sentry-context }
+      - name: Diagnose and repair with Codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ':workspace'
+          prompt-file: scripts/sentry-autofix/prompt.md
+          output-file: .sentry-result.json
+          output-schema-file: scripts/sentry-autofix/result.schema.json
+      - name: Collect proposed change without publishing
+        run: |
+          git add --all -- apps/web/src CLAUDE_HANDOFF.md IMPLEMENTATION_TIMELINE.md
+          mkdir -p .sentry-proposal
+          git diff --cached --binary > .sentry-proposal/repair.patch
+          cp .sentry-result.json .sentry-proposal/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sentry-proposal
+          path: .sentry-proposal/
+          include-hidden-files: true
+          retention-days: 3
+
+  verify:
+    needs: [prepare, repair]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      patch_hash: ${{ steps.hash.outputs.patch_hash }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.base }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci
+        working-directory: apps/web
+      - uses: actions/download-artifact@v4
+        with: { name: sentry-proposal, path: .sentry-proposal }
+      - name: Enforce trusted scope and before/after regression
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base }}
+        run: node scripts/sentry-autofix/verify.mjs
+      - name: Lint and production build independently
+        run: |
+          npm --prefix apps/web run lint -- src
+          npm --prefix apps/web run build
+          git diff --exit-code HEAD
+      - name: Record verified proposal hash
+        id: hash
+        run: echo "patch_hash=$(sha256sum .sentry-proposal/repair.patch | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.base }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with: { name: sentry-proposal, path: .sentry-proposal }
+      - name: Publish verified patch and merge unchanged baseline
+        env:
+          GH_TOKEN: ${{ secrets.SENTRY_AUTOFIX_PUBLISH_TOKEN }}
+          EXPECTED_PATCH_HASH: ${{ needs.verify.outputs.patch_hash }}
+          REPAIR_BRANCH: ${{ needs.prepare.outputs.branch }}
+          BASE_SHA: ${{ needs.prepare.outputs.base }}
+          SENTRY_ISSUE_ID: ${{ needs.prepare.outputs.issue }}
+        run: node scripts/sentry-autofix/publish.mjs
+
+  report:
+    needs: [prepare, repair, verify, publish]
+    if: always() && needs.prepare.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Report outcome
+        uses: actions/github-script@v7
+        env:
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          CLAIMED: ${{ needs.prepare.outputs.claimed }}
+          REPAIR_RESULT: ${{ needs.repair.result }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          PUBLISH_RESULT: ${{ needs.publish.result }}
+        with:
+          script: |
+            const e = process.env;
+            await core.summary.addHeading('Sentry automatic repair')
+              .addTable([['Stage','Result'],['Evidence',e.PREPARE_RESULT],['Claimed',e.CLAIMED || 'no'],
+                ['Codex',e.REPAIR_RESULT],['Independent checks',e.VERIFY_RESULT],['Merge request',e.PUBLISH_RESULT]])
+              .addRaw('A merge starts the existing Vercel deployment. This workflow does not claim deployment health or resolve the Sentry issue. Failed/out-of-scope attempts remain claimed until an operator deliberately retries.').write();
