@@ -15,6 +15,36 @@ const headers = { ...corsHeaders, "Content-Type": "application/json" };
 
 type Check = { label: string; ok: boolean; detail: string };
 
+
+// Reads monitor status from UptimeRobot. Use a read-only API key; it is never
+// returned to the client, only the up/down summary.
+async function uptimeCheck(): Promise<Check> {
+  const key = Deno.env.get("UPTIMEROBOT_API_KEY");
+  if (!key) return { label: "Uptime monitors", ok: false, detail: "UPTIMEROBOT_API_KEY is missing" };
+  try {
+    const res = await fetch("https://api.uptimerobot.com/v2/getMonitors", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ api_key: key, format: "json" }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const body = await res.json();
+    if (body.stat !== "ok") return { label: "Uptime monitors", ok: false, detail: "UptimeRobot request failed" };
+    const monitors = (body.monitors ?? []) as { friendly_name: string; status: number }[];
+    if (!monitors.length) return { label: "Uptime monitors", ok: false, detail: "No monitors configured" };
+    const down = monitors.filter((m) => m.status === 8 || m.status === 9);
+    const paused = monitors.filter((m) => m.status === 0);
+    const ok = down.length === 0 && paused.length === 0;
+    return {
+      label: "Uptime monitors",
+      ok,
+      detail: ok ? `${monitors.length} monitor(s) up` : [down.length && `Down: ${down.map((m) => m.friendly_name).join(", ")}`, paused.length && `Paused: ${paused.map((m) => m.friendly_name).join(", ")}`].filter(Boolean).join(". "),
+    };
+  } catch {
+    return { label: "Uptime monitors", ok: false, detail: "UptimeRobot unreachable" };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return new Response(JSON.stringify({ error: "method not allowed" }), { status: 405, headers });
@@ -34,6 +64,7 @@ Deno.serve(async (req) => {
       .from("winback_email_log").select("id", { head: true, count: "exact" })
       .eq("status", "failed").gte("sent_at", sevenDays);
     const {data:scheduled,error:scheduledError}=await admin.rpc('scheduled_jobs_health');
+    const uptime = await uptimeCheck();
     const checks: Check[] = [
       { label: "Database", ok: !dbError, detail: dbError ? dbError.message : "Supabase database reachable" },
       { label: "Resend", ok: Boolean(Deno.env.get("RESEND_API_KEY")), detail: Deno.env.get("RESEND_API_KEY") ? "Email secret configured" : "RESEND_API_KEY is missing" },
@@ -41,6 +72,7 @@ Deno.serve(async (req) => {
       { label: "Firecrawl", ok: Boolean(Deno.env.get("FIRECRAWL_API_KEY")), detail: Deno.env.get("FIRECRAWL_API_KEY") ? "Research secret configured" : "FIRECRAWL_API_KEY is missing" },
       { label: "Recent email delivery", ok: !emailError && (emailFailures ?? 0) === 0, detail: emailError ? emailError.message : emailFailures ? `${emailFailures} failed win-back email(s) in the last 7 days` : "No failed win-back emails in the last 7 days" },
       { label: "Scheduled jobs", ok: !scheduledError&&scheduled?.ok===true, detail: scheduledError?'Scheduled job health unavailable':scheduled?.detail??'No recent recovery runs' },
+      uptime,
     ];
     return new Response(JSON.stringify({ checks }), { headers });
   } catch (error) {

@@ -7,7 +7,7 @@ const TONES = ['bg-sage text-sage-ink', 'bg-peach text-peach-ink', 'bg-amber tex
 
 const steps = [
   { icon: Image, title: 'Finish your shop profile', body: 'Add your description, address, logo and cover image so customers can recognise your shop.', to: '/owner/settings', action: 'Open shop settings' },
-  { icon: Gift, title: 'Create rewards', body: 'Add at least one reward, for example “Free coffee” after spending £20. Scanning unlocks once a reward is ready.', to: '/owner/settings', action: 'Set up rewards' },
+  { icon: Gift, title: 'Create rewards', body: 'Add at least one reward, for example “Free coffee” after 8 stamps. Scanning unlocks once a reward is ready.', to: '/owner/settings', action: 'Set up rewards' },
   { icon: Wrench, title: 'Invite customers', body: 'Create your dedicated QR poster and place it beside the till so customers can join your card.', to: '/owner/tools', action: 'Open growth tools' },
   { icon: ScanLine, title: 'Award progress at the counter', body: 'Open Scan, scan the shopper’s QR code or type their manual code, choose the amount, then award it.', to: '/owner/scan', action: 'Open scan' },
   { icon: Sparkles, title: 'Keep customers coming back', body: 'Use announcements for shop updates, reviews for replies, and analytics to understand activity.', to: '/owner', action: 'View analytics' },

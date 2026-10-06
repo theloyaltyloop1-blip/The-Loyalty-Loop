@@ -12,11 +12,11 @@ type Item = { q: string; a: React.ReactNode }
 const SHOPPER_ITEMS: Item[] = [
   {
     q: 'What is The Loyalty Loop?',
-    a: 'It replaces the paper loyalty cards from your favourite independent shops with one app. What you spend at each shop counts towards its rewards, and a reward unlocks once you’ve spent the shop’s amount.',
+    a: 'It replaces the paper loyalty cards from your favourite independent shops with one app. Each visit earns a stamp at that shop, and a reward unlocks once your card is full.',
   },
   {
     q: 'How do my purchases count?',
-    a: 'Open the shop’s loyalty card in the app and show the QR code (or read out the 6‑character code) when you pay. The shop scans it and adds what you spent, and your progress updates straight away. Where the shop supports it, a linked card counts automatically.',
+    a: 'Open the shop’s loyalty card in the app and show the QR code (or read out the 6‑character code) when you pay. The shop scans it and adds your stamp, and your progress updates straight away. Where the shop supports it, a linked card counts automatically.',
   },
   {
     q: 'How do I claim a reward?',
@@ -51,7 +51,7 @@ const BUSINESS_ITEMS: Item[] = [
   },
   {
     q: 'What kinds of loyalty programme can I run?',
-    a: 'Spend-based rewards: “spend £20, get a free coffee”. You choose each reward and how much customers spend to unlock it, can add bigger rewards at higher amounts, and can change them whenever you like.',
+    a: 'Stamp rewards: “collect 8 stamps, get a free coffee”. You choose each reward and how many stamps unlock it, can add bigger rewards at higher counts, and can change them whenever you like.',
   },
   {
     q: 'How does the AI business coaching work?',

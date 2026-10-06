@@ -25,13 +25,13 @@ function scrollToSection(event: MouseEvent<HTMLAnchorElement>) {
 
 const STEPS = [
   { icon: MapPin, tone: 'sage', title: 'Find your spot.', body: 'Explore participating shops on the map and join their loyalty cards.' },
-  { icon: QrCode, tone: 'amber', title: 'Show your code.', body: 'At the till, show your QR code or short code. What you spend counts towards your reward.' },
+  { icon: QrCode, tone: 'amber', title: 'Show your code.', body: 'At the till, show your QR code or short code. Every visit adds a stamp towards your reward.' },
   { icon: Gift, tone: 'orange', title: 'Enjoy your reward.', body: 'See your progress in the app. When your reward is ready, show the shop your redemption code.' },
 ]
 
 const QUESTIONS = [
-  ['How do my purchases count?', 'Join a participating shop’s loyalty card, then show your QR code or short code when you pay. The shop adds what you spent, and it counts towards your next reward.'],
-  ['Where can I use it?', 'Open the shop map to find participating independent businesses near you. Each shop sets its own rewards and how much you spend to earn them.'],
+  ['How do my purchases count?', 'Join a participating shop’s loyalty card, then show your QR code or short code when you pay. The shop adds your stamp, and it counts towards your next reward.'],
+  ['Where can I use it?', 'Open the shop map to find participating independent businesses near you. Each shop sets its own rewards and how many stamps you need to earn them.'],
   ['Does it cost anything for shoppers?', 'The Loyalty Loop is free for shoppers. Create an account to keep your participating shops’ loyalty cards together.'],
   ['Can I bring over a paper card?', 'Ask the shop whether they can carry over your existing progress. Each business decides how to handle its paper cards.'],
 ]
@@ -39,14 +39,14 @@ const QUESTIONS = [
 // Example cards for the hero stack. Shop names are illustrative, not real customers.
 const BACK_CARDS = [
   { shop: 'Fade & Co. Barbers', reward: 'Every sixth trim free', tone: 'amber' },
-  { shop: 'Pip’s Bakehouse', reward: 'Spend £15, a loaf on us', tone: 'orange' },
+  { shop: 'Pip’s Bakehouse', reward: 'Collect 8 stamps, a loaf on us', tone: 'orange' },
 ]
 
 const STAMPS_TOTAL = 10
 const STAMPS_FILLED = 7
 
 export function Landing() {
-  usePageMeta({ title: 'The Loyalty Loop: keep coming back to local', description: 'Digital loyalty cards for independent shops. Earn rewards as you spend, keep track of them, and give your regular places another visit.', path: '/' })
+  usePageMeta({ title: 'The Loyalty Loop: keep coming back to local', description: 'Digital loyalty cards for independent shops. Earn rewards with every visit, keep track of them, and give your regular places another visit.', path: '/' })
   return (
     <div className="lp">
       <a className="lp-skip" href="#main-content">Skip to content</a>
@@ -72,14 +72,14 @@ export function Landing() {
         <section className="lp-wrap lp-hero">
           <div className="lp-hero-copy">
             <h1>Your high street, in your pocket.</h1>
-            <p className="lp-lead">Keep the loyalty cards from your favourite local shops in one place, and get rewarded as you spend.</p>
+            <p className="lp-lead">Keep the loyalty cards from your favourite local shops in one place, and get rewarded every time you visit.</p>
             <div className="lp-actions">
               <Link className="lp-btn lp-btn-primary" to="/signup">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
             </div>
             <StoreBadges className="lp-badges" />
           </div>
 
-          <div className="lp-stack" role="img" aria-label="Example loyalty card: £14 of £20 spent at a neighbourhood café, with two more shop cards behind it">
+          <div className="lp-stack" role="img" aria-label="Example loyalty card: 6 of 8 stamps at a neighbourhood café, with two more shop cards behind it">
             {BACK_CARDS.map((card, i) => (
               <div key={card.shop} className={`lp-card lp-card-back lp-card-${card.tone}`} style={{ '--i': i } as React.CSSProperties} aria-hidden="true">
                 <span className="lp-card-shop">{card.shop}</span>
@@ -92,7 +92,7 @@ export function Landing() {
                 <LoopMark className="h-7 w-7" />
               </div>
               <p className="lp-card-title">The usual, please.</p>
-              <p className="lp-card-sub">Spend £20. One coffee on the house.</p>
+              <p className="lp-card-sub">Collect 8 stamps. One coffee on the house.</p>
               <div className="lp-stamps">
                 {Array.from({ length: STAMPS_TOTAL }, (_, i) => (
                   <span key={i} className={i < STAMPS_FILLED ? 'lp-stamp is-filled' : 'lp-stamp'} style={{ '--s': i } as React.CSSProperties}>
@@ -100,7 +100,7 @@ export function Landing() {
                   </span>
                 ))}
               </div>
-              <div className="lp-card-foot"><span>£14 spent</span><span>£6 to your next coffee</span></div>
+              <div className="lp-card-foot"><span>6 stamps</span><span>2 to your next coffee</span></div>
             </div>
           </div>
         </section>
@@ -142,7 +142,7 @@ export function Landing() {
             </div>
             <div className="lp-biz-copy">
               <h2>Give your regulars a reason to return.</h2>
-              <p>You know their order. We help you reward what they spend. Choose rewards, record purchases from your phone, and see how your loyalty programme is doing.</p>
+              <p>You know their order. We help you reward their loyalty. Choose rewards, record visits from your phone, and see how your loyalty programme is doing.</p>
               <p className="lp-biz-note">No paper cards to print or extra scanner to buy.</p>
               <div className="lp-actions">
                 <Link className="lp-btn lp-btn-primary" to="/signup/owner">Set up your business</Link>
