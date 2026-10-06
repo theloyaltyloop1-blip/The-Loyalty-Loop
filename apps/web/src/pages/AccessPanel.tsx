@@ -14,7 +14,6 @@ import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports,
 
 type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features'
 type Health = { label: string; detail: string; ok: boolean; targetTab?: Tab }
-type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
   overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features',
@@ -75,7 +74,6 @@ export function AccessPanel() {
   const [verifications, setVerifications] = React.useState<PendingVerification[]>([])
   const [support, setSupport] = React.useState<SupportRequest[]>([])
   const [reports, setReports] = React.useState<ReviewReport[]>([])
-  const [usage, setUsage] = React.useState<UsageEvent[]>([])
   const [busy, setBusy] = React.useState(true)
 
   const load = React.useCallback(async () => {
@@ -85,19 +83,17 @@ export function AccessPanel() {
       const targetTab = label === 'businesses' ? 'verifications' : label === 'support_requests' ? 'support' : undefined
       return { label, ok: !error, targetTab, detail: error ? error.message : `${count ?? 0} records reachable` }
     }))
-    const [storage, functionChecks, pending, requests, reviewReports, usageData] = await Promise.all([
+    const [storage, functionChecks, pending, requests, reviewReports] = await Promise.all([
       supabase.storage.from('logos').list('', { limit: 1 }).then(({ error }) => ({ label: 'Storage', ok: !error, detail: error ? error.message : 'Logo storage bucket reachable' })),
       fetchPlatformHealth().catch((error) => [{ label: 'Platform health function', ok: false, detail: error instanceof Error ? error.message : 'Unavailable' }]),
       fetchPendingVerifications().catch(() => []),
       fetchAdminSupportRequests().catch(() => []),
       fetchOpenReviewReports().catch(() => []),
-      (async () => { const { data } = await supabase.rpc('admin_usage_analytics', { _days: 30 }); return (data || []) as UsageEvent[] })().catch(() => []),
     ])
     setHealth([...tableChecks, storage, ...functionChecks, appleSignInHealth()])
     setVerifications(pending)
     setSupport(requests)
     setReports(reviewReports)
-    setUsage(usageData)
     setBusy(false)
   }, [])
 
@@ -121,15 +117,13 @@ export function AccessPanel() {
     </aside>
     <main className="w-full flex-1 p-4 sm:p-6 lg:max-w-6xl lg:p-10">
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{tabLabels[tab]}</h1></div><button data-press-feedback onClick={() => void load()} className="w-fit rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Refresh</button></div>
-      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : tab === 'backups' ? <LaptopBackups /> : <PausedFeatures />}
+      {busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : tab === 'backups' ? <LaptopBackups /> : <PausedFeatures />}
     </main>
   </div>
 }
 
-function ProductAnalytics({ items }: { items: UsageEvent[] }) {
-  const total = items.reduce((sum, item) => sum + Number(item.events), 0)
-  const people = Math.max(0, ...items.map((item) => Number(item.people)))
-  return <section><a href="https://eu.posthog.com" target="_blank" rel="noreferrer" className="mb-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/6 p-5 text-sm font-semibold hover:bg-white/10"><span>Website analytics now live in PostHog: funnels, retention and page views</span><span aria-hidden="true">Open ↗</span></a><div className="grid gap-4 sm:grid-cols-2"><article className="rounded-2xl bg-white/6 p-5"><p className="text-sm text-white/55">Tracked actions, last 30 days</p><p className="mt-2 font-display text-4xl font-bold">{total}</p></article><article className="rounded-2xl bg-white/6 p-5"><p className="text-sm text-white/55">Most users on one feature</p><p className="mt-2 font-display text-4xl font-bold">{people}</p></article></div><p className="mt-6 text-sm text-white/55">Only people who opt in are included. Events never include passwords, emails, QR codes or message content.</p><div className="mt-4 overflow-x-auto rounded-2xl border border-white/10"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-b border-white/10 text-white/45"><tr><th className="p-4">Feature</th><th className="p-4">Where</th><th className="p-4">Uses</th><th className="p-4">People</th><th className="p-4">Last used</th></tr></thead><tbody>{items.length ? items.map((item) => <tr key={`${item.surface}-${item.event_name}`} className="border-b border-white/5"><td className="p-4 font-semibold">{item.event_name.replaceAll('_', ' ')}</td><td className="p-4 text-white/60">{item.surface.replaceAll('_', ' ')}</td><td className="p-4">{item.events}</td><td className="p-4">{item.people}</td><td className="p-4 text-white/60">{new Date(item.last_seen).toLocaleString()}</td></tr>) : <tr><td colSpan={5} className="p-5 text-white/55">No opted-in usage yet. It will appear here after people use the website or updated apps.</td></tr>}</tbody></table></div></section>
+function ProductAnalytics() {
+  return <section><a href="https://eu.posthog.com" target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/6 p-5 text-sm font-semibold hover:bg-white/10"><span>Product analytics for the website, shopper app and business app are in PostHog: funnels, retention and page views</span><span aria-hidden="true">Open ↗</span></a></section>
 }
 
 function Overview({ health, selected, onSelect, onRefresh, onOpenTab }: { health: Health[]; selected: Health | null; onSelect: (item: Health | null) => void; onRefresh: () => Promise<void>; onOpenTab: (tab: Tab) => void }) {

@@ -25,6 +25,7 @@ function start() {
     disable_surveys: true,
     person_profiles: 'identified_only',
   })
+  posthog.register({ surface: 'web' })
 }
 
 /** Syncs PostHog with the cookie choice. Safe to call repeatedly. */
