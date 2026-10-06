@@ -1897,6 +1897,83 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Checks performed: `node legal/generate.js` succeeds; pdftotext spot-checks; page counts 5/5/2/4/4/2; copies in `legal/` and `apps/web/public/legal/` identical. Not reviewed by a solicitor.
 - Remaining (owner: user): (1) UK solicitor review. (2) Add registered company name, number, registered address and ICO registration number (none were supplied; none invented). (3) Confirm liability caps (GBP 100 / 12 months' fees for business users) and the 15-day sub-processor objection period. (4) Confirm the sub-processor list in the DPA Annex 2 matches actual contracts. (5) Not yet pushed or deployed unless a later entry says so.
 
+## Sentry activation runbook and CI implemented — 2026-10-06 — Codex
+
+- Added `docs/SENTRY_AUTOFIX.md` and secret-free `scripts/sentry-autofix/.env.example` with exact discovered org/project, credentials/scopes, GitHub workflow registration/default-branch requirement, strict required checks, kill switch/retry and genuine-delivery acceptance criteria. Clearly states synchronous dispatch is not a durable queue and deployment health/source maps remain unverified.
+- `.github/workflows/ci.yml` adds Node 22 automation contract/verifier tests and scopes web lint to src. Publisher also requires `sentry-autofix` CI in main protection. The unprotected/auto-merge-disabled repository remains unchanged; no account credentials or settings created.
+- Previous clean verifier run passed 4/4 after removing inherited test-runner context. Final combined suite including integrity checks is pending its completion/readback. Web build already passed. Next: capture final evidence and publish implementation PR, then activate after credentials/settings are available.
+
+## Sentry final local verification — 2026-10-06 — Codex
+
+- Final combined functional + disposable-Git verifier suite passed **18/18**, including tracked-file integrity checks. Both workflow YAML files and Vercel JSON parsed; git diff --check passed. Source lint exits 0 with existing warnings; web TypeScript/production build passed. Tests used local Node 26.7.0, not yet GitHub Node 22.
+- Updated IMPLEMENTATION_TIMELINE.md for the completed local implementation milestone. Initial timeline no-op patch failed to locate its heading; append succeeded, preserving existing contributor entries.
+- Missing local runtime credentials confirmed by presence-only checks: OPENAI_API_KEY, SENTRY_AUTH_TOKEN, GH_TOKEN, GITHUB_TOKEN are not set. No model call, genuine Sentry delivery, dispatch, automatic merge or deploy was run. GitHub/Vercel account settings and activation secrets remain pending.
+- Codex next: publish bounded implementation PR through connected GitHub tooling, observe CI, and configure activation when secure account credentials/settings are available. Claude is not an approval dependency.
+
+## Sentry implementation branch created — 2026-10-06 — Codex
+
+- Created remote `codex/sentry-autofix` from exact verified main `767485af29bc540cccedb2caa41f23ac6a431452` through the GitHub connector. No production/default branch changed and no local branch/index changed. Next: publish only this task's implementation/documentation, excluding unrelated dirty files, and open a draft PR.
+
+## Sentry implementation published on isolated branch — 2026-10-06 — Codex
+
+- Published 19 task paths at `63b28849a96f6ead7da6336e7bbfb442dd27d29a` on `codex/sentry-autofix` via GitHub Git-tree/commit/ref tools with expected-head lease. Remote handoff/timeline were assembled from exact main versions plus only this task's entries, preserving remote contributor history and excluding unrelated local changes.
+- No main/default branch, production deployment or local index changed. Next: open/attach draft PR and observe hosted CI. Secrets/activation remain absent.
+
+## Sentry draft PR opened — 2026-10-06 — Codex
+
+- Opened and attached [PR #3](https://github.com/theloyaltyloop1-blip/The-Loyalty-Loop/pull/3), draft, targeting main from `codex/sentry-autofix` (`63b28849a96f6ead7da6336e7bbfb442dd27d29a`). Nineteen task files only; local dirty contributor files remain untouched.
+- PR explicitly records inactive credentials/settings, website-only eligible scope, local Node 26 versus CI Node 22, and unverified delivery/model/deployment. No merge/production release initiated. Next: inspect hosted CI and finish activation/account setup.
+
+## Sentry hosted CI first results — 2026-10-06 — Codex
+
+- GitHub CI run `37522107819` on PR #3: all four jobs (**web**, **api**, **mobile**, **sentry-autofix**) completed successfully, including real GitHub Node 22 automation tests. This verifies implementation commit `63b28849a96f6ead7da6336e7bbfb442dd27d29a`; no model call or signed delivery was run.
+- Sentry Custom Integrations page explicitly shows no existing internal integrations. Opened the create-internal form for preparation only; no submit, credential creation, access grant or alert rule change performed. Account activation remains pending.
+
+## Sentry activation form prepared — 2026-10-06 — Codex
+
+- Unsaved internal-integration form in existing signed-in Sentry tab: name `Loyalty Loop Codex automatic repair`, URL `https://www.the-loyalty-loop.com/api/sentry-alert`, Project **Read**, Issue & Event **Read**, Alert Action enabled, other permissions/subscriptions unselected. No Save Changes, integration/token creation, access grant or alert rule was performed. The Alert Action control becomes available after supplying the webhook URL; no plan upgrade was required to prepare it.
+- Asked owner for action-time approval to create persistent read-only integration credentials and store them in GitHub/Vercel, because browser automation confirmation rules require confirmation for new security-sensitive access. This is separate from already-confirmed automatic deployment authorization. No OpenAI API key or billing has been configured.
+- Next: await that credential-creation approval; Codex performs remaining account/trigger activation. PR #3 remains a draft, main remains unchanged, all four implementation CI jobs passed. No automatic error repair is currently active.
+
+## Sentry credential creation approved — 2026-10-06 — Codex
+
+- Owner approved creation/connection of the prepared scoped Sentry credentials and storage in GitHub/Vercel. Submitted Save Changes once; response/navigation still pending at this entry, so creation is not yet claimed complete. Approval does not establish OpenAI API billing/key availability.
+- Next: verify integration creation and store credentials securely without printing/logging values, then finish remaining activation gates. Codex retains ownership; Claude has no role.
+
+## Sentry read-only integration created — 2026-10-06 — Codex
+
+- Created `Loyalty Loop Codex automatic repair` in Sentry after owner approval. Success toast and saved configuration verified: Project Read, Issue & Event Read, Alert Action enabled, fixed production webhook URL, other scopes/subscriptions unselected. Captured newly generated signing secret privately in browser runtime; no value printed, written to disk/handoff or transmitted yet.
+- Requested a read-only token with New Token; adding-token response still pending. Next: verify token creation and store approved values in GitHub/Vercel. Endpoint/alert rule/model credentials/branch settings remain unactivated.
+
+## Sentry token and disabled Vercel configuration created — 2026-10-06 — Codex
+
+- Sentry token creation verified with exact scopes `event:read, project:read`; captured privately in browser runtime. Signing secret and token values remain undisclosed and not written to project files.
+- Created Vercel production variables `SENTRY_PROJECT_ID=4512209368907856` and `SENTRY_AUTOFIX_ENABLED=false`; provider returned both created, no failures. No redeploy and no repair enabled.
+- GitHub browser settings show no existing repository/environment secrets. Opened new-secret form to store approved Sentry token; save is pending. OpenAI and publication/dispatch credentials remain absent.
+
+## Sentry read credential stored in GitHub — 2026-10-06 — Codex
+
+- Saved `SENTRY_AUTH_TOKEN` through GitHub Actions secret UI. Verified "Repository secret added" and the named secret row. Read token value moved only inside browser runtime to the approved GitHub destination; no value printed or written locally.
+- Next: store signing secret as a production-only sensitive Vercel server variable, configure nonsecret GitHub variables, and resolve remaining OpenAI/GitHub automation credentials/settings. Pipeline remains disabled.
+
+## Sentry signing secret stored in Vercel — 2026-10-06 — Codex
+
+- Saved `SENTRY_WEBHOOK_SECRET` through Vercel UI as Secret, Production only. Verified via names/types-only connector inventory: `type=sensitive`, target production. No secret value printed, sent to chat, or saved locally.
+- Signing/read-token temporary browser variables and raw secret snapshots cleared after approved provider storage. GitHub `SENTRY_AUTH_TOKEN` and Vercel signing secret now exist. No alert rule, GitHub dispatch/publication key, OpenAI key, branch protection/default-branch change, merge or redeploy yet. Both repair switches remain disabled/unset.
+- Next: nonsecret GitHub variables and remaining account setup; no need to request Sentry credential permission again.
+
+## GitHub nonsecret configuration saved — 2026-10-06 — Codex
+
+- Saved and verified repository variables `SENTRY_ORG=the-loyalty-loop`, `SENTRY_PROJECT=javascript-react`, `SENTRY_PROJECT_ID=4512209368907856`, `SENTRY_API_HOST=de.sentry.io`, `SENTRY_AUTOFIX_ENABLED=false` through GitHub UI. A navigation-wait wrapper timed out after the first save, but UI independently confirmed the SENTRY_ORG row; no duplicate save/retry was issued. Remaining four saves verified by the named rows.
+- Sentry read token and Vercel production signing secret are securely stored; both switches disabled. Remaining: OpenAI API key/billing, repository-limited GitHub Actions dispatch and publication credentials, workflow/default branch registration, strict required CI/auto-merge settings, alert rule, merge/redeploy and real signed delivery. No model invocation, event dispatch, automatic repair or production release has occurred.
+
+## Mobile apps moved to PostHog; old analytics retired in code — 2026-10-06 — Claude
+
+- Changed: `apps/shopper/src/usage-analytics.ts` and `apps/retailer/src/usage-analytics.ts` now send events to PostHog EU via `posthog-react-native` 4.79 (pure JS; all native helper modules are optional try/catch requires, in-memory persistence, no session replay or lifecycle events, `defaultOptIn: false` mirrored from the existing SecureStore consent). Same exported functions, so `App.tsx` is unchanged. Events carry `surface` = `shopper_app` / `business_app` (web now registers `web`). Identified by Supabase user id only. Admin Product analytics tab no longer reads the old table; it is a link to PostHog. `supabase/migrations/20261006210000_retire_usage_events.sql` drops `admin_usage_analytics` and `usage_events` and is NOT applied to the hosted database.
+- Native build: not needed. Checked that `posthog-react-native/dist` contains no NativeModules/requireNativeModule calls; external requires other than react/react-native/@posthog/core are optional and wrapped in try/catch. `npx expo export --platform ios` succeeded for both apps. Not exercised on a device.
+- Deployed: web `55a1475` (Vercel Ready). OTA to branch `production`, runtime 1.0.0: shopper iOS group d998bf6d-f38a-44da-8191-b93b9057a804, shopper Android group 43c102a3-2e39-465d-9b30-a20c5b9715fb; retailer iOS group df65a4ca-9323-4614-b5fe-48af5c5e438d, retailer Android group 13bb14ff-73e2-4d6e-83a3-21e24db12470. Root `package-lock.json` committed (expo-location + posthog-react-native).
+- Remaining: (1) user opens each app, accepts analytics, and confirms `surface` shopper_app / business_app events in PostHog Live events (owner: user). (2) Then apply the retire migration to the hosted project (owner: Claude, after user confirms). (3) Old installs that have not taken the OTA still try to insert into `usage_events`; those errors are ignored by the apps. (4) Lost-notes issue from earlier: an uncommitted Codex addition to this file was discarded by a `git checkout`; Codex should re-add if needed.
+
 ## Copy-ready prompt for Claude Code
 
-Codex owns the Sentry automatic repair implementation and activation; Claude has no action or approval role for this task. Consult CLAUDE_HANDOFF.md and docs/SENTRY_AUTOFIX.md for status when that runbook exists. Acceptance is a signed Sentry alert starting an isolated Codex repair, independent checks and automatic deployment of eligible passing fixes, with failures reported and no secrets recorded. Product-owner deployment preference is confirmed; account credentials and trigger configuration remain to verify. Preserve unrelated release work.
+Codex owns Sentry automatic repair; Claude has no action or approval role. Continue from CLAUDE_HANDOFF.md and docs/SENTRY_AUTOFIX.md: configure missing credentials and workflow/protected-CI settings, verify GitHub Node 22 checks and a real signed Sentry delivery, then verify an eligible fix merges and Vercel reaches READY. Automatic deployment is owner-authorized; secure credential/account setup is still required. Preserve unrelated releases and never record secrets or claim unrun checks passed.
