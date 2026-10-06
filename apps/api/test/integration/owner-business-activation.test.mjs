@@ -40,7 +40,7 @@ test('Owner activation RPCs on disposable PostgreSQL (focused schema)', async t 
   await t.test('reproduces the original direct UPDATE failure',async()=>{
    await assert.rejects(as(db,'authenticated',owner,'update businesses set is_active=false where id=$1',[shop]),/only be changed by an admin/);
   });
-  const migration=await readFile(new URL('../../../../supabase/migrations/20261005120000_owner_business_activation.sql',import.meta.url),'utf8');
+  const migration=await readFile(new URL('../../../../supabase/migrations/20261005233233_owner_business_activation.sql',import.meta.url),'utf8');
   await db.query(migration);
   await db.query(migration);
   await t.test('owner deactivates, repeats safely, and reactivates with set_updated_at',async()=>{

@@ -7,7 +7,7 @@ import {startFidelDatabase,as} from './fidel-fixture.mjs';
 test('visit thank-you: one email per customer per shop every 6 hours', async t => {
  const f=await startFidelDatabase('thank-you-limit-'); const db=f.client;
  try {
-  await db.query(await readFile(new URL('../../../../supabase/migrations/20261006100500_visit_thank_you_rate_limit.sql',import.meta.url),'utf8'));
+  await db.query(await readFile(new URL('../../../../supabase/migrations/20261005233142_visit_thank_you_rate_limit.sql',import.meta.url),'utf8'));
   const [owner,alice,bob]=Array.from({length:3},()=>randomUUID());
   const shopA=randomUUID(), shopB=randomUUID();
   await db.query('insert into auth.users select unnest($1::uuid[])',[[owner,alice,bob]]);
