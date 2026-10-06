@@ -9,7 +9,17 @@ const sentryDsn = import.meta.env.VITE_SENTRY_DSN
 if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
-    environment: import.meta.env.MODE,
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT,
+    release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      graphQL: { document: false, variables: false },
+      genAI: { inputs: false, outputs: false },
+    },
     tracesSampleRate: 0,
   })
 }

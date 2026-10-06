@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: apps/web/package-lock.json }
       - run: npm ci
-      - run: npm run lint
+      - run: npm run lint -- src
       - run: npm run build
   api:
     runs-on: ubuntu-latest
@@ -46,3 +46,11 @@ jobs:
         working-directory: apps/admin
       - run: node --test review-refresh.test.mjs
         working-directory: apps/shopper
+  sentry-autofix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node --test scripts/sentry-autofix/autofix.test.mjs scripts/sentry-autofix/verifier.test.mjs
