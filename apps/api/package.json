@@ -40,6 +40,7 @@
     "@types/supertest": "7.2.1",
     "embedded-postgres": "18.4.0-beta.17",
     "eslint": "9.39.5",
+    "globals": "^17.13.0",
     "prisma": "7.10.0",
     "supertest": "7.2.2",
     "tsx": "4.23.15",

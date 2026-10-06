@@ -1475,6 +1475,13 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - **Rollback:** `update public.businesses set reward_model='spend_threshold'` and `alter table public.businesses alter column reward_model set default 'spend_threshold'`; republish the previous OTA groups (shopper Android `6c27e009-6f4e-428b-8e79-100b33ffaab9`, iOS `e3963b94-2d3f-400d-8689-8eb28ad6acd6`; retailer groups from the 2026-10-02 release) or redeploy Vercel `dpl_8K3c2LuD4oWJbAhgF9Z8rY6aiWW9`; code tag `spend-rewards-2026-10-04` at `34017f7`.
 - **Open:** £ progress earned 25 Sep-4 Oct at stamp shops is stored but hidden; landing/help/store copy still says spend in places; local `main` still diverges from `origin/main` and holds Codex's uncommitted work; reconcile before the next release.
 
+## Dependency/lint audit (Claude, 2026-10-06)
+
+- `apps/web`: in-range `npm update`; build passes. Remaining `npm audit` high (braces via shadcn) needs breaking `shadcn@1.0.0`; skipped.
+- `apps/api`: ESLint now uses node globals for `.mjs` tests (was 51 `no-undef` errors); added `globals` devDependency. Lint, typecheck, 10/10 tests pass.
+- Mobile apps: `tsc --noEmit` clean for shopper/retailer/admin; shopper unit test passes. `expo install --check` could not reach the network; root `npm audit` (53) is Expo build tooling needing breaking upgrades, not applied.
+- Not done: major bumps (TypeScript 7, eslint 10, prisma 8 rc, @types/node 26); integration tests (need DB); no deploy by Claude.
+
 ## Copy-ready prompt for Claude Code
 
 Review the shipped back-to-stamps release (CLAUDE_HANDOFF.md, "Back-to-stamps RELEASED to production") and the held `supabase/functions/whatsapp-webhook/index.ts` STOP edit, which is still undeployed. Check that stamp shops behave correctly end to end from code and database readback, list any remaining spend-only wording, and record findings in CLAUDE_HANDOFF.md.
