@@ -1,5 +1,4 @@
 import posthog from 'posthog-js'
-import { supabase } from '@/lib/supabase'
 
 const CONSENT_KEY = 'loyalty-loop-cookie-choice'
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined
@@ -47,11 +46,9 @@ export function identifyUsageUser(userId: string | null) {
   else posthog.reset()
 }
 
-export async function trackUsageEvent(eventName: string, context?: string) {
+export function trackUsageEvent(eventName: string, context?: string) {
   if (!hasUsageAnalyticsConsent()) return
   start()
   if (!started) return
-  const { data } = await supabase.auth.getUser()
-  if (!data.user) return
   posthog.capture(eventName, context ? { context: context.slice(0, 80) } : undefined)
 }

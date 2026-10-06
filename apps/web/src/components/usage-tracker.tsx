@@ -20,7 +20,7 @@ export function UsageTracker() {
   }, [consentVersion, session?.user?.id])
 
   React.useEffect(() => {
-    if (session?.user) void trackUsageEvent('page_viewed', location.pathname)
+    trackUsageEvent('$pageview', location.pathname)
   }, [consentVersion, location.pathname, session?.user?.id])
 
   return null
