@@ -11,6 +11,7 @@
 
 ## Monitoring (owner action: needs accounts)
 - Uptime: add an external monitor (e.g. UptimeRobot/Better Stack) on https://the-loyalty-loop.com and the Supabase REST URL; alert to email/phone.
+- Admin panel: the `platform-health` edge function reports an "Uptime monitors" check (System overview) from UptimeRobot. Set Supabase secret `UPTIMEROBOT_API_KEY` (read-only key) and redeploy `platform-health`.
 - Errors: add Sentry (web `@sentry/react`, mobile `sentry-expo`/`@sentry/react-native`) with a DSN set as an env var; not yet integrated in code.
 - Vercel: enable deployment-failure notifications; Supabase: enable usage/error alerts.
 

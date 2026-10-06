@@ -1487,6 +1487,7 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Added `.github/workflows/ci.yml` (web lint+build; api lint, typecheck, unit + integration; mobile tsc + shopper test). `test:integration` glob now includes `.mjs` (103/104 pass, 1 skipped needs pg_net). Not yet observed running on GitHub.
 - Landing/Help/Tutorial/owner Settings copy switched from spend to stamps; legal PDFs not changed or reviewed.
 - Added `docs/PRODUCTION_RUNBOOK.md` (rollback, backups, monitoring, security to-dos). Monitoring, backups and Supabase advisor fixes need owner action/approval; nothing changed in prod DB.
+- `platform-health` edge function now also reports UptimeRobot monitor status (admin System overview). Not deployed; needs secret `UPTIMEROBOT_API_KEY` set in Supabase first. Monitors (site + Supabase auth health) created in UptimeRobot, both up. Deno type-check not run (no deno).
 - Audit: no non-downgrade fix for remaining npm advisories.
 
 ## Copy-ready prompt for Claude Code
