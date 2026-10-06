@@ -30,7 +30,7 @@ are preserved. Acceptance of a privacy notice is not card-monitoring consent.
 ## Release review still required
 
 - Product owner: confirm the legal controller/entity name and contact details.
-  The existing public support address, `developer@the-loyalty-loop.com`, is
+  The existing public support address, `help@the-loyalty-loop.com`, is
   retained. The trading name alone may not identify the legal controller.
 - Confirm actual provider agreements, controller/processor roles, lawful bases,
   transfer safeguards and retention criteria against operational practice. No

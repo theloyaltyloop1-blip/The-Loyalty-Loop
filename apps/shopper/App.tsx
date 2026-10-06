@@ -814,7 +814,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
 
               <SettingsGroup title="Support">
                 <SettingsRow tile="green" icon={(c) => <HelpIcon color={c} size={18} />} title="Help & FAQ" onPress={() => openUrl(`${WEB}/help`)} />
-                <SettingsRow tile="teal" icon={(c) => <MailIcon color={c} size={18} />} title="Contact us" detail="developer@the-loyalty-loop.com" onPress={() => openUrl('mailto:developer@the-loyalty-loop.com')} last />
+                <SettingsRow tile="teal" icon={(c) => <MailIcon color={c} size={18} />} title="Contact us" detail="help@the-loyalty-loop.com" onPress={() => openUrl('mailto:help@the-loyalty-loop.com')} last />
               </SettingsGroup>
 
               <SettingsGroup title="Legal">
