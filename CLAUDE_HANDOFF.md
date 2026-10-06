@@ -1490,6 +1490,10 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - `platform-health` edge function now also reports UptimeRobot monitor status (admin System overview). Not deployed; needs secret `UPTIMEROBOT_API_KEY` set in Supabase first. Monitors (site + Supabase auth health) created in UptimeRobot, both up. Deno type-check not run (no deno).
 - Audit: no non-downgrade fix for remaining npm advisories.
 
+## Sentry web (Claude, 2026-10-06)
+
+- `apps/web/src/main.tsx` initialises `@sentry/react` only when `VITE_SENTRY_DSN` is set (no tracing/replay). CSP `connect-src` in `vercel.json` allows `*.ingest.de.sentry.io`. `VITE_SENTRY_DSN` set in Vercel Production. Not yet verified with a real event. Mobile apps not instrumented.
+
 ## Copy-ready prompt for Claude Code
 
 Review the shipped back-to-stamps release (CLAUDE_HANDOFF.md, "Back-to-stamps RELEASED to production") and the held `supabase/functions/whatsapp-webhook/index.ts` STOP edit, which is still undeployed. Check that stamp shops behave correctly end to end from code and database readback, list any remaining spend-only wording, and record findings in CLAUDE_HANDOFF.md.
