@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Check, Gift, MapPin, QrCode } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
@@ -9,7 +10,18 @@ import './landing.css'
 const NAV_LINKS = [
   { label: 'How it works', href: '#how-it-works' },
   { label: 'For business', href: '#business' },
+  { label: 'FAQs', href: '#faq' },
 ]
+
+function scrollToSection(event: MouseEvent<HTMLAnchorElement>) {
+  const hash = event.currentTarget.hash
+  const target = hash ? document.getElementById(hash.slice(1)) : null
+  if (!target) return
+  event.preventDefault()
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  window.history.replaceState(null, '', hash)
+}
 
 const STEPS = [
   { icon: MapPin, tone: 'sage', title: 'Find your spot.', body: 'Explore participating shops on the map and join their loyalty cards.' },
@@ -46,7 +58,7 @@ export function Landing() {
             <span>The Loyalty Loop</span>
           </Link>
           <nav aria-label="Main navigation" className="lp-nav-links">
-            {NAV_LINKS.map((link) => <a key={link.href} href={link.href}>{link.label}</a>)}
+            {NAV_LINKS.map((link) => <a key={link.href} href={link.href} onClick={scrollToSection}>{link.label}</a>)}
             <Link to="/help">Help</Link>
           </nav>
           <Link to="/login" className="lp-btn lp-btn-quiet">
