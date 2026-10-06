@@ -6,6 +6,18 @@ The website and native apps link to those public URLs. Owner onboarding emails
 fetch the PDFs from the deployed website, so local regeneration does not update
 already-sent attachments or the live site.
 
+## 6 October 2026 revision (template rebuild)
+
+All six documents were rebuilt from General Legal's CC0 `legal-templates` repo 
+(Terms of Use, Privacy Policy GDPR, Cookie Notice, Master Services Agreement and 
+Data Processing Addendum Global) and converted to England and Wales law. Text now lives in 
+`documents-terms.js`, `documents-privacy.js` and `documents-merchant.js`; `generate.js` only renders. 
+Removed as inapplicable: arbitration, class-action waiver, California and other US state sections, 
+advertising and sale/sharing clauses, EU/UK representatives, Swiss and SCC annexes. Kept from the 
+previous version: Fidel card-linking, spend rewards, refund adjustments and manual-entry rules. 
+Added: PostHog, Sentry and named sub-processors, UK GDPR rights and ICO details, consumer-law wording. 
+Still needs review by a UK solicitor; see CLAUDE_HANDOFF.md for open items.
+
 ## 23 September 2026 revision
 
 Adds optional Fidel consent, card and transaction data, spend rewards and refund
