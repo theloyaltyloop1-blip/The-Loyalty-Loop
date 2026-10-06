@@ -14,7 +14,7 @@ test('Shop request review fixes: bounded notify, details budget, narrow delete l
    insert into vault.decrypted_secrets values('SHOP_REQUEST_SIGNING_SECRET','fake'),('SHOP_REQUEST_NOTIFY_SECRET','fake');
    create schema net;create table net.wakes(url text,body jsonb);
    create function net.http_post(url text,body jsonb default '{}',params jsonb default '{}',headers jsonb default '{}',timeout_milliseconds integer default 2000) returns bigint language plpgsql as $$begin insert into net.wakes values(url,body);return 1;end$$;
-   alter table businesses add column lat double precision,add column lng double precision,add column is_active boolean default true,add column approval_status text default 'approved';
+   alter table businesses add column if not exists lat double precision,add column if not exists lng double precision,add column if not exists is_active boolean default true,add column if not exists approval_status text default 'approved';
    create schema cron;create table cron.job(jobid bigserial primary key,jobname text unique,schedule text,command text,active boolean default true);
    create table cron.job_run_details(jobid bigint,status text,start_time timestamptz);
    create function cron.schedule(n text,s text,c text) returns bigint language plpgsql as $$declare id bigint;begin insert into cron.job(jobname,schedule,command) values(n,s,c) on conflict(jobname) do update set schedule=s,command=c returning jobid into id;return id;end$$;`);

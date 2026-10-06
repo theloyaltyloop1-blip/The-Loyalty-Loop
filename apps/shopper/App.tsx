@@ -37,6 +37,7 @@ import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
 import { colors, fonts } from '@loyalty-loop/design-tokens'
+import { encodeRewardQr } from './src/reward-qr'
 import { hasSupabaseConfig, supabase } from './src/supabase'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
@@ -2005,7 +2006,7 @@ function RewardsTab({ rewards }: { rewards: Reward[] }) {
             <Text style={styles.rewardTitle}>{reward.title}</Text>
             <Text style={styles.muted}>Code: {reward.short_code}</Text>
             <View style={styles.rewardQr}>
-              <QRCode value={`loyaltyloop:reward:${reward.qr_token}`} size={120} />
+              <QRCode value={encodeRewardQr(reward.qr_token)} size={120} />
             </View>
           </View>
         ))

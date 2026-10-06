@@ -74,7 +74,8 @@ test('Focused Fidel migrations with a public-schema fixture enforce JSON-claims 
         language plpgsql as $$ begin new.updated_at := now(); return new; end $$;
       create table public.businesses (
         id uuid primary key,
-        owner_id uuid not null references auth.users(id)
+        owner_id uuid not null references auth.users(id),
+        is_active boolean not null default true
       );
       create table public.memberships (
         id uuid primary key,
@@ -335,6 +336,36 @@ test('Focused Fidel migrations with a public-schema fixture enforce JSON-claims 
     assert.equal(syntheticDuplicate.rows[0].outcome.status, 'duplicate');
     assert.equal((await client.query("select count(*)::int as n from public.transactions where note='fidel:auth:synthetic-auth'")).rows[0].n, 1);
 
+    await client.query('update public.businesses set is_active=false where id=$1', [business]);
+    const inactiveAuth = await client.query(`
+      select public.process_fidel_webhook_event(
+        'synthetic-message-inactive-auth', 'transaction.auth', 'synthetic-inactive-auth',
+        'program-test', 'card-customer', 'location-test', null, 400, true, false
+      ) as outcome
+    `);
+    assert.equal(inactiveAuth.rows[0].outcome.status, 'deferred_inactive');
+    assert.equal((await client.query("select outcome from public.fidel_webhook_events where fidel_transaction_id='synthetic-inactive-auth'")).rows[0].outcome, 'deferred_inactive');
+    assert.equal((await client.query("select count(*)::int as n from public.transactions where note='fidel:auth:synthetic-inactive-auth'")).rows[0].n, 0);
+    assert.equal((await client.query("select count(*)::int as n from public.fidel_transactions where fidel_transaction_id='synthetic-inactive-auth'")).rows[0].n, 0);
+    assert.deepEqual((await client.query("select amount_pence,refunded_pence,cleared,status from public.fidel_deferred_awards where fidel_transaction_id='synthetic-inactive-auth'")).rows[0],
+      { amount_pence: 400, refunded_pence: 0, cleared: false, status: 'pending' });
+
+    // More payments received while inactive: a partly refunded and cleared one,
+    // a fully refunded one, a redelivery, and one for a card that is not linked.
+    const event = async (message, type, id, card, original, amount, auth, cleared) => (await client.query(
+      `select public.process_fidel_webhook_event($1,$2,$3,'program-test',$4,'location-test',$5,$6,$7,$8) as outcome`,
+      [message, type, id, card, original, amount, auth, cleared])).rows[0].outcome.status;
+    assert.equal(await event('m-b-auth', 'transaction.auth', 'synthetic-inactive-b', 'card-customer', null, 300, true, false), 'deferred_inactive');
+    assert.equal(await event('m-b-clear', 'transaction.clearing', 'synthetic-inactive-b', 'card-customer', null, 300, true, true), 'deferred_clearing_recorded');
+    assert.equal(await event('m-b-refund', 'transaction.refund', 'synthetic-inactive-b-refund', 'card-customer', 'synthetic-inactive-b', -100, false, true), 'deferred_refund_recorded');
+    assert.equal(await event('m-c-auth', 'transaction.auth', 'synthetic-inactive-c', 'card-customer', null, 200, true, false), 'deferred_inactive');
+    assert.equal(await event('m-c-refund', 'transaction.refund', 'synthetic-inactive-c-refund', 'card-customer', 'synthetic-inactive-c', -200, false, true), 'deferred_refund_recorded');
+    assert.equal(await event('m-c-over', 'transaction.refund', 'synthetic-inactive-c-over', 'card-customer', 'synthetic-inactive-c', -50, false, true), 'unresolved_refund');
+    assert.equal(await event('m-a-retry', 'transaction.auth', 'synthetic-inactive-auth', 'card-customer', null, 400, true, false), 'duplicate');
+    assert.equal(await event('m-d-auth', 'transaction.auth', 'synthetic-inactive-d', 'card-not-linked', null, 250, true, false), 'deferred_inactive');
+    assert.equal((await client.query("select count(*)::int as n from public.fidel_deferred_awards where status='pending'")).rows[0].n, 4);
+    assert.equal((await client.query("select count(*)::int as n from public.transactions where note like 'fidel:auth:synthetic-inactive%'")).rows[0].n, 0);
+
     const syntheticZeroAuth = await client.query(`
       select public.process_fidel_webhook_event(
         'synthetic-message-zero-auth', 'transaction.auth', 'synthetic-zero-auth',
@@ -363,6 +394,56 @@ test('Focused Fidel migrations with a public-schema fixture enforce JSON-claims 
     const syntheticRefundState = await client.query("select total_refunded_pence,progress_credited_pence,status from public.fidel_transactions where fidel_transaction_id='synthetic-auth'");
     assert.deepEqual(syntheticRefundState.rows[0], { total_refunded_pence: 200, progress_credited_pence: 200, status: 'partially_refunded' });
     assert.equal((await client.query("select reward_progress_pence from public.memberships where id=$1", [membership])).rows[0].reward_progress_pence, 150);
+
+    const progressBeforeReplay = (await client.query("select reward_progress_pence from public.memberships where id=$1", [membership])).rows[0].reward_progress_pence;
+    const rewardsBeforeReplay = (await client.query("select count(*)::int as n from public.rewards where user_id=$1 and business_id=$2", [customer, business])).rows[0].n;
+    await client.query('update public.businesses set is_active=true where id=$1', [business]);
+    // Reactivation credits the held payments: net of refunds, once, and never
+    // blocks the reactivation itself.
+    assert.deepEqual((await client.query("select fidel_transaction_id, status, status_reason from public.fidel_deferred_awards order by fidel_transaction_id")).rows, [
+      { fidel_transaction_id: 'synthetic-inactive-auth', status: 'replayed', status_reason: null },
+      { fidel_transaction_id: 'synthetic-inactive-b', status: 'replayed', status_reason: null },
+      { fidel_transaction_id: 'synthetic-inactive-c', status: 'replayed', status_reason: null },
+      { fidel_transaction_id: 'synthetic-inactive-d', status: 'dropped', status_reason: 'card_unlinked' },
+    ]);
+    assert.deepEqual((await client.query("select fidel_transaction_id, original_amount_pence, total_refunded_pence, progress_credited_pence, status from public.fidel_transactions where fidel_transaction_id like 'synthetic-inactive%' order by fidel_transaction_id")).rows, [
+      { fidel_transaction_id: 'synthetic-inactive-auth', original_amount_pence: 400, total_refunded_pence: 0, progress_credited_pence: 400, status: 'authorized' },
+      { fidel_transaction_id: 'synthetic-inactive-b', original_amount_pence: 300, total_refunded_pence: 100, progress_credited_pence: 200, status: 'partially_refunded' },
+      { fidel_transaction_id: 'synthetic-inactive-c', original_amount_pence: 200, total_refunded_pence: 200, progress_credited_pence: 0, status: 'refunded' },
+    ]);
+    assert.deepEqual((await client.query("select note, value from public.transactions where note like 'fidel:auth:synthetic-inactive%' order by note")).rows, [
+      { note: 'fidel:auth:synthetic-inactive-auth', value: 400 },
+      { note: 'fidel:auth:synthetic-inactive-b', value: 200 },
+    ]);
+    // 150 + 400 + 200 = 750 total; with a 500 threshold that is one reward and 250 progress.
+    assert.equal(progressBeforeReplay, 150);
+    assert.equal((await client.query("select reward_progress_pence from public.memberships where id=$1", [membership])).rows[0].reward_progress_pence, 250);
+    assert.equal((await client.query("select count(*)::int as n from public.rewards where user_id=$1 and business_id=$2", [customer, business])).rows[0].n, rewardsBeforeReplay + 1);
+    // Replay is a one-time action: reactivating again credits nothing more.
+    await client.query('update public.businesses set is_active=false where id=$1', [business]);
+    await client.query('update public.businesses set is_active=true where id=$1', [business]);
+    assert.equal((await client.query("select count(*)::int as n from public.transactions where note like 'fidel:auth:synthetic-inactive%'")).rows[0].n, 2);
+    // A payment that cannot be credited is marked failed, rolled back cleanly, and
+    // never blocks the reactivation (600000p at a 500p threshold is refused by the
+    // spend trigger as crossing too many reward thresholds).
+    await client.query('update public.businesses set is_active=false where id=$1', [business]);
+    assert.equal(await event('m-e-auth', 'transaction.auth', 'synthetic-inactive-e', 'card-customer', null, 600000, true, false), 'deferred_inactive');
+    await client.query('update public.businesses set is_active=true where id=$1', [business]);
+    assert.equal((await client.query('select is_active from public.businesses where id=$1', [business])).rows[0].is_active, true);
+    assert.equal((await client.query("select status from public.fidel_deferred_awards where fidel_transaction_id='synthetic-inactive-e'")).rows[0].status, 'failed');
+    assert.equal((await client.query("select count(*)::int as n from public.fidel_transactions where fidel_transaction_id='synthetic-inactive-e'")).rows[0].n, 0);
+    assert.equal((await client.query("select count(*)::int as n from public.transactions where note='fidel:auth:synthetic-inactive-e'")).rows[0].n, 0);
+    // A later clearing for a replayed purchase updates its ledger row as usual.
+    assert.equal(await event('m-a-clear', 'transaction.clearing', 'synthetic-inactive-auth', 'card-customer', null, 400, true, true), 'processed');
+    assert.equal((await client.query("select status from public.fidel_transactions where fidel_transaction_id='synthetic-inactive-auth'")).rows[0].status, 'cleared');
+    const reactivatedAuth = await client.query(`
+      select public.process_fidel_webhook_event(
+        'synthetic-message-reactivated-auth', 'transaction.auth', 'synthetic-reactivated-auth',
+        'program-test', 'card-customer', 'location-test', null, 300, true, false
+      ) as outcome
+    `);
+    assert.equal(reactivatedAuth.rows[0].outcome.status, 'processed');
+    assert.equal((await client.query("select count(*)::int as n from public.transactions where note='fidel:auth:synthetic-reactivated-auth'")).rows[0].n, 1);
 
     const syntheticUnresolvedRefund = await client.query(`
       select public.process_fidel_webhook_event(

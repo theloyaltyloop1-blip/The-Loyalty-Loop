@@ -15,7 +15,7 @@ test('Shop requests phase A: all ten plan acceptance scenarios',async t=>{
    create schema net;create table net.wakes(body jsonb);
    create function net.http_post(url text,body jsonb default '{}',params jsonb default '{}',headers jsonb default '{}',timeout_milliseconds integer default 2000)
    returns bigint language plpgsql as $$ begin insert into net.wakes values(body);return 1;end $$;
-   alter table businesses add column lat double precision,add column lng double precision,add column is_active boolean default true,add column approval_status text default 'approved';`);
+    alter table businesses add column if not exists lat double precision,add column if not exists lng double precision,add column if not exists is_active boolean default true,add column if not exists approval_status text default 'approved';`);
   await db.query('insert into vault.decrypted_secrets values($1,$2),($3,$4)',['SHOP_REQUEST_SIGNING_SECRET',secret,'SHOP_REQUEST_NOTIFY_SECRET','disposable-notify']);
   await db.query(await readFile(new URL('../../../../supabase/migrations/20261002211052_shop_requests_phase_a.sql',import.meta.url),'utf8'));
   await db.query(await readFile(new URL('../../../../supabase/migrations/20261002231854_shop_request_review_fixes.sql',import.meta.url),'utf8'));
