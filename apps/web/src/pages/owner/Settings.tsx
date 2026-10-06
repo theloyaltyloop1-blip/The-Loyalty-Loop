@@ -1485,8 +1485,8 @@ function HelpTab() {
       </SectionCard>
       <SectionCard title="Quick answers">
         <div className="grid gap-3 text-sm text-muted-foreground">
-          <p><strong className="text-foreground">Record a purchase:</strong> open Scan from the owner menu, scan the customer QR code or enter their code, then enter what they spent.</p>
-          <p><strong className="text-foreground">Update your card:</strong> use Loyalty & rewards to change your rewards and how much customers spend to unlock them.</p>
+          <p><strong className="text-foreground">Record a visit:</strong> open Scan from the owner menu, scan the customer QR code or enter their code, then add their stamp.</p>
+          <p><strong className="text-foreground">Update your card:</strong> use Loyalty & rewards to change your rewards and how many stamps unlock them.</p>
           <p><strong className="text-foreground">Your shop:</strong> {business?.is_active ? 'Your shop is live for customers.' : 'Your shop is currently deactivated and hidden from customers.'}</p>
         </div>
       </SectionCard>

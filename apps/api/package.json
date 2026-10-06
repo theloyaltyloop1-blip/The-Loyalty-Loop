@@ -13,7 +13,7 @@
     "typecheck": "prisma generate && tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test test/*.test.ts",
-    "test:integration": "tsx --test test/integration/*.test.ts",
+    "test:integration": "tsx --test test/integration/*.test.*",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate deploy",
