@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
-const EFFECTIVE_DATE = '23 September 2026';
+const EFFECTIVE_DATE = '6 October 2026';
 const COMPANY = 'The Loyalty Loop';
 const CONTACT_EMAIL = 'developer@the-loyalty-loop.com';
 const JURISDICTION = 'England and Wales';
@@ -193,7 +193,7 @@ const privacySections = [
     `${COMPANY} ("we", "us") is the data controller for personal data processed through the Service, except where we process data on behalf of a participating shop that acts as controller for its own members' loyalty data as described below. You can contact us about privacy matters at ${CONTACT_EMAIL}.`,
   ]],
   ["2. Information we collect", [
-    "We collect account details you provide, such as your name, email, optional phone number and postcode, together with authentication information. We also process shops joined, loyalty progress, recorded spend, rewards, visits, reviews, messages, notification subscriptions and technical information needed to run and secure the Service. Device location is used when you permit it for nearby-shop features. Optional usage analytics are described in our Cookie Policy.",
+    "We collect account details you provide, such as your name, email, optional phone number and postcode, together with authentication information. We also process shops joined, loyalty progress, recorded spend, rewards, visits, reviews, messages, notification subscriptions and technical information needed to run and secure the Service. Device location is used when you permit it for nearby-shop features. Optional usage analytics, provided by PostHog, are described in our Cookie Policy.",
     "If you choose card linking when it becomes available, Fidel collects card details directly through its secure enrolment form. We do not receive or store your full card number or card security code. We store a provider card identifier, card scheme, last four digits, link status and linking/unlinking timestamps. A random account-linking identifier associates your enrolled cards with your account.",
     "For matched transactions, Fidel sends purchase or refund identifiers, linked-card and merchant/location identifiers, amount, currency, transaction time and authorisation, clearing or refund status. We store transaction and webhook records, including provider payloads and processing outcomes, to calculate rewards, reconcile refunds, investigate failures and prevent duplicate credit. This is purchase-level data, not a list of individual basket items or access to your bank balance.",
     "For merchants, we process business and location details, payment-provider details and any merchant identifiers supplied for enrolment and transaction matching."
@@ -241,7 +241,7 @@ const cookieSections = [
     'Cookies are small text files placed on your device when you visit a website or use an app. Similar technologies include local storage and push-notification tokens, which we refer to collectively as "cookies" in this policy.',
   ]],
   ["2. The categories of cookies we use", [
-    "Essential browser storage keeps you signed in and remembers your privacy choice. Optional usage analytics record activity such as event name, page context and your signed-in account identifier when you choose Accept all. Essential only disables these optional usage events. These records are not anonymous because they can be associated with your account.",
+    "Essential browser storage keeps you signed in and remembers your privacy choice. Optional usage analytics record activity such as event name, page context and your signed-in account identifier when you choose Accept all. Essential only disables these optional usage events. These records are not anonymous because they can be associated with your account. On our website they are collected using PostHog, which acts as our service provider and stores the data in its European Union cloud region. PostHog stores a small identifier in your browser's local storage and cookies to recognise repeat visits, only after you choose Accept all. We do not send your email address or name to PostHog, and we do not use PostHog session recording, advertising or cross-site tracking. You can change your choice at any time by clearing this site's stored data, which shows the banner again.",
     "Card-linked purchase and refund records are used to operate rewards under the Privacy Notice. They are separate from optional website usage analytics. Accepting cookies does not authorise card enrolment or transaction monitoring; choosing Essential only does not unlink an already linked card."
 ]],
   ["3. Managing your preferences", [
@@ -249,7 +249,7 @@ const cookieSections = [
     "Notification and marketing preferences are separate account controls. When card linking is available, use Linked cards to remove a card; clearing browser cookies alone does not withdraw card-monitoring consent."
 ]],
   ["4. Third-party cookies", [
-    "Features such as authentication, maps and bot protection can connect to third-party services. Optional card linking opens Fidel's hosted enrolment form, which also processes connection and device information under its own notice. Review the terms and privacy information in that form before enrolling. The form has a separate card-linking consent; our cookie banner cannot grant it on your behalf."
+    "Features such as authentication, maps and bot protection can connect to third-party services. If you choose Accept all, optional usage analytics on our website are sent to PostHog (PostHog Inc.), which sets the browser storage described above. Optional card linking opens Fidel's hosted enrolment form, which also processes connection and device information under its own notice. Review the terms and privacy information in that form before enrolling. The form has a separate card-linking consent; our cookie banner cannot grant it on your behalf."
 ]],
   ['5. Changes to this policy', [
     'We may update this Cookie Policy from time to time to reflect changes in the technologies we use. We will update the effective date at the top of this document when we do.',

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
-import { trackUsageEvent } from '@/lib/usage-analytics'
+import { identifyUsageUser, syncUsageAnalyticsConsent, trackUsageEvent } from '@/lib/usage-analytics'
 
 export function UsageTracker() {
   const { session } = useAuth()
@@ -13,6 +13,11 @@ export function UsageTracker() {
     window.addEventListener('loyalty-loop-usage-consent', refresh)
     return () => window.removeEventListener('loyalty-loop-usage-consent', refresh)
   }, [])
+
+  React.useEffect(() => {
+    syncUsageAnalyticsConsent()
+    identifyUsageUser(session?.user?.id ?? null)
+  }, [consentVersion, session?.user?.id])
 
   React.useEffect(() => {
     if (session?.user) void trackUsageEvent('page_viewed', location.pathname)

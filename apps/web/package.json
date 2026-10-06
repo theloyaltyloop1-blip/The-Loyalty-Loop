@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "cn": "^0.3.0",
     "lucide-react": "^1.29.0",
+    "posthog-js": "^1.438.1",
     "qrcode.react": "^4.2.0",
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
