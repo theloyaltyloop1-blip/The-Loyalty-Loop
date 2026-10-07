@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
-import { identifyUsageUser, syncUsageAnalyticsConsent, trackUsageEvent } from '@/lib/usage-analytics'
+import { trackUsageEvent } from '@/lib/usage-analytics'
 
 export function UsageTracker() {
   const { session } = useAuth()
@@ -15,12 +15,7 @@ export function UsageTracker() {
   }, [])
 
   React.useEffect(() => {
-    syncUsageAnalyticsConsent()
-    identifyUsageUser(session?.user?.id ?? null)
-  }, [consentVersion, session?.user?.id])
-
-  React.useEffect(() => {
-    trackUsageEvent('$pageview', location.pathname)
+    if (session?.user) void trackUsageEvent('page_viewed', location.pathname)
   }, [consentVersion, location.pathname, session?.user?.id])
 
   return null

@@ -15,7 +15,7 @@ Data Processing Addendum Global) and converted to England and Wales law. Text no
 Removed as inapplicable: arbitration, class-action waiver, California and other US state sections, 
 advertising and sale/sharing clauses, EU/UK representatives, Swiss and SCC annexes. Kept from the 
 previous version: Fidel card-linking, spend rewards, refund adjustments and manual-entry rules. 
-Added: PostHog, Sentry and named sub-processors, UK GDPR rights and ICO details, consumer-law wording. 
+Added: Sentry and named sub-processors, UK GDPR rights and ICO details, consumer-law wording. 
 Still needs review by a UK solicitor; see CLAUDE_HANDOFF.md for open items.
 
 ## 23 September 2026 revision

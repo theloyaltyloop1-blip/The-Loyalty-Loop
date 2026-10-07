@@ -162,7 +162,7 @@ module.exports = function (ctx) {
         'Google: maps and location-based features.',
         'Sentry: technical error monitoring, configured not to receive personal data such as email addresses.',
       ],
-      'Optional AI-assisted analytics or research features are provided only where the Merchant actively enables them. The Loyalty Loop\'s own website analytics provider (PostHog) processes website usage data for us as controller and does not process Customer Personal Data on a Merchant\'s behalf. We will update this list before changes take effect, as described in section 6.',
+      'Optional AI-assisted analytics or research features are provided only where the Merchant actively enables them. We will update this list before changes take effect, as described in section 6.',
     ]],
     ['About this document', [CREDIT]],
   ];

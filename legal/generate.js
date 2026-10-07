@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
-const EFFECTIVE_DATE = '6 October 2026';
+const EFFECTIVE_DATE = '7 October 2026';
 const COMPANY = 'The Loyalty Loop';
 const CONTACT_EMAIL = 'help@the-loyalty-loop.com';
 const JURISDICTION = 'England and Wales';
