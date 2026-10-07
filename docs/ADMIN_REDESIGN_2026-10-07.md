@@ -1,11 +1,11 @@
 # Admin redesign, 7 October 2026
 
-Implemented locally, not deployed. This changes the admin UI; existing database and admin permissions remain in use.
+Deployed to https://www.the-loyalty-loop.com/access on 7 October 2026 (owner-authorized), implementation commit a963efa, Vercel production dpl_CvJ8WAEv81jHNA8SYcV8doKccXY8 READY. This changes the admin UI; existing database and admin permissions remain in use.
 
 - Light slate background, white panels, blue accent and shared responsive navigation.
 - Overview platform counts are all-time records, explicitly labelled; memberships are not unique shoppers.
 - Charts use existing admin_usage_analytics(_days: 30): top six feature/surface combinations, switch between actions and people within that feature/surface, and total actions by app. Only opted-in activity is included. No time series/revenue/unique-platform-user statistic is invented.
-- All ten views, including Trending shops and Shop requests, use /access?view=... (overview is /access). Legacy /admin/trending and /admin/shop-requests redirect into the shared shell. Browser back and bookmarked views work.
+- All fourteen views (including the newer Users, Businesses, Loyalty and Audit tabs), including Trending shops and Shop requests, use /access?view=... (overview is /access). Legacy /admin/trending and /admin/shop-requests redirect into the shared shell. Browser back and bookmarked views work.
 - Explicit data errors, retry, refresh lock, checked role/override/takedown errors, and truthful download-started backup messages.
 
 ## Verification
@@ -20,3 +20,7 @@ Implemented locally, not deployed. This changes the admin UI; existing database 
 ## Review
 
 Review AccessPanel.tsx, AccessTools.tsx, admin-panel.css, admin-dashboard.tsx, TrendingAdmin.tsx, ShopRequests.tsx, App.tsx and apps/admin/App.tsx. No database migration or new runtime/chart package required. Other dirty Sentry/WhatsApp work is unrelated and must not be bundled into a release by accident.
+
+## Production smoke
+
+Chrome confirmed /access, /admin/trending and /admin/shop-requests return HTTP 200 and keep the unauthenticated login gate. New admin bundle served from the production domain contains redesign, Trending and preserved Users/Audit tabs; zero page errors. Signed-in live data/mutations and native device not tested. Native wrapper colours exist in source but no OTA was published. No database changes made during release. Unrelated Sentry/WhatsApp changes were excluded through an isolated current-main clone.

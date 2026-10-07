@@ -194,3 +194,7 @@ Owner authorized website and Android/iOS shopper release. ID-only Places archite
 
 - Owner requested a complete look/colour change with graphs, then consistent navigation for Trending shops and other admin pages. Codex implemented a light slate/blue dashboard, record metrics and opted-in analytics charts, unified URL-backed views with legacy redirects, recoloured existing tools/queues and native wrapper, and corrected failure feedback.
 - Web production build, native admin TypeScript and isolated mocked desktop/mobile browser checks passed; lint has existing warnings. See docs/ADMIN_REDESIGN_2026-10-07.md and CLAUDE_HANDOFF.md for acceptance evidence and limitations. No database/dependency change or deployment. Next: review/live authenticated verification, then separate release. Existing backend/Sentry milestone order unchanged.
+
+## Admin redesign deployed — 7 October 2026
+
+- Owner authorized Codex deployment. Preserved latest main a4447eb's four newer tabs, integrated/recoloured all 14 views and released bounded commit a963efa through Git/Vercel. Production dpl_CvJ8WAEv81jHNA8SYcV8doKccXY8 READY with production aliases; public Chrome route/login/bundle smoke passed. No backend migration/native OTA; signed-in production data/device checks remain outstanding. See handoff and docs/ADMIN_REDESIGN_2026-10-07.md. Sentry/WhatsApp milestone work unchanged.

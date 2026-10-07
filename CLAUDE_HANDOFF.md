@@ -2057,6 +2057,18 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Dependency junction creation was denied in the sandbox; scoped outside-sandbox creation succeeded and reused existing packages. Initial mistaken root build command had no build script; the intended apps/web candidate build passed. No hosted mutation yet.
 - Next: commit/push the bounded admin release to main (owner-authorized), observe Vercel READY, verify production asset/routing. Native shell source change is included but no mobile OTA/build is performed.
 
+## Admin release committed — 2026-10-07 — Codex
+
+- Isolated clone commit `a963efa307d22de981cfbd36c33c952e0f542f25`, branch codex/admin-redesign-release, contains 19 bounded admin implementation/documentation/screenshot paths on current production a4447eb. Existing project author identity configured only in that clone after the initial missing-identity failure. Root branch/index unchanged.
+- No remote push/deployment at this stage. Next: fast-forward main through existing Git/Vercel deployment integration and verify exact commit readiness.
+
+## Admin production verification complete — 2026-10-07 — Codex
+
+- Redesign implementation commit a963efa is live on www.the-loyalty-loop.com/access via READY production deployment dpl_CvJ8WAEv81jHNA8SYcV8doKccXY8; Vercel confirms exact SHA, production aliases and no alias error. Existing four newer admin tabs retained, recoloured and integrated, for 14 total views.
+- Public-domain Chrome smoke passed: /access, /admin/trending and /admin/shop-requests HTTP 200, unauthenticated redirect to login, exact delivered AccessPanel-Dn4w1Tr5.js contains redesign + Trending + Users/Audit, zero page errors. First smoke assertion was corrected because redirect URL lives in router bundle; rerun passed. No live account mutation/export or sign-in performed.
+- Verification includes prior isolated responsive mock browser, analytics empty/failure/measure, actions success/rejection, backup-confirmation failure; latest current-main release TypeScript/build and whitespace pass. Signed-in live statistics/actions and device/native shell not verified. No migrations applied or native OTA published; admin WebView website content updates automatically.
+- Documentation/timeline updated for authorized production release. Publish this status-only follow-up to main, observe its identical-code deployment, and preserve unrelated dirty work. No new product-owner input or Claude release approval needed.
+
 ## Copy-ready prompt for Claude Code
 
-Codex is deploying the owner-authorized admin redesign from current main while preserving the newer admin tabs. Read CLAUDE_HANDOFF.md and docs/ADMIN_REDESIGN_2026-10-07.md for final release evidence. No product-owner input is required for this release; do not apply pending database migrations or bundle unrelated Sentry/WhatsApp changes.
+Review the deployed admin redesign using CLAUDE_HANDOFF.md and docs/ADMIN_REDESIGN_2026-10-07.md. Verify the signed-in graphs and all 14 views, including Trending and Shop requests, without changing live roles or data. Production deployment and public login/asset checks passed. No product-owner decision is required; native wrapper colours were not shipped by OTA. Keep pending database hardening and Sentry/WhatsApp work separate.
