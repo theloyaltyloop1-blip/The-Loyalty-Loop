@@ -1,28 +1,31 @@
 import * as React from 'react'
-import { Navigate, Link } from 'react-router-dom'
+import { Navigate, Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle } from 'lucide-react'
+import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
-import { AccessTools } from '@/pages/AccessTools'
+import './admin-panel.css'
 import { Audit } from '@/pages/admin/Audit'
 import { Businesses } from '@/pages/admin/Businesses'
 import { Loyalty } from '@/pages/admin/Loyalty'
 import { Users } from '@/pages/admin/Users'
+import { TrendingAdmin } from '@/pages/TrendingAdmin'
+import { ShopRequests } from '@/pages/ShopRequests'
+import { AdminCharts, AdminMetrics } from '@/components/admin-dashboard'
+import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
 
-type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'users' | 'businesses' | 'loyalty' | 'audit'
-type Health = { label: string; detail: string; ok: boolean; targetTab?: Tab }
+type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'trending' | 'shop-requests' | 'users' | 'businesses' | 'loyalty' | 'audit'
+type Health = { count?: number; label: string; detail: string; ok: boolean; targetTab?: Tab }
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features',
-  users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', audit: 'Audit log',
+  overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', audit: 'Audit log',
 }
 
 // Features that were built and shipped, then deliberately switched off at
@@ -74,7 +77,10 @@ function appleSignInHealth(): Health {
 
 export function AccessPanel() {
   const { session, loading, rolesLoading, primaryRole, signOut } = useAuth()
-  const [tab, setTab] = React.useState<Tab>('overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedTab = searchParams.get('view')
+  const tab: Tab = requestedTab && requestedTab in tabLabels ? requestedTab as Tab : 'overview'
+  const setTab = (next: Tab) => setSearchParams(next === 'overview' ? {} : { view: next })
   const [health, setHealth] = React.useState<Health[]>([])
   const [selectedHealth, setSelectedHealth] = React.useState<Health | null>(null)
   const [verifications, setVerifications] = React.useState<PendingVerification[]>([])
@@ -82,28 +88,46 @@ export function AccessPanel() {
   const [reports, setReports] = React.useState<ReviewReport[]>([])
   const [usage, setUsage] = React.useState<UsageEvent[]>([])
   const [busy, setBusy] = React.useState(true)
+  const [errors, setErrors] = React.useState<string[]>([])
+  const [updatedAt, setUpdatedAt] = React.useState<Date | null>(null)
+  const loadingRef = React.useRef(false)
 
   const load = React.useCallback(async () => {
+    if (loadingRef.current) return
+    loadingRef.current = true
     setBusy(true)
-    const tableChecks = await Promise.all(['businesses', 'memberships', 'transactions', 'rewards', 'announcements', 'reviews', 'support_requests'].map(async (label) => {
-      const { count, error } = await supabase.from(label).select('*', { head: true, count: 'exact' })
-      const targetTab = label === 'businesses' ? 'verifications' : label === 'support_requests' ? 'support' : undefined
-      return { label, ok: !error, targetTab, detail: error ? error.message : `${count ?? 0} records reachable` }
-    }))
-    const [storage, functionChecks, pending, requests, reviewReports, usageData] = await Promise.all([
-      supabase.storage.from('logos').list('', { limit: 1 }).then(({ error }) => ({ label: 'Storage', ok: !error, detail: error ? error.message : 'Logo storage bucket reachable' })),
-      fetchPlatformHealth().catch((error) => [{ label: 'Platform health function', ok: false, detail: error instanceof Error ? error.message : 'Unavailable' }]),
-      fetchPendingVerifications().catch(() => []),
-      fetchAdminSupportRequests().catch(() => []),
-      fetchOpenReviewReports().catch(() => []),
-      (async () => { const { data } = await supabase.rpc('admin_usage_analytics', { _days: 30 }); return (data || []) as UsageEvent[] })().catch(() => []),
-    ])
-    setHealth([...tableChecks, storage, ...functionChecks, appleSignInHealth()])
-    setVerifications(pending)
-    setSupport(requests)
-    setReports(reviewReports)
-    setUsage(usageData)
-    setBusy(false)
+    const failures: string[] = []
+    async function safe<T>(label: string, work: PromiseLike<T>, fallback: T): Promise<T> {
+      try { return await work } catch (error) {
+        failures.push(`${label}: ${error instanceof Error ? error.message : 'Could not load data'}`)
+        return fallback
+      }
+    }
+    try {
+      const [tableChecks, storage, functionChecks, pending, requests, reviewReports, usageData] = await Promise.all([
+        Promise.all(['businesses', 'memberships', 'transactions', 'rewards', 'announcements', 'reviews', 'support_requests'].map(async (label) => {
+          try {
+            const { count, error } = await supabase.from(label).select('*', { head: true, count: 'exact' })
+            return { label, ok: !error, count: error ? undefined : count ?? 0, targetTab: label === 'businesses' ? 'verifications' as const : label === 'support_requests' ? 'support' as const : undefined, detail: error ? error.message : `${count ?? 0} records reachable` }
+          } catch { return { label, ok: false, detail: 'Could not reach this table' } }
+        })),
+        safe('Storage', supabase.storage.from('logos').list('', { limit: 1 }).then(({ error }) => ({ label: 'Storage', ok: !error, detail: error ? error.message : 'Logo storage bucket reachable' })), { label: 'Storage', ok: false, detail: 'Storage unavailable' }),
+        safe('Platform health', fetchPlatformHealth(), [{ label: 'Platform health function', ok: false, detail: 'Health report unavailable' }]),
+        safe('Business listings', fetchPendingVerifications(), []),
+        safe('Owner support', fetchAdminSupportRequests(), []),
+        safe('Reported reviews', fetchOpenReviewReports(), []),
+        safe('Product analytics', (async () => {
+          const { data, error } = await supabase.rpc('admin_usage_analytics', { _days: 30 })
+          if (error) throw new Error(error.message)
+          return (data || []) as UsageEvent[]
+        })(), []),
+      ])
+      setHealth([...tableChecks, storage, ...functionChecks, appleSignInHealth()])
+      setVerifications(pending); setSupport(requests); setReports(reviewReports); setUsage(usageData)
+      setUpdatedAt(new Date())
+    } catch (error) { failures.push(error instanceof Error ? error.message : 'Dashboard unavailable') }
+    finally { setErrors(failures); setBusy(false); loadingRef.current = false }
+
   }, [])
 
   React.useEffect(() => { if (primaryRole === 'admin') void load() }, [primaryRole, load])
@@ -111,22 +135,32 @@ export function AccessPanel() {
   if (!session) return <Navigate to="/login" replace />
   if (primaryRole !== 'admin') return <Navigate to="/dashboard" replace />
 
-  return <div className="min-h-dvh bg-[#121714] text-[#ECEEE8] lg:flex">
-    <aside className="border-b border-white/10 p-4 sm:p-6 lg:flex lg:w-72 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
-      <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-olive"><ShieldCheck className="h-6 w-6" /></span><div><p className="font-display font-bold">Access Panel</p><p className="text-xs text-white/45">The Loyalty Loop</p></div></div>
-      <nav aria-label="Access panel navigation" className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:mt-10 lg:flex-col lg:overflow-visible">
-        <Link to="/admin/shop-requests" className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10">Shop requests</Link>
-        <Link to="/admin/trending" className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/10">Trending shops</Link>
-        {(Object.keys(tabLabels) as Tab[]).map((key) => <button data-press-feedback key={key} onClick={() => setTab(key)} className={'shrink-0 rounded-xl px-4 py-2.5 text-left text-sm font-semibold lg:w-full lg:py-3 lg:text-base ' + (tab === key ? 'bg-peach text-peach-ink' : 'text-white/65 hover:bg-white/10')}>
-          {key === 'verifications' ? `Listings (${verifications.length})` : key === 'support' ? `Support (${support.filter((item) => item.status === 'open').length})` : key === 'moderation' ? `Reported reviews (${reports.length})` : tabLabels[key]}
-        </button>)}
-        <button data-press-feedback onClick={signOut} className="shrink-0 rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-white/60 hover:bg-white/10 lg:hidden">Sign out</button>
+  const icons = { overview: LayoutDashboard, analytics: BarChart3, controls: SlidersHorizontal, verifications: Store, support: LifeBuoy, moderation: MessageSquareWarning, backups: HardDrive, features: PauseCircle, trending: BarChart3, 'shop-requests': Store, users: UsersIcon, businesses: Store, loyalty: Gift, audit: ScrollText }
+  const queueCount = verifications.length + support.filter(item => item.status === 'open').length + reports.length
+  const analyticsFailed = errors.some(error => error.startsWith('Product analytics:'))
+  return <div className="admin-panel admin-shell">
+    <aside className="admin-sidebar">
+      <Link to="/access" className="admin-brand"><span className="admin-brand-mark">L</span><span>The Loyalty Loop<small>Administration</small></span></Link>
+      <p className="admin-nav-label">Workspace</p>
+      <nav aria-label="Access panel navigation">
+        {(Object.keys(tabLabels) as Tab[]).map(key => { const Icon = icons[key]; const count = key === 'verifications' ? verifications.length : key === 'support' ? support.filter(item => item.status === 'open').length : key === 'moderation' ? reports.length : 0
+          return <button key={key} aria-current={tab === key ? 'page' : undefined} onClick={() => { setTab(key); setSelectedHealth(null) }} className={'admin-nav-item ' + (tab === key ? 'is-active' : '')}><Icon size={18}/><span>{tabLabels[key]}</span>{count > 0 && <span className="admin-badge">{count}</span>}</button>
+        })}
       </nav>
-      <div className="mt-4 hidden lg:mt-auto lg:block"><Link to="/dashboard" className="block px-4 py-3 text-sm text-white/60">Customer app</Link><Link to="/owner" className="block px-4 py-3 text-sm text-white/60">Business app</Link><button data-press-feedback onClick={signOut} className="px-4 py-3 text-sm text-white/60">Sign out</button></div>
+      <div className="admin-sidebar-footer"><Link to="/dashboard">Customer app <ArrowUpRight size={14}/></Link><Link to="/owner">Business app <ArrowUpRight size={14}/></Link><button onClick={() => void signOut()}><LogOut size={16}/>Sign out</button></div>
     </aside>
-    <main className="w-full flex-1 p-4 sm:p-6 lg:max-w-6xl lg:p-10">
-      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{tabLabels[tab]}</h1></div>{!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <button data-press-feedback onClick={() => void load()} className="w-fit rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Refresh</button>}</div>
-      {tab === 'users' ? <Users /> : tab === 'businesses' ? <Businesses /> : tab === 'loyalty' ? <Loyalty /> : tab === 'audit' ? <Audit /> : busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : tab === 'backups' ? <LaptopBackups /> : <PausedFeatures />}
+    <main className="admin-main">
+      <div className="admin-topbar"><span>Workspace / {tabLabels[tab]}</span><span className="admin-admin-chip"><ShieldCheck size={14}/>Admin access</span></div>
+      <header className="admin-page-header"><div><h1>{tab === 'overview' ? 'Your platform, at a glance.' : tabLabels[tab]}</h1><p>{tab === 'overview' ? 'Activity, outstanding work and system checks in one place.' : 'Manage your workspace with clear, current information.'}</p></div>{!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <button disabled={busy} onClick={() => void load()} className="admin-refresh"><RefreshCw size={16}/>{busy ? 'Refreshing…' : 'Refresh data'}</button>}</header>
+      <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}<span>Analytics · last 30 days</span></div>
+      {!!errors.length && <div role="alert" className="admin-error"><strong>Some data could not be loaded.</strong>{errors.map(error => <p key={error}>{error}</p>)}<button disabled={busy} onClick={() => void load()}>Retry failed checks</button></div>}
+      {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : busy ? <div role="status" className="admin-loading">Loading your dashboard…</div> : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/> : tab === 'overview' ? <>
+        <AdminMetrics counts={Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))}/>
+        <AdminCharts items={usage} unavailable={analyticsFailed}/>
+        <section className="admin-work"><div><h2>Needs your attention</h2><p>{queueCount ? 'Open the queues below to take the next action.' : errors.length ? 'Resolve loading errors to confirm your queues.' : 'Your review queues are clear.'}</p></div><div className="admin-work-links">{(['verifications', 'support', 'moderation'] as Tab[]).map(key => <button key={key} onClick={() => setTab(key)}>{tabLabels[key]}<ArrowUpRight size={16}/></button>)}</div></section>
+        <div className="admin-section-heading"><div><h2>System checks</h2><p>Reachability and configuration at the last refresh.</p></div><span>{health.filter(item => item.ok).length} / {health.length} passing</span></div>
+        <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={setTab}/>
+      </> : tab === 'analytics' ? <><AdminCharts items={usage} unavailable={analyticsFailed}/>{!analyticsFailed && <ProductAnalytics items={usage}/>}</> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load}/> : tab === 'support' ? <SupportQueue items={support} refresh={load}/> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load}/> : tab === 'backups' ? <LaptopBackups/> : <PausedFeatures/>}
     </main>
   </div>
 }
@@ -134,12 +168,12 @@ export function AccessPanel() {
 function ProductAnalytics({ items }: { items: UsageEvent[] }) {
   const total = items.reduce((sum, item) => sum + Number(item.events), 0)
   const people = Math.max(0, ...items.map((item) => Number(item.people)))
-  return <section><div className="grid gap-4 sm:grid-cols-2"><article className="rounded-2xl bg-white/6 p-5"><p className="text-sm text-white/55">Tracked actions, last 30 days</p><p className="mt-2 font-display text-4xl font-bold">{total}</p></article><article className="rounded-2xl bg-white/6 p-5"><p className="text-sm text-white/55">Most users on one feature</p><p className="mt-2 font-display text-4xl font-bold">{people}</p></article></div><p className="mt-6 text-sm text-white/55">Only people who opt in are included. Events never include passwords, emails, QR codes or message content.</p><div className="mt-4 overflow-x-auto rounded-2xl border border-white/10"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-b border-white/10 text-white/45"><tr><th className="p-4">Feature</th><th className="p-4">Where</th><th className="p-4">Uses</th><th className="p-4">People</th><th className="p-4">Last used</th></tr></thead><tbody>{items.length ? items.map((item) => <tr key={`${item.surface}-${item.event_name}`} className="border-b border-white/5"><td className="p-4 font-semibold">{item.event_name.replaceAll('_', ' ')}</td><td className="p-4 text-white/60">{item.surface.replaceAll('_', ' ')}</td><td className="p-4">{item.events}</td><td className="p-4">{item.people}</td><td className="p-4 text-white/60">{new Date(item.last_seen).toLocaleString()}</td></tr>) : <tr><td colSpan={5} className="p-5 text-white/55">No opted-in usage yet. It will appear here after people use the website or updated apps.</td></tr>}</tbody></table></div></section>
+  return <section><div className="grid gap-4 sm:grid-cols-2"><article className="rounded-2xl bg-white p-5"><p className="text-sm text-slate-600">Tracked actions, last 30 days</p><p className="mt-2 font-display text-4xl font-bold">{total}</p></article><article className="rounded-2xl bg-white p-5"><p className="text-sm text-slate-600">Most users on one feature</p><p className="mt-2 font-display text-4xl font-bold">{people}</p></article></div><p className="mt-6 text-sm text-slate-600">Only people who opt in are included. Events never include passwords, emails, QR codes or message content.</p><div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-b border-slate-200 text-slate-600"><tr><th className="p-4">Feature</th><th className="p-4">Where</th><th className="p-4">Uses</th><th className="p-4">People</th><th className="p-4">Last used</th></tr></thead><tbody>{items.length ? items.map((item) => <tr key={`${item.surface}-${item.event_name}`} className="border-b border-slate-200"><td className="p-4 font-semibold">{item.event_name.replaceAll('_', ' ')}</td><td className="p-4 text-slate-600">{item.surface.replaceAll('_', ' ')}</td><td className="p-4">{item.events}</td><td className="p-4">{item.people}</td><td className="p-4 text-slate-600">{new Date(item.last_seen).toLocaleString()}</td></tr>) : <tr><td colSpan={5} className="p-5 text-slate-600">No opted-in usage yet. It will appear here after people use the website or updated apps.</td></tr>}</tbody></table></div></section>
 }
 
 function Overview({ health, selected, onSelect, onRefresh, onOpenTab }: { health: Health[]; selected: Health | null; onSelect: (item: Health | null) => void; onRefresh: () => Promise<void>; onOpenTab: (tab: Tab) => void }) {
-  return <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{health.map((item) => <button data-press-feedback key={item.label} type="button" onClick={() => onSelect(item)} className={'rounded-2xl border p-5 text-left transition-transform duration-150 ease-out active:scale-[0.99] ' + (item.ok ? 'border-fun-green/40 bg-[#1E2820]' : 'border-red-500/50 bg-[#351B1B]')}><div className="flex justify-between gap-3"><p className="font-bold">{item.label}</p>{item.ok ? <CheckCircle2 className="h-5 w-5 shrink-0 text-[#5ACA64]" /> : <XCircle className="h-5 w-5 shrink-0 text-red-400" />}</div><p className="mt-3 break-words text-sm text-white/60">{item.detail}</p><p className="mt-4 text-xs font-bold text-white/45">View actions →</p></button>)}</div>
-    {selected && <section className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold">{selected.label}</p><p className="mt-1 text-sm text-white/60">{selected.detail}</p></div><button data-press-feedback onClick={() => onSelect(null)} className="rounded-lg px-2 py-1 text-sm text-white/60">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button data-press-feedback onClick={() => void onRefresh()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold">Run check again</button>{selected.targetTab && <button data-press-feedback onClick={() => onOpenTab(selected.targetTab!)} className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Open related queue</button>}{selected.label === 'Storage' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/storage/buckets" target="_blank" rel="noreferrer" className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Open Storage</a>}{selected.label === 'Platform health function' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/functions/platform-health" target="_blank" rel="noreferrer" className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Open function</a>}</div></section>}</>
+  return <><div className="admin-health-grid">{health.map(item => <button key={item.label} type="button" onClick={() => onSelect(item)} className={'admin-health-card ' + (item.ok ? '' : 'has-error')}><div><span>{item.label.replaceAll('_', ' ')}</span>{item.ok ? <CheckCircle2 size={17}/> : <XCircle size={17}/>}</div><p>{item.detail}</p><small>View details →</small></button>)}</div>
+    {selected && <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold">{selected.label}</p><p className="mt-1 text-sm text-slate-600">{selected.detail}</p></div><button data-press-feedback onClick={() => onSelect(null)} className="rounded-lg px-2 py-1 text-sm text-slate-600">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button data-press-feedback onClick={() => void onRefresh()} className="rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-bold">Run check again</button>{selected.targetTab && <button data-press-feedback onClick={() => onOpenTab(selected.targetTab!)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold">Open related queue</button>}{selected.label === 'Storage' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/storage/buckets" target="_blank" rel="noreferrer" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold">Open Storage</a>}{selected.label === 'Platform health function' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/functions/platform-health" target="_blank" rel="noreferrer" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold">Open function</a>}</div></section>}</>
 }
 
 function RejectListingDialog({ name, onReject }: { name: string; onReject: (reason: string) => Promise<void> }) {
@@ -160,7 +194,7 @@ function RejectListingDialog({ name, onReject }: { name: string; onReject: (reas
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button data-press-feedback className="rounded-xl border border-red-400/50 px-4 py-2 text-sm font-bold text-red-300">Reject</button>
+        <button data-press-feedback className="rounded-xl border border-red-400/50 px-4 py-2 text-sm font-bold text-red-700">Reject</button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -178,12 +212,12 @@ function RejectListingDialog({ name, onReject }: { name: string; onReject: (reas
 }
 
 function VerificationQueue({ items, refresh }: { items: PendingVerification[]; refresh: () => Promise<void> }) {
-  return <div className="grid gap-4">{items.length ? items.map((item) => <article key={item.id} className="rounded-2xl bg-white/6 p-4 sm:p-5"><p className="font-bold">{item.name}</p><p className="break-all text-sm text-white/55">{item.owner_email}</p><div className="mt-3 flex flex-wrap gap-2"><button data-press-feedback onClick={async () => { await reviewBusinessVerification(item.id, true); void refresh() }} className="rounded-xl bg-fun-green px-4 py-2 text-sm font-bold">Approve</button><RejectListingDialog name={item.name} onReject={async (reason) => { await reviewBusinessVerification(item.id, false, reason); void refresh() }} /></div></article>) : <p className="text-white/55">No listings waiting.</p>}</div>
+  return <div className="grid gap-4">{items.length ? items.map((item) => <article key={item.id} className="rounded-2xl bg-white p-4 sm:p-5"><p className="font-bold">{item.name}</p><p className="break-all text-sm text-slate-600">{item.owner_email}</p><div className="mt-3 flex flex-wrap gap-2"><button data-press-feedback onClick={async () => { await reviewBusinessVerification(item.id, true); void refresh() }} className="rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-bold">Approve</button><RejectListingDialog name={item.name} onReject={async (reason) => { await reviewBusinessVerification(item.id, false, reason); void refresh() }} /></div></article>) : <p className="text-slate-600">No listings waiting.</p>}</div>
 }
 
 function SupportQueue({ items, refresh }: { items: SupportRequest[]; refresh: () => Promise<void> }) {
   const open = items.filter((item) => item.status === 'open')
-  return <div className="grid gap-4">{open.length ? open.map((item) => <article key={item.id} className="rounded-2xl bg-white/6 p-4 sm:p-5"><p className="font-bold">{item.subject}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-white/60">{item.body}</p><button data-press-feedback onClick={async () => { await resolveSupportRequest(item.id); void refresh() }} className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-bold">Resolve</button></article>) : <p className="text-white/55">No open support requests.</p>}</div>
+  return <div className="grid gap-4">{open.length ? open.map((item) => <article key={item.id} className="rounded-2xl bg-white p-4 sm:p-5"><p className="font-bold">{item.subject}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600">{item.body}</p><button data-press-feedback onClick={async () => { await resolveSupportRequest(item.id); void refresh() }} className="mt-3 rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-bold">Resolve</button></article>) : <p className="text-slate-600">No open support requests.</p>}</div>
 }
 
 function ReviewReportsQueue({ items, refresh }: { items: ReviewReport[]; refresh: () => Promise<void> }) {
@@ -193,22 +227,22 @@ function ReviewReportsQueue({ items, refresh }: { items: ReviewReport[]; refresh
     try { await fn(); void refresh() } catch (error) { toast.error(error instanceof Error ? error.message : 'Something went wrong.') } finally { setBusyId(null) }
   }
   return <div className="grid gap-4">
-    <p className="text-sm text-white/50">Reviews a shopper flagged as objectionable. It’s already hidden from the person who reported it. Decide within 24 hours whether to remove it for everyone.</p>
-    {items.length ? items.map((report) => <article key={report.id} className="rounded-2xl bg-white/6 p-4 sm:p-5">
+    <p className="text-sm text-slate-600">Reviews a shopper flagged as objectionable. It’s already hidden from the person who reported it. Decide within 24 hours whether to remove it for everyone.</p>
+    {items.length ? items.map((report) => <article key={report.id} className="rounded-2xl bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-300">{REASON_LABELS[report.reason]}</span>
-        <span className="text-xs text-white/40">reported {new Date(report.created_at).toLocaleString()}</span>
+        <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-700">{REASON_LABELS[report.reason]}</span>
+        <span className="text-xs text-slate-600">reported {new Date(report.created_at).toLocaleString()}</span>
       </div>
       {report.review ? <>
-        <p className="mt-3 text-sm text-white/45">{report.review.business?.name ?? 'Unknown shop'} · {'★'.repeat(report.review.rating)}{'☆'.repeat(5 - report.review.rating)}</p>
-        <p className="mt-1 whitespace-pre-wrap break-words text-white/80">{report.review.body || <span className="italic text-white/40">(rating only, no text)</span>}</p>
-      </> : <p className="mt-3 text-sm italic text-white/40">The review has already been deleted.</p>}
-      {report.detail && <p className="mt-2 text-sm text-white/55">Reporter added: “{report.detail}”</p>}
+        <p className="mt-3 text-sm text-slate-600">{report.review.business?.name ?? 'Unknown shop'} · {'★'.repeat(report.review.rating)}{'☆'.repeat(5 - report.review.rating)}</p>
+        <p className="mt-1 whitespace-pre-wrap break-words text-slate-600">{report.review.body || <span className="italic text-slate-600">(rating only, no text)</span>}</p>
+      </> : <p className="mt-3 text-sm italic text-slate-600">The review has already been deleted.</p>}
+      {report.detail && <p className="mt-2 text-sm text-slate-600">Reporter added: “{report.detail}”</p>}
       <div className="mt-4 flex flex-wrap gap-2">
-        {report.review && <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => removeReportedReview(report.review_id), report.id)} className="rounded-xl bg-red-500/90 px-4 py-2 text-sm font-bold disabled:opacity-50">Remove review</button>}
-        <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => dismissReviewReport(report.id), report.id)} className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold disabled:opacity-50">Dismiss report</button>
+        {report.review && <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => removeReportedReview(report.review_id), report.id)} className="rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-bold disabled:opacity-50">Remove review</button>}
+        <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => dismissReviewReport(report.id), report.id)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold disabled:opacity-50">Dismiss report</button>
       </div>
-    </article>) : <p className="text-white/55">No reported reviews. 🎉</p>}
+    </article>) : <p className="text-slate-600">No reported reviews. 🎉</p>}
   </div>
 }
 
@@ -258,14 +292,14 @@ function formatBytes(value: number) {
 }
 
 function PausedFeatures() {
-  return <div className="grid gap-4"><p className="text-sm text-white/50">Built, shipped, then deliberately switched off. Nothing here was removed by accident, and none of it needs to be rebuilt to come back.</p>
-    {PAUSED_FEATURES.map((feature) => <article key={feature.name} className="rounded-2xl border border-white/10 bg-white/6 p-5 sm:p-6">
+  return <div className="grid gap-4"><p className="text-sm text-slate-600">Built, shipped, then deliberately switched off. Nothing here was removed by accident, and none of it needs to be rebuilt to come back.</p>
+    {PAUSED_FEATURES.map((feature) => <article key={feature.name} className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><p className="font-bold">{feature.name}</p><p className="mt-1 text-sm text-white/45">{feature.where}</p></div>
-        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white/70"><PauseCircle className="h-3.5 w-3.5" />Paused</span>
+        <div><p className="font-bold">{feature.name}</p><p className="mt-1 text-sm text-slate-600">{feature.where}</p></div>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600"><PauseCircle className="h-3.5 w-3.5" />Paused</span>
       </div>
-      <p className="mt-3 text-sm leading-6 text-white/65">{feature.detail}</p>
-      <p className="mt-3 text-sm text-white/45">To bring it back: {feature.toBringBack}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{feature.detail}</p>
+      <p className="mt-3 text-sm text-slate-600">To bring it back: {feature.toBringBack}</p>
     </article>)}
   </div>
 }
@@ -305,8 +339,9 @@ function LaptopBackups() {
       link.click()
       link.remove()
       URL.revokeObjectURL(downloadUrl)
-      await supabase.functions.invoke('export-platform-backup', { body: { action: 'confirm_download', backup_id: data.backup.id } })
-      setMessage(`Encrypted backup downloaded. It contains ${data.backup.record_count.toLocaleString()} records from ${data.backup.table_count} tables.`)
+      const { error: confirmationError } = await supabase.functions.invoke('export-platform-backup', { body: { action: 'confirm_download', backup_id: data.backup.id } })
+      if (confirmationError) setError('Download started, but backup history could not be updated. Check your downloads before trying again.')
+      setMessage(`Encrypted backup download started. It contains ${data.backup.record_count.toLocaleString()} records from ${data.backup.table_count} tables.`)
       setPassphrase('')
       setConfirmation('')
       await loadHistory()
@@ -317,5 +352,5 @@ function LaptopBackups() {
     }
   }
 
-  return <section className="max-w-3xl"><div className="rounded-2xl border border-white/10 bg-white/6 p-5 sm:p-7"><div className="flex gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary"><LockKeyhole className="h-5 w-5" /></span><div><h2 className="font-display text-2xl font-bold">Encrypted backup for this laptop</h2><p className="mt-2 text-sm leading-6 text-white/65">Create a recovery copy of the Loyalty Loop application data and save it on this device. The encryption password stays only with you. We cannot recover it.</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Encryption password<input value={passphrase} onChange={(event) => setPassphrase(event.target.value)} type="password" autoComplete="new-password" className="mt-2 h-11 w-full rounded-xl border border-white/15 bg-black/20 px-3 text-white outline-none focus:border-primary" placeholder="At least 12 characters" /></label><label className="text-sm font-semibold">Repeat password<input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} type="password" autoComplete="new-password" className="mt-2 h-11 w-full rounded-xl border border-white/15 bg-black/20 px-3 text-white outline-none focus:border-primary" placeholder="Repeat it exactly" /></label></div><p className="mt-4 text-xs leading-5 text-white/50">Includes the recovery data needed for accounts, shops, loyalty cards, stamps, rewards, reviews and promotions. It deliberately excludes passwords, service secrets, uploaded file bytes, WhatsApp chats, push tokens and support messages. Keep the backup file and its password separately and securely.</p>{error && <p className="mt-4 text-sm text-red-300">{error}</p>}{message && <p className="mt-4 text-sm text-[#8de39a]">{message}</p>}<button data-press-feedback disabled={busy} onClick={() => void createBackup()} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold disabled:opacity-60"><Download className="h-4 w-4" />{busy ? 'Preparing encrypted backup…' : 'Download encrypted backup'}</button></div><div className="mt-6"><h2 className="font-display text-xl font-semibold tracking-tight">Backup history</h2><p className="mt-1 text-sm text-white/55">This shows exports prepared from the admin panel. “Saved to laptop” is confirmed after the download starts.</p><div className="mt-4 overflow-hidden rounded-2xl border border-white/10">{history.length ? history.map((backup) => <div key={backup.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-4 last:border-b-0"><div><p className="font-semibold">{new Date(backup.created_at).toLocaleString()}</p><p className="mt-1 text-sm text-white/55">{backup.record_count.toLocaleString()} records · {backup.table_count} tables · {formatBytes(backup.archive_bytes)}</p></div><span className={backup.status === 'download_confirmed' ? 'rounded-full bg-[#1E4A29] px-3 py-1 text-xs font-bold text-[#8de39a]' : 'rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white/60'}>{backup.status === 'download_confirmed' ? 'Saved to laptop' : 'Prepared'}</span></div>) : <p className="p-5 text-sm text-white/55">No laptop backups yet.</p>}</div></div></section>
+  return <section className="max-w-3xl"><div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7"><div className="flex gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-600 text-white"><LockKeyhole className="h-5 w-5" /></span><div><h2 className="font-display text-2xl font-bold">Encrypted backup for this laptop</h2><p className="mt-2 text-sm leading-6 text-slate-600">Create a recovery copy of the Loyalty Loop application data and save it on this device. The encryption password stays only with you. We cannot recover it.</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Encryption password<input value={passphrase} onChange={(event) => setPassphrase(event.target.value)} type="password" autoComplete="new-password" className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-900 outline-none focus:border-blue-600" placeholder="At least 12 characters" /></label><label className="text-sm font-semibold">Repeat password<input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} type="password" autoComplete="new-password" className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-900 outline-none focus:border-blue-600" placeholder="Repeat it exactly" /></label></div><p className="mt-4 text-xs leading-5 text-slate-600">Includes the recovery data needed for accounts, shops, loyalty cards, stamps, rewards, reviews and promotions. It deliberately excludes passwords, service secrets, uploaded file bytes, WhatsApp chats, push tokens and support messages. Keep the backup file and its password separately and securely.</p>{error && <p className="mt-4 text-sm text-red-700">{error}</p>}{message && <p className="mt-4 text-sm text-emerald-700">{message}</p>}<button data-press-feedback disabled={busy} onClick={() => void createBackup()} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 text-white px-5 text-sm font-bold disabled:opacity-60"><Download className="h-4 w-4" />{busy ? 'Preparing encrypted backup…' : 'Download encrypted backup'}</button></div><div className="mt-6"><h2 className="font-display text-xl font-semibold tracking-tight">Backup history</h2><p className="mt-1 text-sm text-slate-600">This shows exports prepared from the admin panel. “Download started” records initiation; check your downloads to confirm the file was saved.</p><div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">{history.length ? history.map((backup) => <div key={backup.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 last:border-b-0"><div><p className="font-semibold">{new Date(backup.created_at).toLocaleString()}</p><p className="mt-1 text-sm text-slate-600">{backup.record_count.toLocaleString()} records · {backup.table_count} tables · {formatBytes(backup.archive_bytes)}</p></div><span className={backup.status === 'download_confirmed' ? 'rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700' : 'rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600'}>{backup.status === 'download_confirmed' ? 'Download started' : 'Prepared'}</span></div>) : <p className="p-5 text-sm text-slate-600">No laptop backups yet.</p>}</div></div></section>
 }

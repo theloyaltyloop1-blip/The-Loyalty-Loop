@@ -1991,6 +1991,72 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Checks performed: `npm run lint` (warnings only, none in new files), `npm run build`, `tsc -b` in `apps/web`; live-schema SELECT introspection of all RPCs and ACLs (authenticated only, no anon). NOT performed: browser/UI smoke test, `apps/api` and mobile CI jobs, calling the RPCs as an admin, a real suspension on a test account. This is prototype-level; nothing is production verified.
 - Remaining: (1) user approves/applies the two pending migrations (owner: user, or Claude once apply_migration is allowed). (2) Open PR into `main` and let CI run; the GitHub tool was disconnected in this session (owner: Claude, or user via GitHub). (3) After merge, Vercel deploys production (owner: user to approve merge). (4) Browser smoke test as admin incl. suspend/reinstate on a throwaway account (owner: user or Claude).
 
+## Admin Access Panel source review — 2026-10-07 — Codex
+
+- User requested an inspection of the new admin panel and where Codex can help. Reviewed `apps/web/src/pages/AccessPanel.tsx`, `AccessTools.tsx`, `apps/admin/App.tsx` and the health client/function source, with the current architecture/timeline and handoff. Source inspection only: no authenticated browser, device, live calls, tests, production mutation or deployment. No application files changed; preserved all contributor changes. No existing graphify graph was available.
+- Confirmed finding: `AccessTools.tsx` act helper ignores resolved Supabase `{ error }` results, so role grant/revoke and loyalty override can announce success on server rejection. Announcement takedown likewise ignores update errors. Recommend checking result errors and showing distinct success/error states; lock pending operations against repeat clicks.
+- Confirmed finding: `AccessPanel.tsx` catches verification/support/review request failures as empty arrays; analytics RPC ignores its error field. Failed loads can therefore appear as zero items/events. Recommend per-section load errors and retry, plus a finally cleanup for the outer loading state.
+- Confirmed finding: backup confirmation invoke ignores errors, and the UI says downloaded/saved based on starting a browser download, which does not verify a file was saved. Recommend accurate download-started wording and explicit confirmation failure reporting.
+- Additional source observation: native admin shell has no WebView onError/onHttpError recovery; failed navigation can leave an empty view. Device behavior unverified. Health secret-presence checks establish configuration only, not provider operation; UptimeRobot deployment/key status not checked in this pass.
+- Next: implement the admin error-handling improvements and verify rejected RPCs, failed queue loads, successful operations and backup confirmation failure with mocks, then inspect desktop/mobile authenticated UI. These are recommendations, not new product requirements. No existing backend milestone completed or sequence changed; timeline unchanged. Sentry activation remains separate and disabled per preceding entries.
+
+## Admin dashboard redesign implemented locally — 2026-10-07 — Codex
+
+- User authorized a complete admin visual redesign, new colours and graphs. Implemented light slate/white with blue accents, new navigation/header, platform count cards, feature-use bar charts and app/surface bar charts with action/people selection. Existing analytics RPC remains the only chart source: last 30 days, opted-in data, no fabricated daily trend or summed unique-user claims.
+- Changed `apps/web/src/pages/AccessPanel.tsx`, `AccessTools.tsx`, new `pages/admin-panel.css` and `components/admin-dashboard.tsx`. Existing admin tools/queues preserved and recoloured. Parallel reads, explicit analytics/queue failure alerts, retry and refresh lock added. No database schema/dependency changes. Other contributors' dirty files preserved.
+- Verification pending at this implementation stage; not yet built, browser-tested or deployed. Related admin pages, native shell and control action reliability follow-up still in progress. Sentry work remains separate.
+
+## Unified admin navigation implemented — 2026-10-07 — Codex
+
+- Owner clarified that Trending shops and other admin pages must feel part of the same panel. Added Trending and Shop requests as URL-backed views inside the shared admin shell (`/access?view=trending`, `/access?view=shop-requests`). Original `/admin/*` links redirect to those views. Back/forward, refresh and bookmarked view state now retain the common navigation. Embedded page modes retain their own admin checks/actions while removing duplicate main landmarks/title/back links.
+- Changed `apps/web/src/App.tsx`, `pages/AccessPanel.tsx`, `TrendingAdmin.tsx`, `ShopRequests.tsx` and `apps/admin/App.tsx` (native wrapper palette/title aligned). Initial web TypeScript check before this follow-up passed; this follow-up is not yet checked. Browser, device and production verification pending. No deployment.
+
+## Admin action feedback corrected — 2026-10-07 — Codex
+
+- `AccessTools.tsx` now checks resolved Supabase error results before reporting role/override success; announcement takedown reports errors and blocks concurrent submissions; role/transfer operations share an in-flight lock. Added accessible names to controls and pressed state to announcement targets. Failed announcement-list reads report an error.
+- `AccessPanel.tsx` backup message/history label now say download started, and confirmation invocation errors are surfaced without claiming the download itself failed. Native file save is not inferred.
+- Implementation stage only: checks pending, no live admin operation performed. Native WebView error recovery from the earlier source review is outside this visual redesign and remains open.
+
+## Admin build and static verification — 2026-10-07 — Codex
+
+- Final web `npm run build` passed (TypeScript + Vite); native admin `npx --no-install tsc --noEmit` passed. Scoped oxlint exits 0, four effect/state warnings in existing data-loading patterns, no errors. React skill checklist reviewed: hooks unconditional, stable keys, semantic navigation/current state, form control accessible names, responsive charts with visible numeric values, no new chart dependency.
+- Initial root `npm run build --workspace apps/web` failed because this repository has no npm workspaces; rerunning in apps/web passed. Local preview setup first failed because a temporary fixture directory was nested incorrectly; moved only that newly created directory to apps/web/.admin-preview and server now starts. Browser verification is next, using isolated mock authentication/data, never live admin actions. No deploy/device test.
+
+## Admin first visual inspection — 2026-10-07 — Codex
+
+- Desktop 1440px mock preview rendered without horizontal overflow; dashboard screenshot inspected. Found fixture Tailwind scanning did not include src, fixed preview-only source scanning; rebuilt health cards with explicit admin semantic styling. Initial Python edit hit Windows default encoding; rerun explicitly as UTF-8 succeeded.
+- Browser setup failures were fixture isolation issues (sandbox browser access, local server separation, missing Supabase/auth mock resolution and auth event stub), corrected without any production credential/data access. First successful screenshot uses illustrative mock data, not live platform statistics. Mobile, navigation and failure checks next.
+
+## Admin mocked browser verification passed — 2026-10-07 — Codex
+
+- Headless Chrome with isolated local mocked auth/data passed: 1440px and 390px no document overflow; feature measure switching; shared Trending/Shop requests sidebar/main; URL, reload and browser-back view persistence; empty analytics; unavailable/error analytics without charts; role RPC rejection without false success and successful RPC feedback; light admin theme under global dark mode; zero browser page errors. Desktop/mobile/Trending screenshots inspected. All displayed preview counts are illustrative fixtures, never live statistics.
+- Screenshot found Trending's inherited sage panel and viewport-wide fixed save bar still differed from the new shell. Next polish: blue/white token alignment and constrain save bar to embedded content so it does not cover the sidebar. No live controls exercised, no provider/browser auth bypass in shipped code; mock aliases are preview-only. Backup confirmation failure not exercised in browser, native device behavior unverified.
+
+## Admin redesign final polish and verification — 2026-10-07 — Codex
+
+- Trending now uses blue/white admin tokens and an embedded sticky save bar that does not obscure the sidebar; sidebar can scroll on shorter desktops. Announcement surface selection contrast corrected after utility-class review. Temporary local mock aliases are not production code and are being cleaned up; screenshots saved in `docs/admin-redesign/` (illustrative data). Added `docs/ADMIN_REDESIGN_2026-10-07.md` with scope, semantics and evidence.
+- Repeated mocked Chrome checks passed after the visual fix, additionally exercising encrypted-backup download initiation with failed history confirmation and confirming both accurate message and error. Rebuilt web successfully after health/Trending changes; final announcement contrast edit is CSS utility only and final check pending. Native admin TypeScript passed; no device testing. Existing vendor bundle warning remains.
+- Timeline updated for the local admin redesign milestone. No dependency/database/auth-policy change, commit or deployment; unrelated Sentry/WhatsApp dirty work preserved. Live authenticated statistics and native WebView failure recovery remain unverified/open respectively. Product owner already chose the redesign/unified navigation; no further product decision is needed for review. Release is a separate step.
+
+## Admin redesign cleanup complete — 2026-10-07 — Codex
+
+- Final `npx --no-install tsc -b apps/web` and scoped `git diff --check` passed after the announcement selection contrast fix. Temporary mock server/fixture directory and accidentally nested empty directories removed after verifying all cleanup paths remain inside the project. Production source contains no preview auth/data aliases.
+- Older sandbox preview server had logged a restart/native-module loading failure; the successful independent Chrome fixture server/checks were separate and closed after checks. This is a local preview tooling failure, not a passed deployment check.
+- Local redesign is complete. Final source paths: `apps/web/src/{App.tsx,components/admin-dashboard.tsx,pages/AccessPanel.tsx,pages/AccessTools.tsx,pages/TrendingAdmin.tsx,pages/ShopRequests.tsx,pages/admin-panel.css}`, `apps/admin/App.tsx`; documentation/timeline/handoff and illustrative screenshots updated. No commit, deployment, migration or new dependencies. Next owner reviews and verifies live authenticated data before a separately authorized release.
+
+## Admin release authorized and latest production integrated — 2026-10-07 — Codex
+
+- Owner explicitly requested Codex deploy the redesign. Verified Vercel team `team_OKGMLyN82H2RjDA0NkwLBFvH`, project `prj_V2chVllrYdj7ACGIfqMxuk2RcRhR` (loyalty-loop), production domain www.the-loyalty-loop.com. Existing READY production `dpl_8x9hRBkLwKJCeretrkTfw44Yq3Gw` is main `a4447eba44b32352fc08f08a76b372afa580ffd3`.
+- Current main contains newer Claude admin tabs/API that were absent from the earlier local baseline. Created isolated `.codex-admin-release` clone of current main; integrated Users, Businesses, Loyalty and Audit into the redesigned shell and recoloured their kit/pages. Copied existing deployed frontend files into the shared checkout so its redesign also preserves these tabs. No backend contract or migration changed/applied; pending hardening migration notes from Claude remain separate.
+- Changed additional paths: `apps/web/src/lib/admin.ts` (copied unchanged from main), `apps/web/src/pages/admin/{Audit,Businesses,Loyalty,Users,kit}.tsx`, and AccessPanel. Integration verification pending. Native admin wrapper colour source can be committed, but website deployment itself updates the WebView content; native shell OTA/build is not part of this release.
+- No root dirty Sentry/WhatsApp implementation/config is included in the clean release candidate. Git network initially failed within sandbox; scoped outside-sandbox fetch/clone succeeded. No secrets printed or provider settings changed.
+
+## Admin clean release build verified — 2026-10-07 — Codex
+
+- Clean candidate based on production main a4447eb passed web TypeScript + Vite production build with all 14 admin views (four newer tabs retained). Candidate git diff --check passed. No .env, preview aliases, Sentry scripts/config or WhatsApp changes in the release diff. Dependency versions/config match current production.
+- Dependency junction creation was denied in the sandbox; scoped outside-sandbox creation succeeded and reused existing packages. Initial mistaken root build command had no build script; the intended apps/web candidate build passed. No hosted mutation yet.
+- Next: commit/push the bounded admin release to main (owner-authorized), observe Vercel READY, verify production asset/routing. Native shell source change is included but no mobile OTA/build is performed.
+
 ## Copy-ready prompt for Claude Code
 
-Codex owns Sentry automatic repair; Claude has no action or approval role. Continue from CLAUDE_HANDOFF.md and docs/SENTRY_AUTOFIX.md: configure missing credentials and workflow/protected-CI settings, verify GitHub Node 22 checks and a real signed Sentry delivery, then verify an eligible fix merges and Vercel reaches READY. Automatic deployment is owner-authorized; secure credential/account setup is still required. Preserve unrelated releases and never record secrets or claim unrun checks passed.
+Codex is deploying the owner-authorized admin redesign from current main while preserving the newer admin tabs. Read CLAUDE_HANDOFF.md and docs/ADMIN_REDESIGN_2026-10-07.md for final release evidence. No product-owner input is required for this release; do not apply pending database migrations or bundle unrelated Sentry/WhatsApp changes.

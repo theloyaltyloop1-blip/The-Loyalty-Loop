@@ -9,7 +9,7 @@ const statuses=['collecting','ready','contacted','joined','declined','suppressed
 // The admin details limit is 50 names per lookup, so the list pages in 50s.
 const PAGE=50
 const withNames=(rows:Shop[])=>rows.map(row=>({...row,...shopNameCache.get(row.place_id)}))
-export function ShopRequests(){
+export function ShopRequests({ embedded = false }: { embedded?: boolean }){
  const {session,loading,rolesLoading,roles}=useAuth()
  const [shops,setShops]=useState<Shop[]>([]),[businesses,setBusinesses]=useState<Business[]>([]),[threshold,setThreshold]=useState('5')
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[page,setPage]=useState(0)
@@ -38,9 +38,9 @@ export function ShopRequests(){
   if(e){setError(e.message);setBusy(false)}else await load()
  }
  async function retry(id:string){setBusy(true);const {error:e}=await supabase.rpc('admin_retry_shop_request',{p_place_id:id});if(e){setError('Could not queue the operator notification.');setBusy(false)}else await load()}
- return <main className="mx-auto min-h-dvh max-w-5xl p-5 sm:p-10">
-  <Link to="/access" className="text-sm underline">← Access panel</Link>
-  <h1 className="mt-6 font-display text-3xl font-bold">Shops shoppers want</h1>
+ return <section className={embedded ? "admin-embedded" : "mx-auto min-h-dvh max-w-5xl p-5 sm:p-10"}>
+  {!embedded && <Link to="/access" className="text-sm underline">← Access panel</Link>}
+  {!embedded && <h1 className="mt-6 font-display text-3xl font-bold">Shops shoppers want</h1>}
   <p className="mt-2 text-muted-foreground">Requests are sorted by count. The operator receives a pitch when a shop reaches the threshold.</p>
   <div className="my-6 flex flex-wrap items-center gap-3"><label htmlFor="threshold">Request threshold</label><input id="threshold" type="number" min="1" max="10000" value={threshold} onChange={e=>setThreshold(e.target.value)} className="w-24 rounded-lg border bg-background p-2"/><button disabled={busy} onClick={()=>void saveThreshold()} className="rounded-lg bg-primary hover:bg-primary-hover transition-colors px-4 py-2 text-primary-foreground disabled:opacity-50">Save threshold</button><button disabled={busy} onClick={()=>void load()} className="underline">Refresh</button></div>
   {error&&<p role="alert" className="mb-4 text-destructive">{error}</p>}
@@ -56,5 +56,5 @@ export function ShopRequests(){
   </article>)}</div>
   {shops.length>PAGE&&<div className="mt-6 flex items-center justify-center gap-4"><button disabled={page===0} onClick={()=>setPage(p=>p-1)} className="underline disabled:opacity-40">Previous 50</button><span className="text-sm text-muted-foreground">Page {page+1} of {Math.ceil(shops.length/PAGE)}</span><button disabled={(page+1)*PAGE>=shops.length} onClick={()=>setPage(p=>p+1)} className="underline disabled:opacity-40">Next 50</button></div>}
   {shops.some(shop=>shop.name)&&<p className="mt-4 text-right text-xs text-muted-foreground">Google Maps</p>}
- </main>
+ </section>
 }

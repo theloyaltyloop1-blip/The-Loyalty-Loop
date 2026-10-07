@@ -1,14 +1,14 @@
 import * as React from 'react'
 import { PAGE_SIZE, toCsv } from '@/lib/admin'
 
-export const inputCls = 'h-10 rounded-xl border border-white/15 bg-black/20 px-3 text-sm text-white placeholder:text-white/35'
+export const inputCls = 'h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-600'
 export const btn = 'rounded-xl px-3 py-1.5 text-sm font-bold disabled:opacity-40'
-export const btnPrimary = `${btn} bg-[#E8703B]`
-export const btnGhost = `${btn} border border-white/15 text-white/80 hover:bg-white/10`
-export const btnDanger = `${btn} border border-red-400/50 text-red-300 hover:bg-red-500/10`
+export const btnPrimary = `${btn} bg-blue-600 text-white`
+export const btnGhost = `${btn} border border-slate-200 text-slate-600 hover:bg-slate-50`
+export const btnDanger = `${btn} border border-red-400/50 text-red-700 hover:bg-red-500/10`
 
 export function Badge({ tone, children }: { tone: 'ok' | 'warn' | 'bad' | 'muted'; children: React.ReactNode }) {
-  const c = { ok: 'bg-[#3FA34D]/20 text-[#5ACA64]', warn: 'bg-amber-500/20 text-amber-300', bad: 'bg-red-500/20 text-red-300', muted: 'bg-white/10 text-white/60' }[tone]
+  const c = { ok: 'bg-emerald-50 text-emerald-700', warn: 'bg-amber-500/20 text-amber-800', bad: 'bg-red-500/20 text-red-700', muted: 'bg-slate-50 text-slate-600' }[tone]
   return <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${c}`}>{children}</span>
 }
 
@@ -18,15 +18,15 @@ export interface Column<T> { header: string; cell: (row: T) => React.ReactNode }
 
 export function DataTable<T extends { id: string }>({ columns, rows, empty = 'Nothing here yet.' }: { columns: Column<T>[]; rows: T[]; empty?: string }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200">
       <table className="w-full text-left text-sm">
-        <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/45">
+        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
           <tr>{columns.map((c) => <th key={c.header} className="px-4 py-3 font-semibold">{c.header}</th>)}</tr>
         </thead>
         <tbody>
           {rows.length === 0
-            ? <tr><td colSpan={columns.length} className="px-4 py-8 text-center text-white/45">{empty}</td></tr>
-            : rows.map((r) => <tr key={r.id} className="border-t border-white/5">{columns.map((c) => <td key={c.header} className="px-4 py-3 align-top">{c.cell(r)}</td>)}</tr>)}
+            ? <tr><td colSpan={columns.length} className="px-4 py-8 text-center text-slate-600">{empty}</td></tr>
+            : rows.map((r) => <tr key={r.id} className="border-t border-slate-200">{columns.map((c) => <td key={c.header} className="px-4 py-3 align-top">{c.cell(r)}</td>)}</tr>)}
         </tbody>
       </table>
     </div>
@@ -36,7 +36,7 @@ export function DataTable<T extends { id: string }>({ columns, rows, empty = 'No
 export function Pager({ page, total, onPage }: { page: number; total: number; onPage: (p: number) => void }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   return (
-    <div className="mt-4 flex items-center justify-between text-sm text-white/55">
+    <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
       <span>{total} total</span>
       <div className="flex items-center gap-2">
         <button className={btnGhost} disabled={page === 0} onClick={() => onPage(page - 1)}>Prev</button>
@@ -88,7 +88,7 @@ export function useAction() {
       setMessage({ ok: false, text: e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'Action failed' })
     } finally { setPending(false) }
   }
-  const banner = message && <p className={`mb-4 text-sm ${message.ok ? 'text-[#5ACA64]' : 'text-red-300'}`}>{message.text}</p>
+  const banner = message && <p className={`mb-4 text-sm ${message.ok ? 'text-emerald-700' : 'text-red-700'}`}>{message.text}</p>
   return { act, banner, pending }
 }
 
@@ -106,6 +106,6 @@ export function useDebounced<T>(value: T, ms = 300) {
 }
 
 export function Status({ loading, error }: { loading: boolean; error: string }) {
-  if (error) return <p className="mb-4 text-sm text-red-300">{error}</p>
-  return loading ? <p className="mb-4 text-sm text-white/45">Loading…</p> : null
+  if (error) return <p className="mb-4 text-sm text-red-700">{error}</p>
+  return loading ? <p className="mb-4 text-sm text-slate-600">Loading…</p> : null
 }

@@ -15,7 +15,7 @@ export function Audit() {
         { header: 'Action', cell: (a) => <Badge tone="muted">{a.action}</Badge> },
         { header: 'Target', cell: (a) => `${a.target_type}${a.target_id ? ` · ${a.target_id.slice(0, 8)}` : ''}` },
         { header: 'Actor', cell: (a) => a.actor_id?.slice(0, 8) ?? 'system' },
-        { header: 'Detail', cell: (a) => <code className="text-xs text-white/55">{JSON.stringify(a.detail)}</code> },
+        { header: 'Detail', cell: (a) => <code className="text-xs text-slate-600">{JSON.stringify(a.detail)}</code> },
       ]} />
       <Pager page={page} total={data?.total ?? 0} onPage={setPage} />
     </div>

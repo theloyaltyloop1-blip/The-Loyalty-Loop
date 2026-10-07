@@ -9,7 +9,7 @@ type Shop = { id: string; name: string; category: string | null; brand_color: st
 const MAX_PICKS = 12
 const PHONE_SHOWS = 4
 
-export function TrendingAdmin() {
+export function TrendingAdmin({ embedded = false }: { embedded?: boolean }) {
   const { session, loading, rolesLoading, roles } = useAuth()
   const [shops, setShops] = useState<Shop[]>([])
   const [picks, setPicks] = useState<string[]>([])
@@ -96,9 +96,9 @@ export function TrendingAdmin() {
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-6xl p-5 pb-28 sm:p-10">
-      <Link to="/access" className="text-sm underline">← Access panel</Link>
-      <h1 className="mt-6 flex items-center gap-2 font-display text-3xl font-bold tracking-tight sm:text-4xl"><Sparkles className="h-7 w-7 text-primary" /> Trending shops</h1>
+    <section className={embedded ? "admin-embedded" : "mx-auto min-h-dvh max-w-6xl p-5 pb-28 sm:p-10"}>
+      {!embedded && <Link to="/access" className="text-sm underline">← Access panel</Link>}
+      {!embedded && <h1 className="mt-6 flex items-center gap-2 font-display text-3xl font-bold tracking-tight sm:text-4xl"><Sparkles className="h-7 w-7 text-primary" /> Trending shops</h1>}
       <p className="mt-2 max-w-2xl text-muted-foreground">
         Choose which shops appear under “Trending nearby”, and in what order. If you choose none, shoppers see the first shops in the list, as before.
       </p>
@@ -162,13 +162,13 @@ export function TrendingAdmin() {
         </section>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t bg-background/95 p-4 backdrop-blur">
+      <div className={embedded ? "admin-save-bar" : "fixed inset-x-0 bottom-0 border-t bg-background/95 p-4 backdrop-blur"}>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-end gap-3">
           {!unchanged && <span className="text-sm text-foreground/70">Unsaved changes</span>}
           <button disabled={busy || unchanged} onClick={() => setPicks(saved)} className="rounded-xl px-4 py-3 font-semibold underline disabled:opacity-40">Undo changes</button>
           <button disabled={busy || unchanged} onClick={() => void save()} className="rounded-full bg-primary hover:bg-primary-hover transition-colors px-6 py-3 font-semibold text-primary-foreground disabled:opacity-50">{busy ? 'Saving…' : 'Save Trending list'}</button>
         </div>
       </div>
-    </main>
+    </section>
   )
 }

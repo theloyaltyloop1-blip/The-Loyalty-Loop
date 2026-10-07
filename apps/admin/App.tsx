@@ -12,9 +12,9 @@ function AdminPanel() {
   const [canGoBack, setCanGoBack] = useState(false)
 
   return <SafeAreaView style={styles.safe} edges={['top']}>
-    <StatusBar style="light" />
+    <StatusBar style="dark" />
     <View style={styles.header}>
-      <Text style={styles.title}>Access Panel</Text>
+      <Text style={styles.title}>Admin dashboard</Text>
       <Pressable onPress={() => webView.current?.reload()} style={styles.refresh}><Text style={styles.refreshText}>Refresh</Text></Pressable>
     </View>
     <WebView
@@ -28,7 +28,7 @@ function AdminPanel() {
       thirdPartyCookiesEnabled
       sharedCookiesEnabled
     />
-    {loading && <View style={styles.loading}><ActivityIndicator size="large" color="#F0874F" /><Text style={styles.loadingText}>Loading Access Panel…</Text></View>}
+    {loading && <View style={styles.loading}><ActivityIndicator size="large" color="#2563eb" /><Text style={styles.loadingText}>Loading admin dashboard…</Text></View>}
     {canGoBack && <Pressable style={styles.back} onPress={() => webView.current?.goBack()}><Text style={styles.backText}>Back</Text></Pressable>}
   </SafeAreaView>
 }
@@ -38,13 +38,13 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#121714' },
-  header: { height: 70, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)' },
-  title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.4, color: '#ECEEE8' },
-  refresh: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
-  refreshText: { color: '#ECEEE8', fontWeight: '700', fontSize: 13 },
-  loading: { ...StyleSheet.absoluteFillObject, top: 70, backgroundColor: '#121714', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { color: 'rgba(236,238,232,0.65)', fontSize: 14, fontWeight: '700' },
-  back: { position: 'absolute', right: 18, bottom: 18, borderRadius: 999, backgroundColor: '#C4531F', paddingHorizontal: 18, paddingVertical: 11 },
+  safe: { flex: 1, backgroundColor: '#f5f7fb' },
+  header: { height: 70, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.4, color: '#172033' },
+  refresh: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
+  refreshText: { color: '#172033', fontWeight: '700', fontSize: 13 },
+  loading: { ...StyleSheet.absoluteFillObject, top: 70, backgroundColor: '#f5f7fb', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { color: '#526176', fontSize: 14, fontWeight: '700' },
+  back: { position: 'absolute', right: 18, bottom: 18, borderRadius: 999, backgroundColor: '#2563eb', paddingHorizontal: 18, paddingVertical: 11 },
   backText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 })
