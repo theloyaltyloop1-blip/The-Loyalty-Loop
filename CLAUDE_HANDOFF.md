@@ -2150,6 +2150,13 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Own isolated commit b49e322 created, not pushed. Staged whitespace check identified a generated extra EOF blank line; earlier tracked-only whitespace check did not cover the new file. Generator now trims EOF, and release preparation now rebuilds handoff/timeline from origin/main to avoid duplicate appended records on repeated preparation. Rechecking/amending own unpushed commit before release.
 - Exact candidate build, 129 contrast pairs and 16 browser checks passed; this repair changes generated EOF/docs only. No deployment yet.
 
+## Admin panel tabs MERGED and deployed; hardening migrations live — 2026-10-07 — Claude
+
+- Shipped: PR #4 squash-merged to `main` as `a4447eb`; Vercel production deployment `dpl_8x9hRBkLwKJCeretrkTfw44Yq3Gw` is READY on the-loyalty-loop.com. This supersedes the "NOT merged/deployed" status in the entry above.
+- Database: verified by SELECT on the hosted project that both follow-up migrations' effects are live: `admin_assert` refuses suspended accounts; `user_suspensions.suspended_by` is `on delete set null`; `admin_set_business_active` is gone; `admin_list_transactions` returns `voided_at`; `admin_respond_support_request` and `admin_delete_review` raise when the row does not exist; `admin_set_user_suspended` refuses admin targets. These were applied outside the Supabase migration registry (no rows in `schema_migrations` for 20261007140000/140100), so `supabase db push` would re-run those two idempotent files harmlessly; optionally record them with `supabase migration repair --status applied 20261007140000 20261007140100`.
+- Not verified: the live site could not be loaded from the session (network proxy 403), no browser smoke test as an admin, no real suspend/reinstate on a throwaway account, RPCs not called as an admin. Production behaviour of the four new tabs is unverified.
+- Remaining (owner: user): log in at `/access` as an admin, click through Users & roles, All businesses, Loyalty data, Audit log; suspend and reinstate a throwaway account and confirm it is signed out/blocked and can sign in again after reinstating. (owner: Claude on request): record the two migrations in the registry.
+
 ## Copy-ready prompt for Claude Code
 
 Review CLAUDE_HANDOFF.md, docs/design/WEBSITE_COLOR_SYSTEM.md and apps/web/src/color-system.css. Verify signed-in shopper/owner/admin screens in both themes, including buttons, status colours and charts; preserve unrelated work. Acceptance: consistent semantic colours, readable controls and no responsive overflow. No design input is needed; full plugin registration needs owner approval, and deployment remains separate.
