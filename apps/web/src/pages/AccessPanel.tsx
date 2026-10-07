@@ -9,7 +9,6 @@ import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
 import { AccessTools } from '@/pages/AccessTools'
-import { Announcements } from '@/pages/admin/Announcements'
 import { Audit } from '@/pages/admin/Audit'
 import { Businesses } from '@/pages/admin/Businesses'
 import { Loyalty } from '@/pages/admin/Loyalty'
@@ -17,13 +16,13 @@ import { Users } from '@/pages/admin/Users'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
 
-type Tab = 'users' | 'businesses' | 'loyalty' | 'announcements' | 'audit' | 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features'
+type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'users' | 'businesses' | 'loyalty' | 'audit'
 type Health = { label: string; detail: string; ok: boolean; targetTab?: Tab }
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', announcements: 'Announcements', audit: 'Audit log',
   overview: 'System overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features',
+  users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', audit: 'Audit log',
 }
 
 // Features that were built and shipped, then deliberately switched off at
@@ -126,8 +125,8 @@ export function AccessPanel() {
       <div className="mt-4 hidden lg:mt-auto lg:block"><Link to="/dashboard" className="block px-4 py-3 text-sm text-white/60">Customer app</Link><Link to="/owner" className="block px-4 py-3 text-sm text-white/60">Business app</Link><button data-press-feedback onClick={signOut} className="px-4 py-3 text-sm text-white/60">Sign out</button></div>
     </aside>
     <main className="w-full flex-1 p-4 sm:p-6 lg:max-w-6xl lg:p-10">
-      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{tabLabels[tab]}</h1></div><button data-press-feedback onClick={() => void load()} className="w-fit rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Refresh</button></div>
-      {tab === 'users' ? <Users /> : tab === 'businesses' ? <Businesses /> : tab === 'loyalty' ? <Loyalty /> : tab === 'announcements' ? <Announcements /> : tab === 'audit' ? <Audit /> : busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : tab === 'backups' ? <LaptopBackups /> : <PausedFeatures />}
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{tabLabels[tab]}</h1></div>{!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <button data-press-feedback onClick={() => void load()} className="w-fit rounded-xl border border-white/15 px-4 py-2 text-sm font-bold">Refresh</button>}</div>
+      {tab === 'users' ? <Users /> : tab === 'businesses' ? <Businesses /> : tab === 'loyalty' ? <Loyalty /> : tab === 'audit' ? <Audit /> : busy ? <p className="text-white/50">Checking systems…</p> : tab === 'controls' ? <AccessTools /> : tab === 'overview' ? <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={(next) => { setTab(next); setSelectedHealth(null) }} /> : tab === 'analytics' ? <ProductAnalytics items={usage} /> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load} /> : tab === 'support' ? <SupportQueue items={support} refresh={load} /> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load} /> : tab === 'backups' ? <LaptopBackups /> : <PausedFeatures />}
     </main>
   </div>
 }

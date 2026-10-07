@@ -54,29 +54,49 @@ export function downloadCsv(name: string, rows: Record<string, unknown>[]) {
   URL.revokeObjectURL(url)
 }
 
-/** Loads data via `fetcher` whenever `deps` change; exposes reload + error state. */
+/** Loads data via `fetcher` whenever `deps` change; ignores out-of-order responses. */
 export function useLoad<T>(fetcher: () => Promise<T>, deps: React.DependencyList) {
   const [data, setData] = React.useState<T | null>(null)
   const [error, setError] = React.useState('')
   const [loading, setLoading] = React.useState(true)
+  const latest = React.useRef(0)
   const run = React.useCallback(async () => {
+    const id = ++latest.current
     setLoading(true); setError('')
-    try { setData(await fetcher()) } catch (e) { setError(e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'Failed to load') } finally { setLoading(false) }
+    try {
+      const result = await fetcher()
+      if (id === latest.current) setData(result)
+    } catch (e) {
+      if (id === latest.current) setError(e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'Failed to load')
+    } finally {
+      if (id === latest.current) setLoading(false)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
   React.useEffect(() => { run() }, [run])
   return { data, error, loading, reload: run }
 }
 
+/** Runs a mutation with an in-flight guard; `pending` should disable action buttons. */
 export function useAction() {
   const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null)
+  const [pending, setPending] = React.useState(false)
   const act = async (work: () => Promise<unknown>, success: string, after?: () => void) => {
+    if (pending) return
+    setPending(true)
     try { await work(); setMessage({ ok: true, text: success }); after?.() } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'Action failed' })
-    }
+    } finally { setPending(false) }
   }
   const banner = message && <p className={`mb-4 text-sm ${message.ok ? 'text-[#5ACA64]' : 'text-red-300'}`}>{message.text}</p>
-  return { act, banner }
+  return { act, banner, pending }
+}
+
+/** If a mutation/filter leaves the current page empty, step back to the last valid page. */
+export function useClampPage(rows: unknown[] | undefined, total: number | undefined, page: number, setPage: (p: number) => void) {
+  React.useEffect(() => {
+    if (rows && rows.length === 0 && page > 0) setPage(Math.max(0, Math.ceil((total ?? 0) / PAGE_SIZE) - 1))
+  }, [rows, total, page, setPage])
 }
 
 export function useDebounced<T>(value: T, ms = 300) {

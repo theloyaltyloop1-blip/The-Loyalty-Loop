@@ -50,10 +50,9 @@ export const listBusinesses = (search: string, status: ApprovalStatus | '', page
   rpcPaged<AdminBusiness>('admin_list_businesses', { _search: search || null, _status: status || null, _limit: PAGE_SIZE, _offset: page * PAGE_SIZE })
 export const setBusinessStatus = (id: string, status: ApprovalStatus, reason?: string) =>
   rpcVoid('admin_set_business_status', { _business_id: id, _status: status, _reason: reason ?? null })
-export const setBusinessActive = (id: string, active: boolean) => rpcVoid('admin_set_business_active', { _business_id: id, _active: active })
 
 export interface AdminTransaction {
-  id: string; type: string; value: number; note: string | null; created_at: string
+  id: string; type: string; value: number; note: string | null; created_at: string; voided_at: string | null
   business_id: string; business_name: string; user_id: string; user_email: string | null; total: number
 }
 export const listTransactions = (page: number) =>
@@ -77,21 +76,6 @@ export const deleteReview = (id: string, reason?: string) => rpcVoid('admin_dele
 export const respondSupport = (id: string, response: string, resolve: boolean) =>
   rpcVoid('admin_respond_support_request', { _id: id, _response: response, _resolve: resolve })
 
-export interface PlatformAnnouncement { id: string; title: string; body: string; is_active: boolean; created_at: string }
-export async function listAnnouncements(): Promise<PlatformAnnouncement[]> {
-  const { data, error } = await supabase.from('platform_announcements').select('*').order('created_at', { ascending: false })
-  if (error) throw error
-  return data as PlatformAnnouncement[]
-}
-export async function publishAnnouncement(title: string, body: string) {
-  const { error } = await supabase.from('platform_announcements').insert({ title, body })
-  if (error) throw error
-}
-export async function setAnnouncementActive(id: string, active: boolean) {
-  const { error } = await supabase.from('platform_announcements').update({ is_active: active }).eq('id', id)
-  if (error) throw error
-}
-
 export interface AuditEntry { id: string; actor_id: string | null; action: string; target_type: string; target_id: string | null; detail: Record<string, unknown>; created_at: string }
 export async function listAudit(page: number): Promise<Paged<AuditEntry>> {
   const { data, error, count } = await supabase.from('platform_audit_log').select('*', { count: 'exact' })
@@ -100,9 +84,14 @@ export async function listAudit(page: number): Promise<Paged<AuditEntry>> {
   return { rows: data as AuditEntry[], total: count ?? 0 }
 }
 
+/** CSV with formula-injection protection: cells starting with = + - @ tab or CR are prefixed with a quote. */
 export function toCsv(rows: Record<string, unknown>[]): string {
   if (!rows.length) return ''
   const cols = Object.keys(rows[0])
-  const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
-  return [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n')
+  const esc = (v: unknown) => {
+    let t = String(v ?? '')
+    if (/^[=+\-@\t\r]/.test(t)) t = `'${t}`
+    return `"${t.replace(/"/g, '""')}"`
+  }
+  return '\uFEFF' + [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n')
 }

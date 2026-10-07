@@ -1,10 +1,11 @@
 import * as React from 'react'
 import { listAudit, type AuditEntry } from '@/lib/admin'
-import { Badge, DataTable, Pager, Status, btnGhost, downloadCsv, fmtDate, useLoad } from './kit'
+import { Badge, DataTable, Pager, Status, btnGhost, downloadCsv, fmtDate, useClampPage, useLoad } from './kit'
 
 export function Audit() {
   const [page, setPage] = React.useState(0)
   const { data, error, loading } = useLoad(() => listAudit(page), [page])
+  useClampPage(data?.rows, data?.total, page, setPage)
   return (
     <div>
       <button className={`${btnGhost} mb-4`} onClick={() => data && downloadCsv('audit-log', data.rows.map((a) => ({ when: a.created_at, actor: a.actor_id, action: a.action, target: `${a.target_type}:${a.target_id}`, detail: JSON.stringify(a.detail) })))}>Export page CSV</button>
