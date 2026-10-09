@@ -198,3 +198,7 @@ Owner authorized website and Android/iOS shopper release. ID-only Places archite
 ## Admin redesign deployed — 7 October 2026
 
 - Owner authorized Codex deployment. Preserved latest main a4447eb's four newer tabs, integrated/recoloured all 14 views and released bounded commit a963efa through Git/Vercel. Production dpl_CvJ8WAEv81jHNA8SYcV8doKccXY8 READY with production aliases; public Chrome route/login/bundle smoke passed. No backend migration/native OTA; signed-in production data/device checks remain outstanding. See handoff and docs/ADMIN_REDESIGN_2026-10-07.md. Sentry/WhatsApp milestone work unchanged.
+
+## Website semantic palette — 9 October 2026
+
+Owner authorized palette deployment followed by a screenshot-led admin redesign. Bounded website palette passes production build, 129 contrast pairs and 16 local responsive/theme browser checks on main 9b888fd; local standalone palette skills installed, full plugin registration blocked. No backend/native scope. See docs/design/WEBSITE_COLOR_SYSTEM.md and CLAUDE_HANDOFF.md. Admin redesign follows the palette deployment.

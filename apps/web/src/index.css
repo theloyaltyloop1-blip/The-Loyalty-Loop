@@ -3,6 +3,7 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./color-system.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -10,49 +11,7 @@
   --font-display: 'Bricolage Grotesque Variable', 'Geist Variable', system-ui, sans-serif;
   --font-body: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-sans: var(--font-body);
-
-  --color-background: #F3F4EF;
-  --color-foreground: #1C2620;
-  --color-card: #FCFCFA;
-  --color-card-foreground: var(--color-foreground);
-  --color-primary: #C4531F;
-  --color-primary-foreground: #ffffff;
-  --color-primary-hover: #A8461A;
-  --color-primary-glow: #C4531F;
-  --color-secondary: #E8EAE3;
-  --color-secondary-foreground: var(--color-foreground);
-  --color-accent: #E8703B;
-  --color-accent-foreground: var(--color-foreground);
-  --color-ink: #1C2620;
-  --color-fun-green: #2F7A3F;
-  --color-fun-violet: #5C6B4F;
-  --color-destructive: #dc2626;
-  --color-destructive-foreground: #ffffff;
-  --color-border: #DCDFD6;
-
-  /* Brand colour fields from the logo. Orange (primary) stays the only CTA colour;
-     these are for panels, tiles and highlights. Each has a readable ink pair. */
-  --color-olive: #3E5235;
-  --color-olive-ink: #F1F4EC;
-  --color-sage: #DCE6D2;
-  --color-sage-ink: #24331F;
-  --color-peach: #F8DCCB;
-  --color-peach-ink: #6E2C0F;
-  --color-amber: #F2B544;
-  --color-amber-ink: #2A2410;
-  --color-orange: #E8703B;
-  --color-orange-ink: #2A1408;
-
-  /* shadcn/Radix components (popover, dropdown, dialog, focus rings) reuse the
-     same surfaces and accents as the rest of the app rather than introducing
-     a second, generic gray palette — this is what shadcn's own init would
-     have appended as new `oklch()` tokens if we hadn't remapped it here. */
-  --color-muted: var(--color-secondary);
-  --color-muted-foreground: #5A635C;
-  --color-popover: var(--color-card);
-  --color-popover-foreground: var(--color-foreground);
-  --color-input: var(--color-border);
-  --color-ring: var(--color-primary);
+  /* Colour primitives and semantic light/dark/admin roles live in color-system.css. */
 
   /* Shape rule: inputs and chips 12px (rounded-xl), cards 20px (rounded-2xl),
      large panels 28px (rounded-3xl), buttons and nav pills full. */
@@ -117,9 +76,11 @@
 
   p { text-wrap: pretty; }
 
+  input::placeholder, textarea::placeholder { color: var(--color-muted-foreground); opacity: 1; }
+
   ::selection {
-    background: #F2B48F;
-    color: #1C2620;
+    background: var(--color-peach);
+    color: var(--color-foreground);
   }
 
   :focus-visible {
@@ -136,7 +97,7 @@
     transform: translateY(-160%);
     border-radius: 0.75rem;
     background: var(--color-foreground);
-    color: white;
+    color: var(--color-background);
     padding: 0.75rem 1rem;
     font-weight: 700;
     transition: transform 150ms var(--ease-out);
@@ -145,27 +106,6 @@
 }
 
 html.dark {
-  --color-background: #121714;
-  --color-foreground: #ECEEE8;
-  --color-card: #1A201C;
-  --color-primary: #F0874F;
-  --color-primary-foreground: #1A0F08;
-  --color-primary-hover: #F5A177;
-  --color-primary-glow: #F0874F;
-  --color-secondary: #232A25;
-  --color-accent: #F0874F;
-  --color-ink: #ECEEE8;
-  --color-fun-green: #6FC27E;
-  --color-fun-violet: #A9B89C;
-  --color-destructive: #FF7A70;
-  --color-border: #2E3630;
-  --color-muted-foreground: #A3ACA4;
-  --color-input: #2E3630;
-  --color-olive: #2A3824;
-  --color-sage: #1F2A1C;
-  --color-sage-ink: #CFE0C4;
-  --color-peach: #3A2418;
-  --color-peach-ink: #F6C7AA;
   color-scheme: dark;
 }
 
@@ -175,14 +115,14 @@ html.dark {
 html.dark input:not([type='checkbox']):not([type='radio']),
 html.dark textarea,
 html.dark select {
-  background-color: #1A201C;
+  background-color: var(--color-card);
   color: var(--color-foreground);
-  border-color: #2E3630;
+  border-color: var(--color-input);
 }
 
 html.dark input::placeholder,
-html.dark textarea::placeholder { color: rgb(244 246 240 / 0.46); }
-html.dark option { background-color: #1A201C; color: var(--color-foreground); }
+html.dark textarea::placeholder { color: var(--color-muted-foreground); }
+html.dark option { background-color: var(--color-card); color: var(--color-foreground); }
 html.dark .bg-white { background-color: var(--color-card); }
 html.dark [class*='border-black'] { border-color: rgb(248 238 225 / 0.14); }
 html.dark [class*='divide-black'] > :not(:last-child) { border-color: rgb(248 238 225 / 0.10); }

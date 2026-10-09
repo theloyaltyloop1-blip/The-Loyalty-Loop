@@ -18,7 +18,7 @@ export function Businesses() {
   return (
     <div>
       {banner}
-      <p className="mb-4 text-sm text-slate-600">Rejecting a listing hides it from customers. Document verification requests are in the Business listings tab.</p>
+      <p className="mb-4 text-sm text-muted-foreground">Rejecting a listing hides it from customers. Document verification requests are in the Business listings tab.</p>
       <div className="mb-4 flex flex-wrap gap-2">
         <input className={`${inputCls} w-64`} placeholder="Search name or owner email" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value as ApprovalStatus | '')}>
@@ -27,7 +27,7 @@ export function Businesses() {
       </div>
       <Status loading={list.loading} error={list.error} />
       <DataTable<AdminBusiness> rows={list.data?.rows ?? []} columns={[
-        { header: 'Business', cell: (b) => <><p className="font-semibold">{b.name}</p><p className="text-slate-600">{b.owner_email ?? '—'} · {b.category ?? 'uncategorised'}</p></> },
+        { header: 'Business', cell: (b) => <><p className="font-semibold">{b.name}</p><p className="text-muted-foreground">{b.owner_email ?? '—'} · {b.category ?? 'uncategorised'}</p></> },
         { header: 'Status', cell: (b) => <div className="flex flex-wrap gap-1"><Badge tone={tone(b.approval_status)}>{b.approval_status}</Badge><Badge tone={tone(b.verification_status)}>{b.verification_status}</Badge>{!b.is_active && <Badge tone="muted">paused by owner</Badge>}</div> },
         { header: 'Members', cell: (b) => b.members },
         { header: 'Listed', cell: (b) => fmtDate(b.created_at) },

@@ -290,7 +290,7 @@ export function OwnerOnboarding() {
                     key={c}
                     onClick={() => setForm({ ...form, brand_color: c })}
                     className="h-9 w-9 rounded-full border-2"
-                    style={{ backgroundColor: c, borderColor: c === form.brand_color ? '#1a1a1a' : 'transparent' }}
+                    style={{ backgroundColor: c, borderColor: c === form.brand_color ? 'var(--color-foreground)' : 'transparent' }}
                   />
                 ))}
               </div>

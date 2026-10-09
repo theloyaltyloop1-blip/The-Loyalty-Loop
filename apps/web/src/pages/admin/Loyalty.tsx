@@ -33,7 +33,7 @@ function Rewards() {
     </select>
     <Status loading={loading} error={error} />
     <DataTable<AdminReward> rows={data?.rows ?? []} columns={[
-      { header: 'Reward', cell: (r) => <><p className="font-semibold">{r.title}</p><p className="text-slate-600">{r.short_code}</p></> },
+      { header: 'Reward', cell: (r) => <><p className="font-semibold">{r.title}</p><p className="text-muted-foreground">{r.short_code}</p></> },
       { header: 'Business', cell: (r) => r.business_name },
       { header: 'Customer', cell: (r) => r.user_email ?? r.user_id },
       { header: 'Issued', cell: (r) => fmtDate(r.created_at) },
@@ -51,7 +51,7 @@ function Reviews() {
   const { act, banner, pending } = useAction()
   return <>
     {banner}
-    <label className="mb-4 flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={low} onChange={(e) => { setLow(e.target.checked); setPage(0) }} /> Only 1–2 star reviews</label>
+    <label className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={low} onChange={(e) => { setLow(e.target.checked); setPage(0) }} /> Only 1–2 star reviews</label>
     <Status loading={loading} error={error} />
     <DataTable<AdminReview> rows={data?.rows ?? []} columns={[
       { header: 'Rating', cell: (r) => '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating) },
@@ -70,7 +70,7 @@ export function Loyalty() {
   return (
     <div>
       <div className="mb-5 flex gap-2">
-        {(['transactions', 'rewards', 'reviews'] as Sub[]).map((s) => <button key={s} className={sub === s ? `${btnGhost} bg-slate-50` : btnGhost} onClick={() => setSub(s)}>{s}</button>)}
+        {(['transactions', 'rewards', 'reviews'] as Sub[]).map((s) => <button key={s} className={sub === s ? `${btnGhost} bg-background` : btnGhost} onClick={() => setSub(s)}>{s}</button>)}
       </div>
       {sub === 'transactions' ? <Transactions /> : sub === 'rewards' ? <Rewards /> : <Reviews />}
     </div>

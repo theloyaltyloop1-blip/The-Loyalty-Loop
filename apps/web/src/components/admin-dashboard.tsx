@@ -4,7 +4,7 @@ import { Store, Users, Receipt, Gift, BarChart3 } from 'lucide-react'
 export type AdminUsage = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 const number = (value: number) => value.toLocaleString()
 const label = (value: string) => value.replaceAll('_', ' ')
-const palette = ['#2563eb', '#0891b2', '#7c3aed', '#d97706', '#059669']
+const palette = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)']
 
 export function AdminMetrics({ counts }: { counts: Record<string, number> }) {
   return <div className="admin-metrics">{[

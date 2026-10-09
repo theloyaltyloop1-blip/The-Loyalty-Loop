@@ -647,7 +647,7 @@ function StampLoyaltyTab() {
                       onClick={() => setBrandColor(c)}
                       aria-label={`Use ${c} as the brand color`}
                       className="h-8 w-8 rounded-full border-2"
-                      style={{ backgroundColor: c, borderColor: c === brandColor ? '#1a1a1a' : 'transparent' }}
+                      style={{ backgroundColor: c, borderColor: c === brandColor ? 'var(--color-foreground)' : 'transparent' }}
                     />
                   </TooltipTrigger>
                   <TooltipContent>{c}</TooltipContent>
@@ -919,7 +919,7 @@ function SpendLoyaltyTab() {
                       onClick={() => setBrandColor(c)}
                       aria-label={`Use ${c} as the brand color`}
                       className="h-8 w-8 rounded-full border-2"
-                      style={{ backgroundColor: c, borderColor: c === brandColor ? '#1a1a1a' : 'transparent' }}
+                      style={{ backgroundColor: c, borderColor: c === brandColor ? 'var(--color-foreground)' : 'transparent' }}
                     />
                   </TooltipTrigger>
                   <TooltipContent>{c}</TooltipContent>
@@ -1152,10 +1152,10 @@ const VERIFICATION_STATUS_META: Record<
   string,
   { label: string; color: string; bg: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }
 > = {
-  unverified: { label: 'Not submitted', color: '#1a1a1a', bg: '#00000010', icon: Shield },
-  pending: { label: 'Pending review', color: '#B8860B', bg: '#FFF3D6', icon: Clock },
-  verified: { label: 'Verified', color: '#3FA34D', bg: '#DFF3E3', icon: BadgeCheck },
-  rejected: { label: 'Rejected', color: '#C0392B', bg: '#FBE4E1', icon: XCircle },
+  unverified: { label: 'Not submitted', color: 'var(--color-muted-foreground)', bg: 'var(--color-muted)', icon: Shield },
+  pending: { label: 'Pending review', color: 'var(--color-warning)', bg: 'var(--color-warning-subtle)', icon: Clock },
+  verified: { label: 'Verified', color: 'var(--color-success)', bg: 'var(--color-success-subtle)', icon: BadgeCheck },
+  rejected: { label: 'Rejected', color: 'var(--color-destructive)', bg: 'var(--color-destructive-subtle)', icon: XCircle },
 }
 
 function VerificationTab() {
@@ -1407,7 +1407,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
           disabled={busy}
           className={
             'rounded-full px-4 h-9 text-sm font-bold disabled:opacity-50 ' +
-            (revoked ? 'bg-fun-green text-white' : 'border border-destructive/30 text-destructive')
+            (revoked ? 'bg-fun-green text-success-foreground' : 'border border-destructive/30 text-destructive')
           }
         >
           {revoked ? 'Reactivate' : 'Revoke access'}
@@ -1589,7 +1589,7 @@ function DangerTab() {
           <div className="mt-4 max-w-md">
             <label className="block text-sm font-semibold text-foreground">Type <span className="font-bold">{business.name}</span> to confirm</label>
             <input value={deleteName} onChange={(e) => setDeleteName(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-destructive/30 bg-card px-3.5 outline-none focus:border-destructive focus:ring-3 focus:ring-destructive/20" />
-            <div className="mt-3 flex gap-2"><button data-press-feedback onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-full px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">Cancel</button></div>
+            <div className="mt-3 flex gap-2"><button data-press-feedback onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-full px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">Cancel</button></div>
           </div>
         )}
         {error && <p className="mt-3 text-sm font-medium text-destructive">{error}</p>}
@@ -1608,7 +1608,7 @@ function DangerTab() {
       {businesses.length === 0 && <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
         <h3 className="font-display text-lg font-semibold tracking-tight text-destructive">Delete account permanently</h3>
         <p className="mt-2 text-sm text-foreground/75">All shops have been resolved. This permanently deletes your login and personal account data.</p>
-        <button data-press-feedback onClick={deleteAccount} disabled={deletingAccount} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
+        <button data-press-feedback onClick={deleteAccount} disabled={deletingAccount} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
       </section>}
     </div>
   )
@@ -1682,7 +1682,7 @@ export function OwnerSettings() {
             if (!status.can_delete) return window.alert(status.reason ?? 'Resolve ownership first.')
             if (!window.confirm('Delete your account and personal data? This cannot be undone.')) return
             await requestAccountDeletion(); await signOut()
-          }} disabled={businesses.length > 0} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40">Delete account permanently</button>
+          }} disabled={businesses.length > 0} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">Delete account permanently</button>
         </section>
       ) : (
         <>

@@ -37,7 +37,7 @@ export function Users() {
       </div>
       <Status loading={loading} error={error} />
       <DataTable<AdminUser> rows={data?.rows ?? []} columns={[
-        { header: 'User', cell: (u) => <><p className="font-semibold">{`${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || '—'}</p><p className="text-slate-600">{u.email}</p></> },
+        { header: 'User', cell: (u) => <><p className="font-semibold">{`${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || '—'}</p><p className="text-muted-foreground">{u.email}</p></> },
         { header: 'Roles', cell: (u) => <div className="flex flex-wrap gap-1">{u.roles.map((r) => <Badge key={r} tone={r === 'admin' ? 'warn' : 'muted'}>{r}</Badge>)}{u.suspended && <Badge tone="bad">suspended</Badge>}</div> },
         { header: 'Joined', cell: (u) => fmtDate(u.created_at) },
         { header: 'Last sign-in', cell: (u) => fmtDate(u.last_sign_in_at) },

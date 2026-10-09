@@ -2069,6 +2069,87 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Verification includes prior isolated responsive mock browser, analytics empty/failure/measure, actions success/rejection, backup-confirmation failure; latest current-main release TypeScript/build and whitespace pass. Signed-in live statistics/actions and device/native shell not verified. No migrations applied or native OTA published; admin WebView website content updates automatically.
 - Documentation/timeline updated for authorized production release. Publish this status-only follow-up to main, observe its identical-code deployment, and preserve unrelated dirty work. No new product-owner input or Claude release approval needed.
 
+## Palette sources inspected and skills installed â€” 2026-10-09 â€” Codex
+
+- User requested both linked skills installed and applied throughout the website. Read project handoff, architecture and timeline. Keep existing orange/olive consumer brand and recently approved blue admin identity, with consistent primitive/semantic tokens and accessible light/dark roles; this is Codex's implementation recommendation, not a new owner-selected palette.
+- Downloaded pinned claude-skills-hub color-palette.md into .agents/skills/color-palette/SKILL.md and copied it to user Codex skills. Installed five ui-color-palette core skills into .agents/skills via the official installer. Full second source cloned at tools/claude-ui-color-palette, SHA 498c0a932cae1137847b90fd54602d2766234941. Full Claude plugin registration remains pending; source being present is not a connected MCP server.
+- Initial sandbox writes/network failed; authorized scoped escalation succeeded. Initial second-source skill reads used old README names and failed; actual ui-color-palette-* paths read successfully. No website changes or verification yet. Existing contributors' dirty files preserved.
+- External palette MCP is not exposed in this Codex session. Local token/contrast implementation can apply source guidance; no remote-generated palette/APCA score will be claimed.
+
+## Claude plugin registration blocked â€” 2026-10-09 â€” Codex
+
+- Automatic approval review rejected adding the separate Yelbolt marketplace and project plugin installation: untrusted marketplace commands and persistent MCP/network configuration exceed authorization for the linked repository's skills. No marketplace/plugin registration performed; do not bypass this block. Local requested skill sources remain installed and website work continues using their guidance.
+- Full Claude plugin registration requires explicit owner approval of marketplace and persistent integration effects. Remote get_palette/get_color_system/APCA remains unavailable; local WCAG audit is planned and will be labelled as local.
+
+## Website semantic palette implemented â€” 2026-10-09 â€” Codex
+
+- Added scripts/build-website-palette.py, generated apps/web/src/color-system.css and docs/design/website-palette.{json,html}: 88 shades across eight families, semantic consumer light/dark and scoped light admin themes. Local deterministic export, not MCP-generated. Brand backgrounds now warm neutral, olive/sage and peach with deeper orange controls; retains blue admin workspace.
+- index.css imports the shared system; landing fields, shopper Home/home-collection, admin CSS/tools/tables/charts, owner verification states and shared button colour-mix now reference semantic tokens. Filled primary/destructive/success controls use matching foreground roles in dark mode. Shop brand selections, provider logos, map URLs, photography overlays and print QR are preserved as purposeful exceptions. No backend/native/deployment changes.
+- Implementation unverified at this stage; production build, local contrast audit and browser inspection next. Full Claude plugin registration remains auto-review blocked; core local skills installed. Applied source guidance with local fallback because external MCP absent.
+
+## Website production build passed â€” 2026-10-09 â€” Codex
+
+- apps/web npm run build passed: TypeScript and Vite (2702 transformed modules). Existing vendor chunk-size warning remains. Initial root npm run build failed because root has no build script; correct app command succeeded. No deployment.
+- Palette implementation now compiles; local WCAG pair audit/browser checks pending. React review: style-only component changes preserve hooks, keys, navigation and data behavior; fixed shared secondary hover colour-mix references. No new runtime dependency.
+
+## Palette audit and standalone installation complete â€” 2026-10-09 â€” Codex
+
+- Local scripts/audit-website-palette.py passed 129/129 supported semantic pairings: normal text/buttons/status/brand fields >=4.5:1, focus/input/chart marks >=3:1, in consumer light/dark and admin light themes. Output docs/design/website-palette-contrast.json. This is a token-contract audit, not proof every rendered opacity/photo/merchant colour passes, and not APCA.
+- Added required skill name to the first source; six standalone skills now installed in both .agents/skills and .claude/skills, first also in user Codex skills. These are available on next turn/session. Full plugin MCP registration still blocked; no workaround or marketplace activation attempted.
+- Unscoped npm run lint unexpectedly scanned node_modules with a huge vendor-warning output; interrupted and will rerun scoped to src. Browser check setup pending. No deployment.
+
+## Source lint passed; browser sandbox limitation â€” 2026-10-09 â€” Codex
+
+- Scoped npx --no-install oxlint src exits 0, existing warnings in hooks/render purity/export patterns; no errors. Unscoped lint was interrupted after vendor scanning; not recorded as passed.
+- First local Chrome attempt failed ERR_NETWORK_ACCESS_DENIED to localhost; scoped browser escalation requested. No browser verification success yet. Preview server is localhost-only. Test blocks all remote requests and does not sign in or mutate account data.
+
+## Palette coverage follow-up â€” 2026-10-09 â€” Codex
+
+- Corrected Sonner's shared normal toast CSS variables to the actual --color-* tokens, and assigned landing step icons matching sage/amber ink roles so dark-mode amber no longer inherits pale page text. Changed components/ui/sonner.tsx and pages/landing.css. Build/browser rerun pending for these fixes.
+- Isolated static server now runs with Chrome in one process; initial browser attempt from the separate sandbox server timed out. Browser test's admin colour comparison was case-sensitive; normalized hex case before rerun. No success claimed yet.
+
+## Final palette build and browser checks passed â€” 2026-10-09 â€” Codex
+
+- Rebuilt apps/web successfully after toast/icon fixes (TypeScript + Vite; existing bundle warning). Chrome passed 16 checks: landing/login/signup/forgot-password in light/dark at 1440px/390px; no horizontal overflow or page errors. All remote traffic blocked; no account operations.
+- Actual built CSS fixture confirms admin remains blue/white under global dark mode; inputs white, button #2563eb/white, admin surface #f8fafc. Screenshots/results saved docs/design/palette-browser. First fixture failed due hex-case comparison; normalized comparison/rerun passed. Screenshots regenerated with reduced motion/essential cookie choice so initial entrance animations do not hide content.
+- Local 129/129 WCAG pair audit passed earlier. Signed-in shopper/owner/admin screens and merchant-uploaded colour/photo combinations remain unverified; fixture is a CSS contract check, not authenticated admin verification. Screenshot visual inspection and final documentation/whitespace next. No deployment.
+
+## Palette visual inspection and documentation complete â€” 2026-10-09 â€” Codex
+
+- Inspected full desktop dark landing and phone light login screenshots; readable primary controls and coherent fields. Found landing mock toast's fixed green check became pale against its light dark-mode toast; icon now inherits its readable text colour. index.css stale colour comments removed. Final build/browser rerun pending for this small icon fix.
+- Added docs/design/WEBSITE_COLOR_SYSTEM.md with installation provenance, blocked full-plugin status, source guidance/local fallback distinction, regeneration workflow, coverage/exceptions, verification evidence and explicit authenticated limitations. Changed scripts/palette-handoff.py to write the current bounded Claude prompt. Timeline update/final checks next; no deployment.
+
+## Website release and reference admin redesign authorized â€” 2026-10-09 â€” Codex
+
+- Owner explicitly requested deploy the palette, then redesign admin from four attached screenshots. References: soft grey cards, rounded modular panels, dark typography, pastel/lavender accents, clear sidebar/header and chart hierarchy. Keep actual platform data, all 14 current admin views and existing controls; do not invent sales/revenue/daily trends from aggregate analytics. This is the new owner-confirmed visual direction.
+- Verified Vercel loyalty-loop team/project and production READY 9b888fd; fetched current main into clean .codex-admin-release checkout, also 9b888fd, no dirty files. Shared original remains dirty and must not be deployed wholesale. Palette release will transplant only bounded website changes/docs onto current production baseline.
+- Full UI Color Palette plugin activation remains blocked and outside this deployment. No need for further owner approval to deploy the website palette. Admin redesign implementation follows the palette deployment; no additional backend/native scope.
+
+## Clean palette release prepared â€” 2026-10-09 â€” Codex
+
+- Prepared 26 bounded palette source/export/check/documentation paths in clean .codex-admin-release at current production main 9b888fd. Existing remote handoff/timeline history preserved; only this run's records appended. Shared unrelated App/main/config/Sentry/WhatsApp work excluded. Print poster title retains fixed dark ink as a print exception.
+- Candidate git diff --check passes; clean checkout build running. No push or deployment yet. Product owner explicitly authorized this website deployment; admin reference redesign follows.
+
+## Clean palette release build passed â€” 2026-10-09 â€” Codex
+
+- Exact current-main candidate in .codex-admin-release passes apps/web TypeScript/Vite production build and whitespace checks. Shared source palette audit still passes 129/129. Build differences from shared source only reflect the current production baseline, not unrelated dirty configuration.
+- Clean candidate browser check running; next bounded commit and authorized fast-forward main push, then verify exact Vercel READY/production aliases. No deployment yet.
+
+## Clean candidate browser setup repaired â€” 2026-10-09 â€” Codex
+
+- Candidate compiled but public browser h1 check timed out: clean checkout lacks local .env and Supabase initialization intentionally throws without build-time public variables. No production defect established. Rebuilding the candidate with explicit non-secret fixture URL/anon value for local browser verification; remote requests remain blocked. Vercel builds from its existing configured production environment.
+- No local env/secret copied or committed; no live API accessed. Candidate browser check must pass before publication. Existing source build and 129/129 colour contracts remain passed.
+
+## Exact palette release candidate verified â€” 2026-10-09 â€” Codex
+
+- Clean release checkout passes production build with non-secret local fixture build variables; all 16 public light/dark desktop/phone browser checks and admin CSS isolation pass, zero page errors. Final mock-toast icon and print exception included. Production build uses Vercel's existing real environment, not the fixture values.
+- Candidate ready for bounded commit/authorized main push. No backend migration, native OTA, unrelated configuration or secrets included. Authenticated live screens remain unverified. Admin screenshot redesign follows this deployment.
+
+## Palette bounded commit prepared; whitespace corrected â€” 2026-10-09 â€” Codex
+
+- Own isolated commit b49e322 created, not pushed. Staged whitespace check identified a generated extra EOF blank line; earlier tracked-only whitespace check did not cover the new file. Generator now trims EOF, and release preparation now rebuilds handoff/timeline from origin/main to avoid duplicate appended records on repeated preparation. Rechecking/amending own unpushed commit before release.
+- Exact candidate build, 129 contrast pairs and 16 browser checks passed; this repair changes generated EOF/docs only. No deployment yet.
+
 ## Copy-ready prompt for Claude Code
 
-Review the deployed admin redesign using CLAUDE_HANDOFF.md and docs/ADMIN_REDESIGN_2026-10-07.md. Verify the signed-in graphs and all 14 views, including Trending and Shop requests, without changing live roles or data. Production deployment and public login/asset checks passed. No product-owner decision is required; native wrapper colours were not shipped by OTA. Keep pending database hardening and Sentry/WhatsApp work separate.
+Review CLAUDE_HANDOFF.md, docs/design/WEBSITE_COLOR_SYSTEM.md and apps/web/src/color-system.css. Verify signed-in shopper/owner/admin screens in both themes, including buttons, status colours and charts; preserve unrelated work. Acceptance: consistent semantic colours, readable controls and no responsive overflow. No design input is needed; full plugin registration needs owner approval, and deployment remains separate.

@@ -1,0 +1,141 @@
+{
+  "publicPages": [
+    {
+      "route": "/",
+      "mode": "light",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/login",
+      "mode": "light",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/signup",
+      "mode": "light",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/forgot-password",
+      "mode": "light",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/",
+      "mode": "light",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/login",
+      "mode": "light",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/signup",
+      "mode": "light",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/forgot-password",
+      "mode": "light",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(245, 244, 238)",
+      "primary": "#b9471d"
+    },
+    {
+      "route": "/",
+      "mode": "dark",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    },
+    {
+      "route": "/login",
+      "mode": "dark",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    },
+    {
+      "route": "/signup",
+      "mode": "dark",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    },
+    {
+      "route": "/forgot-password",
+      "mode": "dark",
+      "width": 1440,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    },
+    {
+      "route": "/",
+      "mode": "dark",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    },
+    {
+      "route": "/login",
+      "mode": "dark",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    },
+    {
+      "route": "/signup",
+      "mode": "dark",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    },
+    {
+      "route": "/forgot-password",
+      "mode": "dark",
+      "width": 390,
+      "overflow": false,
+      "background": "rgb(18, 26, 21)",
+      "primary": "#f2b18b"
+    }
+  ],
+  "adminCssFixture": {
+    "primary": "rgb(37, 99, 235)",
+    "foreground": "rgb(255, 255, 255)",
+    "input": "rgb(255, 255, 255)",
+    "surface": "rgb(248, 250, 252)",
+    "token": "#2563eb"
+  },
+  "pageErrors": [],
+  "limitations": "Remote requests blocked; no authenticated shopper/owner/admin data or operations tested."
+}

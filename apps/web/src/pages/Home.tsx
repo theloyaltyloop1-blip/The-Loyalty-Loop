@@ -103,21 +103,21 @@ export function Home() {
       </header>
 
       <div role="group" aria-label="Filter shops by category" className="mb-7 flex gap-2 overflow-x-auto pb-1">
-        <button type="button" aria-pressed={category === 'All'} onClick={() => setCategory('All')} className={'min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-primary ' + (category === 'All' ? 'bg-[#3E5235] text-[#F1F4EC]' : 'bg-card text-foreground ring-1 ring-foreground/10 hover:bg-[#DCE6D2]')}>
+        <button type="button" aria-pressed={category === 'All'} onClick={() => setCategory('All')} className={'min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-primary ' + (category === 'All' ? 'bg-olive text-olive-ink' : 'bg-card text-foreground ring-1 ring-foreground/10 hover:bg-sage')}>
           All shops
         </button>
-        {Object.entries(counts).map(([name, count]) => <button type="button" key={name} aria-pressed={category === name} onClick={() => setCategory(name)} className={'min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-primary ' + (category === name ? 'bg-[#3E5235] text-[#F1F4EC]' : 'bg-card text-foreground ring-1 ring-foreground/10 hover:bg-[#DCE6D2]')}>
+        {Object.entries(counts).map(([name, count]) => <button type="button" key={name} aria-pressed={category === name} onClick={() => setCategory(name)} className={'min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-primary ' + (category === name ? 'bg-olive text-olive-ink' : 'bg-card text-foreground ring-1 ring-foreground/10 hover:bg-sage')}>
           {name} <span aria-hidden="true">·</span> {count}
         </button>)}
       </div>
 
-      {fetching && !businesses.length ? <p role="status" className="rounded-2xl bg-[#DCE6D2] px-5 py-6 text-[#24331F]">Finding your local favourites…</p>
-        : loadError ? <div role="alert" className="rounded-2xl bg-[#F8DCCB] px-5 py-6 text-[#6E2C0F]"><p>{loadError}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-white">Refresh <ArrowRight className="h-4 w-4" aria-hidden="true" /></button></div>
+      {fetching && !businesses.length ? <p role="status" className="rounded-2xl bg-sage px-5 py-6 text-sage-ink">Finding your local favourites…</p>
+        : loadError ? <div role="alert" className="rounded-2xl bg-peach px-5 py-6 text-peach-ink"><p>{loadError}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground">Refresh <ArrowRight className="h-4 w-4" aria-hidden="true" /></button></div>
           : <HomeCollection businesses={filtered} featured={featured} featuredReason={personal?.reason} memberships={memberships} catalog={catalog} filtered={category !== 'All' || Boolean(search)} location={userLocation} locationStatus={locationStatus} onUseLocation={locate} />}
 
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#F8DCCB] px-5 py-5 text-[#6E2C0F] sm:px-7">
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-peach px-5 py-5 text-peach-ink sm:px-7">
         <p className="font-semibold">Can’t find your favourite shop?</p>
-        <button type="button" onClick={() => setAskOpen(true)} className="min-h-11 rounded-full bg-primary px-5 py-2.5 font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-3 focus-visible:outline-foreground">Ask a shop to join</button>
+        <button type="button" onClick={() => setAskOpen(true)} className="min-h-11 rounded-full bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-3 focus-visible:outline-foreground">Ask a shop to join</button>
       </div>
       <AskShopDialog open={askOpen} onOpenChange={setAskOpen} initialQuery={query} />
     </DashboardLayout>
