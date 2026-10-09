@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { deleteReview, listRewards, listReviews, listTransactions, type AdminReview, type AdminReward, type AdminTransaction } from '@/lib/admin'
-import { Badge, DataTable, Pager, Status, btnDanger, btnGhost, fmtDate, inputCls, useAction, useClampPage, useLoad } from './kit'
+import { Badge, DataTable, Pager, Status, btnDanger, fmtDate, inputCls, useAction, useClampPage, useLoad } from './kit'
 
 type Sub = 'transactions' | 'rewards' | 'reviews'
 
@@ -69,8 +69,8 @@ export function Loyalty() {
   const [sub, setSub] = React.useState<Sub>('transactions')
   return (
     <div>
-      <div className="mb-5 flex gap-2">
-        {(['transactions', 'rewards', 'reviews'] as Sub[]).map((s) => <button key={s} className={sub === s ? `${btnGhost} bg-background` : btnGhost} onClick={() => setSub(s)}>{s}</button>)}
+      <div className="admin-segment mb-5 w-fit" role="group" aria-label="Loyalty data view">
+        {(['transactions', 'rewards', 'reviews'] as Sub[]).map((s) => <button key={s} aria-pressed={sub === s} onClick={() => setSub(s)} className="capitalize">{s}</button>)}
       </div>
       {sub === 'transactions' ? <Transactions /> : sub === 'rewards' ? <Rewards /> : <Reviews />}
     </div>

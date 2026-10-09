@@ -1,25 +1,28 @@
 import * as React from 'react'
 import { PAGE_SIZE, toCsv } from '@/lib/admin'
 
-export const inputCls = 'h-10 rounded-xl border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground'
-export const btn = 'rounded-xl px-3 py-1.5 text-sm font-bold disabled:opacity-40'
+export const inputCls = 'h-9 rounded-full border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground'
+export const btn = 'inline-flex h-8 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold transition-colors disabled:opacity-40'
 export const btnPrimary = `${btn} bg-info text-info-foreground`
-export const btnGhost = `${btn} border border-border text-muted-foreground hover:bg-background`
-export const btnDanger = `${btn} border border-destructive-border/50 text-destructive hover:bg-destructive/10`
+export const btnGhost = `${btn} border border-border bg-card text-foreground hover:bg-secondary`
+export const btnDanger = `${btn} border border-destructive-border/40 bg-card text-destructive hover:bg-destructive/10`
 
 export function Badge({ tone, children }: { tone: 'ok' | 'warn' | 'bad' | 'muted'; children: React.ReactNode }) {
   const c = { ok: 'bg-success-subtle text-success', warn: 'bg-warning/20 text-warning', bad: 'bg-destructive/20 text-destructive', muted: 'bg-background text-muted-foreground' }[tone]
   return <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${c}`}>{children}</span>
 }
 
-export function fmtDate(v: string | null) { return v ? new Date(v).toLocaleString() : '—' }
+const DATE_FORMAT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+
+/** UK format without seconds, e.g. "9 Oct 2026, 13:20". */
+export function fmtDate(v: string | null) { return v ? new Date(v).toLocaleString('en-GB', DATE_FORMAT) : '—' }
 
 export interface Column<T> { header: string; cell: (row: T) => React.ReactNode }
 
 export function DataTable<T extends { id: string }>({ columns, rows, empty = 'Nothing here yet.' }: { columns: Column<T>[]; rows: T[]; empty?: string }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-border">
-      <table className="w-full text-left text-sm">
+      <table className="w-full min-w-[760px] text-left text-sm">
         <thead className="bg-background text-xs uppercase tracking-wide text-muted-foreground">
           <tr>{columns.map((c) => <th key={c.header} className="px-4 py-3 font-semibold">{c.header}</th>)}</tr>
         </thead>
