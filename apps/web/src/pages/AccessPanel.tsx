@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Navigate, Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle } from 'lucide-react'
+import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle, CalendarDays } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -9,13 +9,14 @@ import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
 import './admin-panel.css'
+import './admin-reference.css'
 import { Audit } from '@/pages/admin/Audit'
 import { Businesses } from '@/pages/admin/Businesses'
 import { Loyalty } from '@/pages/admin/Loyalty'
 import { Users } from '@/pages/admin/Users'
 import { TrendingAdmin } from '@/pages/TrendingAdmin'
 import { ShopRequests } from '@/pages/ShopRequests'
-import { AdminCharts, AdminMetrics } from '@/components/admin-dashboard'
+import { AdminCharts, AdminMetrics, AdminQueueSummary } from '@/components/admin-dashboard'
 import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
@@ -27,6 +28,12 @@ type UsageEvent = { event_name: string; surface: string; events: number; people:
 const tabLabels: Record<Tab, string> = {
   overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', audit: 'Audit log',
 }
+
+const navGroups: { label: string; tabs: Tab[] }[] = [
+  { label: 'Workspace', tabs: ['overview', 'analytics', 'users', 'businesses', 'loyalty'] },
+  { label: 'Manage', tabs: ['verifications', 'trending', 'shop-requests', 'support', 'moderation', 'controls'] },
+  { label: 'System', tabs: ['audit', 'backups', 'features'] },
+]
 
 // Features that were built and shipped, then deliberately switched off at
 // the owner's request — kept here so it's obvious what still exists and how
@@ -140,24 +147,27 @@ export function AccessPanel() {
   const analyticsFailed = errors.some(error => error.startsWith('Product analytics:'))
   return <div className="admin-panel admin-shell">
     <aside className="admin-sidebar">
-      <Link to="/access" className="admin-brand"><span className="admin-brand-mark">L</span><span>The Loyalty Loop<small>Administration</small></span></Link>
-      <p className="admin-nav-label">Workspace</p>
+      <Link to="/access" className="admin-brand"><span className="admin-brand-mark"><Gift size={21}/></span><span>The Loyalty Loop<small>Admin workspace</small></span></Link>
       <nav aria-label="Access panel navigation">
-        {(Object.keys(tabLabels) as Tab[]).map(key => { const Icon = icons[key]; const count = key === 'verifications' ? verifications.length : key === 'support' ? support.filter(item => item.status === 'open').length : key === 'moderation' ? reports.length : 0
+        {navGroups.map(group => <div className="admin-nav-group" key={group.label}><p className="admin-nav-label">{group.label}</p>{group.tabs.map(key => { const Icon = icons[key]; const count = key === 'verifications' ? verifications.length : key === 'support' ? support.filter(item => item.status === 'open').length : key === 'moderation' ? reports.length : 0
           return <button key={key} aria-current={tab === key ? 'page' : undefined} onClick={() => { setTab(key); setSelectedHealth(null) }} className={'admin-nav-item ' + (tab === key ? 'is-active' : '')}><Icon size={18}/><span>{tabLabels[key]}</span>{count > 0 && <span className="admin-badge">{count}</span>}</button>
-        })}
+        })}</div>)}
       </nav>
       <div className="admin-sidebar-footer"><Link to="/dashboard">Customer app <ArrowUpRight size={14}/></Link><Link to="/owner">Business app <ArrowUpRight size={14}/></Link><button onClick={() => void signOut()}><LogOut size={16}/>Sign out</button></div>
     </aside>
     <main className="admin-main">
-      <div className="admin-topbar"><span>Workspace / {tabLabels[tab]}</span><span className="admin-admin-chip"><ShieldCheck size={14}/>Admin access</span></div>
-      <header className="admin-page-header"><div><h1>{tab === 'overview' ? 'Your platform, at a glance.' : tabLabels[tab]}</h1><p>{tab === 'overview' ? 'Activity, outstanding work and system checks in one place.' : 'Manage your workspace with clear, current information.'}</p></div>{!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <button disabled={busy} onClick={() => void load()} className="admin-refresh"><RefreshCw size={16}/>{busy ? 'Refreshing…' : 'Refresh data'}</button>}</header>
+      <div className="admin-topbar"><span>Workspace / {tabLabels[tab]}</span><div className="admin-topbar-tools"><span className="admin-date"><CalendarDays size={16}/>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span className="admin-admin-chip"><ShieldCheck size={14}/>Admin access</span></div></div>
+      <header className="admin-page-header"><div><h1>{tab === 'overview' ? 'Welcome back.' : tabLabels[tab]}</h1><p>{tab === 'overview' ? 'Here’s what’s happening across The Loyalty Loop.' : 'Your platform. Everything in its place.'}</p></div>{!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <button disabled={busy} onClick={() => void load()} className="admin-refresh"><RefreshCw size={16}/>{busy ? 'Refreshing…' : 'Refresh data'}</button>}</header>
       <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}<span>Analytics · last 30 days</span></div>
       {!!errors.length && <div role="alert" className="admin-error"><strong>Some data could not be loaded.</strong>{errors.map(error => <p key={error}>{error}</p>)}<button disabled={busy} onClick={() => void load()}>Retry failed checks</button></div>}
       {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : busy ? <div role="status" className="admin-loading">Loading your dashboard…</div> : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/> : tab === 'overview' ? <>
         <AdminMetrics counts={Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))}/>
         <AdminCharts items={usage} unavailable={analyticsFailed}/>
-        <section className="admin-work"><div><h2>Needs your attention</h2><p>{queueCount ? 'Open the queues below to take the next action.' : errors.length ? 'Resolve loading errors to confirm your queues.' : 'Your review queues are clear.'}</p></div><div className="admin-work-links">{(['verifications', 'support', 'moderation'] as Tab[]).map(key => <button key={key} onClick={() => setTab(key)}>{tabLabels[key]}<ArrowUpRight size={16}/></button>)}</div></section>
+        <AdminQueueSummary message={queueCount ? 'A few things need your attention.' : errors.length ? 'Refresh failed checks to confirm your queues.' : 'You’re all caught up.'} queues={([
+          { key: 'verifications', label: 'Business listings', count: verifications.length, source: 'Business listings:' },
+          { key: 'support', label: 'Owner support', count: support.filter(item => item.status === 'open').length, source: 'Owner support:' },
+          { key: 'moderation', label: 'Reported reviews', count: reports.length, source: 'Reported reviews:' },
+        ] as const).map(queue => ({ ...queue, unavailable: errors.some(error => error.startsWith(queue.source)), onOpen: () => setTab(queue.key) }))}/>
         <div className="admin-section-heading"><div><h2>System checks</h2><p>Reachability and configuration at the last refresh.</p></div><span>{health.filter(item => item.ok).length} / {health.length} passing</span></div>
         <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={setTab}/>
       </> : tab === 'analytics' ? <><AdminCharts items={usage} unavailable={analyticsFailed}/>{!analyticsFailed && <ProductAnalytics items={usage}/>}</> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load}/> : tab === 'support' ? <SupportQueue items={support} refresh={load}/> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load}/> : tab === 'backups' ? <LaptopBackups/> : <PausedFeatures/>}
