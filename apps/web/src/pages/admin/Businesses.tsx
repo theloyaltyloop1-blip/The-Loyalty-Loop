@@ -32,7 +32,7 @@ export function Businesses() {
         { header: 'Members', cell: (b) => b.members },
         { header: 'Listed', cell: (b) => fmtDate(b.created_at) },
         { header: 'Actions', cell: (b) => (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             {b.approval_status !== 'approved' && <button className={btnPrimary} disabled={pending} onClick={() => act(() => setBusinessStatus(b.id, 'approved'), 'Approved', list.reload)}>Approve</button>}
             {b.approval_status !== 'rejected' && <button className={btnDanger} disabled={pending} onClick={() => { const r = prompt('Rejection reason'); if (r) void act(() => setBusinessStatus(b.id, 'rejected', r), 'Rejected', list.reload) }}>Reject</button>}
           </div>) },

@@ -44,7 +44,7 @@ export function Users() {
         { header: 'Actions', cell: (u) => {
           const self = u.id === session?.user.id
           return (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2">
               <button className={btnGhost} disabled={pending} onClick={() => changeRole(u, true)}>Grant</button>
               <button className={btnDanger} disabled={pending || (self && grantRole === 'admin')} title={self && grantRole === 'admin' ? 'You cannot revoke your own admin role here' : undefined} onClick={() => changeRole(u, false)}>Revoke</button>
               {u.suspended

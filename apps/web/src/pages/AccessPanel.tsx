@@ -75,10 +75,10 @@ function appleSignInHealth(): Health {
     label: 'Apple Sign-In secret',
     ok: !expiredOrSoon,
     detail: daysLeft <= 0
-      ? `Expired ${expiresAt.toLocaleDateString()}. Apple sign-in is broken until you generate a new secret and paste it into Supabase → Auth → Providers → Apple.`
+      ? `Expired ${expiresAt.toLocaleDateString('en-GB')}. Apple sign-in is broken until you generate a new secret and paste it into Supabase → Auth → Providers → Apple.`
       : expiredOrSoon
-        ? `Expires ${expiresAt.toLocaleDateString()}, ${daysLeft} days left. Generate a new secret soon and paste it into Supabase → Auth → Providers → Apple, or Apple sign-in will silently break.`
-        : `Expires ${expiresAt.toLocaleDateString()} (Apple caps these at 6 months). No action needed yet.`,
+        ? `Expires ${expiresAt.toLocaleDateString('en-GB')}, ${daysLeft} days left. Generate a new secret soon and paste it into Supabase → Auth → Providers → Apple, or Apple sign-in will silently break.`
+        : `Expires ${expiresAt.toLocaleDateString('en-GB')} (Apple caps these at 6 months). No action needed yet.`,
   }
 }
 
@@ -158,7 +158,7 @@ export function AccessPanel() {
     <main className="admin-main">
       <div className="admin-topbar"><span>Workspace / {tabLabels[tab]}</span><div className="admin-topbar-tools"><span className="admin-date"><CalendarDays size={16}/>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span className="admin-admin-chip"><ShieldCheck size={14}/>Admin access</span></div></div>
       <header className="admin-page-header"><div><h1>{tab === 'overview' ? 'Welcome back.' : tabLabels[tab]}</h1><p>{tab === 'overview' ? 'Here’s what’s happening across The Loyalty Loop.' : 'Your platform. Everything in its place.'}</p></div>{!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <button disabled={busy} onClick={() => void load()} className="admin-refresh"><RefreshCw size={16}/>{busy ? 'Refreshing…' : 'Refresh data'}</button>}</header>
-      <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}<span>Analytics · last 30 days</span></div>
+      {!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}{(tab === 'overview' || tab === 'analytics') && <span>Analytics · last 30 days</span>}</div>}
       {!!errors.length && <div role="alert" className="admin-error"><strong>Some data could not be loaded.</strong>{errors.map(error => <p key={error}>{error}</p>)}<button disabled={busy} onClick={() => void load()}>Retry failed checks</button></div>}
       {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : busy ? <div role="status" className="admin-loading">Loading your dashboard…</div> : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/> : tab === 'overview' ? <>
         <AdminMetrics counts={Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))}/>
@@ -241,7 +241,7 @@ function ReviewReportsQueue({ items, refresh }: { items: ReviewReport[]; refresh
     {items.length ? items.map((report) => <article key={report.id} className="rounded-2xl bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="rounded-full bg-destructive/20 px-3 py-1 text-xs font-bold text-destructive">{REASON_LABELS[report.reason]}</span>
-        <span className="text-xs text-muted-foreground">reported {new Date(report.created_at).toLocaleString()}</span>
+        <span className="text-xs text-muted-foreground">reported {new Date(report.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
       </div>
       {report.review ? <>
         <p className="mt-3 text-sm text-muted-foreground">{report.review.business?.name ?? 'Unknown shop'} · {'★'.repeat(report.review.rating)}{'☆'.repeat(5 - report.review.rating)}</p>

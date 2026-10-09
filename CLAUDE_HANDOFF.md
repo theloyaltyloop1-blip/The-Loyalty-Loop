@@ -2157,6 +2157,13 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Not verified: the live site could not be loaded from the session (network proxy 403), no browser smoke test as an admin, no real suspend/reinstate on a throwaway account, RPCs not called as an admin. Production behaviour of the four new tabs is unverified.
 - Remaining (owner: user): log in at `/access` as an admin, click through Users & roles, All businesses, Loyalty data, Audit log; suspend and reinstate a throwaway account and confirm it is signed out/blocked and can sign in again after reinstating. (owner: Claude on request): record the two migrations in the registry.
 
+## Codex admin redesign shipped; admin polish follow-up — 2026-10-09 — Claude
+
+- Codex hit its usage limit before releasing the screenshot-led admin redesign. The work was only in the shared folder's uncommitted copy; the owner copied the admin files into the clean `.codex-admin-release` checkout and pushed `codex/admin-redesign` (7e67a1d). Diff limited to AccessPanel.tsx, admin-dashboard.tsx, new admin-reference.css, Codex preview/check scripts and one doc screenshot. Reviewed, built, merged as PR #5 (`db5f9c7`); CI web/api/mobile green.
+- Polish follow-up (this branch): admin table dates now en-GB without seconds ("9 Oct 2026, 13:20"); compact pill action buttons and inputs; Loyalty data sub-tabs use the panel segmented control; "Last checked"/"Analytics · last 30 days" line hidden on Users/Businesses/Loyalty/Audit and the analytics label only on Overview/Analytics; admin-reference.css minimum text raised from 9-10px to 11px; data tables keep a 760px minimum width and scroll horizontally on phones instead of squashing rows.
+- Checks: `tsc -b`, scoped oxlint (no errors), production build; production build served locally with mocked Supabase responses and screenshotted Overview/Users/Businesses/Loyalty/Support at 1440px and 390px with zero page or console errors. Not verified with signed-in production data.
+- Remaining (owner: user): spot-check `/access` signed in. The shared folder still holds unrelated uncommitted Codex work (Sentry, WhatsApp, CI, vite/vercel config); none of it was released.
+
 ## Copy-ready prompt for Claude Code
 
 Review CLAUDE_HANDOFF.md, docs/design/WEBSITE_COLOR_SYSTEM.md and apps/web/src/color-system.css. Verify signed-in shopper/owner/admin screens in both themes, including buttons, status colours and charts; preserve unrelated work. Acceptance: consistent semantic colours, readable controls and no responsive overflow. No design input is needed; full plugin registration needs owner approval, and deployment remains separate.
