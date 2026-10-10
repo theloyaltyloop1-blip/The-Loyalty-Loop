@@ -1,0 +1,27 @@
+const { createRequire } = require('node:module')
+const path = require('node:path')
+const fs = require('node:fs')
+const assert = require('node:assert/strict')
+const { chromium } = createRequire(path.join(process.argv[2], 'package.json'))('playwright')
+;(async () => {
+  const browser = await chromium.launch({ channel: 'chrome', headless: true })
+  try {
+    const page = await browser.newPage({ reducedMotion: 'reduce' })
+    const errors = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.route('**/*', route => new URL(route.request().url()).hostname === 'www.the-loyalty-loop.com' ? route.continue() : route.abort())
+    await page.addInitScript(() => { localStorage.setItem('loyalty-loop-theme', 'light'); localStorage.setItem('loyalty-loop-cookie-choice', 'essential') })
+    const response = await page.goto('https://www.the-loyalty-loop.com/')
+    await page.locator('h1').waitFor()
+    assert.equal(response.status(), 200)
+    const palette = await page.evaluate(() => ({ primary: getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim(), background: getComputedStyle(document.body).backgroundColor }))
+    assert.equal(palette.primary.toLowerCase(), '#b9471d')
+    assert.equal(palette.background, 'rgb(245, 244, 238)')
+    await page.goto('https://www.the-loyalty-loop.com/access')
+    await page.waitForURL('**/login')
+    assert.deepEqual(errors, [])
+    const output = path.resolve(__dirname, '../docs/design/palette-browser/production-smoke.json')
+    fs.writeFileSync(output, JSON.stringify({ domain: 'www.the-loyalty-loop.com', palette, unauthenticatedAdminRedirect: page.url(), pageErrors: errors, limitation: 'Remote API traffic blocked; no authenticated operation.' }, null, 2))
+    console.log('Production HTTP 200, deployed palette and admin login gate passed; no page errors.')
+  } finally { await browser.close() }
+})().catch(error => { console.error(error); process.exit(1) })

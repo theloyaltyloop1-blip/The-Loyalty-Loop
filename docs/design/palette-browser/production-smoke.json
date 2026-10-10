@@ -1,0 +1,10 @@
+{
+  "domain": "www.the-loyalty-loop.com",
+  "palette": {
+    "primary": "#b9471d",
+    "background": "rgb(245, 244, 238)"
+  },
+  "unauthenticatedAdminRedirect": "https://www.the-loyalty-loop.com/login",
+  "pageErrors": [],
+  "limitation": "Remote API traffic blocked; no authenticated operation."
+}

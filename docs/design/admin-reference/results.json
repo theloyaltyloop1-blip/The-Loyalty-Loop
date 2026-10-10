@@ -1,0 +1,15 @@
+{
+  "passed": [
+    "14 views retained",
+    "desktop/mobile no overflow",
+    "measure toggle and unchanged app total",
+    "URL/reload/back",
+    "all admin views render",
+    "global dark isolation",
+    "empty analytics",
+    "failed analytics without charts",
+    "failed queue unavailable"
+  ],
+  "pageErrors": [],
+  "data": "Illustrative mock values only; no live account or provider request."
+}

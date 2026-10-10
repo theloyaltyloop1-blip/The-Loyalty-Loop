@@ -11,6 +11,31 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Go-live preparation (2026-10-10) - Claude
+
+Owner decisions this session: hide Fidel for now; AI review replies and WhatsApp go into this release; thank-you limit is **one email per customer per shop every 3 hours**; hold the `expo-location` shopper change until Apple approves the pending builds. Apple review was still WAITING when asked.
+
+**Working tree.** Local `main` was 6 behind `origin/main`, and many "dirty" files were stale copies of work already on `origin/main`. Backed up the old tip as branch `backup/main-before-reconcile-2026-10-10` and a file snapshot outside the repo, re-pointed `main` at `origin/main`, restored the stale files, and kept only genuine local work. Not committed, left out on purpose: Sentry autofix (already on `origin/codex/sentry-autofix`, includes automatic deployment, not reviewed here), skills/plugins, `.codex*` worktrees, `brag-output*`, `timeline-site`, `tools`.
+
+**Hosted state found (read-only, then applied).** The four "pending" migrations from the 5-6 Oct checklist (`visit_thank_you_rate_limit`, `owner_business_activation`, `fidel_inactive_business_write_gating`, `fidel_replay_deferred_awards`) and the admin API migrations were **already applied**; `send-visit-thank-you` v20 and the AI functions were already deployed. The two admin hardening migrations (`20261007140000`, `20261007140100`) were live but not recorded; verified their effects and recorded them in `schema_migrations`.
+
+**Applied to hosted today (via the Supabase MCP):**
+- `20261010154526 whatsapp_spend_dispatch` (renamed from `20261002133050`).
+- `20261010154606 visit_thank_you_3_hours` (default interval 3 hours; no edge function redeploy needed).
+- `20261010160634 whatsapp_outbox_contact_fk`: **found by smoke test.** The outbox FK still pointed at `whatsapp_archive.whatsapp_contacts`, so queueing any message failed and the trigger's catch-all hid it. The disposable-database tests could not see this. Fixed and re-tested. Edge functions deployed: `whatsapp-dispatch` (new, v1, JWT off) and `whatsapp-webhook` (v17).
+
+**Checks actually run.** `tsc` (web, shopper) clean; `npm run build` for web passes; `node --test` thank-you limit and WhatsApp stage 2 pass (19 tests); full API integration suite result is in the next line if it finished. Production smoke tests ran inside blocks that raise at the end so nothing persisted (verified afterwards): thank-you limit (second claim refused, refused at 2h59, allowed at 3h01, release frees the slot, other shop independent); Developer Test Shop deactivate/reactivate as owner, stamp refused while inactive and allowed after, non-owner refused; WhatsApp purchase queues one message, STOP opts out and suppresses it, a purchase after STOP queues nothing.
+
+**Not done / still open.**
+- **WhatsApp dispatch secret.** The queue trigger reads `WHATSAPP_DISPATCH_SECRET` from Supabase Vault and there is **no such Vault entry**. Without it the dispatch function is never called, so queued messages sit pending. It must hold the same value as the edge function secret of the same name. Owner: user (value is theirs; Claude has not seen it). Meta templates `spend_progress` and `reward_ready` also need to be approved; dormant until a spend purchase happens, which Fidel being hidden makes rare.
+- **Not tested on a real device or inbox:** reward QR scan in the retailer app (including a legacy raw-token QR), the staff thank-you email arriving, the stamp-shop device check, and the shopper app with Fidel hidden. Held-card-payment replay is dormant until Fidel is live.
+- **Apple.** Both apps WAITING_FOR_REVIEW. After approval: native build with `expo-location`, then the shopper OTA (the Fidel hide is JS but `origin/main` shopper code already imports `expo-location`, so it must not be OTA-ed to old binaries), then `eas metadata:push` for the corrected store copy (edited locally only).
+- **Legal documents** (`legal/documents-*.js`) still say shops are moving to cumulative spend rewards and describe Fidel card linking. Left unedited; wording needs the owner's sign-off.
+- **£ progress from 25 Sep to 4 Oct.** Checked: the only spend activity in the database is at Pure Elegant Dry Cleaners, which is still on spend rewards. No stamp shop has hidden £ progress. Nothing to migrate.
+- Fidel card linking: `CARD_LINKING_VISIBLE = false` in `apps/shopper/src/card-linking.ts`. All server and native code untouched. To bring back, set it to true (JS change).
+
+---
+
 ## Anti-AI-look redesign, phase 1: web tokens + landing (2026-10-04) - Claude
 
 - User asked to rebuild the websites and apps because they look AI-made, using the `design-taste-frontend` (Taste) and `redesign-existing-projects` skills. Design read: redesign (overhaul visuals, keep content, routes and nav labels) of a consumer loyalty site for UK shoppers and shop owners. Dials: website 6/5/4; product screens density 5.
@@ -1980,16 +2005,16 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Changed: web, shopper and retailer analytics restored to the Supabase `usage_events` implementation (files restored from 42e9268); admin Product analytics tab restored to the old numbers; `posthog-js` and `posthog-react-native` uninstalled; PostHog hosts removed from the CSP in `vercel.json` (only that hunk committed; an unrelated uncommitted `/api/sentry-alert` rewrite in the same file was left alone); `supabase/migrations/20261006210000_retire_usage_events.sql` deleted (it was never applied to the hosted database, so `usage_events` and `admin_usage_analytics` still exist); PostHog removed from the legal documents (privacy notice, cookie policy, DPA sub-processor note), effective date 7 October 2026, acceptance version `2026-10-07`; PDFs regenerated.
 - OTA: shopper rolled back to the 2026-10-04 update (iOS group 56bcce19-1537-4dd6-bd57-472d4f549b4f, Android 5aed2231-b9b3-435a-bacd-310e3b8bb879). Retailer rolled back to its 2026-10-04 update (iOS 65fa9a27-9f59-4e77-b349-258662e8595d, Android 7c72cb43-c338-4c32-a78d-300aa499154a). Shopper therefore does NOT yet show help@ in Contact us or the reward QR helper; a new shopper OTA from current main would add them but was deliberately not published while the glitch cause is unconfirmed.
 - Checks performed: web `npm run build` passes; `tsc --noEmit` clean for shopper and retailer; PDFs contain no PostHog text; repo grep finds no PostHog outside this handoff. Not exercised on a device.
+- Follow-up (2026-10-07): at user request, shopper OTA published from main `80d16b5` with help@ Contact us and the reward QR helper, no PostHog: iOS group a6fbd87d-3c8a-4c94-803d-c9031798fb47, Android group ba1fbc86-3bd4-4c12-a896-67ab67585e48. If the glitch returns, the cause is something other than PostHog; the other changes in this OTA are the help@ text and `reward-qr.ts`.
 - Remaining (owner: user): delete `VITE_POSTHOG_KEY` and `VITE_POSTHOG_HOST` from the Vercel `loyalty-loop` project (harmless but unused; no delete tool was available); optionally delete the PostHog project/key in PostHog. (owner: Claude, if user agrees): publish a shopper OTA with the help@ email and reward QR helper, then watch for the glitch.
 
-## Admin panel tabs added to Access Panel (branch, NOT merged/deployed) — 2026-10-07 — Claude
+## Sentry activation status checked — 2026-10-07 — Codex
 
-- Changed (branch `claude/admiring-albattani-y1779a`, one feature commit + fixes on top of `80d16b5`): `apps/web/src/pages/AccessPanel.tsx` gains four tabs (Users & roles, All businesses, Loyalty data, Audit log) backed by `apps/web/src/lib/admin.ts` and `apps/web/src/pages/admin/*`; existing tabs untouched. Added the `build-admin-panel` skill under `.claude/skills/`.
-- Database (hosted project, applied 2026-10-07 07:28-07:35 UTC as 8 migrations, files in `supabase/migrations/20261007072834..073515_*`): table `user_suspensions` (admin-read RLS) and SECURITY DEFINER RPCs `admin_assert`, `admin_dashboard_stats`, `admin_list_users`, `admin_list_businesses`, `admin_list_transactions`, `admin_list_rewards`, `admin_list_reviews`, `admin_respond_support_request`. `admin_delete_review` and `admin_set_user_suspended` (suspension bans in auth + revokes sessions) were run by the user in the SQL editor, so they are NOT in the hosted migration history.
-- Written but NOT yet applied: `20261007140000_admin_panel_hardening.sql` (suspension check in `admin_assert`, `suspended_by` FK `on delete set null`, drop `admin_set_business_active` because owners can undo `is_active` via `reactivate_my_business`, `voided_at` added to `admin_list_transactions`, no-op guard on support replies) and `20261007140100_admin_panel_destructive_fns.sql` (re-defines `admin_delete_review`, `admin_set_user_suspended`: refuses to suspend an admin, not-found guard). Apply order: 140000 then 140100. The apply_migration tool needs the user's approval, so these are pending. The web build works without them (voided badge only appears after 140000).
-- Review: 5-dimension independent review (SQL security, SQL correctness vs live schema, frontend, CI parity, repo conventions) with skeptic verification, stopped early; findings fixed: announcement tab removed (insert violated the `target_*` check constraint; Platform controls tab already has the composer), CSV formula injection, stale-response and empty-page bugs, double-click guard, role-change confirm, migration-history drift (repo files now use the hosted versions), `window.open` after await (verification queue removed from the new Businesses tab; Business listings tab owns it). Deliberately not changed: no last-admin guard in `admin_set_role` (pre-existing, verifier judged it not introduced here); no-op audit guard only added to support/delete RPCs.
-- Checks performed: `npm run lint` (warnings only, none in new files), `npm run build`, `tsc -b` in `apps/web`; live-schema SELECT introspection of all RPCs and ACLs (authenticated only, no anon). NOT performed: browser/UI smoke test, `apps/api` and mobile CI jobs, calling the RPCs as an admin, a real suspension on a test account. This is prototype-level; nothing is production verified.
-- Remaining: (1) user approves/applies the two pending migrations (owner: user, or Claude once apply_migration is allowed). (2) Open PR into `main` and let CI run; the GitHub tool was disconnected in this session (owner: Claude, or user via GitHub). (3) After merge, Vercel deploys production (owner: user to approve merge). (4) Browser smoke test as admin incl. suspend/reinstate on a throwaway account (owner: user or Claude).
+- Confirmed hosted state: PR #3 remains open, draft and unmerged at implementation commit `63b28849a96f6ead7da6336e7bbfb442dd27d29a`. Vercel Production `SENTRY_AUTOFIX_ENABLED=false`; `SENTRY_AUTOFIX_GITHUB_TOKEN` is absent. Automatic repair and deployment are not active.
+- Previously verified implementation: 18 local tests passed and all four GitHub CI jobs passed. No real signed alert, paid repair, automatic merge or production deployment has been exercised.
+- Connected: scoped Sentry integration, GitHub `SENTRY_AUTH_TOKEN`, Vercel sensitive signing secret and project identifier. Remaining: GitHub identity verification, OpenAI API credential, scoped dispatch/publication credentials, workflow registration/default-branch and protected-CI settings, Sentry alert rule, merge/deployment and end-to-end activation checks. The runbook still describes some already completed credential steps; consult these current handoff entries before acting.
+- Account blocker: automatic approval review rejected triggering GitHub's verification email because credential-storage approval did not authorize the identity-verification flow. No email was requested; the user must complete the open GitHub account check. No secrets recorded.
+- This status check changed only this handoff; unrelated contributor releases and notes were preserved.
 
 ## Admin Access Panel source review — 2026-10-07 — Codex
 
@@ -2053,14 +2078,29 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 
 ## Admin clean release build verified — 2026-10-07 — Codex
 
-- Clean candidate based on production main a4447eb passed web TypeScript + Vite production build with all 14 admin views (four newer tabs retained). Candidate git diff --check passed. No .env, preview aliases, Sentry scripts/config or WhatsApp changes in the release diff. Dependency versions/config match current production.
-- Dependency junction creation was denied in the sandbox; scoped outside-sandbox creation succeeded and reused existing packages. Initial mistaken root build command had no build script; the intended apps/web candidate build passed. No hosted mutation yet.
-- Next: commit/push the bounded admin release to main (owner-authorized), observe Vercel READY, verify production asset/routing. Native shell source change is included but no mobile OTA/build is performed.
+- Isolated current-main release passes web TypeScript/Vite build with all 14 admin views retained and git diff --check. No runtime config/dependency/backend change or unrelated Sentry/WhatsApp work in candidate.
+- Dependency junctions initially denied in sandbox succeeded with scoped escalation. A root build command had no build script; correct apps/web build passed. First commit attempt failed because isolated clone has no author identity; no commit/push occurred. Use existing project author config in the isolated clone only. Candidate handoff entry was written but shared-root update initially used wrong relative working directory; this entry repairs the shared status.
+- Next: publish bounded release to main, observe READY and verify public production route/assets. Native shell source is included, but no OTA/build planned; WebView content follows website.
 
-## Admin release committed — 2026-10-07 — Codex
+## Admin release published — 2026-10-07 — Codex
 
-- Isolated clone commit `a963efa307d22de981cfbd36c33c952e0f542f25`, branch codex/admin-redesign-release, contains 19 bounded admin implementation/documentation/screenshot paths on current production a4447eb. Existing project author identity configured only in that clone after the initial missing-identity failure. Root branch/index unchanged.
-- No remote push/deployment at this stage. Next: fast-forward main through existing Git/Vercel deployment integration and verify exact commit readiness.
+- Committed bounded release `a963efa307d22de981cfbd36c33c952e0f542f25` in isolated codex/admin-redesign-release clone, using existing project author identity in clone-local config. Fast-forward push to remote main succeeded (a4447eb -> a963efa), authorized by owner deployment request. Nineteen admin implementation/documentation/screenshot paths; unrelated root index/branch and dirty files untouched.
+- Existing Git/Vercel integration should build production. Deployment not yet claimed READY; next inspect exact commit and verify alias/assets. No backend migration or native OTA.
+
+## Admin production build started — 2026-10-07 — Codex
+
+- Vercel reports production deployment `dpl_CvJ8WAEv81jHNA8SYcV8doKccXY8`, commit a963efa, BUILDING, project loyalty-loop. Production readiness/domain switch not yet claimed; previous a4447eb deployment remains available as rollback candidate.
+- Next: inspect deployment completion and public-domain route/asset checks. Shared handoff records the bounded release; isolated clone has an additional uncommitted post-commit status note to reconcile after verification.
+
+## Admin production READY — 2026-10-07 — Codex
+
+- Vercel confirms `dpl_CvJ8WAEv81jHNA8SYcV8doKccXY8` READY, production, exact redesign commit a963efa; aliases include www.the-loyalty-loop.com and the-loyalty-loop.com, aliasError null. Release is live. No backend migration or mobile OTA performed.
+- Next: public production browser gate/legacy route and delivered asset smoke checks. Live signed-in queue/analytics/mutation behavior remains unverified; mock checks and production build are the prior evidence.
+
+## Admin production smoke first pass — 2026-10-07 — Codex
+
+- Chrome public domain: /access, /admin/trending and /admin/shop-requests each HTTP 200 and redirect unauthenticated visitors to login; no page errors observed. New admin bundle fetched successfully.
+- Asset assertion incorrectly expected the legacy redirect URL literal in the lazy admin bundle; that URL resides in the main router bundle, while the admin bundle uses URL search-parameter state. Smoke script failed on that incorrect test expectation, not a demonstrated production bug. Corrected assertion to the retained Trending view and rerun pending. No authenticated operations performed.
 
 ## Admin production verification complete — 2026-10-07 — Codex
 
@@ -2068,6 +2108,20 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Public-domain Chrome smoke passed: /access, /admin/trending and /admin/shop-requests HTTP 200, unauthenticated redirect to login, exact delivered AccessPanel-Dn4w1Tr5.js contains redesign + Trending + Users/Audit, zero page errors. First smoke assertion was corrected because redirect URL lives in router bundle; rerun passed. No live account mutation/export or sign-in performed.
 - Verification includes prior isolated responsive mock browser, analytics empty/failure/measure, actions success/rejection, backup-confirmation failure; latest current-main release TypeScript/build and whitespace pass. Signed-in live statistics/actions and device/native shell not verified. No migrations applied or native OTA published; admin WebView website content updates automatically.
 - Documentation/timeline updated for authorized production release. Publish this status-only follow-up to main, observe its identical-code deployment, and preserve unrelated dirty work. No new product-owner input or Claude release approval needed.
+
+## Admin release evidence committed — 2026-10-07 — Codex
+
+- Documentation-only follow-up `9b888fd` records production evidence in remote handoff/timeline/redesign doc, preserving remote Claude history. No runtime code changed after a963efa. Next publish follow-up and verify identical-code production deployment.
+
+## Admin evidence follow-up published — 2026-10-07 — Codex
+
+- Documentation-only 9b888fd fast-forwarded main successfully. Application files identical to READY/smoke-verified a963efa. Remote handoff/timeline include exact production evidence. Final follow-up Vercel state pending readback; no additional feature/config/backend change.
+
+## Admin deployment finished — 2026-10-07 — Codex
+
+- Final documentation-follow-up production deployment `dpl_4kJSBym99YhJLyqHHTgnU8xL4d57` is READY at exact main `9b888fd7ca92259a73e6d6dfc93ce4518a7efcb6`, aliases www.the-loyalty-loop.com and the-loyalty-loop.com, aliasError null. Application code is identical to smoke-verified a963efa.
+- Temporary public smoke script removed from isolated clone; clone git status clean. Scoped shared git diff --check passed. Clean release clone retained for traceability; shared original index/branch and unrelated dirty work preserved.
+- Authorized website deployment complete, no remaining release blocker. Signed-in real data/actions and native shell/device validation still unverified, not claimed passed. Website content in the native admin WebView follows the release; wrapper colour source was not published as an OTA. No database migrations, Sentry activation or WhatsApp release performed.
 
 ## Palette sources inspected and skills installed â€” 2026-10-09 â€” Codex
 
@@ -2150,20 +2204,51 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Own isolated commit b49e322 created, not pushed. Staged whitespace check identified a generated extra EOF blank line; earlier tracked-only whitespace check did not cover the new file. Generator now trims EOF, and release preparation now rebuilds handoff/timeline from origin/main to avoid duplicate appended records on repeated preparation. Rechecking/amending own unpushed commit before release.
 - Exact candidate build, 129 contrast pairs and 16 browser checks passed; this repair changes generated EOF/docs only. No deployment yet.
 
-## Admin panel tabs MERGED and deployed; hardening migrations live — 2026-10-07 — Claude
+## Palette published to production branch â€” 2026-10-09 â€” Codex
 
-- Shipped: PR #4 squash-merged to `main` as `a4447eb`; Vercel production deployment `dpl_8x9hRBkLwKJCeretrkTfw44Yq3Gw` is READY on the-loyalty-loop.com. This supersedes the "NOT merged/deployed" status in the entry above.
-- Database: verified by SELECT on the hosted project that both follow-up migrations' effects are live: `admin_assert` refuses suspended accounts; `user_suspensions.suspended_by` is `on delete set null`; `admin_set_business_active` is gone; `admin_list_transactions` returns `voided_at`; `admin_respond_support_request` and `admin_delete_review` raise when the row does not exist; `admin_set_user_suspended` refuses admin targets. These were applied outside the Supabase migration registry (no rows in `schema_migrations` for 20261007140000/140100), so `supabase db push` would re-run those two idempotent files harmlessly; optionally record them with `supabase migration repair --status applied 20261007140000 20261007140100`.
-- Not verified: the live site could not be loaded from the session (network proxy 403), no browser smoke test as an admin, no real suspend/reinstate on a throwaway account, RPCs not called as an admin. Production behaviour of the four new tabs is unverified.
-- Remaining (owner: user): log in at `/access` as an admin, click through Users & roles, All businesses, Loyalty data, Audit log; suspend and reinstate a throwaway account and confirm it is signed out/blocked and can sign in again after reinstating. (owner: Claude on request): record the two migrations in the registry.
+- Authorized fast-forward main push succeeded: 9b888fd -> 35e0a8f (bounded website palette commit). Exact candidate build and responsive/theme browser checks passed before publishing; staged whitespace passed after EOF repair. Shared original branch/index and unrelated dirty files unchanged.
+- Existing Vercel Git integration is building the production website; READY/aliases not yet verified. No migrations/functions/native release or marketplace activation. Next confirm production READY and public delivered palette, then implement screenshot-led admin redesign.
 
-## Codex admin redesign shipped; admin polish follow-up — 2026-10-09 — Claude
+## Palette production READY â€” 2026-10-09 â€” Codex
 
-- Codex hit its usage limit before releasing the screenshot-led admin redesign. The work was only in the shared folder's uncommitted copy; the owner copied the admin files into the clean `.codex-admin-release` checkout and pushed `codex/admin-redesign` (7e67a1d). Diff limited to AccessPanel.tsx, admin-dashboard.tsx, new admin-reference.css, Codex preview/check scripts and one doc screenshot. Reviewed, built, merged as PR #5 (`db5f9c7`); CI web/api/mobile green.
-- Polish follow-up (this branch): admin table dates now en-GB without seconds ("9 Oct 2026, 13:20"); compact pill action buttons and inputs; Loyalty data sub-tabs use the panel segmented control; "Last checked"/"Analytics · last 30 days" line hidden on Users/Businesses/Loyalty/Audit and the analytics label only on Overview/Analytics; admin-reference.css minimum text raised from 9-10px to 11px; data tables keep a 760px minimum width and scroll horizontally on phones instead of squashing rows.
-- Checks: `tsc -b`, scoped oxlint (no errors), production build; production build served locally with mocked Supabase responses and screenshotted Overview/Users/Businesses/Loyalty/Support at 1440px and 390px with zero page or console errors. Not verified with signed-in production data.
-- Remaining (owner: user): spot-check `/access` signed in. The shared folder still holds unrelated uncommitted Codex work (Sentry, WhatsApp, CI, vite/vercel config); none of it was released.
+- Vercel confirms production deployment dpl_E8LWWAPtERmjpy8WThVycot2YZag READY at exact main 35e0a8f1544c9b9b12577cefdb7e7302a195c570, aliases www.the-loyalty-loop.com/the-loyalty-loop.com, aliasError null. Authorized website palette release is live. No backend/native/plugin activation.
+- Public delivered-palette smoke remains to run. Next implement owner-requested screenshot-led admin redesign while preserving all current functions and honest aggregate analytics.
+
+## Palette production smoke passed; admin design implementation starts â€” 2026-10-09 â€” Codex
+
+- Live www.the-loyalty-loop.com returns HTTP 200 with primary #b9471d and page background rgb(245,244,238); unauthenticated /access redirects /login, no page errors. External API traffic blocked and no account operations. docs/design/palette-browser/production-smoke.json records result.
+- Palette deployment complete at 35e0a8f / dpl_E8LWWAPtERmjpy8WThVycot2YZag. Owner's next requested work: admin references 3/4 blended into neutral modular cards, dark primary, lavender selected states and bar/donut chart hierarchy. All fourteen views/current admin auth preserved; no invented revenue/trend series.
+
+## Reference admin layout implemented â€” 2026-10-09 â€” Codex
+
+- Changed apps/web/src/pages/AccessPanel.tsx, new pages/admin-reference.css, components/admin-dashboard.tsx and scripts/build-website-palette.py/generated colour exports. Screenshot direction: white rounded workspace on pale lavender-grey canvas, grouped sidebar, neutral rounded cards, dark actions, lavender selection and icon fields, four metrics, vertical feature bars and app-share donut, review queue cards and quieter system checks.
+- All 14 admin views, URL state, current admin auth and data/control APIs retained. Chart values remain existing last-30-day opted-in analytics; no invented revenue, change percentage or time-series. People are shown per feature/surface only and never summed across features. Queue read failures show unavailable rather than zero.
+- Regenerated semantic admin palette passes local 129/129 WCAG pairs. TypeScript running; production build/mocked desktop/mobile browser checks pending. Palette deployment 35e0a8f remains live; this admin redesign not yet deployed. Next verify exact layout and interaction behavior without live operations.
+
+## Reference admin TypeScript passed; mock preview setup repaired â€” 2026-10-09 â€” Codex
+
+- Web TypeScript passed; regenerated palette contract remains 129/129. Added isolated scripts/admin-reference-preview + check-admin-reference.cjs to exercise actual source with test-only auth/data aliases; production source/config does not import these fixtures.
+- First fixture startup failed to resolve react-router-dom from the scripts directory and omitted the module-level auth-event stub used by shop-request cache. Added explicit router resolution/react dedupe and a non-network auth-listener stub. No production code/auth policy changed. Browser rerun pending; no admin deployment.
+- Owner clarified public website should stay as deployed; focus solely on admin reference design.
+
+## Reference admin mocked browser checks passed â€” 2026-10-09 â€” Codex
+
+- Isolated Chrome using actual source and illustrative in-memory auth/data passed: all 14 navigation views retained/render, desktop/mobile no overflow, measure toggle without changing app action total, URL/reload/back persistence, global-dark admin isolation, empty analytics, failed analytics with no charts, failed queue shows unavailable, zero page errors.
+- Captures/results docs/design/admin-reference/{overview-desktop.png,overview-mobile.png,results.json}; these values are mock fixtures, not live platform statistics. First startup/old process timed out before repaired aliases/stub; fresh rerun passed.
+- Web production build running. Visual screenshot inspection and any necessary polish next; no admin deployment. Public palette remains live and owner chose to keep it.
+
+## Admin visual review completed - 2026-10-09 - Codex
+
+- Inspected desktop and mobile screenshots against the user's references. Rounded neutral cards, lavender navigation/icon fields, dark bar chart and app donut match the chosen direction. Metric values now explicitly use dark foreground ink. Public website stays as deployed per owner clarification.
+- Added docs/design/ADMIN_REFERENCE_REDESIGN.md and current Claude prompt. Independent bounded admin review is running. Previous production build process result is unavailable after tool session change, so a clean release build will provide fresh final evidence rather than assuming success from dist timestamps.
+- Preparing bounded admin release on deployed 35e0a8f, within the owner's website deployment/redesign request. Shared unrelated source/config remains excluded. No admin release yet.
+
+## WhatsApp brag video (2026-10-09) - Claude
+
+- Made a 21s vertical (1080x1920) launch video of the WhatsApp sign-up flow in `brag-output-2026-10-09-183249/` (`brag.mp4`, 1.6 MB, so it forwards in WhatsApp; poster `brag.jpg`; `share-copy.txt`; plan and brief alongside). Copy is taken from `whatsapp-webhook` and the `spend_progress` / `reward_ready` templates; "Sam", "sam@example.com" and "Pure Elegant" are illustrative stand-ins.
+- Checks actually run: `hyperframes check` passed (0 errors, warnings only: short SFX slots and a sub-composition suggestion); rendered locally; four key frames viewed. Music reactivity was not added. Not published or sent anywhere.
+- Note: the video shows the sign-up and £ spend messages as designed in `docs/WHATSAPP_PLAN.md`; the Meta templates are not yet approved, so it should not be posted as a live feature until they are. Owner: user.
 
 ## Copy-ready prompt for Claude Code
 
-Review CLAUDE_HANDOFF.md, docs/design/WEBSITE_COLOR_SYSTEM.md and apps/web/src/color-system.css. Verify signed-in shopper/owner/admin screens in both themes, including buttons, status colours and charts; preserve unrelated work. Acceptance: consistent semantic colours, readable controls and no responsive overflow. No design input is needed; full plugin registration needs owner approval, and deployment remains separate.
+Read CLAUDE_HANDOFF.md section 'Go-live preparation (2026-10-10)'. Check App Store Connect for both apps. Only once Apple has approved them: run the native shopper build that includes expo-location, wait for it to be accepted, then ship the shopper OTA that hides Fidel card linking, and run eas metadata:push for both store.config.json files. Before that, confirm with the owner that the WHATSAPP_DISPATCH_SECRET value is in Supabase Vault under that exact name and matches the edge function secret. Do not edit the legal documents without the owner's wording.
