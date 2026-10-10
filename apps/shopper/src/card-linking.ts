@@ -34,8 +34,13 @@ export type LinkOutcome =
 // JavaScript also reaches older builds as an over-the-air update, and importing
 // the package there would crash at start-up, so it is loaded lazily and only
 // when the native side is present.
+//
+// Card linking is hidden for now. Flip this to true to bring back the Linked
+// cards row, the shop prompt and the ⚡ chip; all server and native code is intact.
+const CARD_LINKING_VISIBLE = false
+
 export function cardLinkingSupported(): boolean {
-  return Platform.OS !== 'web' && NativeModules.NativeFidelBridge != null
+  return CARD_LINKING_VISIBLE && Platform.OS !== 'web' && NativeModules.NativeFidelBridge != null
 }
 
 function loadFidel(): any {
