@@ -4,10 +4,11 @@ import {randomUUID} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {startFidelDatabase,as} from './fidel-fixture.mjs';
 
-test('visit thank-you: one email per customer per shop every 6 hours', async t => {
+test('visit thank-you: one email per customer per shop every 3 hours', async t => {
  const f=await startFidelDatabase('thank-you-limit-'); const db=f.client;
  try {
   await db.query(await readFile(new URL('../../../../supabase/migrations/20261005233142_visit_thank_you_rate_limit.sql',import.meta.url),'utf8'));
+  await db.query(await readFile(new URL('../../../../supabase/migrations/20261010154606_visit_thank_you_3_hours.sql',import.meta.url),'utf8'));
   const [owner,alice,bob]=Array.from({length:3},()=>randomUUID());
   const shopA=randomUUID(), shopB=randomUUID();
   await db.query('insert into auth.users select unnest($1::uuid[])',[[owner,alice,bob]]);
@@ -15,7 +16,7 @@ test('visit thank-you: one email per customer per shop every 6 hours', async t =
   const claim=(shop,user)=>as(db,'service_role',null,'select claim_visit_thank_you($1,$2) c',[shop,user]).then(r=>r.rows[0].c);
   const release=(shop,user)=>as(db,'service_role',null,'select release_visit_thank_you($1,$2)',[shop,user]);
 
-  await t.test('first award claims; repeats inside 6 hours are refused',async()=>{
+  await t.test('first award claims; repeats inside 3 hours are refused',async()=>{
    assert.equal(await claim(shopA,alice),true);
    assert.equal(await claim(shopA,alice),false);
    assert.equal(await claim(shopA,alice),false);
@@ -24,10 +25,10 @@ test('visit thank-you: one email per customer per shop every 6 hours', async t =
    assert.equal(await claim(shopA,bob),true);
    assert.equal(await claim(shopB,alice),true);
   });
-  await t.test('after 6 hours the next award claims again, then the clock restarts',async()=>{
-   await db.query("update visit_thank_you_log set last_sent_at=now()-interval '5 hours 59 minutes' where business_id=$1 and user_id=$2",[shopA,alice]);
+  await t.test('after 3 hours the next award claims again, then the clock restarts',async()=>{
+   await db.query("update visit_thank_you_log set last_sent_at=now()-interval '2 hours 59 minutes' where business_id=$1 and user_id=$2",[shopA,alice]);
    assert.equal(await claim(shopA,alice),false);
-   await db.query("update visit_thank_you_log set last_sent_at=now()-interval '6 hours 1 minute' where business_id=$1 and user_id=$2",[shopA,alice]);
+   await db.query("update visit_thank_you_log set last_sent_at=now()-interval '3 hours 1 minute' where business_id=$1 and user_id=$2",[shopA,alice]);
    assert.equal(await claim(shopA,alice),true);
    assert.equal(await claim(shopA,alice),false);
   });

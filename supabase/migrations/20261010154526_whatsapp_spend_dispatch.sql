@@ -64,7 +64,12 @@ begin
       and created_at>now()-interval '24 hours' and message_kind not in ('stop','start','logout'))>=20 then return false; end if;
   insert into public.whatsapp_message_log(direction,provider_message_id,phone_e164,message_kind,provider_payload)
     values('inbound',p_id,p_phone,p_kind,'{"reserved":true}') on conflict do nothing;
-  get diagnostics n=row_count; return n=1;
+  get diagnostics n=row_count;
+  if n=1 and p_kind='stop' then
+    update public.whatsapp_contacts set opted_out_at=now() where phone_e164=p_phone;
+    update public.whatsapp_outbox set status='suppressed',error_message='opted_out' where phone_e164=p_phone and status='pending';
+  end if;
+  return n=1;
 end $$;
 
 create function public.queue_whatsapp_spend_message() returns trigger
@@ -141,7 +146,7 @@ declare item public.whatsapp_outbox;
 begin
   select * into item from public.whatsapp_outbox where id=p_id and lease_id=p_lease and status='sending' for update;
   if not found then return; end if;
-  update public.whatsapp_outbox set status=case when p_outcome='sent' then 'sent' when p_outcome='retry' and attempts<3 then 'pending' else 'failed' end,
+  update public.whatsapp_outbox set status=case when p_outcome='suppressed' then 'suppressed' when p_outcome='sent' then 'sent' when p_outcome='retry' and attempts<3 then 'pending' else 'failed' end,
     provider_message_id=p_message,error_message=case when p_outcome='sent' then null else p_outcome end,
     sent_at=case when p_outcome='sent' then now() end,lease_until=null,
     available_at=now()+make_interval(secs=>60*power(2,attempts)::integer) where id=p_id;

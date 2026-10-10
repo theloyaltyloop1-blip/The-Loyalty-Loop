@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { isLogout, isStop, LOGGED_OUT_ALREADY, LOGOUT_REPLY, progressLine, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
+import { isLogout, isStop, LOGGED_OUT_ALREADY, LOGOUT_REPLY, progressLine, stampProgressText, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
 import { answerQuestion, DAILY_QUESTION_LIMIT, LIMIT_REPLY, type BotShop, type ChatMessage } from "../_shared/whatsapp-bot.ts";
 import {
   ASK_LOCATION, joinChoices, matchShops, NO_SHOP_FOUND, nearbyReply, nearestShops, parseJoin, parseNearby, type Shop,
@@ -105,7 +105,7 @@ async function linkedCustomerReply(admin: Admin, phone: string, userId: string, 
   const [{ data: profile }, { data: memberships }] = await Promise.all([
     admin.from("profiles").select("first_name").eq("id", userId).single(),
     admin.from("memberships")
-      .select("reward_progress_pence,business:businesses(id,name,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
+      .select("reward_progress_pence,stamp_count,points_balance,visit_count,business:businesses(id,name,reward_model,loyalty_type,loyalty_config,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
       .eq("user_id", userId)
       .order("last_activity_at", { ascending: false, nullsFirst: false }),
   ]);
@@ -116,6 +116,7 @@ async function linkedCustomerReply(admin: Admin, phone: string, userId: string, 
       progressPence: m.reward_progress_pence ?? 0,
       thresholdPence: business.reward_threshold_pence ?? null,
       tiers: business.reward_catalog ?? [],
+      stampLine: stampProgressText(business, m),
     }] : [];
   });
   const token = await createLink(admin, { linkType: "card", phone, businessId, userId, hours: 1 });
@@ -178,7 +179,7 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
   const [{ data: profile }, { data: memberships }, { data: rewards }] = await Promise.all([
     admin.from("profiles").select("first_name").eq("id", userId).single(),
     admin.from("memberships")
-      .select("reward_progress_pence,business:businesses(id,name,category,description,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
+      .select("reward_progress_pence,stamp_count,points_balance,visit_count,business:businesses(id,name,category,description,reward_model,loyalty_type,loyalty_config,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
       .eq("user_id", userId),
     admin.from("rewards").select("business_id,title,expires_at").eq("user_id", userId).is("redeemed_at", null),
   ]);
@@ -193,6 +194,7 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
       progressPence: m.reward_progress_pence ?? 0,
       thresholdPence: business.reward_threshold_pence ?? null,
       tiers: business.reward_catalog ?? [],
+      stampLine: stampProgressText(business, m),
       readyRewards: (rewards ?? [])
         .filter((r) => r.business_id === business.id && (!r.expires_at || Date.parse(r.expires_at) > now))
         .map((r) => r.title),
@@ -243,8 +245,8 @@ async function joinByChat(admin: Admin, phone: string, query: string): Promise<s
     if (error && error.code !== "23505") throw error;
   }
   const [{ data: membership }, { data: business }] = await Promise.all([
-    admin.from("memberships").select("reward_progress_pence").eq("user_id", userId).eq("business_id", shop.id).single(),
-    admin.from("businesses").select("reward_threshold_pence,reward_catalog(title,spend_threshold_pence)").eq("id", shop.id).single(),
+    admin.from("memberships").select("reward_progress_pence,stamp_count,points_balance,visit_count").eq("user_id", userId).eq("business_id", shop.id).single(),
+    admin.from("businesses").select("reward_model,loyalty_type,loyalty_config,reward_threshold_pence,reward_catalog(title,spend_threshold_pence)").eq("id", shop.id).single(),
   ]);
   const token = await createLink(admin, { linkType: "card", phone, userId, businessId: shop.id, hours: 1 });
   const line = progressLine({
@@ -252,6 +254,7 @@ async function joinByChat(admin: Admin, phone: string, query: string): Promise<s
     progressPence: membership?.reward_progress_pence ?? 0,
     thresholdPence: business?.reward_threshold_pence ?? null,
     tiers: business?.reward_catalog ?? [],
+    stampLine: business && membership ? stampProgressText(business, membership) : null,
   }).replace(/^• /, "");
   await sendText(admin, phone,
     `${existing ? "You're already a member of" : "You've joined"} ${shop.name}! 🎉\n\n${line}\n\nShow your card at the till to earn: ${APP_URL}/whatsapp/card?token=${encodeURIComponent(token)}`,
@@ -295,8 +298,11 @@ async function processText(admin: Admin, phone: string, message: string): Promis
   // STOP must always work, even when no sign-up conversation is open.
   if (isStop(text)) {
     await ensureContact(admin, phone);
-    await admin.from("whatsapp_contacts").update({ opted_out_at: new Date().toISOString() }).eq("phone_e164", phone);
-    await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "idle", pending_first_name: null, pending_email: null });
+    // Opt-out and pending suppression already committed atomically with reservation.
+    const {error:contactError}=await admin.from("whatsapp_contacts").update({ opted_out_at: new Date().toISOString() }).eq("phone_e164", phone);
+    if(contactError)throw Error('STOP contact update failed');
+    const {error:conversationError}=await admin.from("whatsapp_conversations").upsert({ phone_e164: phone, state: "idle", pending_first_name: null, pending_email: null });
+    if(conversationError)throw Error('STOP conversation update failed');
     await sendText(admin, phone, STOP_REPLY, "stop");
     return "stop";
   }

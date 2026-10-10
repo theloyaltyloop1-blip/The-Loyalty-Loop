@@ -7,7 +7,7 @@ import {sameSecret,sendWhatsAppTemplate} from '../../../../supabase/functions/_s
 export async function setupWhatsApp(db) {
   const old=await readFile(new URL('../../../../supabase/migrations/20260824175004_whatsapp_customer_onboarding.sql',import.meta.url),'utf8');
   await db.query(old.slice(0,old.indexOf('-- Redeems a short-lived')));
-  await db.query(await readFile(new URL('../../../../supabase/migrations/20261002133050_whatsapp_spend_dispatch.sql',import.meta.url),'utf8'));
+  await db.query(await readFile(new URL('../../../../supabase/migrations/20261010154526_whatsapp_spend_dispatch.sql',import.meta.url),'utf8'));
 }
 test('WhatsApp stage 2 disposable PostgreSQL and fake Graph acceptance',async t=>{
  const f=await startFidelDatabase('whatsapp-'); const db=f.client;
@@ -44,6 +44,10 @@ test('WhatsApp stage 2 disposable PostgreSQL and fake Graph acceptance',async t=
   await t.test('auth rejection and no client outbox access',async()=>{assert.equal(await sameSecret('secret','Bearer wrong'),false);assert.equal(await sameSecret('secret','Bearer secret'),true);await assert.rejects(as(db,'authenticated',user,'select * from whatsapp_outbox'),/permission denied/);});
   await t.test('inbound reservation is atomic and bounded; STOP bypasses cap',async()=>{const c2=await f.newClient();const p='+447000000001';const race=await Promise.all([db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['same',p,'question']),c2.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['same',p,'question'])]);assert.equal(race.filter(r=>r.rows[0].ok).length,1);for(let i=0;i<19;i++)assert.equal((await db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',[String(i),p,'question'])).rows[0].ok,true);assert.equal((await db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['over',p,'question'])).rows[0].ok,false);assert.equal((await db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['stop',p,'stop'])).rows[0].ok,true);});
   await t.test('progress in flight coalesces latest and enforces thirty-minute send spacing',async()=>{
+   assert.ok((await db.query('select opted_out_at from whatsapp_contacts')).rows[0].opted_out_at);
+   try{throw Error('handler crashed after STOP reservation')}catch{}
+   assert.ok((await db.query('select opted_out_at from whatsapp_contacts')).rows[0].opted_out_at);
+   await db.query('update whatsapp_contacts set opted_out_at=null');
    await db.query("update whatsapp_outbox set sent_at=now()-interval '31 minutes' where event_type='spend_progress' and status='sent'");
    await spend(100);const job=(await db.query('select claim_whatsapp_outbox() j')).rows[0].j;assert.ok(job);
    await spend(100);await spend(100);assert.equal((await db.query("select count(*) n from whatsapp_outbox where status='pending' and event_type='spend_progress'")).rows[0].n,'1');
