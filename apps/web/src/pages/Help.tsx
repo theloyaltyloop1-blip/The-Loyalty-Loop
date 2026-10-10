@@ -16,7 +16,7 @@ const SHOPPER_ITEMS: Item[] = [
   },
   {
     q: 'How do my purchases count?',
-    a: 'Open the shop’s loyalty card in the app and show the QR code (or read out the 6‑character code) when you pay. The shop scans it and adds your stamp, and your progress updates straight away. Where the shop supports it, a linked card counts automatically.',
+    a: 'Open the shop’s loyalty card in the app and show the QR code (or read out the 6‑character code) when you pay. The shop scans it and adds your stamp, and your progress updates straight away.',
   },
   {
     q: 'How do I claim a reward?',

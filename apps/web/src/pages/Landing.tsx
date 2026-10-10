@@ -133,12 +133,12 @@ export function Landing() {
           <div className="lp-biz">
             <div className="lp-biz-preview" aria-hidden="true">
               <div className="lp-record">
-                <p className="lp-record-label">Record a purchase</p>
+                <p className="lp-record-label">Record a visit</p>
                 <div className="lp-record-code"><span>Customer code</span><strong>K7P 2QD</strong></div>
-                <div className="lp-record-amount"><span>Amount</span><strong>£6.40</strong></div>
-                <span className="lp-record-btn">Add to card</span>
+                <div className="lp-record-amount"><span>Stamps</span><strong>+1</strong></div>
+                <span className="lp-record-btn">Add stamp</span>
               </div>
-              <div className="lp-record-toast"><Check size={16} strokeWidth={2.5} /> Added. £3.60 to their next reward.</div>
+              <div className="lp-record-toast"><Check size={16} strokeWidth={2.5} /> Stamp added. 3 more to their reward.</div>
             </div>
             <div className="lp-biz-copy">
               <h2>Give your regulars a reason to return.</h2>

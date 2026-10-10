@@ -14,7 +14,7 @@
       "en-GB": {
         "title": "The Loyalty Loop",
         "subtitle": "Loyalty cards for local shops",
-        "description": "The Loyalty Loop turns the loyalty cards from your favourite local shops into one simple app.\n\nEarn rewards at independent cafes, bakeries, restaurants, salons and studios near you. Every time you spend, your progress goes up. When you reach the shop's goal, your reward unlocks in the app - show it at the till and enjoy.\n\nHOW IT WORKS\n- Discover: browse local shops, cafes and studios on a friendly map\n- Collect: show your QR code or 6-character code when you pay, and the shop adds what you spent\n- Redeem: reach the goal and your reward unlocks instantly\n\nMORE\n- Add your loyalty card to Apple Wallet so it's one tap away\n- Save your favourite shops to keep them at the top\n- See your progress and reward history any time\n\nNo paper cards to lose. No plastic. Just support your high street and get rewarded for it.\n\nThe Loyalty Loop is completely free, with no ads, subscriptions or in-app purchases, and we never sell your data.",
+        "description": "The Loyalty Loop turns the loyalty cards from your favourite local shops into one simple app.\n\nEarn rewards at independent cafes, bakeries, restaurants, salons and studios near you. Every visit adds to your progress. When you reach the shop's goal, your reward unlocks in the app - show it at the till and enjoy.\n\nHOW IT WORKS\n- Discover: browse local shops, cafes and studios on a friendly map\n- Collect: show your QR code or 6-character code when you pay, and the shop adds your stamp\n- Redeem: reach the goal and your reward unlocks instantly\n\nMORE\n- Add your loyalty card to Apple Wallet so it's one tap away\n- Save your favourite shops to keep them at the top\n- See your progress and reward history any time\n\nNo paper cards to lose. No plastic. Just support your high street and get rewarded for it.\n\nThe Loyalty Loop is completely free, with no ads, subscriptions or in-app purchases, and we never sell your data.",
         "keywords": [
           "rewards",
           "stamp card",
@@ -27,8 +27,8 @@
           "independent",
           "reward card"
         ],
-        "releaseNotes": "The first release of The Loyalty Loop. Discover local shops, earn rewards when you spend, and keep all your loyalty cards in one app.",
-        "promoText": "Completely free. Earn real rewards at independent cafes, bakeries and salons near you, just by spending as usual. No more paper cards to lose.",
+        "releaseNotes": "The first release of The Loyalty Loop. Discover local shops, earn rewards with every visit, and keep all your loyalty cards in one app.",
+        "promoText": "Completely free. Earn real rewards at independent cafes, bakeries and salons near you, just by visiting as usual. No more paper cards to lose.",
         "marketingUrl": "https://www.the-loyalty-loop.com",
         "supportUrl": "https://www.the-loyalty-loop.com/help",
         "privacyPolicyUrl": "https://www.the-loyalty-loop.com/legal/privacy-notice.pdf"
