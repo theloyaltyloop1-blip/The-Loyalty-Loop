@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
+import { WHATSAPP_VISIBLE } from '@/lib/features'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/lib/auth-context'
 import { OwnerProvider } from '@/lib/owner-context'
@@ -46,6 +47,14 @@ const BrandWorkspace = lazy(() => import('@/pages/BrandWorkspace').then((m) => (
 const WhatsAppOnboarding = lazy(() => import('@/pages/WhatsAppOnboarding').then((m) => ({ default: m.WhatsAppOnboarding })))
 const WhatsAppCard = lazy(() => import('@/pages/WhatsAppCard').then((m) => ({ default: m.WhatsAppCard })))
 const WhatsAppStart = lazy(() => import('@/pages/WhatsAppStart').then((m) => ({ default: m.WhatsAppStart })))
+
+// While WhatsApp is paused (see lib/features.ts), old poster and message links
+// send people to the shop's normal page, or home, and never reach WhatsApp pages.
+function WhatsAppPaused() {
+  const [params] = useSearchParams()
+  const shop = params.get('shop')
+  return <Navigate to={shop && /^[a-z0-9-]{1,100}$/i.test(shop) ? `/dashboard/shop/${shop}` : '/'} replace />
+}
 
 const queryClient = new QueryClient()
 
@@ -120,9 +129,9 @@ function App() {
                 <Route path="/owner/support" element={<OwnerSupport />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/whatsapp/onboarding" element={<WhatsAppOnboarding />} />
-                <Route path="/whatsapp/card" element={<WhatsAppCard />} />
-                <Route path="/whatsapp/start" element={<WhatsAppStart />} />
+                <Route path="/whatsapp/onboarding" element={WHATSAPP_VISIBLE ? <WhatsAppOnboarding /> : <WhatsAppPaused />} />
+                <Route path="/whatsapp/card" element={WHATSAPP_VISIBLE ? <WhatsAppCard /> : <WhatsAppPaused />} />
+                <Route path="/whatsapp/start" element={WHATSAPP_VISIBLE ? <WhatsAppStart /> : <WhatsAppPaused />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/signup/owner" element={<Signup asOwner />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -36,6 +36,15 @@ Owner decisions this session: hide Fidel for now; AI review replies and WhatsApp
 
 ---
 
+## WhatsApp paused (2026-10-11) - Claude
+
+- **Why.** Both "The Loyalty Loop" WhatsApp accounts in Meta (IDs ending 677 and 355, number +44 7963 382835) show "Account disabled: does not comply with WhatsApp Business's Commerce Policy"; the number reads Banned. The templates `spend_progress` and `reward_ready` do not exist in any account (only `hello_world` and Meta samples). Nothing can send until Meta lifts the disablement. Owner is deciding whether to appeal (Business support home, Request a review). Read via the owner's logged-in Brave through Claude in Chrome, read-only.
+- **Website pause.** `WHATSAPP_VISIBLE = false` in `apps/web/src/lib/features.ts`: hides the "Join on WhatsApp" card in owner Tools, makes the shop poster QR always point at the normal shop page (so shops that still have `whatsapp_onboarding_enabled` true are covered), and sends `/whatsapp/start?shop=slug` to `/dashboard/shop/slug` and `/whatsapp/card`, `/whatsapp/onboarding` to home. Checked: `tsc -b` clean. Not run in a browser before pushing.
+- **Backend pause (not done yet, needs the database).** `update public.whatsapp_dispatch_settings set daily_cap = 0;` stops all sending with no deploys (claim_whatsapp_outbox returns nothing). To resume set it back to 500. Owner: Codex or Claude once the Loyalty Loop project is connected. Deployed functions, migrations and the Vault secret are left as they are.
+- **To resume.** Meta re-enables the account, create the two templates (English UK, Utility; `spend_progress` 4 variables, `reward_ready` 2) in the account that owns `META_WHATSAPP_PHONE_NUMBER_ID`, set `daily_cap` back to 500, set `WHATSAPP_VISIBLE = true`.
+
+---
+
 ## Anti-AI-look redesign, phase 1: web tokens + landing (2026-10-04) - Claude
 
 - User asked to rebuild the websites and apps because they look AI-made, using the `design-taste-frontend` (Taste) and `redesign-existing-projects` skills. Design read: redesign (overhaul visuals, keep content, routes and nav labels) of a consumer loyalty site for UK shoppers and shop owners. Dials: website 6/5/4; product screens density 5.
