@@ -11,6 +11,15 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Shopper rolled back to the bundled app (2026-10-14) - Claude
+
+- **Why.** Owner's Android phone: sign in, then a black screen and the app opens and closes itself. The only crash frame seen was `ExceptionsManagerModule.reportException`, which is React Native's handler for an uncaught JavaScript error, so the cause is a JS exception whose message is not yet known. Play vitals showed one cluster of about 8 events on 7 Oct (the day of the last OTA) and nothing since; vitals lag and cover opted-in devices only. No crash reporting in the app; no device was connected for adb. Database, key and gateway checked fine (an anonymous read of `businesses` returns 42501 by design).
+- **Done (owner approved Android and iPhone).** `eas update:roll-back-to-embedded --branch production --runtime-version 1.0.0 --platform all`. Update group `f566d99d-715a-45be-85c6-c0d06ac70803` (Android `01a13c7d-1e22-75a6-914f-08a0bae800cf`, iOS `01a13c7d-1e22-7694-8e7e-df2974effcc6`), verified as newest on branch `production` with `isRollBackToEmbedded` true. Phones run the JS inside the installed build (late September) and ignore the 2-7 Oct OTAs. Not yet confirmed on a device.
+- **Undo.** Republish the 7 Oct group (`ba1fbc86-3bd4-4c12-a896-67ab67585e48` Android, `a6fbd87d-3c8a-4c94-803d-c9031798fb47` iOS) or run `eas update` from commit 80d16b5.
+- **Open.** Owner to force-close and reopen twice, clear storage if still bad, and report. If it works, bisect which 2-7 Oct change throws (get the message from a USB `adb logcat` or Play vitals). If it still crashes, the fault is in the installed Android build. The Fidel hide was never shipped by OTA. Do not republish any OTA from `main` before the `expo-location` native build.
+
+---
+
 ## Go-live preparation (2026-10-10) - Claude
 
 Owner decisions this session: hide Fidel for now; AI review replies and WhatsApp go into this release; thank-you limit is **one email per customer per shop every 3 hours**; hold the `expo-location` shopper change until Apple approves the pending builds. Apple review was still WAITING when asked.
@@ -2258,6 +2267,25 @@ The owner pushed `stamps-while-fidel` to `main` themselves (`34017f7..fe3c603`) 
 - Checks actually run: `hyperframes check` passed (0 errors, warnings only: short SFX slots and a sub-composition suggestion); rendered locally; four key frames viewed. Music reactivity was not added. Not published or sent anywhere.
 - Note: the video shows the sign-up and £ spend messages as designed in `docs/WHATSAPP_PLAN.md`; the Meta templates are not yet approved, so it should not be posted as a live feature until they are. Owner: user.
 
+
+## Requested task project mismatch - 2026-10-12 - Codex
+
+- Read shared handoff, architecture and timeline; no application changes or tests run. The requested M3a, M3b, F-20261011 and M2b IDs were confirmed in the separate 3D4U project docs/TASKS.md and docs/HANDOFF.md, not this repository. Asked owner to confirm the project switch before modifying the other repository. Loyalty Loop work and milestone sequence unchanged.
+
+
+## Confirmed project switch and 3D4U completion candidate - 2026-10-12 - Codex
+
+Owner confirmed 3D4U project switch. Candidate C:/Users/zahih/Desktop/3D 4U/Website and App/.codex-completion at main 7705b0b integrates four fixes, scanner repairs, contained hidden-label overflow and independent bounded existing-job recovery. Final evidence: 26 regressions, 29 units, four DB harnesses, types/lint/build (62 routes), nine local admin/browser checks pass. Read-only hosted schema/deployment verified; three repair migrations absent. One legacy confirmation log gap held for Resend review. Candidate uncommitted/unpublished, no live sends/payments/migrations. Claude/owner teacher privacy and live production acceptance remain. Actual source handoff/task board updated in 3D4U. No Loyalty Loop application change.
+
+
+## Approved 3D4U release and migrations complete - 2026-10-12 - Codex
+
+Owner approved publication/migrations. Bounded repair a485380 is live via READY dpl_9h5HavtZbBhW3VVWxKVyMgtAAkqx on 3d4u.site. Three Supabase migrations applied in order (hosted20261012183259/20261012183318/20261012183830); email schema applied after >330s code-first drain, old unique URL SSO-protected. Hosted guards/RLS/grants and REST queries verified; one historical email held needs_review, no resend. Public Chrome route/bundle/cron/ignored-event checks pass; not genuine payment/inbox proof. Status-only c1e2496 pushed and independently READY as dpl_JCTtvyBpQoV7RzXXEVzTT4Nv941v, aliases valid; application code identical to a485380. Candidate clean, shared other changes preserved. No live customer test send/payment/refund. Claude teacher privacy/independent acceptance and user physical phone/live end-to-end still open. Actual current handoff and task board updated in 3D4U; no Loyalty Loop application change. First status-write attempt hit PowerShell quote parsing, wrote nothing; corrected.
+
+## Five-hour usage session checked - 2026-10-13 - Codex
+
+- Owner requested starting their five-hour session. Account usage tool confirms the 300-minute window is active, 2% used / 98% remaining, resetting 2026-10-13 at 20:21:29 Europe/London. No reset redeemed or timer created. No application changes or tests; milestone sequence unchanged. Next engineering actions remain the previously recorded 3D4U acceptance review.
+
 ## Copy-ready prompt for Claude Code
 
-Read CLAUDE_HANDOFF.md section 'Go-live preparation (2026-10-10)'. Check App Store Connect for both apps. Only once Apple has approved them: run the native shopper build that includes expo-location, wait for it to be accepted, then ship the shopper OTA that hides Fidel card linking, and run eas metadata:push for both store.config.json files. Before that, confirm with the owner that the WHATSAPP_DISPATCH_SECRET value is in Supabase Vault under that exact name and matches the edge function secret. Do not edit the legal documents without the owner's wording.
+Review published 3D4U release a485380 and docs/COMPLETION_2026-10-12.md plus docs/ORDER_EMAIL_RECOVERY.md. Confirm hosted guards and the held legacy email, sign off M3b phone-size evidence, and resolve teacher-privacy blockers. Product-owner input is still required for physical-phone and genuine webhook/inbox/payment/refund tests; do not resend the held email without approval.
