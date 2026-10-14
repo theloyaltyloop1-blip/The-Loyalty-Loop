@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { requireOptionalNativeModule } from 'expo-modules-core'
 import type { Coords } from './distance'
 
 // 'ask' means the system has not asked yet, so we wait for a tap instead of throwing
@@ -9,11 +10,18 @@ export type LocationStatus = 'checking' | 'ask' | 'locating' | 'ready' | 'denied
 type LocationModule = typeof import('expo-location')
 
 // The native module only exists in builds that include expo-location.
-// JavaScript also reaches older builds as an over-the-air update, and importing
-// the package there would crash at start-up, so it is loaded lazily inside a guard.
+// JavaScript also reaches older builds as an over-the-air update. A try/catch
+// around require() is NOT enough there: when a module fails to initialise,
+// Metro reports it as a fatal error instead of throwing to the caller, which
+// crashed the Android app right after sign-in. So ask for the native module
+// first, and only load the package when it is really in this build.
 let loaded: LocationModule | null | undefined
 function loadLocation(): LocationModule | null {
   if (loaded !== undefined) return loaded
+  if (!requireOptionalNativeModule('ExpoLocation')) {
+    loaded = null
+    return loaded
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     loaded = require('expo-location') as LocationModule

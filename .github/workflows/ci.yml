@@ -44,5 +44,5 @@ jobs:
         working-directory: apps/retailer
       - run: npx tsc --noEmit
         working-directory: apps/admin
-      - run: node --test review-refresh.test.mjs
+      - run: node --test review-refresh.test.mjs location-guard.test.mjs
         working-directory: apps/shopper
