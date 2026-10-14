@@ -11,6 +11,16 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Shopper crash after sign-in found and fixed (2026-10-14) - Claude
+
+- **Root cause (from the phone's logcat, owner's Android, app versionCode 121).** `FATAL EXCEPTION: expo-updates-error-recovery ... Error: Cannot find native module 'ExpoLocation'` thrown from `loadLocation` in `apps/shopper/src/use-user-location.ts`, run from a React effect right after sign-in. The installed Android build has no `expo-location` native module. The old code wrapped `require('expo-location')` in try/catch, but Metro's `guardedLoadModule` reports a failed module load through `ErrorUtils.reportFatalError` when not already inside a guard, so the catch never ran and the app crashed in a loop. The 4 Oct home screen introduced it; the 7 Oct OTA delivered it. iPhone has the same exposure (same JS, installed build lacks the module).
+- **Fix (commit 52d1966).** `loadLocation` now calls `requireOptionalNativeModule('ExpoLocation')` from `expo-modules-core` first and only requires the package if the native module exists; otherwise the hook reports `unsupported` and the home screen simply has no closest-first sorting. Regression test `apps/shopper/location-guard.test.mjs` (added to the CI shopper step). Checked: `tsc --noEmit` clean, `expo export --platform android` bundles, the test passes.
+- **Published to production (runtime 1.0.0).** Android group `723b19aa-9b06-440c-9555-dbe5082106eb`, iOS group `2d34798e-00be-46eb-bac4-a97887e067a8`, from commit 52d1966. Contains the redesign, new home, `help@` email, Fidel hide and this fix. `eas update --platform all` fails (web bundling of react-native-maps), so publish per platform. **Verified on the owner's Android phone: the app works and the log shows no further crash after the fix loaded.** iPhone not yet reported.
+- **History of this incident.** 7 Oct OTA live -> owner saw black screen/restart loop -> rolled back to the bundled app (group f566d99d, verified working) -> owner restored the 7 Oct groups (70afdfae Android, d6f9c316 iOS) to capture the crash on a USB-connected phone -> fix published above. During that window the crashing update was live to everyone on production.
+- **Still true.** The closest-first sorting needs a native build that includes `expo-location` (after Apple approves). Until then the phone shows no distance. Lesson: never rely on try/catch around `require()` for a native module; check `requireOptionalNativeModule` first. Same care applies to any future lazy native import.
+
+---
+
 ## Shopper rolled back to the bundled app (2026-10-14) - Claude
 
 - **Why.** Owner's Android phone: sign in, then a black screen and the app opens and closes itself. The only crash frame seen was `ExceptionsManagerModule.reportException`, which is React Native's handler for an uncaught JavaScript error, so the cause is a JS exception whose message is not yet known. Play vitals showed one cluster of about 8 events on 7 Oct (the day of the last OTA) and nothing since; vitals lag and cover opted-in devices only. No crash reporting in the app; no device was connected for adb. Database, key and gateway checked fine (an anonymous read of `businesses` returns 42501 by design).
