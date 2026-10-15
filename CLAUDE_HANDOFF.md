@@ -11,6 +11,13 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## App Store badge on the website (2026-10-15) - Claude
+
+- Owner reported both iOS apps live. Apple's public lookup (`itunes.apple.com/lookup?id=...&country=gb`) lists the **shopper** (id 6809930346, v1.0) but returns 0 results for the **Business app** (id 6813259329, bundle com.theloyaltyloop.retailer) in GB and US, and its App Store page 404s. The homepage badge in `apps/web/src/components/store-badges.tsx` is now per app: shopper `iosLive: true`, business `iosLive: false` (still "Coming soon"). Commit eab1231, deployed and checked on the live homepage (screenshot).
+- **Open (owner).** Check the Business app in App Store Connect: if it says Pending Developer Release, press Release; if it was approved minutes ago it may still be propagating. When the lookup returns resultCount 1, set `iosLive: true` for business.
+
+---
+
 ## Shopper crash after sign-in found and fixed (2026-10-14) - Claude
 
 - **Root cause (from the phone's logcat, owner's Android, app versionCode 121).** `FATAL EXCEPTION: expo-updates-error-recovery ... Error: Cannot find native module 'ExpoLocation'` thrown from `loadLocation` in `apps/shopper/src/use-user-location.ts`, run from a React effect right after sign-in. The installed Android build has no `expo-location` native module. The old code wrapped `require('expo-location')` in try/catch, but Metro's `guardedLoadModule` reports a failed module load through `ErrorUtils.reportFatalError` when not already inside a guard, so the catch never ran and the app crashed in a loop. The 4 Oct home screen introduced it; the 7 Oct OTA delivered it. iPhone has the same exposure (same JS, installed build lacks the module).
