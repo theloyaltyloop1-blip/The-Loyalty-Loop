@@ -2303,6 +2303,38 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 
 - Owner requested starting their five-hour session. Account usage tool confirms the 300-minute window is active, 2% used / 98% remaining, resetting 2026-10-13 at 20:21:29 Europe/London. No reset redeemed or timer created. No application changes or tests; milestone sequence unchanged. Next engineering actions remain the previously recorded 3D4U acceptance review.
 
+## Test-data wipe preflight - 2026-10-15 - Codex
+
+- Owner explicitly authorized deleting all app test data and all non-admin accounts in one transaction, preserving admin profiles/roles/settings and four named settings tables. Connected project confirmed: The Loyalty Loop (tgukdabfvvoywawmzbdo).
+- Read-only hosted preflight: 12 businesses, 37 auth logins, two admins (35 non-admin). Storage has 12 objects: covers 1, logos 4, gallery 5, owner_verification_docs 2. Scope includes public, whatsapp_archive and business_activation_private tables, excluding the four owner-named preserved tables. Existing scripts/wipe-test-data/01-preview.sql preserved.
+- Admin profiles have no referred_by dependency. Profile insertion creates referral codes, so generated codes must also be cleared before final verification. No wipe executed yet. Storage must be emptied separately through Dashboard/API, never SQL. Milestone sequence unchanged.
+
+
+## Wipe transaction attempt rolled back - 2026-10-15 - Codex
+
+- First execution failed before truncation: PL/pgSQL record r shadowed the user_roles alias. Transaction rolled back; no wipe committed. Fixed alias to ur in scripts/wipe-test-data/02-wipe.sql. Retry pending. Current Claude instruction above still applies; Storage remains untouched.
+
+
+## Wipe committed - 2026-10-15 - Codex
+
+- Corrected transaction succeeded on tgukdabfvvoywawmzbdo: 61 app tables truncated, 37 original logins minus 35 non-admins leaves two original admins. Final transaction assertions passed: admin profile/role/settings rows match saved rows, all other targeted app tables empty, all four protected tables exactly unchanged. SQL saved in scripts/wipe-test-data/02-wipe.sql. No schema migration or application release.
+- Storage separate cleanup and independent post-commit counts pending.
+
+
+## Test-data wipe verified; Storage access blocked - 2026-10-15 - Codex
+
+- Independent post-commit hosted query confirms businesses 0, memberships 0, notifications 0, usage_events 0, profiles 2 and auth.users 2. Transaction checked all 61 targeted tables (admin rows restored only), exact preservation of the four excluded tables, and original admin IDs. Both original admin logins remain. No application code, schema or release change.
+- Storage objects remain 12 (covers 1, logos 4, gallery 5, owner_verification_docs 2). Browser Dashboard redirected to sign-in; connector has no Storage deletion tool. No files deleted and no SQL Storage deletion attempted. Dashboard tab left for sign-in. External Fidel-provider objects were not deleted; authorized wipe covers local Fidel records.
+- Prior SQL attempt failed before truncation and rolled back due to a record/alias collision; corrected successful script is scripts/wipe-test-data/02-wipe.sql. Existing preview preserved. No further database wipe needed.
+
+## Review of the 15 Oct wipe; Storage cleanup handed to the owner (2026-10-16) - Claude
+
+- **Script review (`scripts/wipe-test-data/02-wipe.sql`).** Sound for a one-off: one transaction with lock and statement timeouts, `truncate ... restrict` (fails rather than cascading outside the list), exact admin-ID match, saved-and-compared admin profile/role/settings rows, byte-for-byte comparison of the four protected tables, and a final check that every other app table is empty. Notes: (1) it hard-codes exactly two admins, which would still pass today, so a rerun would delete real sign-ups. I prepended a banner and a guard that raises before anything runs; the original body is kept as the record. (2) Admins' `legal_acceptances` rows were truncated, not restored, so admins may be asked to accept the terms again. Harmless. (3) Fidel provider-side objects were not deleted (test mode), as Codex recorded.
+- **Independent read-only verification (Supabase connector, project tgukdabfvvoywawmzbdo).** auth.users 2, admin roles 2, profiles 2, user_roles 6 rows (both admins' roles), user_settings 2, admin_laptop_backups 3, shop_request_settings 1, whatsapp_dispatch_settings 1; every other app table in public, whatsapp_archive and business_activation_private is empty. auth.audit_log_entries 0. Admin sessions remain (4 sessions, 15 refresh tokens) as expected. Matches Codex's report.
+- **Storage not touched.** Still 12 objects: covers 1, logos 4, gallery 5, owner_verification_docs 2 (the last are verification documents, so worth clearing). Permanent deletion is the owner's to do in Dashboard > Storage > each bucket > select all > Delete (never SQL; Supabase blocks it). Then re-run the read-only count `select bucket_id, count(*) from storage.objects group by 1` and expect no rows. Owner: user, then Claude or Codex to verify.
+
+---
+
 ## Copy-ready prompt for Claude Code
 
-Review published 3D4U release a485380 and docs/COMPLETION_2026-10-12.md plus docs/ORDER_EMAIL_RECOVERY.md. Confirm hosted guards and the held legacy email, sign off M3b phone-size evidence, and resolve teacher-privacy blockers. Product-owner input is still required for physical-phone and genuine webhook/inbox/payment/refund tests; do not resend the held email without approval.
+Read CLAUDE_HANDOFF.md section 'Review of the 15 Oct wipe; Storage cleanup handed to the owner'. Once the owner says the four Storage buckets (covers, logos, gallery, owner_verification_docs) are emptied in the Dashboard, run only the read-only count select bucket_id, count(*) from storage.objects group by 1 against tgukdabfvvoywawmzbdo and record whether storage is empty. Do not delete Storage objects through SQL and do not rerun scripts/wipe-test-data/02-wipe.sql (it is guarded and must stay that way).
