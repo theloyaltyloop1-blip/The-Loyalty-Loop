@@ -12,7 +12,7 @@ const APPS = {
   business: {
     play: 'https://play.google.com/store/apps/details?id=com.theloyaltyloop.retailer',
     ios: 'https://apps.apple.com/gb/app/id6813259329',
-    iosLive: false,
+    iosLive: true,
     name: 'The Loyalty Loop for Business',
   },
 } as const
