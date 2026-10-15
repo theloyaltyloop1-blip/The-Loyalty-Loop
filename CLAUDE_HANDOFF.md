@@ -2335,6 +2335,13 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 
 ---
 
+## Test-data cleanup complete (2026-10-16) - Claude
+
+- Owner emptied the four Storage buckets in the Dashboard. Independent read-only check on tgukdabfvvoywawmzbdo: `storage.objects` 0 (logos 0, covers 0, owner_verification_docs 0, gallery 0), auth.users 2 (admins), businesses 0. The buckets themselves still exist. The database wipe (15 Oct) and Storage cleanup are both done; nothing further to run. `02-wipe.sql` stays guarded and must not be rerun.
+- Not covered by the wipe: Fidel provider-side test cards, Supabase Vault and Edge Function secrets, and the two admins' own sessions. All intentional.
+
+---
+
 ## Copy-ready prompt for Claude Code
 
-Read CLAUDE_HANDOFF.md section 'Review of the 15 Oct wipe; Storage cleanup handed to the owner'. Once the owner says the four Storage buckets (covers, logos, gallery, owner_verification_docs) are emptied in the Dashboard, run only the read-only count select bucket_id, count(*) from storage.objects group by 1 against tgukdabfvvoywawmzbdo and record whether storage is empty. Do not delete Storage objects through SQL and do not rerun scripts/wipe-test-data/02-wipe.sql (it is guarded and must stay that way).
+Read CLAUDE_HANDOFF.md sections 'Go-live preparation (2026-10-10)' and 'Test-data cleanup complete (2026-10-16)'. The database and Storage are clean. Remaining owner-dependent items: appeal Meta's WhatsApp account disablement; confirm the iPhone shopper app works after the 14 Oct OTA fix; legal documents wording (they still describe spend rewards and Fidel). Once the owner approves a new version for review, build the native shopper app including expo-location, and run eas metadata:push for both store.config.json files. Do not rerun scripts/wipe-test-data/02-wipe.sql.
