@@ -21,9 +21,9 @@ export function renderShopperWidget(state: ShopperWidgetState) {
       <TextWidget text={state.shopName} maxLines={1} style={{ color: '#1E1B19', fontSize: 16, fontWeight: 'bold' }} />
       <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-end', flexGap: 6 }}>
         <TextWidget text={isPounds ? `£${state.current}` : String(state.current)} style={{ color: state.brandColor as `#${string}`, fontSize: 34, fontWeight: 'bold' }} />
-        <TextWidget text={isPounds ? `of £${state.target}` : `/ ${state.target} ${state.unit}`} style={{ color: '#6D6A65', fontSize: 14, marginBottom: 6 }} />
+        <TextWidget text={isPounds ? `of £${state.target}` : `/ ${state.target} ${state.unit}`} style={{ color: '#000000', fontSize: 14, marginBottom: 6 }} />
       </FlexWidget>
-      <TextWidget text={progress} maxLines={2} style={{ color: '#45413D', fontSize: 14 }} />
+      <TextWidget text={progress} maxLines={2} style={{ color: '#000000', fontSize: 14 }} />
       <TextWidget text="Show customer card  →" style={{ color: state.brandColor as `#${string}`, fontSize: 14, fontWeight: 'bold', marginTop: 8 }} />
     </FlexWidget>
   )

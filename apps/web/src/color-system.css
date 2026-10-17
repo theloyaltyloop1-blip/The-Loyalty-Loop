@@ -92,9 +92,9 @@
 
 @theme {
   --color-background: var(--palette-neutral-100);
-  --color-foreground: var(--palette-neutral-900);
+  --color-foreground: #000000;
   --color-card: var(--palette-neutral-50);
-  --color-card-foreground: var(--palette-neutral-900);
+  --color-card-foreground: #000000;
   --color-primary: var(--palette-orange-700);
   --color-primary-foreground: var(--palette-neutral-50);
   --color-primary-hover: var(--palette-orange-800);
@@ -114,7 +114,7 @@
   --color-input: var(--palette-neutral-500);
   --color-ring: var(--palette-orange-700);
   --color-muted: var(--palette-neutral-200);
-  --color-muted-foreground: var(--palette-neutral-600);
+  --color-muted-foreground: #000000;
   --color-popover: var(--palette-neutral-50);
   --color-popover-foreground: var(--palette-neutral-900);
   --color-olive: var(--palette-olive-800);
@@ -204,7 +204,7 @@ html.dark {
 
 .admin-panel {
   --color-background: var(--palette-slate-50);
-  --color-foreground: var(--palette-slate-900);
+  --color-foreground: #000000;
   --color-card: #FFFFFF;
   --color-card-foreground: var(--palette-slate-900);
   --color-primary: var(--palette-blue-600);
@@ -226,7 +226,7 @@ html.dark {
   --color-input: var(--palette-slate-500);
   --color-ring: var(--palette-blue-600);
   --color-muted: var(--palette-slate-100);
-  --color-muted-foreground: var(--palette-slate-600);
+  --color-muted-foreground: #000000;
   --color-popover: #FFFFFF;
   --color-popover-foreground: var(--palette-slate-900);
   --color-olive: var(--palette-blue-600);

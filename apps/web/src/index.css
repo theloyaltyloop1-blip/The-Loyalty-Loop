@@ -226,3 +226,7 @@ button[data-press-feedback]:not(:disabled):active { transform: scale(.97); }
   .shop-poster-steps { margin-top: auto; font-size: 12px; }
   .shop-poster-steps b { width: 22px; height: 22px; font-size: 11px; }
 }
+
+/* Owner request 2026-10-17: all text black in light mode, including faded text-foreground/NN. Dark mode keeps light text so it stays readable. */
+html:not(.dark) [class*="text-foreground/"],
+html:not(.dark) [class*="text-muted-foreground/"] { color: #000000; }
