@@ -100,14 +100,21 @@ export async function updateBusiness(id: string, patch: Partial<Business>): Prom
   return data as Business
 }
 
-/** Permanently removes a shop and its loyalty data. The database RPC verifies
- * that the current account owns the shop before doing any deletion. */
+/** The edge function checks owner/admin access and cleans Storage after the RPC. */
 export async function deleteOwnedBusiness(businessId: string, confirmationName: string) {
-  const { error } = await supabase.rpc('delete_owned_business', {
-    _business_id: businessId,
-    _confirmation_name: confirmationName.trim(),
+  const { data, error } = await supabase.functions.invoke('delete-business', {
+    body: { business_id: businessId, confirmation_name: confirmationName.trim() },
   })
-  if (error) throw error
+  if (error) {
+    const context = (error as { context?: Response }).context
+    const detail = context ? await context.json().catch(() => null) : null
+    throw new Error(typeof detail?.error === 'string' && detail.error.trim() ? detail.error : 'Could not delete the shop. Please try again.')
+  }
+  if (data?.error) throw new Error(data.error)
+  if (!data?.deleted) throw new Error('Could not confirm shop deletion.')
+  if (data.leftovers?.length) {
+    throw new Error(`Shop deleted, but some files could not be removed. Contact support with these paths: ${data.leftovers.join(', ')}`)
+  }
 }
 
 /** Transfers a shop to an existing Loyalty Loop account. The database checks

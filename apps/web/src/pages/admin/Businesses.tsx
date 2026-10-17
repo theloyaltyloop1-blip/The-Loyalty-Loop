@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { deleteOwnedBusiness } from '@/lib/businesses'
 import { listBusinesses, setBusinessStatus, type AdminBusiness, type ApprovalStatus } from '@/lib/admin'
 import { Badge, DataTable, Pager, Status, btnDanger, btnPrimary, fmtDate, inputCls, useAction, useClampPage, useDebounced, useLoad } from './kit'
 
@@ -6,6 +7,8 @@ const tone = (s: string) => (s === 'approved' || s === 'verified' ? 'ok' : s ===
 
 /** All businesses with approval moderation. The document-verification queue lives in the "Business listings" tab. */
 export function Businesses() {
+  const [deleting, setDeleting] = React.useState<AdminBusiness | null>(null)
+  const [confirmation, setConfirmation] = React.useState('')
   const [search, setSearch] = React.useState('')
   const [status, setStatus] = React.useState<ApprovalStatus | ''>('')
   const [page, setPage] = React.useState(0)
@@ -18,6 +21,15 @@ export function Businesses() {
   return (
     <div>
       {banner}
+      {deleting && <section className="mb-4 rounded-xl border border-destructive p-4" aria-label="Confirm shop deletion">
+        <h2 className="font-semibold text-destructive">Delete {deleting.name} permanently?</h2>
+        <p className="my-2 text-sm">This removes the shop, loyalty progress, rewards, reviews and files. Type the exact shop name to confirm.</p>
+        <input className={inputCls} aria-label="Confirm shop name" value={confirmation} onChange={e => setConfirmation(e.target.value)} />
+        <div className="mt-3 flex gap-2">
+          <button className={btnDanger} disabled={pending || confirmation.trim() !== deleting.name} onClick={() => void act(() => deleteOwnedBusiness(deleting.id, confirmation), 'Shop permanently deleted', () => { setDeleting(null); setConfirmation(''); list.reload() })}>Delete shop permanently</button>
+          <button disabled={pending} onClick={() => { setDeleting(null); setConfirmation('') }}>Cancel</button>
+        </div>
+      </section>}
       <p className="mb-4 text-sm text-muted-foreground">Rejecting a listing hides it from customers. Document verification requests are in the Business listings tab.</p>
       <div className="mb-4 flex flex-wrap gap-2">
         <input className={`${inputCls} w-64`} placeholder="Search name or owner email" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -33,6 +45,7 @@ export function Businesses() {
         { header: 'Listed', cell: (b) => fmtDate(b.created_at) },
         { header: 'Actions', cell: (b) => (
           <div className="flex gap-2">
+            <button className={btnDanger} disabled={pending} onClick={() => { setDeleting(b); setConfirmation('') }}>Delete shop</button>
             {b.approval_status !== 'approved' && <button className={btnPrimary} disabled={pending} onClick={() => act(() => setBusinessStatus(b.id, 'approved'), 'Approved', list.reload)}>Approve</button>}
             {b.approval_status !== 'rejected' && <button className={btnDanger} disabled={pending} onClick={() => { const r = prompt('Rejection reason'); if (r) void act(() => setBusinessStatus(b.id, 'rejected', r), 'Rejected', list.reload) }}>Reject</button>}
           </div>) },

@@ -16,6 +16,16 @@
       },
       "channel": "preview"
     },
+    "test": {
+      "distribution": "internal",
+      "channel": "test",
+      "env": {
+        "APP_VARIANT": "test"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production",

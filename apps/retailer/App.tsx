@@ -53,6 +53,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
+import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
 import { SuccessCheck } from "./src/components/SuccessCheck";
 import {
@@ -360,6 +361,44 @@ type RecentSpend = { id: string; value: number; created_at: string };
 
 const pounds = (pence: number) => `£${(pence / 100).toFixed(2)}`;
 
+type ActiveReward = { id: string; title: string; discount_pence: number | null };
+
+function toActiveReward(row: { id: string; title: string; catalog?: unknown }): ActiveReward {
+  return { id: row.id, title: row.title, discount_pence: rewardDiscountPence(row) };
+}
+
+/** "£ off" reward: staff type the bill, the app shows what to charge on the card machine. */
+function DiscountCharge({
+  discountPence,
+  billTotal,
+  onBillTotalChange,
+}: {
+  discountPence: number;
+  billTotal: string;
+  onBillTotalChange: (value: string) => void;
+}) {
+  const billPence = parsePounds(billTotal);
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <Text style={styles.copy}>{`This reward takes ${pounds(discountPence)} off the bill.`}</Text>
+      <TextInput
+        value={billTotal}
+        onChangeText={onBillTotalChange}
+        placeholder="Bill total, e.g. 20.00"
+        placeholderTextColor="#000000"
+        keyboardType="decimal-pad"
+        style={styles.input}
+        accessibilityLabel="Bill total in pounds"
+      />
+      {billPence !== null ? (
+        <Text style={[styles.matchTitle, { marginTop: 8 }]}>
+          {`Charge ${pounds(chargeAfterDiscount(billPence, discountPence))} on the card machine`}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 // Idempotency key for one purchase entry: a retry after a dropped connection
 // reuses it, so the server never credits the same purchase twice. Not a secret.
 function newClientRef(): string {
@@ -496,7 +535,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="First name"
-                placeholderTextColor="#737B74"
+                placeholderTextColor="#000000"
                 autoCapitalize="words"
               />
               <TextInput
@@ -504,7 +543,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Surname"
-                placeholderTextColor="#737B74"
+                placeholderTextColor="#000000"
                 autoCapitalize="words"
               />
             </>
@@ -514,7 +553,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
             value={email}
             onChangeText={setEmail}
             placeholder="Business email address"
-            placeholderTextColor="#737B74"
+            placeholderTextColor="#000000"
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -523,7 +562,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
             value={password}
             onChangeText={setPassword}
             placeholder={signup ? "Password (8+ characters)" : "Password"}
-            placeholderTextColor="#737B74"
+            placeholderTextColor="#000000"
             secureTextEntry
           />
           <Button
@@ -651,10 +690,9 @@ function StampsScreen({
     joined_at?: string | null;
     last_activity_at?: string | null;
   } | null>(null);
-  const [activeReward, setActiveReward] = useState<{
-    id: string;
-    title: string;
-  } | null>(null);
+  const [activeReward, setActiveReward] = useState<ActiveReward | null>(null);
+  // Bill total typed by staff for a "£ off" reward, to show what to charge.
+  const [billTotal, setBillTotal] = useState("");
   const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -719,6 +757,7 @@ function StampsScreen({
     setMatched(null);
     setMemberInfo(null);
     setActiveReward(null);
+    setBillTotal("");
     setCode("");
     setAmount(1);
     setLinkStatus(null);
@@ -880,7 +919,7 @@ function StampsScreen({
       supabase.rpc("get_scanned_member_details", { _business_id: business.id, _user_id: userId }),
       supabase
         .from("rewards")
-        .select("id,title")
+        .select("id,title,catalog:reward_catalog(discount_pence)")
         .eq("business_id", business.id)
         .eq("user_id", userId)
         .is("redeemed_at", null)
@@ -894,7 +933,7 @@ function StampsScreen({
         ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at }
         : null,
     );
-    setActiveReward((rewardRows || [])[0] || null);
+    setActiveReward(rewardRows?.[0] ? toActiveReward(rewardRows[0]) : null);
   }
 
   async function loadMemberInfo(userId: string) {
@@ -918,7 +957,7 @@ function StampsScreen({
       try {
         const { data: reward, error } = await supabase
           .from("rewards")
-          .select("id,title,user_id,redeemed_at,expires_at")
+          .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence)")
           .eq("business_id", business.id)
           .eq("qr_token", rewardToken)
           .maybeSingle();
@@ -927,7 +966,7 @@ function StampsScreen({
         if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
         if (reward.expires_at && new Date(reward.expires_at) < new Date()) throw new Error("This reward has expired.");
         setMatched({ id: reward.user_id });
-        setActiveReward({ id: reward.id, title: reward.title });
+        setActiveReward(toActiveReward(reward));
         setCode("");
         void loadMemberInfo(reward.user_id);
       } catch (e) {
@@ -960,7 +999,7 @@ function StampsScreen({
       if (mode === "reward") {
         const { data: reward, error: rewardError } = await supabase
           .from("rewards")
-          .select("id,title,user_id,redeemed_at,expires_at")
+          .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence)")
           .eq("business_id", business.id)
           .eq("short_code", normalized)
           .maybeSingle();
@@ -969,7 +1008,7 @@ function StampsScreen({
           if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
           if (reward.expires_at && new Date(reward.expires_at) < new Date()) throw new Error("This reward has expired.");
           setMatched({ id: reward.user_id });
-          setActiveReward({ id: reward.id, title: reward.title });
+          setActiveReward(toActiveReward(reward));
           setCode("");
           void loadMemberInfo(reward.user_id);
           return;
@@ -1178,6 +1217,7 @@ function StampsScreen({
           <View style={styles.card}>
             <Text style={styles.section}>{mode === "reward" ? "Or enter their reward or customer code" : "Or enter their code"}</Text>
             <TextInput
+              placeholderTextColor="#000000"
               style={[styles.input, styles.customerCodeInput]}
               value={code}
               onChangeText={setCode}
@@ -1248,6 +1288,14 @@ function StampsScreen({
                   </Text>
                 </Pressable>
               ) : activeReward ? (
+                <View>
+                {activeReward.discount_pence ? (
+                  <DiscountCharge
+                    discountPence={activeReward.discount_pence}
+                    billTotal={billTotal}
+                    onBillTotalChange={setBillTotal}
+                  />
+                ) : null}
                 <Pressable
                   onPress={redeem}
                   disabled={busy}
@@ -1258,9 +1306,10 @@ function StampsScreen({
                   ]}
                 >
                   <Text style={styles.bigActionButtonText}>
-                    {busy ? "Redeeming…" : `Redeem "${activeReward.title}"`}
+                    {busy ? "Redeeming…" : activeReward.discount_pence ? "Customer paid, use reward" : `Redeem "${activeReward.title}"`}
                   </Text>
                 </Pressable>
+                </View>
               ) : (
                 <Text style={styles.copy}>
                   This customer has no reward ready to redeem yet.
@@ -1525,7 +1574,7 @@ function MembersPage({ business }: { business: Business }) {
         value={search}
         onChangeText={setSearch}
         placeholder="Search members"
-        placeholderTextColor="#6B736C"
+        placeholderTextColor="#000000"
       />
       {loading ? (
         <ActivityIndicator color={green} style={{ marginTop: 30 }} />
@@ -1846,7 +1895,7 @@ function NewsPage({ business }: { business: Business }) {
           value={title}
           onChangeText={setTitle}
           placeholder="Headline"
-          placeholderTextColor="#6B736C"
+          placeholderTextColor="#000000"
           maxLength={120}
         />
         <TextInput
@@ -1854,7 +1903,7 @@ function NewsPage({ business }: { business: Business }) {
           value={body}
           onChangeText={setBody}
           placeholder="What would you like customers to know?"
-          placeholderTextColor="#6B736C"
+          placeholderTextColor="#000000"
           multiline
           textAlignVertical="top"
           maxLength={2000}
@@ -2165,7 +2214,7 @@ function BusinessSettings({
                     style={styles.settingsInput}
                     value={name}
                     onChangeText={setName}
-                    placeholderTextColor="#6B736C"
+                    placeholderTextColor="#000000"
                   />
                   <Text style={styles.fieldLabel}>Category</Text>
                   <TextInput
@@ -2173,7 +2222,7 @@ function BusinessSettings({
                     value={category}
                     onChangeText={setCategory}
                     placeholder="Cafe, salon, restaurant…"
-                    placeholderTextColor="#6B736C"
+                    placeholderTextColor="#000000"
                   />
                   <Text style={styles.fieldLabel}>Description</Text>
                   <TextInput
@@ -2181,7 +2230,7 @@ function BusinessSettings({
                     value={description}
                     onChangeText={setDescription}
                     placeholder="Tell customers what makes you special"
-                    placeholderTextColor="#6B736C"
+                    placeholderTextColor="#000000"
                     multiline
                     textAlignVertical="top"
                   />
@@ -2190,7 +2239,7 @@ function BusinessSettings({
                     style={styles.settingsInput}
                     value={address}
                     onChangeText={setAddress}
-                    placeholderTextColor="#6B736C"
+                    placeholderTextColor="#000000"
                   />
                   <View style={styles.twoColumns}>
                     <View style={{ flex: 1 }}>
@@ -2199,7 +2248,7 @@ function BusinessSettings({
                         style={styles.settingsInput}
                         value={postcode}
                         onChangeText={setPostcode}
-                        placeholderTextColor="#6B736C"
+                        placeholderTextColor="#000000"
                         autoCapitalize="characters"
                       />
                     </View>
@@ -2209,7 +2258,7 @@ function BusinessSettings({
                         style={styles.settingsInput}
                         value={phone}
                         onChangeText={setPhone}
-                        placeholderTextColor="#6B736C"
+                        placeholderTextColor="#000000"
                         keyboardType="phone-pad"
                       />
                     </View>
@@ -2516,26 +2565,43 @@ function BusinessSettings({
  * RPC the website uses, after two explicit destructive confirmations. */
 function confirmDeleteAccount(userId: string) {
   const run = async () => {
+    let leftoverFiles = 0;
     try {
       const { data: owned, error: ownedError } = await supabase
         .from("businesses")
         .select("id,name")
         .eq("owner_id", userId);
       if (ownedError) throw ownedError;
+      // A shop that is deleted but leaves files behind is still gone, so carry on
+      // deleting the account and mention the leftovers once at the end.
       for (const shop of owned || []) {
-        const { error } = await supabase.rpc("delete_owned_business", {
-          _business_id: shop.id,
-          _confirmation_name: shop.name,
+        const { data, error } = await supabase.functions.invoke("delete-business", {
+          body: { business_id: shop.id, confirmation_name: shop.name },
         });
-        if (error) throw error;
+        if (error) {
+          const context = (error as { context?: Response }).context;
+          const detail = context ? await context.json().catch(() => null) : null;
+          throw new Error(typeof detail?.error === "string" && detail.error.trim() ? detail.error : "Could not delete your shop. Please try again.");
+        }
+        if (data?.error) throw new Error(data.error);
+        if (!data?.deleted) throw new Error("Could not confirm shop deletion.");
+        leftoverFiles += data.leftovers?.length ?? 0;
       }
       const { data, error } = await supabase.functions.invoke("delete-my-account");
       if (error) throw error;
       if (data && typeof data === "object" && "error" in data && data.error) throw new Error(String(data.error));
       await supabase.auth.signOut().catch(() => undefined);
-      Alert.alert("Account deleted", "Your account and its data have been permanently deleted.");
+      Alert.alert(
+        "Account deleted",
+        leftoverFiles
+          ? `Your account and its data have been permanently deleted. ${leftoverFiles} shop file(s) could not be removed; contact support and we will remove them.`
+          : "Your account and its data have been permanently deleted.",
+      );
     } catch (e) {
-      Alert.alert("Could not delete account", e instanceof Error ? e.message : "Please try again.");
+      const message = e instanceof Error ? e.message : "Please try again.";
+      Alert.alert("Could not delete account", leftoverFiles
+        ? `${message} ${leftoverFiles} file(s) from shops already deleted still need support cleanup.`
+        : message);
     }
   };
   Alert.alert(
@@ -2667,7 +2733,7 @@ function SpendProgramSetup({
                   value={reward.title}
                   onChangeText={(value) => updateReward(index, { title: value })}
                   placeholder="e.g. Free coffee"
-                  placeholderTextColor="#737B74"
+                  placeholderTextColor="#000000"
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Details (optional)</Text>
                 <TextInput
@@ -2675,7 +2741,7 @@ function SpendProgramSetup({
                   value={reward.description}
                   onChangeText={(value) => updateReward(index, { description: value })}
                   placeholder="Anything customers should know"
-                  placeholderTextColor="#737B74"
+                  placeholderTextColor="#000000"
                   multiline
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks after spending (£)</Text>
@@ -2685,7 +2751,7 @@ function SpendProgramSetup({
                   onChangeText={(value) => updateReward(index, { amount: value.replace(/[^0-9.]/g, "") })}
                   keyboardType="decimal-pad"
                   placeholder="20"
-                  placeholderTextColor="#737B74"
+                  placeholderTextColor="#000000"
                 />
                 {rewards.length > 1 && (
                   <Pressable onPress={() => setRewards((list) => list.filter((_, i) => i !== index))} style={styles.onboardingSkip}>
@@ -2830,7 +2896,7 @@ function StampProgramSetup({
                 onChangeText={(value) => setThreshold(value.replace(/[^0-9]/g, ""))}
                 keyboardType="number-pad"
                 placeholder="10"
-                placeholderTextColor="#737B74"
+                placeholderTextColor="#000000"
               />
             </View>
             <Button title="Continue" onPress={() => setStep(2)} />
@@ -2853,7 +2919,7 @@ function StampProgramSetup({
                   value={reward.title}
                   onChangeText={(value) => updateReward(index, { title: value })}
                   placeholder="e.g. Free coffee"
-                  placeholderTextColor="#737B74"
+                  placeholderTextColor="#000000"
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Details (optional)</Text>
                 <TextInput
@@ -2861,7 +2927,7 @@ function StampProgramSetup({
                   value={reward.description}
                   onChangeText={(value) => updateReward(index, { description: value })}
                   placeholder="Anything customers should know"
-                  placeholderTextColor="#737B74"
+                  placeholderTextColor="#000000"
                   multiline
                 />
                 <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks at ({unit})</Text>
@@ -2871,7 +2937,7 @@ function StampProgramSetup({
                   onChangeText={(value) => updateReward(index, { threshold: value.replace(/[^0-9]/g, "") })}
                   keyboardType="number-pad"
                   placeholder={String(thresholdNumber)}
-                  placeholderTextColor="#737B74"
+                  placeholderTextColor="#000000"
                 />
                 {rewards.length > 1 && (
                   <Pressable onPress={() => setRewards((list) => list.filter((_, i) => i !== index))} style={styles.onboardingSkip}>
@@ -2972,7 +3038,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={name}
             onChangeText={setName}
             placeholder="e.g. Bean & Bird"
-            placeholderTextColor="#737B74"
+            placeholderTextColor="#000000"
           />
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Category</Text>
           <View style={styles.categoryRow}>
@@ -2995,7 +3061,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={address}
             onChangeText={setAddress}
             placeholder="12 Balham High Road"
-            placeholderTextColor="#737B74"
+            placeholderTextColor="#000000"
           />
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Postcode (optional)</Text>
           <TextInput
@@ -3003,7 +3069,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={postcode}
             onChangeText={setPostcode}
             placeholder="SW12 9AA"
-            placeholderTextColor="#737B74"
+            placeholderTextColor="#000000"
             autoCapitalize="characters"
           />
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Phone (optional)</Text>
@@ -3012,7 +3078,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             value={phone}
             onChangeText={setPhone}
             placeholder="020 0000 0000"
-            placeholderTextColor="#737B74"
+            placeholderTextColor="#000000"
             keyboardType="phone-pad"
           />
         </View>
@@ -3585,7 +3651,7 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     letterSpacing: -0.7,
   },
-  copy: { color: "#5C6B4F", fontSize: 16, lineHeight: 24, marginTop: 9 },
+  copy: { color: "#000000", fontSize: 16, lineHeight: 24, marginTop: 9 },
   setupOptionCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -3599,7 +3665,7 @@ const styles = StyleSheet.create({
   setupOptionCardActive: { backgroundColor: orange, borderColor: orange },
   setupOptionTitle: { color: green, fontSize: 16, fontWeight: "800" },
   setupOptionTitleActive: { color: "#fff" },
-  setupOptionBlurb: { color: "#5C6B4F", fontSize: 13, marginTop: 2 },
+  setupOptionBlurb: { color: "#000000", fontSize: 13, marginTop: 2 },
   setupOptionBlurbActive: { color: "rgba(255,255,255,0.85)" },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   categoryChip: {
@@ -3614,14 +3680,14 @@ const styles = StyleSheet.create({
   categoryChipText: { color: green, fontWeight: "800", fontSize: 13 },
   categoryChipTextActive: { color: "#fff" },
   small: {
-    color: "#6F776F",
+    color: "#000000",
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
     marginTop: 22,
   },
   authHelpLink: { alignSelf: "center", marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
-  authHelpLinkText: { color: "#6F776F", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  authHelpLinkText: { color: "#000000", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
   card: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -3706,23 +3772,23 @@ const styles = StyleSheet.create({
   cameraSheet: { flex: 1 },
   spendBanner: { backgroundColor: "#e0f2e4", borderRadius: 18, padding: 14, marginTop: 16 },
   spendBannerText: { color: "#1f5c33", fontSize: 15, fontWeight: "800", textAlign: "center" },
-  spendProgress: { color: "#5C6B4F", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
+  spendProgress: { color: "#000000", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
   spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: green, textAlign: "center", marginTop: 4 },
-  spendCap: { color: "#737B74", fontSize: 13, textAlign: "center", marginBottom: 12 },
+  spendCap: { color: "#000000", fontSize: 13, textAlign: "center", marginBottom: 12 },
   keypad: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginBottom: 14 },
   keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center" },
   keypadKeyText: { fontSize: 24, fontFamily: FONT_DISPLAY, color: green },
   recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.12)" },
   recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80 },
-  recentTime: { flex: 1, color: "#737B74", fontSize: 14 },
+  recentTime: { flex: 1, color: "#000000", fontSize: 14 },
   recentUndo: { color: orange, fontSize: 14, fontWeight: "800" },
   paySheet: { backgroundColor: cream, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
   paySheetHandle: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.18)", marginBottom: 16 },
   paySheetTitle: { fontSize: 21, fontFamily: FONT_DISPLAY, color: green },
-  paySheetCopy: { color: "#5C6B4F", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
+  paySheetCopy: { color: "#000000", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
   paySheetQuestion: { fontSize: 16, fontWeight: "800", color: green, marginTop: 18 },
   paySheetButtons: { gap: 10, marginTop: 12 },
-  paySheetNote: { color: "#737B74", fontSize: 13, textAlign: "center", marginTop: 12 },
+  paySheetNote: { color: "#000000", fontSize: 13, textAlign: "center", marginTop: 12 },
   cameraWrap: { flex: 1, padding: 20, backgroundColor: "#111" },
   cameraTitle: {
     color: "#fff",
@@ -3753,7 +3819,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#59615A",
+    color: "#000000",
     fontWeight: "700",
   },
   welcomeRow: {
@@ -3767,7 +3833,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.7,
-    color: "#777970",
+    color: "#000000",
   },
   welcomeTitle: {
     fontSize: 34,
@@ -3815,8 +3881,8 @@ const styles = StyleSheet.create({
   },
   checkDone: { borderColor: orange, backgroundColor: "#F8C9B6" },
   checkMark: { fontSize: 13, fontWeight: "900", color: "#8C3820" },
-  checkText: { fontSize: 14, fontWeight: "700", color: "#333C35" },
-  checkTextDone: { color: "#8A8C85", textDecorationLine: "line-through" },
+  checkText: { fontSize: 14, fontWeight: "700", color: "#000000" },
+  checkTextDone: { color: "#000000", textDecorationLine: "line-through" },
   setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#1C2620", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
   setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
   setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
@@ -3867,7 +3933,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(20,20,18,.07)",
   },
-  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#4B544D", flexShrink: 0, marginRight: 12 },
+  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#000000", flexShrink: 0, marginRight: 12 },
   memberInfoValue: { flex: 1, fontSize: 13, color: "#1C2620", fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
@@ -3896,7 +3962,7 @@ const styles = StyleSheet.create({
   pageIntro: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#676A62",
+    color: "#000000",
     marginTop: 7,
     marginBottom: 20,
   },
@@ -3932,18 +3998,18 @@ const styles = StyleSheet.create({
   },
   memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
   memberName: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
-  memberMeta: { fontSize: 12, color: "#6B736C", marginTop: 3 },
+  memberMeta: { fontSize: 12, color: "#000000", marginTop: 3 },
   memberProgress: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
     color: "#1C2620",
     textAlign: "right",
   },
-  memberUnit: { fontSize: 10, color: "#6B736C", textAlign: "right" },
+  memberUnit: { fontSize: 10, color: "#000000", textAlign: "right" },
   emptyState: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#6B736C",
+    color: "#000000",
     textAlign: "center",
     paddingVertical: 36,
   },
@@ -3962,7 +4028,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   periodActive: { backgroundColor: "#1C2620" },
-  periodText: { fontSize: 12, fontWeight: "800", color: "#626A63" },
+  periodText: { fontSize: 12, fontWeight: "800", color: "#000000" },
   periodTextActive: { color: "#fff" },
   analyticsHeading: {
     fontSize: 18,
@@ -3975,7 +4041,7 @@ const styles = StyleSheet.create({
   chartsHeading: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#41443C",
+    color: "#000000",
     marginTop: 18,
     marginBottom: 10,
   },
@@ -3997,7 +4063,7 @@ const styles = StyleSheet.create({
   chartLegendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   chartLegendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11, fontWeight: "800", color: "#59615A" },
+  legendLabel: { fontSize: 11, fontWeight: "800", color: "#000000" },
   insightCard: {
     borderRadius: 22,
     backgroundColor: "#1C2620",
@@ -4018,7 +4084,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginTop: 9,
   },
-  insightCopy: { fontSize: 14, lineHeight: 21, color: "#D7D4CC", marginTop: 9 },
+  insightCopy: { fontSize: 14, lineHeight: 21, color: "#000000", marginTop: 9 },
   totalCard: {
     borderWidth: 2,
     borderColor: "#26302A",
@@ -4028,7 +4094,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   totalTitle: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
-  totalLine: { fontSize: 13, color: "#626A63", marginTop: 7 },
+  totalLine: { fontSize: 13, color: "#000000", marginTop: 7 },
   composeCard: {
     borderWidth: 2,
     borderColor: "#26302A",
@@ -4061,10 +4127,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   statusDraft: { backgroundColor: "#E5E1D9" },
-  statusText: { fontSize: 9, fontWeight: "900", color: "#454840" },
-  newsBody: { fontSize: 13, lineHeight: 19, color: "#62655E", marginTop: 8 },
-  newsDate: { fontSize: 11, color: "#85877F", marginTop: 10 },
-  navIcon: { fontSize: 21, lineHeight: 23, color: "#59615A" },
+  statusText: { fontSize: 9, fontWeight: "900", color: "#000000" },
+  newsBody: { fontSize: 13, lineHeight: 19, color: "#000000", marginTop: 8 },
+  newsDate: { fontSize: 11, color: "#000000", marginTop: 10 },
+  navIcon: { fontSize: 21, lineHeight: 23, color: "#000000" },
   navIconActive: { color: orange },
   tabPressed: { opacity: 0.55, transform: [{ scale: 0.94 }] },
   settingsHero: {
@@ -4092,7 +4158,7 @@ const styles = StyleSheet.create({
   settingsSubtitle: {
     fontSize: 14,
     lineHeight: 21,
-    color: "#64685F",
+    color: "#000000",
     marginTop: 9,
     maxWidth: 275,
   },
@@ -4111,7 +4177,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.3,
-    color: "#75786F",
+    color: "#000000",
     marginLeft: 4,
     marginTop: 8,
     marginBottom: 9,
@@ -4135,7 +4201,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#4B544D",
+    color: "#000000",
     marginTop: 8,
     marginBottom: 7,
   },
@@ -4171,13 +4237,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(20,20,18,.08)",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#4B544D",
+    color: "#000000",
     fontSize: 15,
   },
   fieldHelp: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: "#6B736C",
+    color: "#000000",
     marginTop: 2,
     marginBottom: 6,
   },
@@ -4203,7 +4269,7 @@ const styles = StyleSheet.create({
   },
   tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
   tierTitle: { fontSize: 15, fontWeight: "800", color: "#1C2620" },
-  tierMeta: { fontSize: 12, color: "#6B736C", marginTop: 2 },
+  tierMeta: { fontSize: 12, color: "#000000", marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",
@@ -4220,7 +4286,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   segmentActive: { backgroundColor: "#1C2620" },
-  segmentText: { fontSize: 13, fontWeight: "800", color: "#65685F" },
+  segmentText: { fontSize: 13, fontWeight: "800", color: "#000000" },
   segmentTextActive: { color: "#fff" },
   stepper: {
     height: 50,
@@ -4288,14 +4354,14 @@ const styles = StyleSheet.create({
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#6B736C",
+    color: "#000000",
     marginTop: 3,
   },
   dangerText: { color: "#B73B32" },
   settingsFootnote: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#777A71",
+    color: "#000000",
     textAlign: "center",
     paddingHorizontal: 18,
     marginTop: -8,
@@ -4320,6 +4386,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 1,
   },
-  tabText: { color: "#6F726A", fontWeight: "700", fontSize: 9, marginTop: 3 },
+  tabText: { color: "#000000", fontWeight: "700", fontSize: 9, marginTop: 3 },
   tabActive: { color: orange, fontWeight: "900" },
 });

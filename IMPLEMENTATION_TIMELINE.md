@@ -1,4 +1,5 @@
-# The Loyalty Loop — implementation timeline
+# The Loyalty Loop — implementation timeline
+
 
 Status (2026-10-10): go-live preparation. Fidel card linking is hidden in the shopper app (`CARD_LINKING_VISIBLE`); shops are on stamps. WhatsApp stage 2 and the 3-hour thank-you limit are applied to hosted. Waiting on Apple review for both apps; the `expo-location` native build and shopper OTA follow approval. See `CLAUDE_HANDOFF.md`, 'Go-live preparation (2026-10-10)'. The milestone table below is the Fidel plan and is on hold.
 
@@ -247,3 +248,21 @@ Owner requested parallel bounded tasks followed by mutual review. First pair: Cl
 ## Website semantic palette — 9 October 2026
 
 Owner authorized palette deployment followed by the supplied screenshot-led admin redesign. Local palette work passes build, 129/129 supported contrast pairings and 16 public responsive/theme browser checks. Clean current-main release candidate verified; publication pending. Standalone skills installed; full plugin marketplace/MCP registration remains blocked. Backend/native milestone order unchanged.
+
+## Owner-authorized test-data reset - 15 October 2026
+
+Database milestone complete on The Loyalty Loop: single transaction cleared 61 app tables, deleted 35 non-admin logins, restored two admins' profiles/roles/settings and verified the four named protected tables unchanged. Independent post-commit counts confirmed. scripts/wipe-test-data/02-wipe.sql records the executed corrected SQL. First attempt rolled back before truncation; no schema/application release. Separate Storage cleanup is pending Dashboard sign-in (12 files in four buckets); owner input required for access. Other engineering milestone order unchanged. See CLAUDE_HANDOFF.md for current next action.
+
+## Reward/shop deletion follow-ups - 18 October 2026
+
+Local implementation and targeted checks complete: shared authenticated Storage API cleanup endpoint, web/retailer callers, admin Businesses name-confirmed deletion, earned catalogue unlink/tied-reward/admin permission regressions. Final integration checks 9/9, discount tests 3/3, web build/typecheck and retailer typecheck pass. Applied migration unchanged. Next owner Claude: review, Deno/live Storage and authenticated UI verification, then deploy endpoint before clients. No deployment/commit/push/OTA performed; GBP-off device test remains separately pending. See CLAUDE_HANDOFF.md.
+
+## Deletion follow-ups and shopper external card wallet - 18 October 2026
+- Task 1 local implementation/review complete: shared authenticated deletion+Storage helper, admin Businesses exact-name confirmation, 4 Storage and 5 PostgreSQL regressions pass; retailer types/web build pass. Production delete-business deployment rejected by automatic approval review; explicit owner deployment approval and authenticated UI acceptance remain.
+- Task 2 local implementation complete: My other cards account sheet, typed add/view/rename/delete, 8 barcode formats, per-card secure offline cache/sign-out cleanup, owner RLS/unique/30-card cap/auth cascade migration. Shopper types, 3 helper/cache tests, isolated RLS/cap/cascade plus concurrent-insert test, Android+iOS exports, independent EAN-13/Code128 raster decode pass. Production rollback-only DDL rejected by automatic approval review; migration remains unapplied. Real phone/offline/physical scanner checks and Claude RLS/logging review pending. No eas update/build, commit or push; owner approval required for those actions. Milestone sequence otherwise unchanged.
+
+- Additional acceptance: isolated admin deletion browser checks pass (name gate/cancel/refusal/success/correct payload/row refresh). Final shopper TypeScript and combined 7 Storage/barcode/cache tests pass. All browser data mocked; no live deletion. Physical devices/scanners remain pending.
+
+## Deletion-client and wallet-format review follow-up - 18 October 2026
+- Completed local client fixes/verification: server JSON error messages and generic fallback; account deletion continues after shop file leftovers with count-only Alert, including later-stage failure. Wallet typed entry now applies evidenced Nectar Code128 default and Change format toggle; unconfirmed brands retain code128 and visible picker. Evidence/GS1 limits in docs/CARD_WALLET_FORMAT_EVIDENCE.md.
+- Web production build, retailer/shopper types, 8 focused client/wallet tests and whitespace check PASS. Hosted grant check, rollback dry-run, wallet apply and export-platform-backup deployment await explicit owner approval; device/scanner acceptance remains. No EAS update/build, commit or push. Next: Claude reviews this bounded follow-up; owner approves production sequence.

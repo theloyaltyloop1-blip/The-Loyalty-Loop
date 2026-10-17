@@ -6,6 +6,17 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "apps/web", "run", "dev", "--", "--port", "5173", "--strictPort"],
       "port": 5173
+    },
+    {
+      "name": "retailer-metro",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--prefix", "apps/retailer", "expo", "run:android", "--port", "8081"],
+      "cwd": "apps/retailer",
+      "env": {
+        "JAVA_HOME": "C:\\Users\\zahih\\Downloads\\The Loyalty Loop - for Claude\\tmp\\jdk17\\jdk-17.0.20.1+1",
+        "ANDROID_HOME": "C:\\Users\\zahih\\AppData\\Local\\Android\\Sdk"
+      },
+      "port": 8081
     }
   ]
 }

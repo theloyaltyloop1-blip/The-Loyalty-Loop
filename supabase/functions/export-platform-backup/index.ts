@@ -17,7 +17,7 @@ const BACKUP_TABLES = [
   "review_replies", "staff_members", "favourites", "business_photos",
   "referral_codes", "referrals", "legal_acceptances", "platform_announcements",
   "business_promotions", "brands", "brand_members", "brand_handoffs",
-  "business_feature_settings",
+  "business_feature_settings", "shopper_external_cards",
 ] as const;
 
 const corsHeaders = {

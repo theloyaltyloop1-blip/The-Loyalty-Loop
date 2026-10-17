@@ -22,3 +22,7 @@ verify_jwt = false
 # the trigger would.
 [functions.ai-review-reply]
 verify_jwt = false
+
+# Authenticated owner/admin deletion; handler also validates the JWT user.
+[functions.delete-business]
+verify_jwt = true

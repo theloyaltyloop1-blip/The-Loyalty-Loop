@@ -10,6 +10,7 @@ const usage = [
   { event_name: 'redeem_reward', surface: 'retailer_ios', events: 168, people: 46, last_seen: '2026-10-09T10:00:00Z' },
 ]
 function fixtureMode() { return new URLSearchParams(location.search).get('fixture') }
+let deletedFixtureShop = false
 const failure = (message: string) => ({ data: null, error: { message } })
 function from(table: string) {
   let head = false
@@ -26,6 +27,7 @@ function from(table: string) {
 export const supabase = {
   from,
   rpc: async (name: string) => {
+    if (fixtureMode() === 'deletion' && name === 'admin_list_businesses') return { data: deletedFixtureShop ? [] : [{ ...businesses[0], total: 1, members: 3, verification_status: 'verified', owner_email: 'owner@example.invalid' }], error: null }
     if (name === 'admin_usage_analytics') {
       if (fixtureMode() === 'analytics-error') return failure('Fixture analytics unavailable')
       return { data: fixtureMode() === 'empty' ? [] : usage, error: null }
@@ -35,7 +37,16 @@ export const supabase = {
     if (name.startsWith('admin_list_') || name === 'admin_shop_requests') return { data: [], error: null }
     return { data: [], error: null }
   },
-  functions: { invoke: async (name: string) => ({ data: name === 'platform-health' ? { checks: [{ label: 'Webhook endpoint', ok: true, detail: 'Illustrative healthy fixture' }] } : { details: [] }, error: null }) },
+  functions: { invoke: async (name: string, options?: unknown) => {
+    if (fixtureMode() === 'deletion' && name === 'delete-business') {
+      const state = window as unknown as { deletionCall: unknown; deletionFail: boolean }
+      state.deletionCall = options
+      if (state.deletionFail) return failure('Fixture deletion refused')
+      deletedFixtureShop = true
+      return { data: { deleted: true, leftovers: [] }, error: null }
+    }
+    return { data: name === 'platform-health' ? { checks: [{ label: 'Webhook endpoint', ok: true, detail: 'Illustrative healthy fixture' }] } : { details: [] }, error: null }
+  } },
   storage: { from: () => ({ list: async () => ({ data: [], error: null }) }) },
   auth: { getSession: async () => ({ data: { session: null }, error: null }), getUser: async () => ({ data: { user: { id: 'fixture-admin' } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
 }

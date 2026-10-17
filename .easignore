@@ -7,3 +7,6 @@ supabase/.temp/
 # Dependencies are installed by EAS from the lockfile.
 node_modules/
 apps/*/node_modules/
+
+# Local scratch: emulator tools, JDKs, screenshots (can be several GB).
+tmp/

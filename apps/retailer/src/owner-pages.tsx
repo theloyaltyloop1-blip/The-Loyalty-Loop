@@ -37,6 +37,7 @@ import {
   UserPlus,
 } from "lucide-react-native";
 import { mergeReplyInputs } from "./review-reply-inputs";
+import { parsePounds } from "./reward-discount";
 import { supabase } from "./supabase";
 import { fonts } from "@loyalty-loop/design-tokens";
 
@@ -44,7 +45,7 @@ const FONT_DISPLAY = fonts.nativeDisplay;
 
 const orange = "#E8703B";
 const ink = "#1C2620";
-const muted = "#676A63";
+const muted = "#000000";
 const cream = "#F8EAD8";
 const card = "#FCFCFA";
 
@@ -125,6 +126,7 @@ interface RewardItem {
   description: string | null;
   stamp_threshold: number;
   spend_threshold_pence: number | null;
+  discount_pence?: number | null;
   sort_order: number;
 }
 interface CustomerReview {
@@ -259,7 +261,7 @@ function Field({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#6B736C"
+      placeholderTextColor="#000000"
       multiline={multiline}
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
@@ -669,7 +671,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                 value={coachInput}
                 onChangeText={setCoachInput}
                 placeholder="Ask the coach…"
-                placeholderTextColor="#6B736C"
+                placeholderTextColor="#000000"
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
               />
               <Pressable
@@ -988,6 +990,8 @@ function RewardsPage({
   const spendShop = business.reward_model === "spend_threshold";
   const [amount, setAmount] = useState("20");
   const [threshold, setThreshold] = useState("10");
+  // Optional "£ off" value; staff then see what to charge when redeeming.
+  const [discount, setDiscount] = useState("");
   const unit =
     business.loyalty_type === "points"
       ? "points"
@@ -1035,8 +1039,12 @@ function RewardsPage({
       if (items.some((item) => item.spend_threshold_pence === pence))
         return Alert.alert("Check the amount", "You already have a reward at that amount.");
     }
+    const discountPence = discount.trim() ? parsePounds(discount) : null;
+    if (discount.trim() && (discountPence === null || discountPence < 1 || discountPence > 1_000_000))
+      return Alert.alert("Check the £ off", "Enter an amount between £0.01 and £10,000, or leave it empty.");
     setBusy(true);
     const { error } = await supabase.from("reward_catalog").insert({
+      discount_pence: discountPence,
       business_id: business.id,
       title: title.trim(),
       description: description.trim() || null,
@@ -1050,6 +1058,7 @@ function RewardsPage({
     setDescription("");
     setAmount("");
     setThreshold("10");
+    setDiscount("");
     void load();
   }
   // Stored on businesses.loyalty_config; the membership trigger hands it to a
@@ -1130,6 +1139,12 @@ function RewardsPage({
             keyboardType="number-pad"
           />
         )}
+        <Field
+          value={discount}
+          onChangeText={(value) => setDiscount(value.replace(/[^0-9.]/g, ""))}
+          placeholder="£ off the bill (optional), e.g. 5"
+          keyboardType="decimal-pad"
+        />
         <PrimaryButton label="Add reward" onPress={add} busy={busy} />
       </Section>
       <Text style={styles.sectionTitle}>Current rewards</Text>
@@ -1147,6 +1162,7 @@ function RewardsPage({
                     ? `Unlocks after spending £${(item.spend_threshold_pence / 100).toFixed(2)}`
                     : "No amount set yet"
                   : `Unlocks at ${item.stamp_threshold} ${unit}`}
+                {item.discount_pence ? ` · £${(item.discount_pence / 100).toFixed(2)} off` : ""}
                 {item.description ? ` · ${item.description}` : ""}
               </Text>
             </View>
@@ -1908,7 +1924,7 @@ const styles = StyleSheet.create({
   tutorialNumberText: { color: "#8C3820", fontWeight: "900" },
   tutorialAction: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44, borderRadius: 13, backgroundColor: cream, paddingHorizontal: 12, marginTop: 13 },
   tutorialActionText: { color: ink, fontSize: 13, fontWeight: "900" },
-  body: { color: "#444740", lineHeight: 21, fontSize: 14 },
+  body: { color: "#000000", lineHeight: 21, fontSize: 14 },
   muted: { color: muted, lineHeight: 20, fontSize: 14 },
   primaryButton: {
     minHeight: 48,
@@ -1996,7 +2012,7 @@ const styles = StyleSheet.create({
   },
   negative: { color: "#B4433A" },
   loader: { marginVertical: 50 },
-  report: { marginTop: 14, color: "#353831", fontSize: 14, lineHeight: 21 },
+  report: { marginTop: 14, color: "#000000", fontSize: 14, lineHeight: 21 },
   source: {
     flexDirection: "row",
     alignItems: "center",

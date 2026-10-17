@@ -2340,8 +2340,178 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Owner emptied the four Storage buckets in the Dashboard. Independent read-only check on tgukdabfvvoywawmzbdo: `storage.objects` 0 (logos 0, covers 0, owner_verification_docs 0, gallery 0), auth.users 2 (admins), businesses 0. The buckets themselves still exist. The database wipe (15 Oct) and Storage cleanup are both done; nothing further to run. `02-wipe.sql` stays guarded and must not be rerun.
 - Not covered by the wipe: Fidel provider-side test cards, Supabase Vault and Edge Function secrets, and the two admins' own sessions. All intentional.
 
+## Design only: loyalty before payment (2026-10-17) - Claude
+
+- Owner discussed adding a step that checks for loyalty before payment (identify the customer, apply the reward, then charge the reduced amount) across SumUp, Square, Clover and Deliverect. Nothing has been built or changed in code.
+- Key constraint: no custom screen or pop-up can be added to the SumUp Solo, Square's own POS app or Square hardware. The loyalty step has to run on a screen we control, before the amount reaches the card machine.
+- Owner decision, SumUp Solo: staff enter the amount in our business app. The app identifies the customer, applies the reward, then sends the final amount to the Solo through the SumUp Cloud API. Points are held, then spent only when SumUp confirms payment, and released if payment fails.
+- Claude recommendation for a Solo that isn't connected: card-linked (Fidel) earning stays automatic. Spending falls back to manual: scan the pass in the business app, staff type the reduced amount into the Solo, and points are deducted only when staff confirm "paid". Owner hasn't explicitly confirmed this yet.
+- Square shops on Square hardware: earning automatic through payment webhooks. Spending: staff tap a predefined "Loyalty reward" discount. Auto-applying a discount to an open Square order is unverified and needs testing against a real Square account.
+- Unverified, prototype assumptions: SumUp Cloud API pairing and remote amount push for the Solo, Square order discount APIs, Clover on-device flow, and the scope of Deliverect's loyalty integration.
+- Next: owner to test pairing their own Solo with the SumUp Cloud API (owner). Then a build plan for the business-app "Take payment" screen, a points hold/settle function and a SumUp payment webhook (Claude), then the build (Codex).
+- Later decision: stamps stay the default. "£ off" rewards are an optional extra. Cloud API (automatic) work is deferred until a shop asks for it.
+
+## "£ off" rewards, manual flow (2026-10-17) - Claude, built locally, NOT applied or deployed
+
+- Finding: the manual flow already existed (points cards, reward QR codes, staff scan-to-redeem). The only missing piece was a £ value on a reward.
+- `supabase/migrations/20261017163435_reward_discount_value.sql`: adds nullable `reward_catalog.discount_pence` (1..1,000,000). Additive, no trigger changes. Issued rewards read the value through `rewards.catalog_id`. **Applied to tgukdabfvvoywawmzbdo on 2026-10-17 as version 20261017163435 (file renamed to match). Verified: integer column and check constraint present; rewards→reward_catalog join query runs.**
+- Business app: `apps/retailer/src/owner-pages.tsx` gets an optional "£ off the bill" field in the rewards catalogue, also shown in the list. `apps/retailer/App.tsx` reward mode: when a scanned reward has a £ value, staff type the bill total, the app shows "Charge £X on the card machine", and the button becomes "Customer paid, use reward" (redeems as before). Pure helpers live in `apps/retailer/src/reward-discount.ts`.
+- Checks run: `tsc --noEmit` on apps/retailer passed. `node --test src/reward-discount.test.mjs` passed 3/3. Not checked on a device, not checked against the real database.
+- **Order matters:** apply the migration BEFORE any OTA. The new app selects `reward_catalog(discount_pence)` and inserts `discount_pence`, so it will break reward redemption and adding rewards if it ships ahead of the column.
+- Not done: the web owner pages (`apps/web/src/pages/owner/Scan.tsx`, `apps/web/src/lib/businesses.ts` catalog editor) don't show or set the £ value yet. The shopper app doesn't show "£5 off" on the reward. Staff can still type a wrong amount into the Solo; that's accepted for the manual flow.
+- Next (owner): approve the migration and the OTA. Then Codex: apply the migration, test on a device (create a "£5 off" reward, earn it, redeem it with a £20 bill, expect "Charge £15"), then `eas update` for the business app only.
+
 ---
+
+## "£ off" verification attempt (2026-10-17) - Codex
+
+- Read the requested manual-flow section, ARCH_PLAN.md and apps/retailer/AGENTS.md. Preserved existing uncommitted implementation and documentation changes.
+- **Actually run:** `node ../../node_modules/typescript/bin/tsc --noEmit` in apps/retailer: exit 0 (passed).
+- **Actually run:** `node --test src/reward-discount.test.mjs` in apps/retailer: exit 0, 3/3 passed. Node emitted MODULE_TYPELESS_PACKAGE_JSON warning; no test failure.
+- Device discovery: adb/emulator absent from PATH. Corrected initial environment-path lookup: the SDK DOES exist at `C:/Users/zahih/AppData/Local/Android/Sdk`. Direct `emulator.exe -list-avds` returned no configured emulators. Direct adb discovery failed to start its daemon inside the sandbox; reran with approved escalation and the daemon started successfully, but `adb devices -l` returned an empty device list. No device/UI tests have run.
+- **Blocked / unverified:** no connected Android device and no configured emulator. Local app was not started; catalogue entry/display, UI rejection of 5.555, earning, QR scan, short-code lookup, £20/£3 bill UI, redemption timestamp, second-redemption refusal and legacy Redeem button were NOT exercised. No screenshots were captured and no device defect is established by the passing helper tests.
+- No production test shop, customer or other test data was created, so no cleanup was required. No production data read/changed, no migration applied, no wipe script, no OTA, no commit or push. Earlier pending owner items (WhatsApp appeal, iPhone OTA check, legal wording, native shopper build) remain unchanged. Release stays pending Claude review and device verification.
+## Review of "£ off" rewards (2026-10-17) - Claude, APPROVED for code, device test still required
+
+- Read-only checks on tgukdabfvvoywawmzbdo: `handle_stamp_transaction` and `handle_spend_transaction` both set `rewards.catalog_id`, so earned rewards resolve their `discount_pence`. `grant_signup_reward` does not (sign-up rewards never show a £ value, which is acceptable). The `reward_catalog` SELECT policy allows anyone at an active, approved shop, so staff (not just owners) get the value through the embed. At an inactive shop the embed returns nothing, but redemption is already refused there.
+- Code review: no blocking defects. Unlinked or deleted catalogue rewards degrade to the old Redeem button. Bill total is cleared on reset. The charge never goes below £0.
+- Non-blocking: (1) "Customer paid, use reward" works without a bill total being typed. Acceptable, because staff may already know the amount. (2) The value is read live from the catalogue, not snapshotted at issue time. No edit UI exists today, so revisit if one is added. (3) Web owner Scan page and web catalogue editor still don't show or set the £ value. (4) The shopper app doesn't show "£5 off".
+- Device test still outstanding (Codex had no device). The OTA stays blocked until it passes.
+- Next (Codex): create an Android emulator with the existing SDK and run the device test there. Only if that is impossible, owner connects an Android phone with USB debugging.
+
+## Emulator device-test continuation (2026-10-17) - Codex, in progress
+
+- Read Claude's approved code review and current owner instructions. Emulator setup/downloads are explicitly authorized. SDK emulator exists; command-line tools and system image are missing. Installing tools/image; no AVD or app test has run yet.
+- Read-only production metadata query confirmed relevant businesses/memberships/catalogue/rewards/transactions/profile columns, including reward_catalog.discount_pence. No customer rows queried and no production data created or changed. Supabase changelog Markdown fetch failed (web tool content-type limitation); no Supabase feature/schema change is planned.
+- SDK tooling downloaded into tmp/android-tools. sdkmanager attempted image installation but stalled at a zero-byte download; bounded-timeout/IPv4 retry also stalled. Stopped only the installer Java processes created by this run. Direct official Google APIs API 35 x86_64 image download is now progressing. Existing emulator package retained. Windows reports HypervisorPresent=true; optional-feature inspection required administrator elevation and was not performed.
+- No migration, wipe, OTA, commit or push. Owner pending items unchanged. Device screenshots/acceptance checks remain pending.
+## Business test app added; emulator abandoned (2026-10-17) - Claude
+
+- Emulator route stopped. Created AVD LoyaltyLoopDiscountTest (~/.android/avd) and booted it, but Expo Go 54 can't run the business app (react-native-worklets 0.8.3 vs Expo Go's 0.5.1). The local `expo run:android` needed JDK 17 (Android Studio's JBR is 25); Temurin 17 was downloaded to tmp/jdk17 with owner approval. Owner then chose a phone test instead.
+- New separate test app: `apps/retailer/app.config.js` with `APP_VARIANT=test` gives package `com.theloyaltyloop.retailer.test`, name "Business (Test)", scheme `loyaltyloop-business-test`, and no google-services.json (push off). It installs next to the Play Store app. Without APP_VARIANT the config is unchanged (checked with `expo config`).
+- `apps/retailer/eas.json` new profile `test`: internal APK, channel `test` (created on EAS), env APP_VARIANT=test. EAS generated a new keystore for the test package. Root `.easignore` now excludes `tmp/` (it was 4.2 GB and broke the upload).
+- First test build (includes the uncommitted "£ off" code): https://expo.dev/accounts/the-loyalty-loop/projects/localoop-business/builds/9cd306e8-41dd-4f34-a42c-106e0e6e4025
+- **The test app still uses the LIVE database.** Use disposable test shops only. A separate test database is a later decision.
+- Future JS changes for testing: `APP_VARIANT=test eas update --channel test --platform android`. It reaches only the test app, never the store apps.
+- Removed the generated `apps/retailer/android/` folder and reverted the package.json script change made by prebuild. Nothing committed.
+- Next: owner installs the APK and signs in to a test shop, then runs the £ off checklist and sends screenshots (owner). Claude reviews before any production OTA.
+## Reward delete, shop delete, tied rewards (2026-10-17) - Claude, migration APPLIED to live
+- User-reported: can't delete rewards; admin can't delete a shop; with several rewards only one is ever given.
+- Causes (live DB): `rewards.catalog_id` FK had no ON DELETE, and the rewards update guard also refused unlinking, so any reward a customer had earned could not be deleted. `delete_owned_business` was owner-only and deleted from `storage.objects`, which Supabase's `protect_objects_delete` trigger now blocks, so any shop with images failed. `handle_stamp_transaction` picked one catalogue row per threshold (`limit 1`), so a second reward at the same stamp count (Test Shop for ££: two at 10) was never issued. Separate thresholds (5 and 10) already worked.
+- File: `supabase/migrations/20261017225143_fix_reward_and_shop_deletion.sql` (FK ON DELETE SET NULL, guard allows that unlink, admin may delete shops, no SQL storage delete, all rewards at a crossed threshold are issued).
+- Checks: rollback-only dry run on live DB: 2 rewards issued at 10 stamps; deleting an earned catalogue reward succeeded and unlinked rows. Admin shop delete not exercised.
+- Applied to live as version 20261017225143; verified FK is ON DELETE SET NULL, delete_owned_business allows admins and no longer touches storage, stamp trigger loops over tied rewards. Not yet tested in the apps by a person.
+- Remaining: user to retest all three in the apps (owner: user); shop images are no longer deleted with the shop — remove them through the Storage API (owner: Codex); web Settings only shows Delete to owners, check admin path in UI (owner: Codex).
+
+## Business app grey text made black; test OTA (2026-10-17) - Claude
+
+- Owner asked for all text to be black. In apps/retailer/App.tsx and src/owner-pages.tsx, every neutral grey `color:` (61 + 5 replacements), every `placeholderTextColor`, and `muted` are now #000000, including the £ off bill input. Unchanged: white text on dark/coloured buttons, near-black ink, and coloured status text (red errors, green success, orange brand). Shopper app and website are not changed. tsc passed.
+- Published to the TEST channel only (Android): update group 1fc703ca-69ae-4fac-bcf7-905a24ab4ecd. Store apps are untouched.
+- Owner test so far: shop "Test Shop for ££" (dfe13228…) and test accounts flyhigher722+testshop / zahihussain92+1546 marked verified by Claude. Earned rewards were "Free. Offee" (no £), so the bill box correctly did not show. The £ off redeem test is still pending.
+- Pre-existing bug found: two catalogue rewards at the same stamp_threshold, and handle_stamp_transaction only ever issues one (limit 1, no tie-break). Fix: refuse duplicate stamp thresholds per shop (unique index + UI message), like spend tiers already do.
+- Cleanup still needed after the test: delete the test shop and the two test accounts.
+## Deletion follow-ups (2026-10-18) - Codex, local work complete; Claude review next
+
+**Implemented**
+- `supabase/functions/delete-business/index.ts`, `cleanup.ts`, `supabase/config.toml`: new authenticated endpoint validates the JWT user, owner/admin and exact shop name. Captures every page and nested folder under `<business_id>/` in logos/covers/gallery plus the saved verification document path. Calls `delete_owned_business` with the caller's JWT, then removes files through the service-role Storage API in batches. Existing image RLS depends on the business row, so client removal after RPC would fail. No storage SQL deletes or new database migration.
+- Listing failure blocks the RPC; RPC failure leaves files intact. Storage removal failures do not roll back shop deletion: endpoint returns `deleted: true` with exact bucket/path leftovers and logs them for support. Both clients explicitly report that the shop was deleted and files remain. Account deletion stops before deleting the login if leftovers are reported; a later account-deletion retry also uses the existing delete-my-account owner-file cleanup.
+- `apps/web/src/lib/businesses.ts`: web owner deletion now calls the endpoint; owner Settings already uses this helper. `apps/retailer/App.tsx`: account-deletion shop loop uses the same endpoint. Preserved existing grey-text/discount and other contributors' work.
+- Website owner Settings danger controls were owner-only; admin Businesses had Approve/Reject but no Delete. `apps/web/src/pages/admin/Businesses.tsx` now has Delete shop on each row, exact-name confirmation, cancel, disabled pending state, and list refresh on success. No remaining AccessTools change.
+- `apps/api/test/integration/reward-shop-deletion.test.mjs`: unchanged applied migration loaded into disposable focused PostgreSQL; tests tied reward awards, earned reward catalogue unlinking preserving all other fields, rejection of non-owner/non-admin and wrong-name admin, and admin deletion of another owner's shop plus dependent loyalty data. Fixture adds missing platform types/columns/grants and catalogue cascade; this is not full Supabase history/RLS coverage.
+- `apps/api/test/integration/shop-storage-cleanup.test.ts`: pagination/nesting, failed listing, exact leftovers with continued cleanup in other buckets, verification document removal, and RPC-before-removal/failure ordering.
+
+**Checks actually run**
+- Web `npm run build` PASS, including `tsc -b` and production Vite build; rerun PASS after final Businesses control. Vite warns about existing large chunks.
+- Retailer `npx tsc --noEmit` PASS. `node --test src/reward-discount.test.mjs` 3/3 PASS (Node module-type warning). The separate real-device GBP-off test remains pending and untouched.
+- API `npx tsx --test test/integration/reward-shop-deletion.test.mjs test/integration/shop-storage-cleanup.test.ts`: final 9/9 PASS, no skips. First sandbox run could not initialize PostgreSQL (Windows WAL rename permission denied); reran outside sandbox using only disposable local PostgreSQL. First database run then exposed missing SELECT grant in the focused fixture; corrected and both subsequent runs passed. Initial test-file command used wrong cwd and created no test files; corrected.
+- Scoped `git diff --check` PASS after normalizing accidental newline churn. No EAS update, commit, push, production SQL, wipe script, or deployment run. `20261017225143_fix_reward_and_shop_deletion.sql` was neither edited nor reapplied.
+
+**Gaps / release ordering**
+- New `delete-business` function is NOT deployed. Deploy it before releasing the web/retailer callers; otherwise deletion calls fail safely. No product-owner decision is needed for this local implementation; release is left for Claude review.
+- Deno is not installed: no Deno check/serve or actual Edge/Storage integration run. The cleanup module is exercised by tsx, while handler JWT/HTTP behavior and live Storage permissions remain unverified.
+- No authenticated browser/device smoke test or full API suite run. Claude should review and then use disposable shops/files to exercise owner/admin/non-owner, exact-name confirmation, nested/paginated files and document cleanup, and injected Storage failure reporting. Concurrent uploads during deletion are not serialized by this endpoint; review that residual race before release.
+- No historical orphan cleanup, test-account cleanup or pending GBP-off device test was performed. Applied migration retains valid tied thresholds; ignore the older handoff suggestion to forbid duplicates.
+
+## Review of delete-business follow-ups (2026-10-18) - Claude, APPROVED with 2 fixes before client release
+- Reviewed `supabase/functions/delete-business/{index,cleanup}.ts`, `supabase/config.toml`, `apps/web/src/lib/businesses.ts`, `apps/web/src/pages/admin/Businesses.tsx`, `apps/retailer/App.tsx`, the two new integration tests.
+- Meets acceptance: JWT checked by gateway and handler; owner or admin (has_role, then rechecked inside the RPC); exact-name match; all pages and nested folders listed before the RPC; listing or RPC failure removes nothing; removal failures return exact `bucket/path` leftovers and the shop stays deleted.
+- Checks run by Claude: `deno check` of the function (isolated, passes); `shop-storage-cleanup.test.ts` 4/4 pass; live `has_role(_user_id,_role)` and `delete_owned_business` are executable by `authenticated`. Did not rerun the DB integration tests (Codex reported 9 pass).
+- Deployed: `delete-business` v1 to production, verify_jwt on. Smoke: no auth 401, bad JWT 401, OPTIONS 200. Authenticated owner/admin/non-owner calls and a real Storage cleanup NOT exercised (needs a signed-in test account).
+- Must fix before web deploy or business-app OTA (owner: Codex):
+  1. Every error path returns 4xx, and `supabase.functions.invoke` then returns a generic FunctionsHttpError with `data` null, so users never see "Shop name does not match" / "Not permitted" / the RPC message. Read the body from `error.context` (Response) in both clients.
+  2. `confirmDeleteAccount` (business app) aborts account deletion when a shop was deleted but files were left over. The shop is already gone, so log/report the leftovers and carry on to `delete-my-account`.
+- Accepted limits: files uploaded between listing and the RPC stay behind (rare; leftovers are not reported for them); the unit tests use fake storage; concurrent deletes of the same shop: the second call gets "Shop not found" or an RPC error, no harm.
+- Release order: function is live first (done); then web deploy; then business-app OTA after the user's go-ahead. Not committed.
+
+## Black text LIVE on shopper and website (2026-10-18) - Claude
+
+- Owner approved. Shopper production OTA: Android 0dbf5fd7-5d47-4869-9aa5-b66cc019cc8e, iOS ae58f5e9-186f-4bb0-bb83-f83cf4406a07 (colour-only diff). Roll back with eas update:roll-back-to-embedded if needed.
+- Website: commit e462083 (2 web CSS files + 3 shopper files only) pushed to main; Vercel deployed it, and live CSS shows --color-muted-foreground #000. Uncommitted retailer £ off, web businesses.ts/AccessTools, delete-business and the new migrations were deliberately left out.
+- Business app black text is still on the TEST channel only.
+## Card wallet implementation - 2026-10-18 - Codex
+- Added ExternalCards account-sheet view, pure-JS bwip-js generic encoder rendered through react-native-svg, validation and per-card SecureStore cache with serialized sign-out cleanup. Typed entry only: shopper app.json lacks camera plugin, current store linkage unverified; no new native module/import. App-first Co-op/Lidl/Costa/Greggs withheld without real stable-barcode evidence.
+- Migration generated by Supabase CLI: 20261017230331_shopper_external_cards.sql. Owner-only RLS, immutable ownership, auth cascade, uniqueness and parent-row-locked 30-card guard. Not yet tested or applied. UI/device/scanner acceptance unverified. Dependency install reported existing aggregate npm audit findings (52); no broad audit fix attempted. No EAS update/build, commit or push.
+
+- Wallet verification stage: shopper TypeScript PASS after correcting encoder padding option typing; local barcode/validation/cache tests 3/3 PASS; disposable PostgreSQL owner isolation/anon denial/ownership immutability/unique/30-cap/rename/delete/cascade integration PASS. All eight formats produce SVG. Real reader/device proof remains pending. Initial handoff append used app cwd; moved the newly created app-local note into this root handoff and removed that accidental file.
+
+- Production rollback-only wallet DDL test was rejected by automatic approval review for live schema/grants/trigger changes. No wallet schema created/applied. This conflicts with the requested copied prompt's production dry-run/apply instruction; retained as blocked rather than bypassing the review. Owner approval needed to unblock hosted schema work.
+
+- Follow-up hardening: tested two simultaneous insert connections competing for slot 30 (one succeeds); all wallet integration assertions PASS. Cache now rejects late network writes after sign-out until that owner authenticates again; 3/3 helper/cache tests PASS. Added guarded optional ExpoKeepAwake while displaying a card, and shopper_external_cards to the encrypted recovery backup table list (backup function change local only; deploy after migration). delete-my-account already calls admin.auth.admin.deleteUser, activating the new FK cascade. Android export reached Hermes but sandbox denied index.hbc output; retrying Android+iOS exports outside sandbox.
+
+## Wallet bundle and decoder verification - 2026-10-18 - Codex
+- Android and iOS local expo export PASS outside sandbox (tmp/wallet-export); this is a local JS/Hermes export, not eas build or update. Independent ZXing decoder reads generated EAN-13 and Code128 SVG rasterizations at 320x170 using same-format synthetic test numbers. First decoder attempt omitted reader initialization; corrected setHints and rerun PASS. Shopper TypeScript PASS including optional keep-awake guard.
+- Applied React best-practices review: bounded 30-card collection, memoized barcode encoding, guarded optional native load, cancellation on component disposal, explicit pending/error/empty states and accessible control labels. Added persisted cache-owner cleanup for expired sessions starting already signed out; final verification pending for this small follow-up. No card values are logged or sent to analytics; raw encoder/network errors are replaced with generic UI messages. No hosted wallet changes or function deployment occurred.
+
+## Final local verification - 2026-10-18 - Codex
+- Added isolated mocked browser coverage of actual admin Businesses and deleteOwnedBusiness source. Exact-name disabled gate, cancel with no invocation, refusal preserving row, successful payload and refreshed row all PASS in Chrome. Sandbox localhost navigation was denied; escalated local mock run passed with external requests blocked. No production mutation. Test-only fixture additions in scripts/admin-reference-preview/supabase.ts and scripts/check-deletion-ui.cjs.
+- Final shopper TypeScript PASS; combined Storage + barcode/cache tests 7/7 PASS after persistent-owner cleanup. scripts/verify-wallet-barcodes.mjs independent raster decode PASS for EAN-13/Code128. Phone/iOS/Android UI, true airplane-mode use and physical-scanner acceptance remain unrun; no device screenshots. Backup function table-list change is local and not Deno checked (Deno unavailable), and must not deploy before wallet schema. Hosted approval blockers unchanged.
+
+- Final source review: barcode always fits the available screen width so long codes are not clipped behind a horizontal viewport. Very long codes still need physical scanner acceptance at phone pixel density. Account-row formatting cleaned up; whitespace check passes. These UI-only refinements follow the successful bundle export; final export process currently running.
+
+## Completion boundary - 2026-10-18 - Codex
+- Repeated Android+iOS local exports PASS including persisted cache-owner cleanup (tmp/wallet-export-final). Final barcode-width fit and account-row whitespace refinements are typechecked separately; no additional runtime/device claim. No hosted mutation, EAS update/build, commit or push by this run. Claude review and owner production/device acceptance remain. All changed/untracked contributor work is preserved.
+
+## Review: card wallet + delete-business follow-ups (2026-10-18) - Claude
+- Wallet APPROVED for hosted apply, pending owner approval. Reviewed the migration, external-card-cache.ts, external-cards.ts, external-card-barcode.ts and ExternalCards.tsx.
+  - RLS: a single owner-only policy (using + with check on auth.uid()); anon has nothing; ownership can't change. Correct.
+  - 30-card cap: the insert trigger locks the owner's profiles row FOR UPDATE, then counts, so concurrent inserts queue. Codex's two-connection test passed. Under invoker rights this needs authenticated UPDATE on profiles plus the existing profiles_update_self policy. Both exist in the local migrations; live grants were not checked because a production read was denied. A user with no profiles row cannot add cards (accepted).
+  - Auth cascade: FK ON DELETE CASCADE, and delete-my-account calls admin.deleteUser. Correct.
+  - Cache: one serial queue, clear bumps a generation, and the signed-out set blocks late writes. A persisted owner key clears a stale owner's cache on cold start. No race found. Accepted limit: if the device cache write fails after a server delete, the deleted card can still show offline until the next refresh.
+  - Logging: no console/Sentry/analytics calls in the wallet files; encoder and network errors are replaced with generic text. Correct.
+- delete-business: NOT fixed. Both must-fix items from my 2026-10-18 review are still open:
+  1. apps/web/src/lib/businesses.ts:108 and apps/retailer/App.tsx:2578 still throw the bare FunctionsHttpError, so users never see the server's message.
+  2. confirmDeleteAccount still aborts account deletion when files are left over.
+  Block the web deploy and the business-app OTA until fixed.
+- UX gap (Codex, before release): shoppers must pick the barcode format by hand and won't know Nectar's or Clubcard's. Pre-select a default format per brand once real cards confirm it, and leave the format picker under "Other / change format".
+- Still required before release (owner: user + Codex): Android/iOS offline add/view/rename/delete on real phones, and a physical scanner reading the EAN-13 and Code128 barcodes shown on the phone. Camera scanning is deferred to the next native build.
+- Release order: owner approval, then dry-run, then apply the migration; then deploy export-platform-backup; then shopper OTA after owner approval. Nothing was committed or deployed by Claude.
+
+## Requested client and wallet UX follow-up - 2026-10-18 - Codex
+- Existing shared client fixes already parse FunctionsHttpError.context JSON and continue account deletion after shop leftovers; preserved them. Hardened blank server error fallback in web/retailer. Retailer now also reports accumulated leftover count if a later deletion stage fails, without analytics or file paths.
+- Added evidenced Nectar Code128 default, per-brand format choice and Change format disclosure. Unconfirmed brands use code128 with the picker initially visible. Existing cards are untouched; choosing a brand/new card resets the format/disclosure. Verification pending; no hosted changes or release commands.
+
+- Client regression stage PASS: 4 tests execute actual web/retailer function source with in-memory providers (no native/network imports): JSON server refusal, missing/non-JSON/blank error fallback, leftovers continue to delete-my-account/sign-out, count-only final alert, and later failure still reports count. No paths enter analytics. Wallet helper/cache/default tests 4/4 PASS; total focused tests 8/8. Added docs/CARD_WALLET_FORMAT_EVIDENCE.md with firsthand Nectar scan, GS1/payload caveats and explicit unconfirmed brands. No hosted work attempted.
+
+## Follow-up verification complete - 2026-10-18 - Codex
+- Web npm run build PASS (tsc + Vite; existing large-chunk warning); retailer TypeScript PASS; shopper TypeScript PASS; focused client and wallet tests 8/8 PASS. Initial whitespace check exposed whole-file CRLF conversion in two files with mixed-line-ending indices; restored index endings for unchanged lines and retained all content edits. Final git diff --check PASS (normal line-ending warnings only).
+- Existing client fixes were present at run start and preserved, with blank-message fallback and later-failure cleanup-count hardening added. No file-path analytics. New source-executing client regressions in apps/retailer/deletion-clients.test.mjs, brand-default assertions in apps/shopper/external-cards.test.mjs.
+- Nectar Code128 default is supported by a firsthand decoded physical-card account, not a universal card-variant guarantee. GS1/FNC1 and barcode-vs-membership-number limitations documented; other brands remain unconfirmed with visible picker. Confirmed default can be changed. No native module added; saved cards retain their format.
+- STOPPED as requested before any hosted SQL/deploy. Current live authenticated UPDATE on public.profiles was not rechecked in this run; it is a prerequisite in the approval request. No eas update, eas build, commit or push. Android/iOS offline/device/physical-scanner acceptance remains outstanding.
+
+## Review: deletion clients + wallet formats (2026-10-18) - Claude, APPROVED
+- Deletion clients (apps/web/src/lib/businesses.ts, apps/retailer/App.tsx confirmDeleteAccount): both read the server message from error.context with a generic fallback. Account deletion now carries on past file leftovers, gives a count (not paths) in the final alert, and mentions it in the error alert too. Both earlier must-fix items are closed. Minor and left as is: the delete-my-account error is still the generic one.
+- Wallet formats: only Nectar gets a default (code128, picker hidden behind "Change format"); the others show the picker. This is honest, and the evidence doc is careful.
+- Risk to test (owner: user, with a real Nectar card): the evidence says Nectar's barcode data can differ from the number printed elsewhere on the card, and the input hint says "Type the number below the barcode". At the physical-scanner test, type the digits printed directly under the barcode and confirm a scanner reads the same value as the plastic card. If it doesn't, hide Nectar from typed entry until camera scanning ships. The GS1-128 Nectar variant isn't supported (bwip-js has gs1-128 if it's ever needed).
+- Checks: read the code only. Relied on Codex's reported web build, retailer/shopper tsc and 8 tests passing; not rerun.
+- Remaining, needs owner approval: production steps on tgukdabfvvoywawmzbdo (confirm profiles UPDATE grant, rollback-only dry run, apply wallet migration, verify RLS/cap/cascade, deploy export-platform-backup); then web deploy, shopper and business-app OTA; device and scanner acceptance.
+
+## Wallet table LIVE + backup function deployed (2026-10-18) - Claude, owner-approved
+- Pre-check on tgukdabfvvoywawmzbdo: authenticated has UPDATE on public.profiles, the profiles_update_self policy exists, and 0 auth users lack a profiles row.
+- Rollback-only dry run of the migration plus checks, as authenticated on 2 real profiles: the 31st card was refused, inserting a card for another user was refused, user B saw 0 and updated 0 of A's cards, and the FK is ON DELETE CASCADE.
+- Applied as version 20261017234534 (name shopper_external_cards). The local file was renamed from 20261017230331 to match; update any references. Rechecked on live with the same checks plus anon denied, rolled back; 0 rows left.
+- export-platform-backup v12 deployed (verify_jwt on). The only change is shopper_external_cards in the table list. Smoke: no auth 401, OPTIONS 200. An authenticated admin export was not run.
+- Not done (needs owner approval): web deploy, shopper OTA (the wallet UI), business-app OTA, commit. Device offline CRUD and physical scanner tests (incl. the Nectar check above) are still pending.
 
 ## Copy-ready prompt for Claude Code
 
-Read CLAUDE_HANDOFF.md sections 'Go-live preparation (2026-10-10)' and 'Test-data cleanup complete (2026-10-16)'. The database and Storage are clean. Remaining owner-dependent items: appeal Meta's WhatsApp account disablement; confirm the iPhone shopper app works after the 14 Oct OTA fix; legal documents wording (they still describe spend rewards and Fidel). Once the owner approves a new version for review, build the native shopper app including expo-location, and run eas metadata:push for both store.config.json files. Do not rerun scripts/wipe-test-data/02-wipe.sql.
+Claude: review the deletion-client and wallet-format follow-up in apps/web/src/lib/businesses.ts, apps/retailer/App.tsx, apps/shopper/src/external-card-barcode.ts and components/ExternalCards.tsx. Check docs/CARD_WALLET_FORMAT_EVIDENCE.md, especially Nectar GS1/payload limits. Web build, retailer/shopper TypeScript and 8 focused tests passed; device/scanner acceptance remains unrun. Owner approval is still required: on tgukdabfvvoywawmzbdo first confirm authenticated UPDATE on public.profiles, then rollback-only dry-run and apply supabase/migrations/20261017230331_shopper_external_cards.sql, verify hosted RLS/cap/cascade, then deploy export-platform-backup. No production action has run in this follow-up. Do not run eas update, eas build, commit or push without owner approval.

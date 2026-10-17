@@ -52,6 +52,7 @@ import { SuccessCheck } from './src/components/SuccessCheck'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
 import { trendingShops } from './src/trending'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
+import { ExternalCards } from './src/components/ExternalCards'
 import logo from './assets/brand/loyalty-loop-logo.png'
 
 const FONT_DISPLAY = fonts.nativeDisplay
@@ -670,8 +671,8 @@ function SettingsGroup({ title, children }: { title?: string; children: ReactNod
   )
 }
 
-type SettingsView = 'root' | 'card' | 'name' | 'blocked' | 'cards'
-const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Customer card', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards' }
+type SettingsView = 'root' | 'card' | 'name' | 'blocked' | 'cards' | 'externalCards'
+const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Customer card', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards', externalCards: 'My other cards' }
 
 /** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
  * grouped rows — security & privacy → notifications → support → legal → account.
@@ -785,6 +786,9 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   <ChevronRightIcon color={primary} size={18} />
                 </Pressable>
               </LinearGradient>
+              <SettingsGroup title="Other loyalty cards">
+                <SettingsRow tile="green" icon={(c) => <CardIcon color={c} size={18} />} title="My other cards" detail="Show your other loyalty cards at the till" onPress={() => setView('externalCards')} last />
+              </SettingsGroup>
               <SettingsGroup title="Shop requests">
                 <SettingsRow tile="orange" icon={(c) => <MegaphoneIcon color={c} size={18} />} title="Shops you've asked for" detail="See progress or withdraw a request" onPress={() => setShowRequests(true)} last />
               </SettingsGroup>
@@ -843,6 +847,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             </View>
           )}
 
+          {view === 'externalCards' && <ExternalCards userId={userId} />}
           {view === 'name' && (
             <>
               <View style={styles.settingsCard}>
