@@ -2512,6 +2512,13 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - export-platform-backup v12 deployed (verify_jwt on). The only change is shopper_external_cards in the table list. Smoke: no auth 401, OPTIONS 200. An authenticated admin export was not run.
 - Not done (needs owner approval): web deploy, shopper OTA (the wallet UI), business-app OTA, commit. Device offline CRUD and physical scanner tests (incl. the Nectar check above) are still pending.
 
+## Released: wallet, delete fixes, black text, £ off (2026-10-18) - Claude, owner-approved
+- Commit 5ecf8f1 pushed to main (tmp/ excluded). Both Vercel statuses for the commit report success, so the website is live with the delete-business error messages and the admin Delete shop control.
+- Shopper production OTA (card wallet "My other cards"): Android group 2b814490-2a1d-4c2e-8c35-f3758d4726ec, iOS group b205b52d-638e-4923-9a8c-220593d2782d, runtime 1.0.0.
+- Business app production OTA: Android 007e50c4-9b90-4d81-8bc0-4e99b9d6a413, iOS c6582ff0-c246-455c-8083-da850bda54df. The owner chose to ship everything pending: the delete fixes, black text and the £ off reward redeem flow. £ off was NOT device-tested before release.
+- Rollback if needed: `eas update:roll-back-to-embedded` or republish the previous group per platform.
+- Next: owner device checks of the wallet (offline CRUD, physical scanner incl. Nectar), a £ off redeem on a real shop, and a real shop deletion with images. Claude watches Sentry for new shopper and business errors.
+
 ## Copy-ready prompt for Claude Code
 
 Claude: review the deletion-client and wallet-format follow-up in apps/web/src/lib/businesses.ts, apps/retailer/App.tsx, apps/shopper/src/external-card-barcode.ts and components/ExternalCards.tsx. Check docs/CARD_WALLET_FORMAT_EVIDENCE.md, especially Nectar GS1/payload limits. Web build, retailer/shopper TypeScript and 8 focused tests passed; device/scanner acceptance remains unrun. Owner approval is still required: on tgukdabfvvoywawmzbdo first confirm authenticated UPDATE on public.profiles, then rollback-only dry-run and apply supabase/migrations/20261017230331_shopper_external_cards.sql, verify hosted RLS/cap/cascade, then deploy export-platform-backup. No production action has run in this follow-up. Do not run eas update, eas build, commit or push without owner approval.
