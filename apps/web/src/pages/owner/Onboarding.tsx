@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Check, Store, MapPin, Palette, ArrowRight, ArrowLeft } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/states'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { createBusiness, type Business } from '@/lib/businesses'
@@ -54,7 +55,7 @@ export function OwnerOnboarding() {
     stamps_required: 10,
   })
 
-  if (loading || rolesLoading || ownerLoading) return null
+  if (loading || rolesLoading || ownerLoading) return <div className="min-h-screen bg-[#F7ECDC] p-8"><ListSkeleton /></div>
   if (!session) return <Navigate to="/login" replace />
   if (!roles.includes('business_owner')) return <Navigate to="/dashboard" replace />
   if (businesses.length > 0) return <Navigate to="/owner" replace />
@@ -229,7 +230,7 @@ export function OwnerOnboarding() {
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="flex items-center gap-1.5 text-sm font-semibold text-[#1a1a1a]/50 disabled:opacity-0"
+              className="flex min-h-11 items-center gap-1.5 px-2 -ml-2 text-sm font-semibold text-[#1a1a1a]/50 disabled:opacity-0"
             >
               <ArrowLeft className="h-4 w-4" /> Back
             </button>

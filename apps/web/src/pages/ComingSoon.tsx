@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { ListSkeleton } from '@/components/ui/states'
 
 export function ComingSoon({ title }: { title: string }) {
   const { session, loading } = useAuth()
 
-  if (loading) return null
+  if (loading) return <DashboardLayout><ListSkeleton /></DashboardLayout>
   if (!session) return <Navigate to="/login" replace />
 
   return (
