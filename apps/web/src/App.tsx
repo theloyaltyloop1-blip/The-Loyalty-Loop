@@ -28,6 +28,7 @@ import { CookieConsent } from '@/components/cookie-consent'
 import { OwnerTools } from '@/pages/owner/Tools'
 import { OwnerNotifications } from '@/pages/owner/Notifications'
 import { BrandWorkspace } from '@/pages/BrandWorkspace'
+import { RouteTitle } from '@/components/route-title'
 
 const queryClient = new QueryClient()
 
@@ -37,6 +38,7 @@ function App() {
       <AuthProvider>
         <OwnerProvider>
           <BrowserRouter>
+            <RouteTitle />
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/dashboard" element={<Home />} />
