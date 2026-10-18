@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { getReferralCode, requestAccountDeletion } from '@/lib/engagement'
+import { ListSkeleton, ErrorState } from '@/components/ui/states'
 
 interface ProfileData {
   first_name: string | null
@@ -53,13 +54,19 @@ export function ProfilePage() {
   const [copied, setCopied] = React.useState(false)
   const [referralCode, setReferralCode] = React.useState('')
   const [deleting, setDeleting] = React.useState(false)
+  const [loadError, setLoadError] = React.useState(false)
+  const [saveError, setSaveError] = React.useState<string | null>(null)
+  const [reload, setReload] = React.useState(0)
 
   React.useEffect(() => {
     if (!session?.user) return
+    setLoadError(false)
     Promise.all([
       supabase.from('profiles').select('first_name,last_name,phone,postcode,stamp_code').eq('id', session.user.id).single(),
       supabase.from('user_settings').select('notify_offers,notify_rewards,notify_stamps').eq('user_id', session.user.id).single(),
     ]).then(([p, s]) => {
+      // Never render the edit form with blanks after a failed load — saving would wipe the profile.
+      if (p.error) { setLoadError(true); setReady(true); return }
       if (p.data) {
         setProfile(p.data as ProfileData)
         setForm({
@@ -73,20 +80,25 @@ export function ProfilePage() {
       getReferralCode(session.user.id).then(setReferralCode).catch(() => undefined)
       setReady(true)
     })
-  }, [session?.user])
+  }, [session?.user, reload])
 
-  if (loading || !ready) return null
-  if (!session) return <Navigate to="/login" replace />
+  if (!loading && !session) return <Navigate to="/login" replace />
+  if (loading || !ready) return <DashboardLayout><ListSkeleton /></DashboardLayout>
+  if (!session) return null
+  if (loadError) return <DashboardLayout><ErrorState message="We couldn’t load your profile." onRetry={() => { setReady(false); setReload((n) => n + 1) }} /></DashboardLayout>
 
   async function handleSaveProfile() {
     if (!session?.user) return
     setSaving(true)
+    setSaveError(null)
     try {
       const { error } = await supabase.from('profiles').update(form).eq('id', session.user.id)
       if (!error) {
         setProfile((prev) => (prev ? { ...prev, ...form } : prev))
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
+      } else {
+        setSaveError('Couldn’t save your changes. Please try again.')
       }
     } finally {
       setSaving(false)
@@ -97,7 +109,9 @@ export function ProfilePage() {
     if (!session?.user || !settings) return
     const next = { ...settings, [key]: !settings[key] }
     setSettings(next)
-    await supabase.from('user_settings').update({ [key]: next[key] }).eq('user_id', session.user.id)
+    setSaveError(null)
+    const { error } = await supabase.from('user_settings').update({ [key]: next[key] }).eq('user_id', session.user.id)
+    if (error) { setSettings(settings); setSaveError('Couldn’t update that setting. Please try again.') }
   }
 
   function handleCopyCode() {
@@ -182,6 +196,8 @@ export function ProfilePage() {
         >
           <User className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
         </button>
+        {saved && <p role="status" className="sr-only">Profile saved</p>}
+        {saveError && <p role="alert" className="mt-3 text-sm font-semibold text-red-600">{saveError}</p>}
       </SectionCard>
 
       {settings && (

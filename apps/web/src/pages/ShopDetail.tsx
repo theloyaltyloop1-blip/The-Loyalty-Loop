@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ListSkeleton, ErrorState } from '@/components/ui/states'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
@@ -93,9 +94,10 @@ export function ShopDetail() {
   const requestIdRef = React.useRef(0)
   const loyaltyCardRef = React.useRef<HTMLDivElement>(null)
 
-  const refetch = React.useCallback(async () => {
+  const [loadError, setLoadError] = React.useState(false)
+  const load = React.useCallback(async (thisRequestId: number) => {
     if (!slug || !userId) return
-    const thisRequestId = ++requestIdRef.current
+    setLoadError(false)
     const biz = await fetchBusinessBySlug(slug)
     if (!biz) {
       if (thisRequestId === requestIdRef.current) setReady(true)
@@ -114,6 +116,16 @@ export function ShopDetail() {
     setOptedIn(m ? !m.promos_opted_out : true)
     setReady(true)
   }, [slug, userId])
+
+  const refetch = React.useCallback(async () => {
+    if (!slug || !userId) return
+    const thisRequestId = ++requestIdRef.current
+    try {
+      await load(thisRequestId)
+    } catch {
+      if (thisRequestId === requestIdRef.current) { setLoadError(true); setReady(true) }
+    }
+  }, [slug, userId, load])
 
   React.useEffect(() => {
     refetch()
@@ -137,7 +149,7 @@ export function ShopDetail() {
 
   React.useEffect(() => {
     if (!userId || !business) return
-    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
+    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id))).catch(() => undefined)
   }, [userId, business?.id])
 
   async function handleToggleFavourite() {
@@ -152,8 +164,10 @@ export function ShopDetail() {
     }
   }
 
-  if (loading || !ready) return null
-  if (!session) return <Navigate to="/login" replace />
+  if (!loading && !session) return <Navigate to="/login" replace />
+  if (loading || !ready) return <DashboardLayout><ListSkeleton /></DashboardLayout>
+  if (!session) return null
+  if (loadError) return <DashboardLayout><ErrorState message="We couldn’t load this shop." onRetry={() => { setReady(false); refetch() }} /></DashboardLayout>
   if (!business) return <Navigate to="/dashboard" replace />
 
   const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
@@ -183,11 +197,12 @@ export function ShopDetail() {
     if (!session?.user || !business || !membership) return
     const next = !optedIn
     setOptedIn(next)
-    await supabase
+    const { error } = await supabase
       .from('memberships')
       .update({ promos_opted_out: !next })
       .eq('user_id', session.user.id)
       .eq('business_id', business.id)
+    if (error) setOptedIn(!next)
   }
 
   async function handleSimulateStamp() {

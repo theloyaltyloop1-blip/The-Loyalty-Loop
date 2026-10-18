@@ -350,3 +350,25 @@ undersized: 0
 - Customer layout floating "Security" button (`dashboard-layout.tsx`) has no action — dead control; intent unclear, left for product decision.
 - Announcements/Reviews/Support show raw backend messages (e.g. "boom" in mocks) and the empty state simultaneously on failure.
 - Desktop sidebar unchanged (verified visible at 1280px, menu button hidden).
+
+## Pass 5–6 – mutations & detail pages
+| Severity | Issue | Fix |
+|---|---|---|
+| **High** | Profile: failed load still rendered the edit form with blank fields; pressing Save would overwrite the real profile with blanks | ErrorState + retry instead of form on load failure |
+| **High** | ShopDetail: fetch failure → unhandled rejection, blank page forever | ErrorState + retry; skeleton while loading |
+| Med | Profile save & notification toggles failed silently (toggle stayed flipped) | Inline alert; toggle reverts on failure |
+| Med | ShopDetail promo opt-in toggle stayed flipped on failure | Reverts |
+| Med | Owner Announcements/Reviews/Support: load failure showed raw backend text *and* "No … yet" empty state; empty state flashed before load | Dedicated loading/error/ready list state with retry |
+| Med | Announcement publish & support request had no success confirmation | `role=status` confirmation messages |
+| Low | Review post/delete had no confirmation | Status message |
+| Low | Remaining owner pages returned `null` during auth load | Skeleton |
+
+Mutation flow test (mock 201 vs 400):
+```
+announce: ["Published — customers will see it on their News page."]
+support: ["Request sent — we’ll reply here."]
+promo: ["Draft saved."]
+announce: ["insert failed"]
+support: ["insert failed"]
+promo: ["Couldn’t save the promotion. Please try again."]
+```
