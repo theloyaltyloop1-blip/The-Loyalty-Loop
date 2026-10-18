@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/report-error'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Megaphone } from 'lucide-react'
@@ -9,7 +10,7 @@ export function NewsPage() {
   const { session, loading } = useAuth()
   const [items, setItems] = React.useState<Announcement[]>([])
   const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { if (session) fetchAnnouncements().then(setItems).finally(() => setReady(true)) }, [session])
+  React.useEffect(() => { if (session) void fetchAnnouncements().then(setItems).catch(reportError).finally(() => setReady(true)) }, [session])
   if (loading || !ready) return null
   if (!session) return <Navigate to="/login" replace />
   return <DashboardLayout>

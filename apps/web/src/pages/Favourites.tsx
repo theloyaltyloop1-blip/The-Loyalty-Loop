@@ -14,7 +14,7 @@ export function FavouritesPage() {
 
   React.useEffect(() => {
     if (!session?.user) return
-    Promise.all([fetchFavouriteBusinesses(session.user.id), fetchMyMemberships(session.user.id)])
+    void Promise.all([fetchFavouriteBusinesses(session.user.id), fetchMyMemberships(session.user.id)])
       .then(([b, m]) => {
         setBusinesses(b)
         setMemberships(m)

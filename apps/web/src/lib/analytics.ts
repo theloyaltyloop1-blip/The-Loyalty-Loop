@@ -27,20 +27,16 @@ function isoDaysAgo(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 }
 
-function baseCount(table: string, businessId: string) {
-  return supabase.from(table).select('id', { count: 'exact', head: true }).eq('business_id', businessId)
+function stampCount(businessId: string) {
+  return supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('business_id', businessId).eq('type', 'stamp')
 }
-type CountQuery = ReturnType<typeof baseCount>
+function rewardCount(businessId: string) {
+  return supabase.from('rewards').select('id', { count: 'exact', head: true }).eq('business_id', businessId)
+}
+type CountQuery = ReturnType<typeof stampCount> | ReturnType<typeof rewardCount>
 
-async function countRows(
-  table: string,
-  businessId: string,
-  extra: (q: CountQuery) => CountQuery,
-  from?: string,
-  to?: string
-): Promise<number> {
-  let q = baseCount(table, businessId)
-  q = extra(q)
+async function countRows(base: CountQuery, from?: string, to?: string): Promise<number> {
+  let q = base
   if (from) q = q.gte('created_at', from)
   if (to) q = q.lt('created_at', to)
   const { count, error } = await q
@@ -78,10 +74,10 @@ export async function fetchPeriodStats(businessId: string, period: Period): Prom
       .gte('joined_at', prevStart)
       .lt('joined_at', periodStart)
       .then((r) => r.count ?? 0),
-    countRows('transactions', businessId, (q) => q.eq('type', 'stamp'), periodStart, now),
-    countRows('transactions', businessId, (q) => q.eq('type', 'stamp'), prevStart, periodStart),
-    countRows('rewards', businessId, (q) => q, periodStart, now),
-    countRows('rewards', businessId, (q) => q, prevStart, periodStart),
+    countRows(stampCount(businessId), periodStart, now),
+    countRows(stampCount(businessId), prevStart, periodStart),
+    countRows(rewardCount(businessId), periodStart, now),
+    countRows(rewardCount(businessId), prevStart, periodStart),
     supabase
       .from('rewards')
       .select('id', { count: 'exact', head: true })

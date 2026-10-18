@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/report-error'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
@@ -198,7 +199,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    fetchBusinessPhotos(businessId).then(setPhotos).finally(() => setLoadingPhotos(false))
+    void fetchBusinessPhotos(businessId).then(setPhotos).catch(reportError).finally(() => setLoadingPhotos(false))
   }, [businessId])
 
   async function handleUpload(file: File | undefined) {
@@ -475,7 +476,7 @@ function LoyaltyTab() {
     setStampsRequired(business.loyalty_config.stamps_required ?? 10)
     setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
-    fetchRewardCatalog(business.id).then(setCatalog)
+    void fetchRewardCatalog(business.id).then(setCatalog)
     // Re-sync local form state only when the selected shop changes, not on every
     // local patch, so unsaved edits are not clobbered.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
@@ -738,7 +739,7 @@ function WinbackTab() {
   const loadLog = React.useCallback(() => {
     if (!businessId) return
     setLoadingLog(true)
-    fetchWinbackLog(businessId)
+    void fetchWinbackLog(businessId)
       .then(setLog)
       .finally(() => setLoadingLog(false))
   }, [businessId])
@@ -1133,7 +1134,7 @@ function StaffTab() {
 
   React.useEffect(() => {
     if (!businessId) return
-    fetchStaffMembers(businessId).then(setStaff).finally(() => setLoadingStaff(false))
+    void fetchStaffMembers(businessId).then(setStaff).catch(reportError).finally(() => setLoadingStaff(false))
   }, [businessId])
 
   if (!business) return null

@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/report-error'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -43,7 +44,7 @@ export function RewardsPage() {
 
   React.useEffect(() => {
     if (!session?.user) return
-    fetchMyRewards(session.user.id).then(setRewards).finally(() => setReady(true))
+    void fetchMyRewards(session.user.id).then(setRewards).catch(reportError).finally(() => setReady(true))
   }, [session?.user])
 
   if (loading || !ready) return null

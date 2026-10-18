@@ -16,7 +16,10 @@
     "no-debugger": "error",
     "eqeqeq": ["error", "smart"],
     "typescript/no-explicit-any": "error",
-    "import/no-cycle": "error"
+    "import/no-cycle": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-misused-promises": ["error", { "checksVoidReturn": { "attributes": false } }]
   },
-  "ignorePatterns": ["dist", "node_modules"]
+  "ignorePatterns": ["dist", "node_modules", "src/lib/database.types.ts"]
 }

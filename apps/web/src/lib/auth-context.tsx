@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadRoles = React.useCallback(async (userId: string) => {
     const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId)
     if (!error && data) {
-      setRoles(data.map((r) => r.role as AppRole))
+      setRoles(data.map((r) => r.role))
     }
   }, [])
 
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, loadRoles])
 
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
     })
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (session?.user) {
-      refreshRoles()
+      void refreshRoles()
     } else {
       setRoles([])
       setRolesLoading(false)

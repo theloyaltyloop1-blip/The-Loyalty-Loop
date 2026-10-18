@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/report-error'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { History, Award } from 'lucide-react'
@@ -8,7 +9,7 @@ import { fetchActivity, type ActivityItem } from '@/lib/engagement'
 const labels: Record<ActivityItem['type'], string> = { stamp: 'Stamp collected', points_earn: 'Points earned', points_spend: 'Points spent', redeem: 'Reward redeemed' }
 export function ActivityPage() {
   const { session, loading } = useAuth(); const [items, setItems] = React.useState<ActivityItem[]>([]); const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { if (session?.user) fetchActivity(session.user.id).then(setItems).finally(() => setReady(true)) }, [session?.user])
+  React.useEffect(() => { if (session?.user) void fetchActivity(session.user.id).then(setItems).catch(reportError).finally(() => setReady(true)) }, [session?.user])
   if (loading || !ready) return null; if (!session) return <Navigate to="/login" replace />
   return <DashboardLayout><p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Your loyalty</p><h1 className="text-3xl font-display font-extrabold">Activity & achievements</h1><p className="text-[#1a1a1a]/55 mt-2 mb-7">Every stamp, point and reward in one place.</p>
     <section className="grid gap-4 sm:grid-cols-3 mb-8">{[{ name: 'First visit', done: items.some(x=>x.type==='stamp') }, { name: 'Regular', done: items.filter(x=>x.type==='stamp').length>=5 }, { name: 'Reward hunter', done: items.some(x=>x.type==='redeem') }].map(b => <div key={b.name} className={'rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,.08)] ' + (b.done ? 'bg-[#FFF0C2]' : 'bg-[#FBF6EC] opacity-65')}><Award className={'h-6 w-6 mb-2 ' + (b.done?'text-[#E8703B]':'text-black/30')}/><p className="font-display font-bold">{b.name}</p><p className="text-xs text-black/50">{b.done ? 'Unlocked' : 'Keep going to unlock'}</p></div>)}</section>

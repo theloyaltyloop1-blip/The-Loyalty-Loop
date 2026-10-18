@@ -53,7 +53,7 @@ export function Home() {
       .single()
       .then(({ data }) => setFirstName(data?.first_name ?? null))
 
-    Promise.all([fetchBusinesses(), fetchMyMemberships(session.user.id)])
+    void Promise.all([fetchBusinesses(), fetchMyMemberships(session.user.id)])
       .then(([b, m]) => {
         setBusinesses(b)
         setMemberships(m)

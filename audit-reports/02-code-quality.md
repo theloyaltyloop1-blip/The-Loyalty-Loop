@@ -33,3 +33,24 @@ Build: `tsc -b && vite build` ✓ (JS 234 kB / 75 kB gzip). No type errors.
 
 ## Raw outputs
 - `baseline-oxlint.txt`, `strict-before-fix.txt`, `strict-after-fix.txt` (this directory).
+
+---
+
+## Pass 2 — Type-aware linting & DB types
+
+### Type-aware rules (oxlint `--type-aware` via `oxlint-tsgolint`)
+- Enabled `no-floating-promises`, `await-thenable`, `no-misused-promises` (JSX attribute void-return check off — standard React convention).
+- Before: 36 floating promises, 67 misused (`typeaware-before.txt`). After: 0 errors (`typeaware-after.txt`).
+- Added `src/lib/report-error.ts`; fetch chains in effects now `.catch(reportError)` before `.finally(...)` (previously unhandled rejections). Inbox/Notifications read-mark mutations also catch. Intentional fire-and-forget calls marked `void`.
+- `Scan.tsx`: rAF callback wraps async `tick` (`() => void tick()`).
+
+### Supabase generated types
+- Generated `src/lib/database.types.ts` from project `tgukdabfvvoywawmzbdo`; client is now `createClient<Database>`.
+- Surfaced & fixed 14 real type mismatches: invalid dynamic table names in analytics (split into typed `stampCount`/`rewardCount`), `_reason` null vs undefined for RPC, `SupportRequest.business` optional (not selected in some queries), role select typed as `app_role` enum, `LoyaltyConfig`/`DayHours` → type aliases (JSON-compatible), admin health check uses untyped client for dynamic schema/table.
+- Removed redundant casts via `--fix`.
+
+### Remaining warnings (42, capped by `lint --max-warnings 42`)
+- 39× `no-unsafe-type-assertion`: hand-written interfaces narrower than DB row types (e.g. `string` → union). Follow-up: derive app types from `Tables<'...'>` and add runtime guards.
+- 2× `only-export-components`, 1× `consistent-return` (effect cleanup in Scan).
+
+Regenerate types after migrations: Supabase MCP `generate_typescript_types` or `supabase gen types typescript --project-id tgukdabfvvoywawmzbdo > apps/web/src/lib/database.types.ts`.

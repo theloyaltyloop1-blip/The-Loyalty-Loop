@@ -69,7 +69,7 @@ export function OwnerOnboarding() {
       const business = await createBusiness(session!.user.id, form)
       await refetch()
       setBusinessId(business.id)
-      navigate('/owner')
+      void navigate('/owner')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create your shop — try again.')
     } finally {

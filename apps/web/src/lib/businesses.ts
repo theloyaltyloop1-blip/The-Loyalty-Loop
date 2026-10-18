@@ -1,12 +1,12 @@
 import { supabase } from './supabase'
 
-export interface LoyaltyConfig {
+export type LoyaltyConfig = {
   stamps_required?: number
   stamp_icon?: string
   signup_reward_title?: string
 }
 
-export interface DayHours {
+export type DayHours = {
   closed: boolean
   open: string
   close: string
@@ -162,13 +162,13 @@ export async function uploadBusinessImage(
   if (uploadError) throw uploadError
 
   const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path)
-  return updateBusiness(businessId, { [field]: publicUrl.publicUrl } as Partial<Business>)
+  return updateBusiness(businessId, { [field]: publicUrl.publicUrl })
 }
 
 export async function fetchMyMemberships(userId: string): Promise<Membership[]> {
   const { data, error } = await supabase.from('memberships').select('*').eq('user_id', userId)
   if (error) throw error
-  return data as Membership[]
+  return data
 }
 
 export async function fetchMembership(userId: string, businessId: string): Promise<Membership | null> {
@@ -179,7 +179,7 @@ export async function fetchMembership(userId: string, businessId: string): Promi
     .eq('business_id', businessId)
     .maybeSingle()
   if (error) throw error
-  return data as Membership | null
+  return data
 }
 
 export async function joinBusiness(userId: string, businessId: string): Promise<Membership> {
@@ -196,7 +196,7 @@ export async function joinBusiness(userId: string, businessId: string): Promise<
     .select()
     .single()
   if (error) throw error
-  return data as Membership
+  return data
 }
 
 export async function fetchRewardCatalog(businessId: string): Promise<RewardCatalogItem[]> {
@@ -206,7 +206,7 @@ export async function fetchRewardCatalog(businessId: string): Promise<RewardCata
     .eq('business_id', businessId)
     .order('sort_order')
   if (error) throw error
-  return data as RewardCatalogItem[]
+  return data
 }
 
 export async function addRewardCatalogItem(
@@ -219,7 +219,7 @@ export async function addRewardCatalogItem(
     .select()
     .single()
   if (error) throw error
-  return data as RewardCatalogItem
+  return data
 }
 
 export async function deleteRewardCatalogItem(id: string) {
@@ -248,7 +248,7 @@ export async function fetchWinbackLog(businessId: string): Promise<WinbackLogEnt
     .order('sent_at', { ascending: false })
     .limit(50)
   if (error) throw error
-  return data as WinbackLogEntry[]
+  return data
 }
 
 export async function triggerWinbackEmails(businessId: string, daysInactiveThreshold: number) {
@@ -363,7 +363,7 @@ export async function fetchShopReviews(businessId: string): Promise<ShopReview[]
     .eq('business_id', businessId)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data ?? []).map((row) => ({ ...row, reply: Array.isArray(row.reply) ? row.reply[0] ?? null : row.reply })) as ShopReview[]
+  return (data ?? []).map((row) => ({ ...row, reply: Array.isArray(row.reply) ? row.reply[0] ?? null : row.reply }))
 }
 
 export async function upsertReview(businessId: string, userId: string, rating: number, body: string) {
@@ -402,7 +402,7 @@ export async function fetchMyRewards(userId: string): Promise<CustomerReward[]> 
   return (data ?? []).map((row) => ({
     ...row,
     business: Array.isArray(row.business) ? row.business[0] ?? null : row.business,
-  })) as CustomerReward[]
+  }))
 }
 
 export async function fetchAnnouncements(): Promise<Announcement[]> {
@@ -458,7 +458,7 @@ export async function findRewardByCode(businessId: string, code: string): Promis
     .eq('short_code', code.trim())
     .maybeSingle()
   if (error) throw error
-  return data as RewardLookup | null
+  return data
 }
 
 export async function findRewardByToken(businessId: string, qrToken: string): Promise<RewardLookup | null> {
@@ -469,7 +469,7 @@ export async function findRewardByToken(businessId: string, qrToken: string): Pr
     .eq('qr_token', qrToken)
     .maybeSingle()
   if (error) throw error
-  return data as RewardLookup | null
+  return data
 }
 
 /** Marks a reward redeemed. enforce_rewards_update_scope additionally
@@ -535,7 +535,7 @@ export interface PendingVerification {
 export async function fetchPendingVerifications(): Promise<PendingVerification[]> {
   const { data, error } = await supabase.rpc('admin_pending_business_verifications')
   if (error) throw error
-  return data as PendingVerification[]
+  return data
 }
 
 /** Signed URL to the private document, valid briefly — admin/owner-only per
@@ -551,7 +551,7 @@ export async function reviewBusinessVerification(businessId: string, approve: bo
   const { data, error } = await supabase.rpc('admin_review_business_verification', {
     _business_id: businessId,
     _approve: approve,
-    _reason: reason ?? null,
+    _reason: reason,
   })
   if (error) throw error
   return data as Business
@@ -569,7 +569,7 @@ export interface SupportRequest {
   resolved_at: string | null
   resolved_by: string | null
   created_at: string
-  business: Pick<Business, 'name'> | null
+  business?: Pick<Business, 'name'> | null
 }
 
 export async function createSupportRequest(businessId: string, userId: string, values: Pick<SupportRequest, 'subject' | 'body' | 'priority'>) {
@@ -602,7 +602,7 @@ export async function resolveSupportRequest(id: string, response = '') {
 export async function fetchFavouriteIds(userId: string): Promise<Set<string>> {
   const { data, error } = await supabase.from('favourites').select('business_id').eq('user_id', userId)
   if (error) throw error
-  return new Set((data ?? []).map((r) => r.business_id as string))
+  return new Set((data ?? []).map((r) => r.business_id))
 }
 
 export async function fetchFavouriteBusinesses(userId: string): Promise<Business[]> {
@@ -725,7 +725,7 @@ export async function fetchMyStaffBusinesses(userId: string): Promise<MyStaffMem
   return (data ?? []).map((row) => ({
     ...row,
     business: Array.isArray(row.business) ? row.business[0] : row.business,
-  })) as MyStaffMembership[]
+  }))
 }
 
 // ---------------------------------------------------------------------
@@ -745,7 +745,7 @@ export async function fetchBusinessPhotos(businessId: string): Promise<BusinessP
     .eq('business_id', businessId)
     .order('sort_order')
   if (error) throw error
-  return data as BusinessPhoto[]
+  return data
 }
 
 const MAX_GALLERY_BYTES = 5 * 1024 * 1024
@@ -777,7 +777,7 @@ export async function uploadGalleryPhoto(businessId: string, file: File, sortOrd
     .select()
     .single()
   if (error) throw error
-  return data as BusinessPhoto
+  return data
 }
 
 export async function deleteBusinessPhoto(id: string) {

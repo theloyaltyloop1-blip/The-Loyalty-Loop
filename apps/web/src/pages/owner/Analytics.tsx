@@ -94,7 +94,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [businessId, period, stats, totals])
 
   React.useEffect(() => {
-    generate()
+    void generate()
   }, [generate])
 
   return (
@@ -283,7 +283,7 @@ export function OwnerAnalytics() {
   React.useEffect(() => {
     if (!businessId) return
     setStatsLoading(true)
-    Promise.all([fetchPeriodStats(businessId, period), fetchTotalsStats(businessId)])
+    void Promise.all([fetchPeriodStats(businessId, period), fetchTotalsStats(businessId)])
       .then(([p, t]) => {
         setStats(p)
         setTotals(t)
@@ -294,7 +294,7 @@ export function OwnerAnalytics() {
   React.useEffect(() => {
     if (!businessId) return
     setWebResearch(null)
-    fetchLatestWebResearch(businessId).then(setWebResearch)
+    void fetchLatestWebResearch(businessId).then(setWebResearch)
   }, [businessId])
 
   if (loading || rolesLoading || ownerLoading) return null

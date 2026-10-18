@@ -71,14 +71,14 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
           } catch {
             // detection can transiently fail mid-frame; keep polling
           }
-          raf = requestAnimationFrame(tick)
+          raf = requestAnimationFrame(() => void tick())
         }
-        raf = requestAnimationFrame(tick)
+        raf = requestAnimationFrame(() => void tick())
       } catch {
         setError('Camera access denied or unavailable — use manual entry below.')
       }
     }
-    start()
+    void start()
 
     return () => {
       cancelled = true

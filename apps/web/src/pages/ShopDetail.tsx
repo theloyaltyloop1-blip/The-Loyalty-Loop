@@ -117,7 +117,7 @@ export function ShopDetail() {
   }, [slug, userId])
 
   React.useEffect(() => {
-    refetch()
+    void refetch()
   }, [refetch])
 
   React.useEffect(() => {
@@ -138,7 +138,7 @@ export function ShopDetail() {
 
   React.useEffect(() => {
     if (!userId || !businessId) return
-    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(businessId)))
+    void fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(businessId)))
   }, [userId, businessId])
 
   async function handleToggleFavourite() {
