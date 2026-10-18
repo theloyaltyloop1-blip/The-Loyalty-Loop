@@ -67,4 +67,4 @@ Regenerate types after migrations: Supabase MCP `generate_typescript_types` or `
 ### Dead code (knip, `knip.txt`) — reported, not deleted (file deletion blocked by sandbox policy; needs owner decision)
 - Unused files: `src/pages/ComingSoon.tsx`, `src/pages/owner/OwnerComingSoon.tsx`.
 - Unused exports: `getVerificationDocUrl`, `applyReferralCode`, `acceptLegal`, `ButtonProps`, `PlatformHealthCheck` (type).
-- ⚠️ `acceptLegal` (writes `legal_acceptances`) is never called; Signup only sets `legal_accepted` in auth metadata. Verify a DB trigger records acceptances, otherwise legal-consent audit trail is missing. Same for unused `applyReferralCode` (referral redemption not wired in UI).
+- `acceptLegal` is redundant: signup trigger (migration 0024) inserts `legal_acceptances` from `legal_accepted` metadata — safe to remove. `applyReferralCode` is unused (referral redemption not wired in UI) — product decision.
