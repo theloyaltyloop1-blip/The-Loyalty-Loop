@@ -144,7 +144,7 @@ export function ExternalCards({ userId }: { userId: string }) {
 }
 const s = StyleSheet.create({
   copy: { color: '#000', fontSize: 15, lineHeight: 22 }, heading: { color: '#000', fontFamily: fonts.nativeDisplay, fontSize: 23 },
-  card: { padding: 22, borderRadius: 20, gap: 18 }, input: { color: '#000', fontSize: 17, padding: 14, borderWidth: 1, borderColor: '#68705E', borderRadius: 12, backgroundColor: '#fff' },
-  action: { padding: 15, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', minHeight: 48 }, actionText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  card: { padding: 24, borderRadius: 20, gap: 20 }, input: { color: '#000', fontSize: 17, padding: 16, borderWidth: 1, borderColor: '#68705E', borderRadius: 12, backgroundColor: '#fff' },
+  action: { padding: 16, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', minHeight: 48 }, actionText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { padding: 12, borderRadius: 18, borderWidth: 1, borderColor: '#68705E', minHeight: 44 }, chosen: { backgroundColor: '#D5DFBB', borderWidth: 2 },
 })

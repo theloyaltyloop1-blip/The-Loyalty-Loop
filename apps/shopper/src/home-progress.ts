@@ -1,6 +1,6 @@
 export type HomeShop = {
   id: string; name: string; category?: string | null; description?: string | null;
-  address?: string | null; logo_url?: string | null; cover_url?: string | null;
+  address?: string | null; logo_url?: string | null; cover_url?: string | null; brand_color?: string | null;
   loyalty_type?: string; loyalty_config?: { stamps_required?: number };
   reward_model?: 'stamp_legacy' | 'spend_threshold'; reward_threshold_pence?: number | null;
 }

@@ -23,6 +23,7 @@ import {
 import { CategoryCircles, HomeCollection, homeStyles } from './src/components/HomeCollection'
 import { categoryCounts } from './src/home-rails'
 import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
+import { formatAddress } from './src/format-address'
 import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
@@ -146,7 +147,7 @@ function SearchIcon({ color = foreground, size = 20 }: IconProps) {
 function SearchBar({ value, onChangeText, accessibilityLabel }: { value: string; onChangeText: (v: string) => void; accessibilityLabel: string }) {
   return (
     <View style={styles.searchBar}>
-      <SearchIcon color={primary} size={20} />
+      <SearchIcon color={foreground} size={20} />
       <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#000000" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
       {value.length > 0 && (
         <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
@@ -1340,7 +1341,7 @@ function ShopDetail({
         <Text style={styles.title}>{business.name}</Text>
         <Text style={styles.muted}>
           {business.category || 'Local business'}
-          {business.address ? ` · ${business.address}` : ''}
+          {business.address ? ` · ${formatAddress(business.address)}` : ''}
         </Text>
         {business.features?.length ? (
           <View style={featureStyles.row}>
@@ -1428,7 +1429,7 @@ function ShopDetail({
             )}
             {!catalogLoading && catalog.length > 3 && <Text style={styles.muted}>Plus more rewards as you collect.</Text>}
             {!catalogLoading && !catalog.length && <Text style={styles.muted}>Collect {threshold} {label} to unlock a reward.</Text>}
-            <View style={{ marginTop: 18 }}>
+            <View style={{ marginTop: 20 }}>
               <Button title={busy ? 'Joining…' : 'Join card'} onPress={join} disabled={busy} />
             </View>
           </View>
@@ -1439,6 +1440,8 @@ function ShopDetail({
           {hasMapCoordinates ? (
             <View style={styles.mapEmbed}>
               <MapView
+                customMapStyle={QUIET_MAP_STYLE}
+                showsPointsOfInterest={false}
                 provider={PROVIDER_GOOGLE}
                 style={styles.nativeMap}
                 initialRegion={{
@@ -1512,7 +1515,7 @@ function ShopDetail({
           )}
 
           {reviewsLoading ? (
-            <ActivityIndicator color={primary} style={{ marginTop: 18 }} />
+            <ActivityIndicator color={primary} style={{ marginTop: 20 }} />
           ) : reviews.length === 0 ? (
             <Text style={styles.reviewHint}>Be the first to review this shop.</Text>
           ) : (
@@ -1595,12 +1598,13 @@ function NearbyRow({ business, onPress }: { business: Business; onPress: () => v
         <Image source={{ uri: business.logo_url }} style={styles.nearbyLogo} />
       ) : (
         <View style={[styles.nearbyLogo, { backgroundColor: business.brand_color || ink }]}>
-          <Text style={styles.logoLetter}>{business.name[0]}</Text>
+          <Text style={styles.logoLetter}>{initialsOf(business.name)}</Text>
         </View>
       )}
       <View style={{ flex: 1 }}>
-        <Text style={styles.shopName}>{business.name}</Text>
-        <Text style={styles.muted}>{business.category || 'Local business'}{business.address ? ` · ${business.address}` : ''}</Text>
+        <Text style={styles.shopName} numberOfLines={1}>{business.name}</Text>
+        <Text style={styles.nearbyCategory} numberOfLines={1}>{business.category || 'Local business'}</Text>
+        {business.address ? <Text style={styles.nearbyAddress} numberOfLines={1}>{formatAddress(business.address)}</Text> : null}
       </View>
       <ArrowRightIcon />
     </Pressable>
@@ -1630,13 +1634,13 @@ function FeatureFilter({ selected, onChange }: { selected: string[]; onChange: (
 }
 
 const featureStyles = StyleSheet.create({
-  filterRow: { gap: 8, paddingVertical: 6, paddingRight: 8 },
-  chip: { borderRadius: 999, borderWidth: 1.5, borderColor: primary, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: card },
+  filterRow: { gap: 8, paddingVertical: 8, paddingRight: 8 },
+  chip: { borderRadius: 999, borderWidth: 1.5, borderColor: primary, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: card },
   chipActive: { backgroundColor: primary },
   chipText: { color: '#000000', fontWeight: '700', fontSize: 13 },
   chipTextActive: { color: '#fff' },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  badge: { borderRadius: 999, backgroundColor: '#EEF3E6', paddingHorizontal: 10, paddingVertical: 5 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  badge: { borderRadius: 999, backgroundColor: '#EEF3E6', paddingHorizontal: 12, paddingVertical: 4 },
   badgeText: { color: '#000000', fontSize: 12, fontWeight: '700' },
 })
 
@@ -1683,6 +1687,13 @@ function initialsOf(name: string) {
   const letters = name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '')
   return letters.join('') || '?'
 }
+
+// Hides Google's own business, hospital and transit labels so only our shop pins show.
+const QUIET_MAP_STYLE = [
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+]
 
 const PIN_ENDPOINT = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/map-pin`
 
@@ -1781,7 +1792,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
       {matches.length === 0 && <Pressable accessibilityRole="button" onPress={() => onAsk(query, center)} style={styles.settingsRow}><Text style={styles.settingsRowTitle}>Can't find your favourite shop? Ask them to join</Text></Pressable>}
       {pins.length > 0 ? (
         <View style={styles.mapWrap}>
-          <MapView ref={mapRef} provider={PROVIDER_GOOGLE} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false} onMapReady={fitAllPins} onRegionChangeComplete={region => setCenter({lat:region.latitude,lng:region.longitude})}>
+          <MapView ref={mapRef} provider={PROVIDER_GOOGLE} customMapStyle={QUIET_MAP_STYLE} showsPointsOfInterest={false} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false} onMapReady={fitAllPins} onRegionChangeComplete={region => setCenter({lat:region.latitude,lng:region.longitude})}>
             {pins.map((pin) => (
               <ShopMarker key={pin.id} business={pin.business} onCalloutPress={() => onSelect(pin.business)} />
             ))}
@@ -2503,7 +2514,7 @@ function AppRoot() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: background },
-  platformBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: primary, paddingHorizontal: 16, paddingVertical: 10 },
+  platformBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: primary, paddingHorizontal: 16, paddingVertical: 12 },
   platformBannerText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   platformBannerBody: { fontWeight: '400', opacity: 0.9 },
   auth: { flexGrow: 1, padding: 28, justifyContent: 'center' },
@@ -2512,17 +2523,17 @@ const styles = StyleSheet.create({
   onboarding: { flex: 1, padding: 28, justifyContent: 'center' },
   onboardingLogo: { width: 66, height: 66, resizeMode: 'contain', marginBottom: 44 },
   onboardingTitle: { color: foreground, fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
-  onboardingDots: { flexDirection: 'row', gap: 8, marginTop: 34, marginBottom: 36 },
+  onboardingDots: { flexDirection: 'row', gap: 8, marginTop: 36, marginBottom: 36 },
   onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#CBD1C3' },
   onboardingDotActive: { width: 26, backgroundColor: primary },
-  onboardingConsent: { marginTop: 26 },
+  onboardingConsent: { marginTop: 28 },
   onboardingSkip: { alignItems: 'center', padding: 16 },
   onboardingSkipText: { color: primary, fontSize: 15, fontWeight: '700' },
 
   mark: { width: 64, height: 64, borderRadius: 18, backgroundColor: card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 28, overflow: 'hidden' },
   markImage: { width: 46, height: 46, resizeMode: 'contain' },
 
-  eyebrow: { color: primary, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 10 },
+  eyebrow: { color: primary, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 12 },
   hero: { color: foreground, fontSize: 36, fontFamily: FONT_DISPLAY, lineHeight: 42, letterSpacing: -1 },
   title: { color: foreground, fontSize: 26, fontFamily: FONT_DISPLAY, lineHeight: 31, letterSpacing: -0.5 },
   copy: { color: '#000000', fontSize: 16, lineHeight: 24, marginTop: 16 },
@@ -2530,59 +2541,59 @@ const styles = StyleSheet.create({
   landingTitle: { color: foreground, fontSize: 16, fontWeight: '800', marginTop: 3 },
   landingCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginBottom: 8 },
 
-  card: { backgroundColor: card, borderRadius: 20, padding: 18, marginTop: 26, gap: 12, shadowColor: '#1C2620', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
-  input: { backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: foreground, fontSize: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#F8DCCB', paddingHorizontal: 14, marginBottom: 4, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  searchInput: { flex: 1, paddingVertical: 14, color: foreground, fontSize: 16 },
-  askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 14, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
+  card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#1C2620', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
+  input: { backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.14)', paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  searchInput: { flex: 1, paddingVertical: 16, color: foreground, fontSize: 16 },
+  askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
   askShopIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
   askShopTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
   askShopCopy: { color: '#000000', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
   appleButton: { width: '100%', height: 48, marginBottom: 12 },
-  appleButtonAndroid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#000', borderRadius: 12 },
+  appleButtonAndroid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#000', borderRadius: 12 },
   appleButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', paddingVertical: 14 },
+  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', paddingVertical: 16 },
   googleButtonText: { color: foreground, fontWeight: '800', fontSize: 15 },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.1)' },
   dividerText: { color: '#000000', fontSize: 12, fontWeight: '700' },
 
-  button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 15, marginTop: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', shadowColor: primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
-  buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: foreground, marginTop: 18 },
+  button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 16, marginTop: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', shadowColor: primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: foreground, marginTop: 20 },
   buttonText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   buttonTextSecondary: { color: foreground },
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.6 },
   link: { color: primary, textAlign: 'center', fontWeight: '700', marginTop: 8 },
-  small: { color: '#000000', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 22 },
-  authHelpLink: { alignSelf: 'center', marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
+  small: { color: '#000000', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 24 },
+  authHelpLink: { alignSelf: 'center', marginTop: 16, paddingVertical: 8, paddingHorizontal: 12 },
   authHelpLinkText: { color: '#000000', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 
   // Header
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 6, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
-  headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerLogo: { width: 32, height: 32, borderRadius: 8 },
   headerTitle: { fontSize: 17, fontWeight: '800', color: foreground },
-  headerProfileButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: card },
+  headerProfileButton: { width: 40, height: 40, aspectRatio: 1, flexShrink: 0, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
 
   pageTitle: { fontSize: 26, fontFamily: FONT_DISPLAY, color: foreground, letterSpacing: -0.5, marginBottom: 16, marginTop: 4 },
 
   // Category pills
-  pillRow: { gap: 8, paddingBottom: 22 },
-  pill: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.1)', backgroundColor: card },
+  pillRow: { gap: 8, paddingBottom: 24 },
+  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.1)', backgroundColor: card },
   pillActive: { backgroundColor: primary, borderColor: primary },
   pillText: { fontSize: 13, fontWeight: '700', color: foreground },
   pillTextActive: { color: '#fff' },
 
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   sectionEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#000000' },
   sparkle: { color: primary, fontSize: 13 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: foreground },
 
   // Announcements
-  announcementRow: { gap: 12, paddingBottom: 26 },
+  announcementRow: { gap: 12, paddingBottom: 28 },
   announcementCard: { width: 240, backgroundColor: card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  announcementBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(232,112,59,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  announcementBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(232,112,59,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   announcementFrom: { fontSize: 11, fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: 0.4 },
   announcementTitle: { fontSize: 15, fontWeight: '800', color: foreground, marginTop: 4 },
   announcementBody: { fontSize: 13, color: '#000000', marginTop: 4, lineHeight: 18 },
@@ -2595,16 +2606,18 @@ const styles = StyleSheet.create({
   trendingName: { fontSize: 14, fontWeight: '800', color: foreground },
 
   // Nearby list
-  nearbyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: card, borderRadius: 16, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  nearbyLogo: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  logoLetter: { color: '#fff', fontWeight: '800', fontSize: 17 },
-  shopName: { fontSize: 15, fontWeight: '800', color: foreground },
+  nearbyRow: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: card, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  nearbyLogo: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  logoLetter: { color: '#fff', fontWeight: '800', fontSize: 17, lineHeight: 20, textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
+  nearbyCategory: { color: '#000000', fontSize: 13, fontWeight: '600', marginTop: 3 },
+  nearbyAddress: { color: '#000000', fontSize: 12, fontWeight: '400', marginTop: 2 },
+  shopName: { fontSize: 16, fontWeight: '800', color: foreground },
   muted: { color: '#000000', fontSize: 12.5, lineHeight: 18, marginTop: 2 },
   empty: { color: '#000000', fontSize: 15, lineHeight: 22, marginTop: 12 },
 
   // Map
   mapWrap: { height: 320, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 20 },
-  mapPlaceholder: { backgroundColor: card, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', padding: 22, alignItems: 'center', gap: 10, marginBottom: 20 },
+  mapPlaceholder: { backgroundColor: card, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', padding: 24, alignItems: 'center', gap: 12, marginBottom: 20 },
   mapPlaceholderText: { textAlign: 'center', color: '#000000', fontSize: 13.5, lineHeight: 19 },
 
   // News
@@ -2613,20 +2626,20 @@ const styles = StyleSheet.create({
   newsDate: { color: '#000000', fontSize: 11, marginTop: 8 },
 
   // Shop detail
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 18 },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 },
   back: { color: foreground, fontWeight: '700', fontSize: 15 },
-  detailCover: { height: 190, width: '100%', borderRadius: 22, overflow: 'hidden', marginBottom: 18 },
+  detailCover: { height: 190, width: '100%', borderRadius: 22, overflow: 'hidden', marginBottom: 20 },
   favouriteButton: { position: 'absolute', top: 14, right: 14, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
 
-  joinCard: { backgroundColor: card, borderRadius: 22, padding: 26, marginTop: 20, alignItems: 'center' },
+  joinCard: { backgroundColor: card, borderRadius: 22, padding: 28, marginTop: 20, alignItems: 'center' },
   joinTitle: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center', marginBottom: 12 },
-  rewardPill: { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
+  rewardPill: { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 12 },
   rewardPillText: { fontSize: 11, fontWeight: '700', color: '#000000' },
   rewardTitleLarge: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center' },
   rewardTierList: { alignSelf: 'stretch', gap: 8, marginTop: 2 },
-  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
   rewardTierThreshold: { color: foreground, fontSize: 13, fontWeight: '800' },
-  rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 14 },
+  rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 16 },
 
   loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -2636,40 +2649,40 @@ const styles = StyleSheet.create({
   qrWrap: { alignItems: 'center', marginTop: 20 },
   qrText: { color: '#000000', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
   manualCodeLabel: { color: '#000000', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
-  manualCode: { color: foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 5 },
+  manualCode: { color: foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 4 },
   securityCard: { backgroundColor: '#EDEFE9', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
-  securityCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 5 },
-  securityButton: { alignSelf: 'flex-start', marginTop: 13, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: 'rgba(79,100,56,0.12)' },
+  securityCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 4 },
+  securityButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(79,100,56,0.12)' },
   securityButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
   lockScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
-  lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 22 },
-  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1C2620', borderRadius: 999, height: 46, marginTop: 18 },
+  lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 24 },
+  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1C2620', borderRadius: 999, height: 46, marginTop: 20 },
   walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Visit and contact details
   visitSection: { marginTop: 28 },
-  mapEmbed: { height: 150, marginTop: 10, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#E7EAE2' },
+  mapEmbed: { height: 150, marginTop: 12, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#E7EAE2' },
   nativeMap: { flex: 1 },
-  shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
+  shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
   shopNotifyTitle: { fontSize: 14, fontWeight: '700', color: foreground },
   shopNotifyCopy: { color: '#000000', fontSize: 12, marginTop: 1, lineHeight: 16 },
-  settingsSheet: { paddingHorizontal: 18, maxHeight: '80%' },
+  settingsSheet: { paddingHorizontal: 20, maxHeight: '80%' },
   settingsSheetScroll: { paddingBottom: 20, gap: 20 },
   sheetBack: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  settingsHero: { borderRadius: 24, padding: 16, gap: 14, shadowColor: primary, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
-  settingsHeroRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  settingsHero: { borderRadius: 24, padding: 16, gap: 16, shadowColor: primary, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
+  settingsHeroRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   settingsHeroAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.75)', alignItems: 'center', justifyContent: 'center' },
   settingsHeroAvatarText: { color: '#fff', fontFamily: FONT_DISPLAY, fontSize: 20 },
   settingsHeroName: { color: '#fff', fontSize: 20, fontFamily: FONT_DISPLAY },
   settingsHeroEmail: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 },
-  settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 11 },
+  settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12 },
   settingsHeroButtonIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
   settingsHeroButtonTitle: { color: foreground, fontWeight: '800', fontSize: 15 },
   settingsHeroButtonCopy: { color: '#000000', fontSize: 12.5, marginTop: 1 },
   settingsGroup: { gap: 8 },
-  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 6 },
+  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 8 },
   settingsCard: { backgroundColor: card, borderRadius: 18, overflow: 'hidden' },
-  settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
+  settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
   settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.12)' },
   settingsRowPressed: { backgroundColor: 'rgba(0,0,0,0.04)' },
   settingsIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -2678,14 +2691,14 @@ const styles = StyleSheet.create({
   settingsRowTitleDanger: { color: '#b54439' },
   settingsRowDetail: { color: '#000000', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
   settingsFooter: { textAlign: 'center', color: '#000000', fontSize: 12, marginTop: 4 },
-  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 14, paddingTop: 14 },
-  settingsInput: { fontSize: 17, color: foreground, paddingHorizontal: 14, paddingVertical: 12 },
-  settingsFieldHelp: { color: '#000000', fontSize: 12.5, paddingHorizontal: 14, paddingBottom: 14, lineHeight: 17 },
+  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 16 },
+  settingsInput: { fontSize: 17, color: foreground, paddingHorizontal: 16, paddingVertical: 12 },
+  settingsFieldHelp: { color: '#000000', fontSize: 12.5, paddingHorizontal: 16, paddingBottom: 16, lineHeight: 17 },
   settingsEmpty: { color: '#000000', fontSize: 14, lineHeight: 20, padding: 16 },
   cardScreen: { backgroundColor: card, borderRadius: 24, padding: 24, alignItems: 'center' },
   cardQr: { backgroundColor: '#fff', padding: 16, borderRadius: 20 },
-  cardName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: foreground, marginTop: 18 },
-  pinWrap: { alignItems: 'center', width: 60, height: 66, paddingTop: 6 },
+  cardName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: foreground, marginTop: 20 },
+  pinWrap: { alignItems: 'center', width: 60, height: 66, paddingTop: 8 },
   pinHalo: { position: 'absolute', top: 0, width: 56, height: 56, borderRadius: 28, opacity: 0.22 },
   pinBody: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
   pinInner: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
@@ -2693,50 +2706,50 @@ const styles = StyleSheet.create({
   pinInitial: { fontWeight: '900', fontSize: 14, letterSpacing: -0.5 },
   pinTail: { width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 11, borderLeftColor: 'transparent', borderRightColor: 'transparent', marginTop: -4 },
   pinShadow: { width: 16, height: 5, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.2)', marginTop: 1 },
-  mapAddress: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 9 },
-  directionsButton: { alignSelf: 'flex-start', marginTop: 11, borderRadius: 999, backgroundColor: 'rgba(79,100,56,0.12)', paddingHorizontal: 14, paddingVertical: 10 },
+  mapAddress: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 8 },
+  directionsButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, backgroundColor: 'rgba(79,100,56,0.12)', paddingHorizontal: 16, paddingVertical: 12 },
   directionsButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
-  contactList: { marginTop: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', borderRadius: 18, overflow: 'hidden', backgroundColor: card },
-  contactRow: { minHeight: 54, paddingHorizontal: 15, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.07)' },
+  contactList: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', borderRadius: 18, overflow: 'hidden', backgroundColor: card },
+  contactRow: { minHeight: 54, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.07)' },
   contactLabel: { color: foreground, fontSize: 14, fontWeight: '800', flexShrink: 0 },
   contactValue: { color: primary, fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
 
   // Shop gallery — a tall, photo-first scrolling feed.
-  gallerySection: { marginTop: 30 },
+  gallerySection: { marginTop: 32 },
   galleryHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
   gallerySubheading: { color: '#000000', fontSize: 12.5, marginTop: 3 },
   galleryCount: { color: primary, fontSize: 12, fontWeight: '800' },
-  shortsFeed: { gap: 14, marginTop: 12 },
+  shortsFeed: { gap: 16, marginTop: 12 },
   shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: '#DFE3DA', position: 'relative' },
   shortImage: { width: '100%', height: '100%' },
-  shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 14, justifyContent: 'flex-end', backgroundColor: 'rgba(20,20,18,0.42)' },
+  shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 16, justifyContent: 'flex-end', backgroundColor: 'rgba(20,20,18,0.42)' },
   shortIndex: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   shortShopName: { color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 4 },
 
   // Reviews
-  reviewsSection: { marginTop: 30 },
-  reviewHint: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 9 },
-  reviewComposer: { backgroundColor: card, borderRadius: 18, padding: 16, marginTop: 13, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
+  reviewsSection: { marginTop: 32 },
+  reviewHint: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
+  reviewComposer: { backgroundColor: card, borderRadius: 18, padding: 16, marginTop: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
   reviewComposerTitle: { fontSize: 15, fontWeight: '800', color: foreground },
-  starRow: { flexDirection: 'row', gap: 4, marginTop: 9 },
+  starRow: { flexDirection: 'row', gap: 4, marginTop: 8 },
   starButton: { paddingVertical: 3, paddingRight: 3 },
   star: { fontSize: 29, lineHeight: 34, color: '#000000' },
   starSelected: { color: accent },
-  reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.12)', backgroundColor: '#fff', color: foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 13, paddingVertical: 11, textAlignVertical: 'top' },
-  deleteReview: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 14 },
-  reviewList: { marginTop: 18, gap: 14 },
-  reviewItem: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.09)', paddingTop: 14 },
-  reviewHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.12)', backgroundColor: '#fff', color: foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 12, paddingVertical: 12, textAlignVertical: 'top' },
+  deleteReview: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
+  reviewList: { marginTop: 20, gap: 16 },
+  reviewItem: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.09)', paddingTop: 16 },
+  reviewHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   reviewAuthor: { fontSize: 14, fontWeight: '800', color: foreground },
   reviewDate: { color: '#000000', fontSize: 11.5 },
   reviewStars: { color: accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
-  reviewBody: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 6 },
-  reviewReply: { marginTop: 10, marginLeft: 6, paddingLeft: 12, borderLeftWidth: 3 },
+  reviewBody: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
+  reviewReply: { marginTop: 12, marginLeft: 8, paddingLeft: 12, borderLeftWidth: 3 },
   reviewReplyTitle: { color: ink, fontSize: 13, fontWeight: '800' },
-  reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   reviewModLink: { color: '#000000', fontSize: 12, fontWeight: '600' },
   reviewModDot: { color: '#000000', fontSize: 12 },
-  blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
   blockRowText: { color: '#000000', fontSize: 13 },
   blockRowUnblock: { color: primary, fontSize: 13, fontWeight: '700' },
   spendHint: { color: '#000000', fontSize: 12.5, lineHeight: 17, marginTop: 8 },
@@ -2744,25 +2757,25 @@ const styles = StyleSheet.create({
   cardsExplainerTitle: { fontSize: 15, fontWeight: '800', color: '#1f5c33', marginBottom: 2 },
   cardsExplainerLine: { fontSize: 13.5, color: '#2f5a3b', lineHeight: 19 },
   cardsHelp: { color: '#000000', fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
-  autoEarnCard: { backgroundColor: '#fdeccd', borderRadius: 18, padding: 16, marginTop: 14, gap: 8 },
-  autoEarnRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  autoEarnCard: { backgroundColor: '#fdeccd', borderRadius: 18, padding: 16, marginTop: 16, gap: 8 },
+  autoEarnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   autoEarnTitle: { fontSize: 15, fontWeight: '800', color: '#7a4a0c' },
   autoEarnCopy: { fontSize: 13.5, color: '#6b4a1c', lineHeight: 19 },
-  autoEarnChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: '#fdeccd', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: 12 },
+  autoEarnChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: '#fdeccd', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, marginTop: 12 },
   autoEarnChipText: { fontSize: 12.5, fontWeight: '700', color: '#7a4a0c' },
 
   // Rewards
-  reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   rewardShop: { color: primary, fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  rewardTitle: { color: foreground, fontSize: 21, fontFamily: FONT_DISPLAY, marginTop: 6 },
+  rewardTitle: { color: foreground, fontSize: 21, fontFamily: FONT_DISPLAY, marginTop: 8 },
   rewardQr: { alignItems: 'center', marginTop: 16 },
 
   // Favourites
-  favouriteCard: { backgroundColor: card, borderRadius: 20, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  favouriteCard: { backgroundColor: card, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   favouriteTopRow: { marginBottom: 12 },
   favouriteLogo: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   categoryLabel: { fontSize: 11, fontWeight: '700', color: '#000000', letterSpacing: 0.6, marginTop: 4 },
-  favouriteDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.07)', marginVertical: 14 },
+  favouriteDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.07)', marginVertical: 16 },
   favouriteBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   favouriteTapRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   favouriteDot: { width: 10, height: 10, borderRadius: 5 },
@@ -2772,7 +2785,7 @@ const styles = StyleSheet.create({
 
   // Profile sheet
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { backgroundColor: background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 24, maxHeight: '90%' },
+  sheet: { backgroundColor: background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, maxHeight: '90%' },
   sheetScroll: { paddingBottom: 16 },
   deleteAccount: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
   sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 16 },
@@ -2780,14 +2793,14 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 13, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // Bottom tab bar
-  tabs: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', backgroundColor: card, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.07)', paddingTop: 10, paddingBottom: 24 },
+  tabs: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', backgroundColor: card, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.07)', paddingTop: 12, paddingBottom: 24 },
   tab: { flex: 1, alignItems: 'center', gap: 3 },
   tabText: { color: '#000000', fontWeight: '700', fontSize: 11 },
   tabTextActive: { color: primary },
 
   // Discover feed
   discoverGradient: { ...StyleSheet.absoluteFillObject },
-  discoverActionRail: { position: 'absolute', right: 14, bottom: 110, alignItems: 'center', gap: 22 },
+  discoverActionRail: { position: 'absolute', right: 14, bottom: 110, alignItems: 'center', gap: 24 },
   discoverActionButton: { alignItems: 'center', justifyContent: 'center' },
   discoverInfo: { position: 'absolute', left: 18, right: 80, bottom: 34 },
   discoverShopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -2795,7 +2808,7 @@ const styles = StyleSheet.create({
   discoverShopName: { color: '#fff', fontWeight: '800', fontSize: 15, flexShrink: 1 },
   discoverTime: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '600' },
   discoverCaption: { color: '#fff', fontSize: 13.5, lineHeight: 19, marginTop: 8 },
-  discoverViewShop: { color: '#fff', fontWeight: '800', fontSize: 13, marginTop: 10 },
+  discoverViewShop: { color: '#fff', fontWeight: '800', fontSize: 13, marginTop: 12 },
   discoverBack: {
     position: 'absolute',
     left: 16,
@@ -2807,6 +2820,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
-  discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: background, paddingHorizontal: 40 },
+  discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: background, paddingHorizontal: 40 },
   discoverEmptyText: { color: '#000000', fontSize: 14, textAlign: 'center' },
 })

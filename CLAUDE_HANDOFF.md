@@ -2554,6 +2554,14 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - The owner saw the sand on the business app and asked to undo it everywhere. Commit ba7dca6 reverts 37b7dc3 and 72eca60 and makes apps/shopper/src/theme.ts a plain re-export of the shared tokens. Back to background #F3F4EF, card #FCFCFA, border #DCDFD6.
 - Production OTAs: shopper Android 01a14c70…, iOS 01a14c71…; business Android 01a14c72-0c16…, iOS 01a14c72-c091…. Website redeploys from the push. The superseded sand OTAs (shopper 01a14c65/66, business 01a14c6d/6e) are replaced. The halal/vegan feature work is untouched.
 
+## Shopper design-audit fixes (2026-10-18) - Claude, local only, NOT released
+
+- From the owner's pasted critique. New apps/shopper/src/format-address.ts (Title Case streets, capitalised UK postcodes; test 1/1) used on shop rows and the shop page.
+- Map tab rows (NearbyRow): name, category and address on separate lines with size/weight hierarchy; two-letter centred initials; more padding. Home rows (HomeCollection): brand-colour initials (two letters, centred, includeFontPadding off), 16px gaps. Header profile button: fixed 40x40 circle with a border.
+- Search bar: dark icon and darker border for contrast. Both maps: QUIET_MAP_STYLE hides Google POI and transit labels (the red "H" was most likely Google's hospital icon).
+- Spacing: 143 margin/padding/gap values in App.tsx and components snapped to a 4-pt scale (values under 4 or over 40 untouched). tsc passes; home-rails tests 4/4.
+- Background left at #F3F4EF (owner said the sand was reverted). Business app and website were not audited.
+- Not seen on a device. The shopper has no test channel, so release = production OTA. Needs owner OK.
 ## Copy-ready prompt for Claude Code
 
 Claude: review the deletion-client and wallet-format follow-up in apps/web/src/lib/businesses.ts, apps/retailer/App.tsx, apps/shopper/src/external-card-barcode.ts and components/ExternalCards.tsx. Check docs/CARD_WALLET_FORMAT_EVIDENCE.md, especially Nectar GS1/payload limits. Web build, retailer/shopper TypeScript and 8 focused tests passed; device/scanner acceptance remains unrun. Owner approval is still required: on tgukdabfvvoywawmzbdo first confirm authenticated UPDATE on public.profiles, then rollback-only dry-run and apply supabase/migrations/20261017230331_shopper_external_cards.sql, verify hosted RLS/cap/cascade, then deploy export-platform-backup. No production action has run in this follow-up. Do not run eas update, eas build, commit or push without owner approval.

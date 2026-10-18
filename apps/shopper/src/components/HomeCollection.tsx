@@ -31,9 +31,10 @@ function LocationNote({ status, onUseLocation }: { status: LocationStatus; onUse
 
 function ShopMark({ shop }: { shop: HomeShop }) {
   const [failed, setFailed] = useState(false)
-  return <View style={s.mark}>{shop.logo_url && !failed
-    ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url }} style={StyleSheet.absoluteFill} resizeMode="contain" onError={() => setFailed(true)} />
-    : <Text style={s.markInitial}>{shop.name.trim().charAt(0).toUpperCase()}</Text>}</View>
+  const showLogo = !!shop.logo_url && !failed
+  return <View style={[s.mark, !showLogo && shop.brand_color ? { backgroundColor: shop.brand_color } : null]}>{showLogo
+    ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url! }} style={StyleSheet.absoluteFill} resizeMode="contain" onError={() => setFailed(true)} />
+    : <Text style={[s.markInitial, shop.brand_color ? { color: '#fff' } : null]}>{initialsOf(shop.name)}</Text>}</View>
 }
 
 function ShopPhoto({ shop, large = false, distance }: { shop: HomeShop; large?: boolean; distance?: string }) {
@@ -45,6 +46,11 @@ function ShopPhoto({ shop, large = false, distance }: { shop: HomeShop; large?: 
       : <View style={s.photoFallback}><Text style={s.initial}>{shop.name.trim().charAt(0).toUpperCase()}</Text><Text style={s.fallbackCategory}>{shop.category || 'Local independent'}</Text></View>}
     {distance && <View style={s.distancePill}><Pin size={12} /><Text style={s.distanceText}>{distance}</Text></View>}
   </View>
+}
+
+/** Up to two initials ("Test Shop" → "TS") so different shops don't all show the same letter. */
+function initialsOf(name: string) {
+  return name.trim().split(/s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || '?'
 }
 
 const shopLabel = (shop: HomeShop, miles: number | null) => `Explore ${shop.name}${shop.category ? `, ${shop.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`
@@ -131,7 +137,7 @@ export function CategoryCircles({ categories, selected, onSelect }: { categories
       <Text style={[s.circleLabel, active && { color: c.primary }]} numberOfLines={1}>{name}</Text>
     </Pressable>
   }
-  return <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.rail} contentContainerStyle={[s.railContent, { gap: 10 }]}>
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.rail} contentContainerStyle={[s.railContent, { gap: 12 }]}>
     {item(null, 'All', 0)}
     {categories.map(([name], index) => item(name, name, index))}
   </ScrollView>
@@ -219,8 +225,8 @@ export function HomeCollection<T extends RailShop>({ shops, featured, membership
 }
 
 export const homeStyles = StyleSheet.create({
-  title: { fontFamily: fonts.nativeDisplay, fontSize: 42, lineHeight: 46, letterSpacing: -1, color: c.foreground, marginTop: 6, marginBottom: 20 },
-  sectionHeading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 23, color: c.foreground, marginTop: 32, marginBottom: 14 },
+  title: { fontFamily: fonts.nativeDisplay, fontSize: 42, lineHeight: 46, letterSpacing: -1, color: c.foreground, marginTop: 8, marginBottom: 20 },
+  sectionHeading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 23, color: c.foreground, marginTop: 32, marginBottom: 16 },
 })
 const s = StyleSheet.create({
   pressed: { opacity: 0.78 },
@@ -230,34 +236,34 @@ const s = StyleSheet.create({
   photoFallback: { flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' },
   initial: { fontFamily: fonts.nativeDisplay, fontSize: 56, color: c.olive },
   fallbackCategory: { fontSize: 13, color: c.sageInk, textAlign: 'center' },
-  heroCopy: { padding: 18, gap: 8 },
+  heroCopy: { padding: 20, gap: 8 },
   heroName: { fontFamily: fonts.nativeDisplay, fontSize: 27, color: c.oliveInk, letterSpacing: -0.6 },
   heroDescription: { fontSize: 15, lineHeight: 21, color: c.oliveInk },
-  offer: { marginTop: 6, paddingHorizontal: 16, paddingVertical: 13, borderRadius: 24, backgroundColor: c.sage, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  offer: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, backgroundColor: c.sage, flexDirection: 'row', alignItems: 'center', gap: 12 },
   offerText: { flex: 1, fontSize: 14, fontWeight: '600', color: c.sageInk },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 12 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: c.border },
   dotActive: { width: 20, backgroundColor: c.primary },
   section: { marginTop: 28 },
-  heading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 22, color: c.foreground, letterSpacing: -0.4, marginBottom: 14 },
+  heading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 22, color: c.foreground, letterSpacing: -0.4, marginBottom: 16 },
   headingRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, rowGap: 8, marginBottom: 12 },
   headingInRow: { marginBottom: 0, flexShrink: 1 },
-  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
-  loyaltyCard: { padding: 18, borderRadius: 20, gap: 10 },
+  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
+  loyaltyCard: { padding: 20, borderRadius: 20, gap: 12 },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   cardName: { fontFamily: fonts.nativeDisplay, fontSize: 21, letterSpacing: -0.4 },
   cardReward: { fontSize: 14, lineHeight: 20 },
   progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden', marginVertical: 4 },
   progressFill: { height: 8, borderRadius: 4 },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   cardCount: { fontSize: 14, fontWeight: '600' },
-  readyPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: c.primary },
+  readyPill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: c.primary },
   readyText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   moreText: { color: c.primary, fontSize: 15, fontWeight: '600' },
-  locationButton: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 14, borderRadius: 22, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
+  locationButton: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
   locationButtonText: { color: c.foreground, fontSize: 14, fontWeight: '600' },
   locationText: { color: c.muted, fontSize: 14 },
-  locationReady: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  locationReady: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   locationReadyText: { color: c.muted, fontSize: 14, fontWeight: '600' },
   rail: { marginHorizontal: -20 },
   railContent: { paddingHorizontal: 20, gap: RAIL_GAP, paddingBottom: 4 },
@@ -265,21 +271,21 @@ const s = StyleSheet.create({
   tileCopy: { padding: 12, gap: 3 },
   tileName: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 17, color: c.foreground },
   tileCategory: { fontSize: 13, color: c.muted },
-  distancePill: { position: 'absolute', left: 10, top: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 14, backgroundColor: 'rgba(252,252,250,0.95)' },
+  distancePill: { position: 'absolute', left: 10, top: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 14, backgroundColor: 'rgba(252,252,250,0.95)' },
   distanceText: { color: c.foreground, fontSize: 12, fontWeight: '600' },
-  circleItem: { width: 72, alignItems: 'center', gap: 6 },
+  circleItem: { width: 72, alignItems: 'center', gap: 8 },
   circle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent' },
   circleActive: { borderColor: c.primary },
   circleLetter: { fontFamily: fonts.nativeDisplay, fontSize: 24, color: c.foreground },
   circleLabel: { fontSize: 12, fontWeight: '600', color: c.foreground, textAlign: 'center' },
-  rows: { gap: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 16, backgroundColor: c.card },
-  mark: { width: 44, height: 44, borderRadius: 12, backgroundColor: c.olive, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  markInitial: { fontFamily: fonts.nativeDisplay, fontSize: 19, color: c.oliveInk },
-  rowCopy: { flex: 1, gap: 2 },
+  rows: { gap: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 72, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: c.card },
+  mark: { width: 48, height: 48, borderRadius: 14, flexShrink: 0, backgroundColor: c.olive, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  markInitial: { fontFamily: fonts.nativeDisplay, fontSize: 18, lineHeight: 22, color: c.oliveInk, textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
+  rowCopy: { flex: 1, gap: 3 },
   rowName: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 16, color: c.foreground },
   rowMeta: { fontSize: 13, color: c.muted },
-  showMore: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 10, minHeight: 48, marginTop: 4, paddingHorizontal: 18, borderRadius: 24, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
+  showMore: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 12, minHeight: 48, marginTop: 4, paddingHorizontal: 20, borderRadius: 24, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
   empty: { paddingVertical: 24 },
   emptyText: { color: c.muted, fontSize: 16, lineHeight: 24 },
 })
