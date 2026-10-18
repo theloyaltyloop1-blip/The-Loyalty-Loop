@@ -11,6 +11,13 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Business 1.0.1 submitted to both stores (2026-10-18) - Claude
+
+- Built from commit d47c8bb (countries/currency work). **Android** build 44b66aec (versionCode 132) submitted to the Play production track for review. **iOS** build 9702b4d0 (build 13) processed VALID. ASC version 1.0.1 (5e19af26) created, "What's new" set for en-US and en-GB, review submission c8f07489 is **WAITING_FOR_REVIEW**, released after approval.
+- Both apps' 1.0.1 builds are now in review on both stores. (Owner) Watch for the results.
+
+---
+
 ## Reviews: shop replies broken, star summaries added (2026-10-18) - Claude
 
 - **Found.** Reviews save fine, including stars-only (POST 201 at 20:54 UTC; the owner deleted that test review at 20:55). The automatic shop reply never runs: the live `ai-review-reply` function has `verify_jwt: true`, but `supabase/config.toml` says `false`, and the `request_ai_review_reply` trigger calls it with no token. Gateway answers 401 (20:49 and 20:54), so drafts stay `queued` (review 5d34b1c0, Test Shop for ££).
