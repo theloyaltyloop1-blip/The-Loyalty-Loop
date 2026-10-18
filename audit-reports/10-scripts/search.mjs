@@ -1,0 +1,15 @@
+import { chromium } from 'playwright'
+const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:390,height:844}})
+const sess={access_token:'x',refresh_token:'y',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:'u1',email:'a@b.c',aud:'authenticated',app_metadata:{},user_metadata:{}}}
+const biz=(id,name,category)=>({id,name,slug:id,category,brand_color:'#E8703B',loyalty_type:'stamp_card',loyalty_config:{stamps_required:8},address:'1 High St',postcode:'SW17',logo_url:null,cover_url:null,description:null,is_active:true})
+await ctx.route('https://dummy.supabase.co/**',r=>{const u=r.request().url();const j=x=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(x)})
+ if(u.includes('/rest/v1/businesses'))return j([biz('a','Bean There','Cafe'),biz('b','Snip Salon','Salon'),biz('c','Crumbs Bakery','Bakery')]); if(u.includes('/profiles'))return j({first_name:'Al'}); return j([])})
+await ctx.addInitScript(s=>{localStorage.setItem('sb-dummy-auth-token',s);localStorage.setItem('loyalty-loop-cookie-choice','all')},JSON.stringify(sess))
+const p=await ctx.newPage(); await p.goto('http://localhost:4173/dashboard',{waitUntil:'networkidle'}); await p.waitForTimeout(800)
+const names=async()=>p.evaluate(()=>[...document.querySelectorAll('main a h3, main a .font-display')].map(e=>e.textContent.trim()).filter(Boolean).slice(0,10))
+const count=async()=>p.evaluate(()=>document.querySelectorAll('.grid.sm\\:grid-cols-2 > *').length)
+console.log('initial cards:', await count())
+await p.getByLabel('Search shops').fill('salon'); await p.waitForTimeout(300); console.log('"salon" cards:', await count())
+await p.getByLabel('Search shops').fill('zzz'); await p.waitForTimeout(300); console.log('"zzz" empty state:', await p.getByText(/No shops match/).isVisible(), 'cards:', await count())
+await p.getByRole('button',{name:'Clear filters'}).click(); await p.waitForTimeout(300); console.log('after clear cards:', await count(), 'query:', JSON.stringify(await p.getByLabel('Search shops').inputValue()))
+await b.close()

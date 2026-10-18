@@ -1,5 +1,35 @@
 # Audit 10 – UX Usability & State Completeness
 
+## Executive summary
+_Before counts marked ≈ come from code review. All other counts were measured by the scripts below._
+
+12 passes. Every pass was verified in headless Chromium (Playwright) against a production build, with all Supabase traffic mocked (500 / empty / slow / POST-fail). Mobile viewport is 390×844 with touch; desktop is 1280px.
+
+| Metric | Before | After |
+|---|---|---|
+| Undersized tap targets (<44px; inline sentence links excluded under the WCAG 2.5.8 exception) | 63 customer/public + ~30 owner | 0 (only exempt ones remain: links inside sentences, checkbox inside a clickable label) |
+| Data views that are blank while loading | ≈20 (every auth-gated page returned `null`) | 0 (skeleton confirmed at 0.9s with 2.5s latency) |
+| Data views that silently show empty/blank on fetch failure | ≈17 | 0 (ErrorState + retry or inline alert) |
+| Mutations with no success or no failure feedback | ≈9 | 0 |
+| Pages with horizontal overflow at 390px | every sidebar page + landing | 0 |
+| Modals/drawers that close on Escape and backdrop | n/a (no modals existed) | Mobile nav drawer: Escape, backdrop, X and navigation all close it; focus is managed |
+| Controls without visible keyboard focus (measured) | 9 | 0 |
+
+### Highest-impact bugs fixed
+1. **Role-loading race.** Owners were bounced from every owner page on refresh, deep link or login. Brand heads were bounced from /brand. `rolesLoading` is now derived per user id.
+2. **No mobile navigation.** A fixed 256px sidebar left 206px of content with horizontal scroll. Fixed with a responsive drawer.
+3. **Admin tools reported false success.** A denied role grant showed "Role granted." because Supabase returns `{error}` rather than throwing.
+4. **Profile could be wiped.** After a failed profile load, the edit form showed blank fields, and Save would overwrite the profile.
+5. **Home search was decorative.** It had no state or filtering. It now filters shops and has a "no results" empty state.
+6. **Blank pages on fetch failure.** ShopDetail, Analytics ("Loading stats…" forever) and logged-out users on 5 customer pages saw a blank screen indefinitely.
+
+### Not changed (product decisions or low impact)
+- The floating "Security" button in the customer layout has no action.
+- Single-item "mark read" failure is ignored (the optimistic state is kept).
+- Duplicate loading/error state handling across pages (cleanup only; see Pass 8).
+
+---
+
 Scope: `apps/web/src` (28 pages, 11 components). Build: `npm run build` ✅ (tsc + vite, 0 errors).
 
 ## Raw scan (keyword heuristic per page: Loading/Error/Empty/Success/Escape hits)
@@ -448,3 +478,156 @@ after clear cards: 3 query: ""
 /dashboard/profile: tabbed 39, no visible focus: 0
 ```
 Before: /login 2, /signup 5, /forgot-password 1, /dashboard/profile 1 controls without visible focus.
+
+## Final regression run (all suites)
+Overflow/page-error count: 0. Undersized: only /signup exempt items (inline Terms/Privacy links, checkbox in label).
+```
+### public
+## / → / | interactive=21 alert=false skeleton=false | "The Loyalty Loop Sign up or log in SW17 · SW12 · now live Your high street, in your pocket"
+undersized: 0
+## /login → /login | interactive=10 alert=false skeleton=false | "Welcome back Log in New here? – Sign up as a customer Run a shop? – Sign up as a Loyalty"
+undersized: 0
+## /signup → /signup | interactive=15 alert=false skeleton=false | "Welcome to The Loyalty Loop I agree to the Terms and Privacy Notice . Sign up Already reg"
+undersized: 3
+## /signup/owner → /signup/owner | interactive=15 alert=false skeleton=false | "Welcome to The Loyalty Loop I agree to the Terms and Privacy Notice . Create shop account "
+undersized: 3
+## /forgot-password → /forgot-password | interactive=6 alert=false skeleton=false | "Reset your password Send reset link Back to sign in Your privacy choices We use essentia"
+undersized: 0
+## /reset-password → /reset-password | interactive=5 alert=false skeleton=false | "Choose a new password Save new password Your privacy choices We use essential storage to"
+undersized: 0
+## /terms → /terms | interactive=4 alert=false skeleton=false | "← The Loyalty Loop EFFECTIVE 7 AUGUST 2026 Terms of service Using The Loyalty Loop The "
+undersized: 0
+## /privacy → /privacy | interactive=4 alert=false skeleton=false | "← The Loyalty Loop EFFECTIVE 7 AUGUST 2026 Privacy notice What we store We store the ac"
+undersized: 0
+### customer (500s)
+## /dashboard → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop Hello, a Discover local rewards All categories Something went wrong We"
+undersized: 0
+## /dashboard/rewards → /dashboard/rewards | interactive=12 alert=true skeleton=false | "The Loyalty Loop Something went wrong We couldn’t load your rewards. Check your connectio"
+undersized: 0
+## /dashboard/news → /dashboard/news | interactive=12 alert=true skeleton=false | "The Loyalty Loop Something went wrong We couldn’t load shop news. Check your connection a"
+undersized: 0
+## /dashboard/favourites → /dashboard/favourites | interactive=12 alert=true skeleton=false | "The Loyalty Loop FAVOURITES Shops you've saved Something went wrong We couldn’t load yo"
+undersized: 0
+## /dashboard/activity → /dashboard/activity | interactive=12 alert=true skeleton=false | "The Loyalty Loop Something went wrong We couldn’t load your activity. Check your connecti"
+undersized: 0
+## /dashboard/inbox → /dashboard/inbox | interactive=12 alert=true skeleton=false | "The Loyalty Loop Something went wrong We couldn’t load your notifications. Check your con"
+undersized: 0
+## /dashboard/profile → /dashboard/profile | interactive=12 alert=true skeleton=false | "The Loyalty Loop Something went wrong We couldn’t load your profile. Check your connectio"
+undersized: 0
+## /owner → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop Hello, a Discover local rewards All categories Something went wrong We"
+undersized: 0
+## /owner/notifications → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop Hello, a Discover local rewards All categories Something went wrong We"
+undersized: 0
+## /owner/settings → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop Hello, a Discover local rewards All categories Something went wrong We"
+undersized: 0
+## /owner/scan → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop Hello, a Discover local rewards All categories Something went wrong We"
+undersized: 0
+### owner fail
+## /owner → /owner alerts=["Something went wrongWe couldn’t load your stats. Check your "] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/scan → /owner/scan alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/tools → /owner/tools alerts=["Couldn’t load your member list."] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/settings → /owner/settings alerts=["Couldn’t load your photos. Refresh to try again."] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/notifications → /owner/notifications alerts=["Something went wrongWe couldn’t load notifications. Check yo"] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/announcements → /owner/announcements alerts=["Something went wrongWe couldn’t load your updates. Check you"] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/reviews → /owner/reviews alerts=["Something went wrongWe couldn’t load your reviews. Check you"] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/support → /owner/support alerts=["Something went wrongWe couldn’t load your requests. Check yo"] skeleton=false pageErrors=0
+  undersized(0): 
+### owner empty
+## /owner → /owner alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/scan → /owner/scan alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/tools → /owner/tools alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/settings → /owner/settings alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/notifications → /owner/notifications alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/announcements → /owner/announcements alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/reviews → /owner/reviews alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+## /owner/support → /owner/support alerts=[] skeleton=false pageErrors=0
+  undersized(0): 
+### drawer
+/owner: scrollWidth=390 ok
+/owner/scan: scrollWidth=390 ok
+/owner/tools: scrollWidth=390 ok
+/owner/settings: scrollWidth=390 ok
+/owner/notifications: scrollWidth=390 ok
+/owner/announcements: scrollWidth=390 ok
+/owner/reviews: scrollWidth=390 ok
+/owner/support: scrollWidth=390 ok
+/dashboard: scrollWidth=390 ok
+/dashboard/rewards: scrollWidth=390 ok
+/dashboard/profile: scrollWidth=390 ok
+/: scrollWidth=390 ok
+/login: scrollWidth=390 ok
+/signup: scrollWidth=390 ok
+/terms: scrollWidth=390 ok
+drawer hidden initially: true
+opens on menu tap: true
+closes on Escape: true
+closes on backdrop: true
+closes on X: true
+closes on navigate: true http://localhost:4173/owner/reviews
+### mutations
+announce: ["Published — customers will see it on their News page."]
+support: ["Request sent — we’ll reply here."]
+promo: ["Draft saved."]
+announce: ["insert failed"]
+support: ["insert failed"]
+promo: ["Couldn’t save the promotion. Please try again."]
+### forms
+login-empty: url=/login invalidNative=2 messages=[]
+login-badcreds: url=/login invalidNative=0 messages=["Invalid login credentials"]
+forgot-err: url=/forgot-password invalidNative=0 messages=["We couldn’t send the link right now. Please try again."]
+forgot-ok: url=/forgot-password invalidNative=0 messages=["If an account exists for a@b.co, we've sent a password reset link to it."]
+signup-noagree: url=/signup invalidNative=3 messages=[]
+### search
+initial cards: 3
+"salon" cards: 1
+"zzz" empty state: true cards: 0
+after clear cards: 3 query: ""
+### login
+login → final /owner via /login > /login > /owner
+deep link after login → /owner/settings
+### focus
+/: tabbed 39, no visible focus: 0
+/login: tabbed 37, no visible focus: 0
+/signup: tabbed 38, no visible focus: 0
+/forgot-password: tabbed 35, no visible focus: 0
+/dashboard: tabbed 37, no visible focus: 0
+/dashboard/profile: tabbed 39, no visible focus: 0
+/owner: tabbed 43, no visible focus: 0
+/owner/scan: tabbed 43, no visible focus: 0
+/owner/tools: tabbed 43, no visible focus: 0
+/owner/settings: tabbed 44, no visible focus: 0
+/owner/announcements: tabbed 42, no visible focus: 0
+/owner/reviews: tabbed 42, no visible focus: 0
+/owner/support: tabbed 43, no visible focus: 0
+### slow
+/dashboard @0.9s: skeleton=true blank=false "The Loyalty Loop Hello, a Discover local rewards All categor"
+/dashboard/rewards @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/news @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/favourites @0.9s: skeleton=true blank=false "The Loyalty Loop FAVOURITES Shops you've saved Loading…"
+/dashboard/activity @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/inbox @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/profile @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/shop/x @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/owner @0.9s: skeleton=true blank=false "The Loyalty Loop ANALYTICS Know your customers 7d 30d 90d Lo"
+/owner/notifications @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/owner/announcements @0.9s: skeleton=true blank=false "The Loyalty Loop CUSTOMER NEWS Announcements Share menu laun"
+/owner/reviews @0.9s: skeleton=true blank=false "The Loyalty Loop CUSTOMER FEEDBACK Reviews — from 0 reviews "
+/owner/support @0.9s: skeleton=true blank=false "The Loyalty Loop HELP CENTRE Help & support Send a request d"
+/owner/settings @0.9s: skeleton=false blank=false "The Loyalty Loop Shop settings Profile Loyalty & rewards Win"
+### admin
+postfail ["permission denied for function"]
+```
