@@ -211,11 +211,11 @@ export function ShopDetail() {
       </button>
 
       <div
-        className="relative rounded-3xl p-8 mb-6 text-white bg-cover bg-center"
+        className="relative rounded-3xl p-6 sm:p-8 mb-6 text-white bg-cover bg-center"
         style={{
           background: business.cover_url
             ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
-            : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
+            : `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
         <button
@@ -239,8 +239,8 @@ export function ShopDetail() {
           )}
         </div>
 
-        <h1 className="text-4xl font-display font-extrabold mb-1 flex items-center gap-2">
-          {business.name}
+        <h1 className="pr-12 text-3xl sm:text-4xl font-display font-extrabold mb-1 flex items-center gap-2 break-words [text-shadow:0_1px_2px_rgba(0,0,0,0.25)]">
+          <span className="min-w-0">{business.name}</span>
           {business.verification_status === 'verified' && (
             <BadgeCheck className="h-7 w-7 text-white shrink-0" aria-label="Verified" />
           )}

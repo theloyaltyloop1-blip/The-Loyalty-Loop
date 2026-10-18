@@ -233,3 +233,24 @@ Diff:  26 files changed, 63 insertions(+), 63 deletions(-)
 ## After
 - Authed 320/768 re-scan: 0 overflow, 0 overlap; remaining: disabled "Post reply" (WCAG-exempt), FAB over profile toggle only at initial scroll position (content scrollable clear).
 - Cookie banner still overlays content on first paint by design (until a choice is made); page is now scrollable past it.
+
+---
+# Pass 4 – remaining routes, full regression, 200% text zoom (2026-10-18 14:46 UTC)
+
+- Mock fixtures fixed (single-row responses for `id/slug=eq`, web-research report shape) → /dashboard/shop/:id, /brand, /owner/tools now render and are audited.
+- Full regression: public + consumer + business_owner + admin + brand_head × 320/390/768/1280/1920.
+- Text zoom: root font-size 200% (`ZOOM=200%`) at 390/1280 for consumer + owner.
+
+## Findings & fixes
+| Issue | Where | Fix |
+|---|---|---|
+| Bug: `/owner/tools` redirected to onboarding → /owner before owner data loaded | `pages/owner/Tools.tsx` | wait for `useOwner().loading` |
+| Bug: `/brand` redirected to /owner before roles loaded | `pages/BrandWorkspace.tsx` | wait for `rolesLoading` |
+| Shop hero: long name + verified badge overflowed (352px) at 320px; title under favourite button | `ShopDetail.tsx` | `text-3xl sm:text-4xl`, `pr-12`, name in `min-w-0` span, `p-6 sm:p-8` |
+| Shop hero: white text on owner-chosen `brand_color` gradient unreadable for light brand colours | `ShopDetail.tsx` | 20% dark overlay layer + subtle text-shadow |
+| 200% zoom: landing header (logo + CTA, `rounded-full`, no wrap) overflowed to 604px at 390 | `Landing.tsx` | header `flex-wrap`, `rounded-[2rem]`, logo nowrap |
+| 200% zoom: shop card grid overflowed (454px @390, 1298px @1280) — grid items `min-width:auto` | `Home.tsx`, `Favourites.tsx` | `grid-cols-1 sm:grid-cols-2` (minmax(0,1fr)) |
+| Deactivate-shop copy `text-red-700/75` on red-50 = 4.31 | `owner/Tools.tsx` | `text-red-700` |
+
+## After
+- 320px + 200% zoom re-scan (consumer): 0 overflow, 0 offscreen, 0 overlap, 0 contrast (excluding intentional `truncate` and disabled button).

@@ -129,7 +129,7 @@ export function Home() {
           </div>
 
           <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/75 mb-4">Nearby</p>
-          <div className="grid sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {filtered.map((business) => (
               <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
             ))}

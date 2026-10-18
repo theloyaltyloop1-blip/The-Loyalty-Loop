@@ -154,8 +154,8 @@ export function Landing() {
   return (
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto px-4 py-4 sticky top-0 z-30">
-        <header className="flex items-center justify-between gap-4 rounded-full border-[3px] border-foreground bg-card px-4 py-2 shadow-sticker">
-          <Link to="/" className="flex items-center gap-2 font-display font-extrabold text-lg">
+        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[2rem] border-[3px] border-foreground bg-card px-4 py-2 shadow-sticker">
+          <Link to="/" className="flex items-center gap-2 font-display font-extrabold text-lg whitespace-nowrap">
             <LoopMark className="h-9 w-9" />
             The Loyalty Loop
           </Link>

@@ -42,7 +42,7 @@ export function FavouritesPage() {
           </p>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {businesses.map((business) => (
             <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
           ))}
