@@ -312,7 +312,7 @@ export function ShopDetail() {
         style={{
           background: business.cover_url
             ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
-            : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
+            : `linear-gradient(rgb(0 0 0 / 0.28), rgb(0 0 0 / 0.28)), linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
         <Tooltip>
@@ -342,8 +342,8 @@ export function ShopDetail() {
           )}
         </div>
 
-        <h1 className="text-4xl font-display font-bold tracking-tight mb-1 flex items-center gap-2 sm:text-5xl">
-          {business.name}
+        <h1 className="mb-1 flex min-w-0 items-center gap-2 pr-14 font-display text-3xl font-bold tracking-tight [overflow-wrap:anywhere] [text-shadow:0_1px_3px_rgb(0_0_0/0.35)] sm:text-5xl">
+          <span className="min-w-0">{business.name}</span>
           {business.verification_status === 'verified' && (
             <Tooltip>
               <TooltipTrigger asChild>

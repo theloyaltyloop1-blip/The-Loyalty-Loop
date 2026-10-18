@@ -342,23 +342,30 @@ export function OwnerAnalytics() {
   const [stats, setStats] = React.useState<PeriodStats | null>(null)
   const [totals, setTotals] = React.useState<TotalsStats | null>(null)
   const [statsLoading, setStatsLoading] = React.useState(true)
+  const [statsError, setStatsError] = React.useState(false)
+  const [statsKey, setStatsKey] = React.useState(0)
   const [webResearch, setWebResearch] = React.useState<DeepBusinessReport | null>(null)
 
   React.useEffect(() => {
     if (!business) return
+    let cancelled = false
     setStatsLoading(true)
+    setStatsError(false)
     Promise.all([fetchPeriodStats(business.id, period), fetchTotalsStats(business.id)])
       .then(([p, t]) => {
+        if (cancelled) return
         setStats(p)
         setTotals(t)
       })
-      .finally(() => setStatsLoading(false))
-  }, [business?.id, period])
+      .catch(() => { if (!cancelled) setStatsError(true) })
+      .finally(() => { if (!cancelled) setStatsLoading(false) })
+    return () => { cancelled = true }
+  }, [business?.id, period, statsKey])
 
   React.useEffect(() => {
     if (!business) return
     setWebResearch(null)
-    fetchLatestWebResearch(business.id).then(setWebResearch)
+    fetchLatestWebResearch(business.id).then(setWebResearch).catch(() => setWebResearch(null))
   }, [business?.id])
 
   if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
@@ -377,8 +384,9 @@ export function OwnerAnalytics() {
               <button data-press-feedback
                 key={p}
                 onClick={() => setPeriod(p)}
+                aria-pressed={period === p}
                 className={
-                  'px-4 h-9 rounded-full text-sm font-semibold tabular-nums transition-colors duration-200 ease-out ' +
+                  'px-4 h-11 rounded-full text-sm font-semibold tabular-nums transition-colors duration-200 ease-out ' +
                   (period === p ? 'bg-peach text-peach-ink' : 'text-muted-foreground hover:text-foreground')
                 }
               >
@@ -392,6 +400,11 @@ export function OwnerAnalytics() {
       {!business ? (
         <div className="rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink">
           <p>Set up a shop to see analytics.</p>
+        </div>
+      ) : statsError && !statsLoading ? (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-destructive/10 p-5 text-sm text-destructive">
+          <span>We couldn’t load your stats.</span>
+          <button data-press-feedback onClick={() => setStatsKey((k) => k + 1)} className="min-h-11 rounded-full bg-destructive px-4 font-semibold text-white">Try again</button>
         </div>
       ) : statsLoading || !stats || !totals ? (
         <div role="status" aria-label="Loading stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
