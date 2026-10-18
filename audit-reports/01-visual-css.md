@@ -214,3 +214,22 @@ Diff:  26 files changed, 63 insertions(+), 63 deletions(-)
 - apps/web/src/pages/owner/Support.tsx
 - apps/web/src/pages/owner/Tools.tsx
 - audit-reports/scripts/crawl.mjs
+
+---
+# Pass 3 – overlap / z-index / covered controls / 320px (2026-10-18 13:35 UTC)
+
+- New detectors in `crawl.mjs`: **covered** (elementFromPoint at centre of every in-viewport a/button/input/select/textarea), **overlap** (intersecting in-flow flex/grid siblings), **truncated** (ellipsis / line-clamp actually cutting text). Breakpoints now 320/390/768/1280/1920 (`W=` env to override).
+- `states.mjs`: interactive states — FAQ open, cookie banner vs login form and landing hero CTAs, at 320/390/768/1280.
+
+## Findings (before)
+| Issue | Where | Fix |
+|---|---|---|
+| Cookie banner (fixed, z-50) covers hero CTAs, signup inputs, "Log in"/"Sign up" links; no way to scroll content out from under it | 320–768px: /, /login, /signup, /signup/owner | `cookie-consent.tsx`: reserves body `padding-bottom` = banner height (ResizeObserver) while open; compact padding/heading on mobile; `role="dialog"` + label |
+| Scan manual-code row overflows (365px) | 320px /owner/scan (award + redeem) | input `min-w-0`, button `shrink-0` |
+| Security FAB (fixed) covers right-edge controls (profile toggles) | 768px /dashboard/profile | dashboard `main` gets `pb-24` so content can scroll clear of FAB; FAB smaller on mobile (pass 2) |
+| 35× truncated business name in switcher | 320px owner pages | Intentional `truncate` with full name elsewhere — no change |
+| Sibling overlap | — | 0 found |
+
+## After
+- Authed 320/768 re-scan: 0 overflow, 0 overlap; remaining: disabled "Post reply" (WCAG-exempt), FAB over profile toggle only at initial scroll position (content scrollable clear).
+- Cookie banner still overlays content on first paint by design (until a choice is made); page is now scrollable past it.

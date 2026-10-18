@@ -208,7 +208,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
+          className="h-12 flex-1 min-w-0 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
           placeholder="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -217,7 +217,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
         <button
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-xl bg-[#1a1a1a] text-white font-bold px-5 disabled:opacity-40"
+          className="h-12 shrink-0 rounded-xl bg-[#1a1a1a] text-white font-bold px-5 disabled:opacity-40"
         >
           Find
         </button>
@@ -359,7 +359,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
+          className="h-12 flex-1 min-w-0 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
           placeholder="Reward's short code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -368,7 +368,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         <button
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-xl bg-[#1a1a1a] text-white font-bold px-5 disabled:opacity-40"
+          className="h-12 shrink-0 rounded-xl bg-[#1a1a1a] text-white font-bold px-5 disabled:opacity-40"
         >
           Find
         </button>

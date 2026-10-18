@@ -59,7 +59,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 max-w-5xl">{children}</main>
+      <main className="flex-1 min-w-0 p-4 pb-24 sm:p-6 sm:pb-24 md:p-8 md:pb-24 max-w-5xl">{children}</main>
 
       <button
         title="Security"
