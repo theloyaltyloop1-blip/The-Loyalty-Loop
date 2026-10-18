@@ -2585,6 +2585,13 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Visual branch advanced to 2063bb2 (pass-4 loading fixes) while inventory was underway; snapshot pinned. Report ends pass 3. Raw npm-audit file on audit 03 is pre-fix evidence despite report's final zero claim. Type-aware warning counts are staged. Branch palette/nav/router/bundle decisions conflict and require selective review; do not wholesale merge old branches.
 - Review completed; no implementation milestone or sequence changed. Changed paths: this handoff plus docs/audit-review-2026-10-18/*.md and sources.json. Verification: Git reads succeeded; saved reports checked against pinned source content. Tests not rerun; current-main/device/inbox/scanner/manual accessibility acceptance remains unverified. Prior wallet/deletion work and approval constraints remain applicable.
 
+## Launch update check (2026-10-18) - Claude, local only, NOT released
+
+- Owner saw `0101b7b3` (the embedded store bundle) on a fresh install. By default expo-updates runs the embedded bundle first and applies an OTA only on the next launch.
+- New apps/shopper/src/launch-update.ts (`useLaunchUpdate`): on cold start it checks, fetches and `reloadAsync()`s into a newer update behind the existing loading spinner. It gives up after 6s or on error and opens the current version. Skipped in dev and when updates are disabled. Wired into AppRoot in App.tsx. tsc passes. Not run on a device.
+- Release: an OTA helps existing users from their next launch. New store installs need a new shopper store build (owner asked for this behaviour). Business app not changed.
+- Next (owner): approve commit + OTA, then a shopper store build/submit when ready.
+
 ## Copy-ready prompt for Claude Code
 
 Read docs/audit-review-2026-10-18/README.md and sources.json, then compare each of the ten pinned audit reports with current main. Most audit branches start at August 7 commit d752640 and omit 253 main commits; preserve current features, fonts and design and do not merge them wholesale. First independently verify the security report's hosted protections read-only, then identify which role-loading, failure-state, responsive and accessibility findings still reproduce on current main. Acceptance: a current-main finding matrix separating already fixed, reproducible, outdated and unverified issues, with test evidence and conflicting branch implementations identified. No product-owner input is needed for read-only review; obtain approval before production writes/deployment, and retain prior wallet/deletion handoff requirements.

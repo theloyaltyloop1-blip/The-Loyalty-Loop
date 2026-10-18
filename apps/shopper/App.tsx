@@ -24,6 +24,7 @@ import { CategoryCircles, HomeCollection, homeStyles } from './src/components/Ho
 import { categoryCounts } from './src/home-rails'
 import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
 import { formatAddress } from './src/format-address'
+import { useLaunchUpdate } from './src/launch-update'
 import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
 import { shopMoney } from './src/money'
@@ -2465,6 +2466,7 @@ function AppRoot() {
   const [locked, setLocked] = useState(false)
   const [checkingLock, setCheckingLock] = useState(false)
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null)
+  const checkingUpdate = useLaunchUpdate()
 
   useEffect(() => { getOnboardingComplete().then(setOnboardingComplete) }, [])
 
@@ -2522,7 +2524,7 @@ function AppRoot() {
       </SafeAreaView>
     )
   }
-  if (onboardingComplete === null || checking || (session && (!allowed || checkingLock))) {
+  if (checkingUpdate || onboardingComplete === null || checking || (session && (!allowed || checkingLock))) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
