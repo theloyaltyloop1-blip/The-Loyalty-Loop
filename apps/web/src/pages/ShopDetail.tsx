@@ -246,7 +246,7 @@ export function ShopDetail() {
           )}
         </h1>
         <p className="text-white/80 mb-2">{business.category}</p>
-        <p className="text-white/70 max-w-md">{business.description}</p>
+        <p className="text-white/85 max-w-md">{business.description}</p>
       </div>
 
       {!membership ? (

@@ -250,7 +250,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           <button
             onClick={handleAward}
             disabled={busy}
-            className="h-12 rounded-full bg-[#E8703B] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+            className="h-12 rounded-full bg-[#C2410C] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Check className="h-4 w-4" /> {busy ? 'Awarding…' : `Award ${amount} ${unit}${amount === 1 ? '' : 's'}`}
           </button>
@@ -389,7 +389,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         <button
           onClick={handleRedeem}
           disabled={busy}
-          className="h-12 rounded-full bg-[#E8703B] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+          className="h-12 rounded-full bg-[#C2410C] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <Check className="h-4 w-4" /> {busy ? 'Redeeming…' : 'Redeem reward'}
         </button>
@@ -474,7 +474,7 @@ export function OwnerScan() {
                       onClick={() => setMode(key)}
                       className={
                         'flex-1 h-10 rounded-full text-sm font-bold capitalize transition-colors flex items-center justify-center gap-1.5 ' +
-                        (mode === key ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/50')
+                        (mode === key ? 'bg-[#C2410C] text-white' : 'text-[#1a1a1a]/50')
                       }
                     >
                       {key === 'award' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}

@@ -55,7 +55,7 @@ export function ShopCard({ business, membership }: { business: Business; members
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: business.brand_color }} />
           {joined ? "You're a member" : 'Tap to join'}
         </span>
-        <span className="flex items-center gap-1 text-sm font-bold text-[#C9622E]">
+        <span className="flex items-center gap-1 text-sm font-bold text-[#A84B1E]">
           View <ArrowRight className="h-3.5 w-3.5" />
         </span>
       </div>

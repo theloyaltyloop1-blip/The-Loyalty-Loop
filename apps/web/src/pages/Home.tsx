@@ -96,7 +96,7 @@ export function Home() {
           onClick={() => setCategory('All')}
           className={
             'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
-            (category === 'All' ? 'bg-[#E8703B] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
+            (category === 'All' ? 'bg-[#C2410C] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
           }
         >
           All categories
@@ -107,7 +107,7 @@ export function Home() {
             onClick={() => setCategory(cat)}
             className={
               'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
-              (category === cat ? 'bg-[#E8703B] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
+              (category === cat ? 'bg-[#C2410C] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
             }
           >
             {cat} · {count}

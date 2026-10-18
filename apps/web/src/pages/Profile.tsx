@@ -178,7 +178,7 @@ export function ProfilePage() {
         <button
           onClick={handleSaveProfile}
           disabled={saving}
-          className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-[#C2410C] text-white font-bold px-6 h-12 disabled:opacity-50"
         >
           <User className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
         </button>
@@ -206,7 +206,7 @@ export function ProfilePage() {
                 onClick={() => handleToggleSetting(key)}
                 className={
                   'h-7 w-12 rounded-full transition-colors relative shrink-0 ' +
-                  (settings[key] ? 'bg-[#E8703B]' : 'bg-black/10')
+                  (settings[key] ? 'bg-[#C2410C]' : 'bg-black/10')
                 }
               >
                 <span
@@ -223,7 +223,7 @@ export function ProfilePage() {
 
       <SectionCard title="Invite a friend">
         <p className="text-sm text-[#1a1a1a]/55 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
-        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#E8703B] px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
+        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#C2410C] px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
       </SectionCard>
 
       <button

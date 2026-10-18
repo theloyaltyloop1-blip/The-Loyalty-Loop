@@ -94,7 +94,7 @@ export function OwnerOnboarding() {
                   (i < step
                     ? 'bg-[#3FA34D] border-[#3FA34D] text-white'
                     : i === step
-                      ? 'bg-[#E8703B] border-[#E8703B] text-white'
+                      ? 'bg-[#C2410C] border-[#E8703B] text-white'
                       : 'bg-white border-black/10 text-[#1a1a1a]/30')
                 }
               >
@@ -238,7 +238,7 @@ export function OwnerOnboarding() {
               <button
                 onClick={() => setStep((s) => s + 1)}
                 disabled={!canContinue}
-                className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-[#C2410C] text-white font-bold px-6 h-12 disabled:opacity-50"
               >
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
@@ -246,7 +246,7 @@ export function OwnerOnboarding() {
               <button
                 onClick={handleCreate}
                 disabled={creating}
-                className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-[#C2410C] text-white font-bold px-6 h-12 disabled:opacity-50"
               >
                 {creating ? 'Creating…' : 'Go live'} <Check className="h-4 w-4" />
               </button>

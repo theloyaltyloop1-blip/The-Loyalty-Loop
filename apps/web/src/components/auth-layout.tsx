@@ -17,7 +17,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
 
           <button
             onClick={() => navigate('/')}
-            className="absolute bottom-6 right-8 text-sm font-semibold text-[#2F6FED] hover:underline"
+            className="absolute bottom-6 right-8 text-sm font-semibold text-[#1F56C7] hover:underline"
           >
             Back
           </button>
@@ -56,7 +56,7 @@ export function AuthLinkLine({
   return (
     <p className="text-[#1a1a1a]">
       <span className="font-semibold">{prompt}</span>{' '}
-      <Link to={to} className="font-semibold text-[#C9622E] hover:underline">
+      <Link to={to} className="font-semibold text-[#A84B1E] hover:underline">
         {linkText}
       </Link>
     </p>
@@ -67,7 +67,7 @@ export function AuthLinkLine({
  * lower-priority action rather than one of the primary account switches. */
 export function AuthMinorLink({ linkText, to }: { linkText: string; to: string }) {
   return (
-    <Link to={to} className="text-xs text-[#1a1a1a]/50 hover:text-[#1a1a1a]/80 hover:underline">
+    <Link to={to} className="text-xs text-[#1a1a1a]/75 hover:text-[#1a1a1a] hover:underline">
       {linkText}
     </Link>
   )

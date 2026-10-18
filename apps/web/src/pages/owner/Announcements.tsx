@@ -50,7 +50,7 @@ export function OwnerAnnouncements() {
         <input className={inputClass + ' mb-3'} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="e.g. Our summer menu is here" required />
         <textarea className={inputClass + ' min-h-28'} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} placeholder="Tell customers what’s new…" />
         {error && <p className="mt-3 text-sm font-semibold text-red-600">{error}</p>}
-        <button disabled={publishing} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#E8703B] text-white px-5 py-3 font-bold disabled:opacity-60"><Plus className="h-4 w-4" />{publishing ? 'Publishing…' : 'Publish update'}</button>
+        <button disabled={publishing} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#C2410C] text-white px-5 py-3 font-bold disabled:opacity-60"><Plus className="h-4 w-4" />{publishing ? 'Publishing…' : 'Publish update'}</button>
       </form>
       <h2 className="font-display text-xl font-bold text-[#1a1a1a] mb-4">Your updates</h2>
       <div className="grid gap-4">{items.length === 0 ? <p className="text-[#1a1a1a]/55">No announcements yet.</p> : items.map((item) => <AnnouncementRow key={item.id} item={item} onChange={reload} />)}</div>

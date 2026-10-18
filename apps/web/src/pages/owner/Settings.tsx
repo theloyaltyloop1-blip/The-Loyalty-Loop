@@ -437,7 +437,7 @@ function ProfileTab() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50 mb-5"
+        className="rounded-full bg-[#C2410C] text-white font-bold px-6 h-12 disabled:opacity-50 mb-5"
       >
         {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
       </button>
@@ -586,7 +586,7 @@ function LoyaltyTab() {
                 <span className="flex items-center gap-1 text-[#1a1a1a]/60">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: brandColor }} /> Tap to join
                 </span>
-                <span className="font-bold text-[#C9622E]">View →</span>
+                <span className="font-bold text-[#A84B1E]">View →</span>
               </div>
             </div>
           </div>
@@ -702,7 +702,7 @@ function LoyaltyTab() {
           </Field>
           <button
             onClick={handleAddReward}
-            className="h-12 rounded-full bg-[#E8703B] text-white font-bold px-5 flex items-center gap-1.5 whitespace-nowrap"
+            className="h-12 rounded-full bg-[#C2410C] text-white font-bold px-5 flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Add
           </button>
@@ -712,7 +712,7 @@ function LoyaltyTab() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+        className="rounded-full bg-[#C2410C] text-white font-bold px-6 h-12 disabled:opacity-50"
       >
         {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
       </button>
@@ -782,7 +782,7 @@ function WinbackTab() {
           <button
             onClick={handleSend}
             disabled={sending}
-            className="h-12 rounded-full bg-[#E8703B] text-white font-bold px-6 flex items-center gap-2 disabled:opacity-50"
+            className="h-12 rounded-full bg-[#C2410C] text-white font-bold px-6 flex items-center gap-2 disabled:opacity-50"
           >
             <Send className="h-4 w-4" /> {sending ? 'Sending…' : 'Send now'}
           </button>
@@ -934,7 +934,7 @@ function VerificationTab() {
           <button
             onClick={handleSubmit}
             disabled={submitting || !file || !label.trim()}
-            className="rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+            className="rounded-full bg-[#C2410C] text-white font-bold px-6 h-12 disabled:opacity-50"
           >
             {submitting ? 'Submitting…' : 'Submit for review'}
           </button>
@@ -960,7 +960,7 @@ function PermissionToggle({
       onClick={onToggle}
       className={
         'flex items-center gap-2 rounded-full border-2 px-3.5 h-9 text-sm font-semibold transition-colors ' +
-        (active ? 'border-[#E8703B] bg-[#E8703B]/10 text-[#C9622E]' : 'border-black/10 text-[#1a1a1a]/40')
+        (active ? 'border-[#E8703B] bg-[#C2410C]/10 text-[#A84B1E]' : 'border-black/10 text-[#1a1a1a]/40')
       }
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -1045,7 +1045,7 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
       <button
         onClick={handleInvite}
         disabled={submitting}
-        className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+        className="flex items-center gap-2 rounded-full bg-[#C2410C] text-white font-bold px-6 h-12 disabled:opacity-50"
       >
         <UserPlus className="h-4 w-4" /> {submitting ? 'Adding…' : 'Add staff member'}
       </button>

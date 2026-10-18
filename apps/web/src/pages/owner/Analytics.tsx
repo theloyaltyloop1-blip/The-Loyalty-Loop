@@ -110,7 +110,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
       ) : (
         <p className="text-sm text-[#1a1a1a]/80 leading-relaxed">{summary}</p>
       )}
-      <button onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-[#C9622E] disabled:opacity-40">
+      <button onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-[#A84B1E] disabled:opacity-40">
         Regenerate
       </button>
     </div>
@@ -175,7 +175,7 @@ function DeepBusinessReportCard({
                   href={s.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-xs font-semibold text-[#C9622E] bg-white border border-black/10 rounded-full px-3 py-1.5 hover:border-[#E8703B]/50"
+                  className="flex items-center gap-1 text-xs font-semibold text-[#A84B1E] bg-white border border-black/10 rounded-full px-3 py-1.5 hover:border-[#E8703B]/50"
                 >
                   {s.title.length > 40 ? s.title.slice(0, 40) + '…' : s.title} <ExternalLink className="h-3 w-3" />
                 </a>
@@ -236,7 +236,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
             className={
               'rounded-xl px-4 py-2.5 text-sm max-w-[90%] ' +
               (m.role === 'user'
-                ? 'bg-[#E8703B] text-white self-end'
+                ? 'bg-[#C2410C] text-white self-end'
                 : 'bg-white text-[#1a1a1a] self-start border border-black/5')
             }
           >
@@ -259,7 +259,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
         <button
           onClick={handleSend}
           disabled={sending || !input.trim()}
-          className="h-11 w-11 rounded-full bg-[#E8703B] text-white flex items-center justify-center disabled:opacity-40 shrink-0"
+          className="h-11 w-11 rounded-full bg-[#C2410C] text-white flex items-center justify-center disabled:opacity-40 shrink-0"
         >
           <Send className="h-4 w-4" />
         </button>
@@ -316,7 +316,7 @@ export function OwnerAnalytics() {
                 onClick={() => setPeriod(p)}
                 className={
                   'px-4 h-9 rounded-full text-sm font-bold transition-colors ' +
-                  (period === p ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/50 hover:text-[#1a1a1a]')
+                  (period === p ? 'bg-[#C2410C] text-white' : 'text-[#1a1a1a]/50 hover:text-[#1a1a1a]')
                 }
               >
                 {p}d
