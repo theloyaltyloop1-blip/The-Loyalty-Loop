@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
+import { CATEGORIES, categoryCopy, categoryOptions } from '@/lib/categories'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from '@/lib/shop-features'
@@ -38,7 +39,6 @@ import { canDeleteCurrentAccount, requestAccountDeletion } from '@/lib/engagemen
 import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
-const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
 
@@ -416,7 +416,7 @@ function ProfileTab() {
             value={form.category ?? ''}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           >
-            {CATEGORIES.map((c) => (
+            {categoryOptions(business?.category).map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -629,7 +629,7 @@ function StampLoyaltyTab() {
         </p>
         <input
           className={inputClass}
-          placeholder="e.g. Free coffee just for joining"
+          placeholder={`e.g. ${categoryCopy(business?.category).signupReward}`}
           value={signupReward}
           onChange={(e) => setSignupReward(e.target.value)}
         />
@@ -802,7 +802,7 @@ function StampLoyaltyTab() {
           <Field label="Title">
             <input
               className={inputClass}
-              placeholder="Free coffee"
+              placeholder={categoryCopy(business?.category).rewardTitle}
               value={newReward.title}
               onChange={(e) => setNewReward({ ...newReward, title: e.target.value })}
             />
@@ -923,7 +923,7 @@ function SpendLoyaltyTab() {
         </p>
         <input
           className={inputClass}
-          placeholder="e.g. Free coffee just for joining"
+          placeholder={`e.g. ${categoryCopy(business?.category).signupReward}`}
           value={signupReward}
           onChange={(e) => setSignupReward(e.target.value)}
         />
@@ -1034,7 +1034,7 @@ function SpendLoyaltyTab() {
           <Field label="Title">
             <input
               className={inputClass}
-              placeholder="Free coffee"
+              placeholder={categoryCopy(business?.category).rewardTitle}
               value={newReward.title}
               onChange={(e) => setNewReward({ ...newReward, title: e.target.value })}
             />

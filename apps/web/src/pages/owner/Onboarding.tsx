@@ -9,7 +9,7 @@ import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 
-const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
+import { CATEGORIES, categoryCopy } from '@/lib/categories'
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
 
 const STEPS = [
@@ -352,7 +352,7 @@ export function OwnerOnboarding() {
                       className={inputClass}
                       value={reward.title}
                       onChange={(e) => updateReward(index, { title: e.target.value })}
-                      placeholder="e.g. Free coffee"
+                      placeholder={`e.g. ${categoryCopy(form.category).rewardTitle}`}
                     />
                   </Field>
                   <Field label="Details">

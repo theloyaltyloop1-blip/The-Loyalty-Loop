@@ -2,7 +2,7 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, UtensilsCrossed, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
@@ -27,12 +27,7 @@ import {
   type BusinessPhoto,
 } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
-
-const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Café: Coffee,
-  Restaurant: UtensilsCrossed,
-  Barber: Scissors,
-}
+import { categoryCopy } from '@/lib/categories'
 
 const UNIT_LABEL: Record<string, string> = {
   stamp_card: 'stamp',
@@ -246,7 +241,7 @@ export function ShopDetail() {
 
   // Stamp / points / visits shops (reward_model 'stamp_legacy').
   const spendShop = business.reward_model === 'spend_threshold'
-  const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
+  const StampIcon = categoryCopy(business.category).icon
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
   const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
   const stampProgress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0

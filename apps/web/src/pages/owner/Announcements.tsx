@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
+import { categoryCopy } from '@/lib/categories'
 import { createAnnouncement, deleteAnnouncement, fetchOwnedAnnouncements, updateAnnouncement, type Announcement } from '@/lib/businesses'
 
 const inputClass = 'w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus:border-primary'
@@ -48,7 +49,7 @@ export function OwnerAnnouncements() {
     {!business ? <div className="rounded-3xl bg-sage px-6 py-10 text-center text-sage-ink">Set up your shop before publishing announcements.</div> : <>
       <form onSubmit={publish} className="rounded-2xl bg-card p-6 ring-1 ring-foreground/8 mb-7">
         <div className="flex items-center gap-2 mb-5"><div className="h-9 w-9 rounded-xl flex items-center justify-center text-white" style={{backgroundColor: business.brand_color}}><Megaphone className="h-4 w-4" /></div><h2 className="font-display text-xl font-semibold tracking-tight">Create an update</h2></div>
-        <input className={inputClass + ' mb-3'} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="e.g. Our summer menu is here" required />
+        <input className={inputClass + ' mb-3'} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder={`e.g. ${categoryCopy(business?.category).announcement}`} required />
         <textarea className={inputClass + ' min-h-28'} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} placeholder="Tell customers what’s new…" />
         {error && <p className="mt-3 text-sm font-semibold text-destructive">{error}</p>}
         <button data-press-feedback disabled={publishing} className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground px-5 py-3 font-semibold disabled:opacity-60"><Plus className="h-4 w-4" />{publishing ? 'Publishing…' : 'Publish update'}</button>
