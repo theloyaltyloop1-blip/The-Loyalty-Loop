@@ -2550,6 +2550,10 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Business production OTA (features settings only; £ off and black text were already shipped by 88be34a): Android 96678226-7a14-4424-bf8e-7142919d4509, iOS 1969a227-3b36-4250-b425-b741a97e3b6f.
 - Not checked on a phone after release. The test shop still has test data (rewards, stamps, features). Delete it and the two test accounts when testing is done.
 - Coordination note: two sessions edited apps/shopper/App.tsx in parallel. Check git log before shipping shopper changes.
+## Sand background UNDONE (2026-10-18) - Claude
+- The owner saw the sand on the business app and asked to undo it everywhere. Commit ba7dca6 reverts 37b7dc3 and 72eca60 and makes apps/shopper/src/theme.ts a plain re-export of the shared tokens. Back to background #F3F4EF, card #FCFCFA, border #DCDFD6.
+- Production OTAs: shopper Android 01a14c70…, iOS 01a14c71…; business Android 01a14c72-0c16…, iOS 01a14c72-c091…. Website redeploys from the push. The superseded sand OTAs (shopper 01a14c65/66, business 01a14c6d/6e) are replaced. The halal/vegan feature work is untouched.
+
 ## Copy-ready prompt for Claude Code
 
 Claude: review the deletion-client and wallet-format follow-up in apps/web/src/lib/businesses.ts, apps/retailer/App.tsx, apps/shopper/src/external-card-barcode.ts and components/ExternalCards.tsx. Check docs/CARD_WALLET_FORMAT_EVIDENCE.md, especially Nectar GS1/payload limits. Web build, retailer/shopper TypeScript and 8 focused tests passed; device/scanner acceptance remains unrun. Owner approval is still required: on tgukdabfvvoywawmzbdo first confirm authenticated UPDATE on public.profiles, then rollback-only dry-run and apply supabase/migrations/20261017230331_shopper_external_cards.sql, verify hosted RLS/cap/cascade, then deploy export-platform-backup. No production action has run in this follow-up. Do not run eas update, eas build, commit or push without owner approval.
