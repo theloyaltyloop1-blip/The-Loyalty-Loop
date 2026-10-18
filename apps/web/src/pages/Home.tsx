@@ -11,11 +11,13 @@ import { fetchBusinesses, fetchMyMemberships, type Business, type Membership, ty
 import { trendingShops } from '@/lib/trending'
 import { useUserLocation } from '@/lib/use-user-location'
 import { pickFeatured } from '@/lib/distance'
+import { SHOP_FEATURES, hasAllFeatures } from '@/lib/shop-features'
 
 export function Home() {
   const { session, loading, rolesLoading, primaryRole } = useAuth()
   const [firstName, setFirstName] = React.useState<string | null>(null)
   const [category, setCategory] = React.useState('All')
+  const [features, setFeatures] = React.useState<string[]>([])
   const [query, setQuery] = React.useState('')
   const [askOpen, setAskOpen] = React.useState(false)
   const [businesses, setBusinesses] = React.useState<Business[]>([])
@@ -72,6 +74,7 @@ export function Home() {
   const search = query.trim().toLowerCase()
   const filtered = businesses.filter((business) =>
     (category === 'All' || (business.category ?? 'Other') === category) &&
+    hasAllFeatures(business.features, features) &&
     `${business.name} ${business.category ?? ''} ${business.address ?? ''} ${business.postcode ?? ''}`.toLowerCase().includes(search)
   )
   const trending = trendingShops(businesses, filtered, { fallback: 2 })
@@ -111,9 +114,16 @@ export function Home() {
         </button>)}
       </div>
 
+      <div role="group" aria-label="Filter shops by what they offer" className="-mt-4 mb-7 flex gap-2 overflow-x-auto pb-1">
+        {SHOP_FEATURES.map((feature) => {
+          const active = features.includes(feature.id)
+          return <button type="button" key={feature.id} aria-pressed={active} onClick={() => setFeatures(active ? features.filter((id) => id !== feature.id) : [...features, feature.id])} className={'min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-primary ' + (active ? 'bg-primary text-primary-foreground' : 'bg-card text-foreground ring-1 ring-primary/40 hover:bg-sage')}>{feature.label}</button>
+        })}
+      </div>
+
       {fetching && !businesses.length ? <p role="status" className="rounded-2xl bg-sage px-5 py-6 text-sage-ink">Finding your local favourites…</p>
         : loadError ? <div role="alert" className="rounded-2xl bg-peach px-5 py-6 text-peach-ink"><p>{loadError}</p><button type="button" onClick={() => window.location.reload()} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground">Refresh <ArrowRight className="h-4 w-4" aria-hidden="true" /></button></div>
-          : <HomeCollection businesses={filtered} featured={featured} featuredReason={personal?.reason} memberships={memberships} catalog={catalog} filtered={category !== 'All' || Boolean(search)} location={userLocation} locationStatus={locationStatus} onUseLocation={locate} />}
+          : <HomeCollection businesses={filtered} featured={featured} featuredReason={personal?.reason} memberships={memberships} catalog={catalog} filtered={category !== 'All' || features.length > 0 || Boolean(search)} location={userLocation} locationStatus={locationStatus} onUseLocation={locate} />}
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-peach px-5 py-5 text-peach-ink sm:px-7">
         <p className="font-semibold">Can’t find your favourite shop?</p>

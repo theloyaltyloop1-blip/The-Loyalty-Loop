@@ -54,6 +54,7 @@ import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } 
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
+import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
 import { SuccessCheck } from "./src/components/SuccessCheck";
 import {
@@ -147,6 +148,8 @@ type Business = {
   reward_model?: "stamp_legacy" | "spend_threshold";
   reward_threshold_pence?: number | null;
   manual_spend_max_pence?: number;
+  features?: string[] | null;
+  halal_certifier?: string | null;
 };
 type StaffBusiness = {
   business_id: string;
@@ -2044,6 +2047,8 @@ function BusinessSettings({
   const [name, setName] = useState(business.name),
     [category, setCategory] = useState(business.category || ""),
     [description, setDescription] = useState(business.description || ""),
+    [features, setFeatures] = useState<string[]>(business.features ?? []),
+    [halalCertifier, setHalalCertifier] = useState<string | null>(business.halal_certifier ?? null),
     [address, setAddress] = useState(business.address || ""),
     [postcode, setPostcode] = useState(business.postcode || ""),
     [phone, setPhone] = useState(business.phone || ""),
@@ -2086,6 +2091,8 @@ function BusinessSettings({
     setName(business.name);
     setCategory(business.category || "");
     setDescription(business.description || "");
+    setFeatures(business.features ?? []);
+    setHalalCertifier(business.halal_certifier ?? null);
     setAddress(business.address || "");
     setPostcode(business.postcode || "");
     setPhone(business.phone || "");
@@ -2116,6 +2123,8 @@ function BusinessSettings({
           name: name.trim(),
           category: category.trim() || null,
           description: description.trim() || null,
+          features,
+          halal_certifier: features.includes("halal") ? halalCertifier : null,
           address: address.trim() || null,
           postcode: postcode.trim() || null,
           phone: phone.trim() || null,
@@ -2234,6 +2243,45 @@ function BusinessSettings({
                     multiline
                     textAlignVertical="top"
                   />
+                  <Text style={styles.fieldLabel}>What your shop offers</Text>
+                  <Text style={styles.copy}>Customers can filter shops by these. Only tick what is true for your shop.</Text>
+                  <View style={styles.categoryRow}>
+                    {SHOP_FEATURES.map((feature) => {
+                      const active = features.includes(feature.id);
+                      return (
+                        <Pressable
+                          key={feature.id}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: active }}
+                          onPress={() => setFeatures((current) => active ? current.filter((id) => id !== feature.id) : [...current, feature.id])}
+                          style={[styles.categoryChip, active && styles.categoryChipActive]}
+                        >
+                          <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{feature.label}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {features.includes("halal") ? (
+                    <>
+                      <Text style={styles.fieldLabel}>Halal certification (optional)</Text>
+                      <View style={styles.categoryRow}>
+                        {[null, ...HALAL_CERTIFIERS].map((certifier) => {
+                          const active = halalCertifier === certifier;
+                          return (
+                            <Pressable
+                              key={certifier ?? "none"}
+                              accessibilityRole="radio"
+                              accessibilityState={{ checked: active }}
+                              onPress={() => setHalalCertifier(certifier)}
+                              style={[styles.categoryChip, active && styles.categoryChipActive]}
+                            >
+                              <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{certifier ? `Certified by ${certifier}` : "Not certified"}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </>
+                  ) : null}
                   <Text style={styles.fieldLabel}>Address</Text>
                   <TextInput
                     style={styles.settingsInput}

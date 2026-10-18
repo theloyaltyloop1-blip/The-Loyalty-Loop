@@ -22,6 +22,7 @@ import {
 } from 'react-native'
 import { CategoryCircles, HomeCollection, homeStyles } from './src/components/HomeCollection'
 import { categoryCounts } from './src/home-rails'
+import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
 import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
@@ -327,6 +328,8 @@ type Business = {
   loyalty_config?: { stamps_required?: number }
   reward_model?: 'stamp_legacy' | 'spend_threshold'
   reward_threshold_pence?: number | null
+  features?: string[] | null
+  halal_certifier?: string | null
   trending?: boolean | null
   trending_position?: number | null
 }
@@ -1339,6 +1342,13 @@ function ShopDetail({
           {business.category || 'Local business'}
           {business.address ? ` · ${business.address}` : ''}
         </Text>
+        {business.features?.length ? (
+          <View style={featureStyles.row}>
+            {business.features.map(id => (
+              <View key={id} style={featureStyles.badge}><Text style={featureStyles.badgeText}>{featureBadge(id, business.halal_certifier)}</Text></View>
+            ))}
+          </View>
+        ) : null}
 
         {cardLinking.enabled && cardLinking.linkedShopIds.has(business.id) ? (
           cardLinking.cards.length === 0 ? (
@@ -1597,20 +1607,55 @@ function NearbyRow({ business, onPress }: { business: Business; onPress: () => v
   )
 }
 
+/** Dietary and access filters (Halal, Vegan options…); a shop must have every selected one. */
+function FeatureFilter({ selected, onChange }: { selected: string[]; onChange: (next: string[]) => void }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={featureStyles.filterRow}>
+      {SHOP_FEATURES.map(feature => {
+        const active = selected.includes(feature.id)
+        return (
+          <Pressable
+            key={feature.id}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: active }}
+            onPress={() => onChange(active ? selected.filter(id => id !== feature.id) : [...selected, feature.id])}
+            style={({ pressed }) => [featureStyles.chip, active && featureStyles.chipActive, pressed && { opacity: 0.8 }]}
+          >
+            <Text style={[featureStyles.chipText, active && featureStyles.chipTextActive]}>{feature.label}</Text>
+          </Pressable>
+        )
+      })}
+    </ScrollView>
+  )
+}
+
+const featureStyles = StyleSheet.create({
+  filterRow: { gap: 8, paddingVertical: 6, paddingRight: 8 },
+  chip: { borderRadius: 999, borderWidth: 1.5, borderColor: primary, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: card },
+  chipActive: { backgroundColor: primary },
+  chipText: { color: '#000000', fontWeight: '700', fontSize: 13 },
+  chipTextActive: { color: '#fff' },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  badge: { borderRadius: 999, backgroundColor: '#EEF3E6', paddingHorizontal: 10, paddingVertical: 5 },
+  badgeText: { color: '#000000', fontSize: 12, fontWeight: '700' },
+})
+
 function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk }: {
   businesses: Business[]; memberships: Membership[]; catalog: HomeTier[];
   announcements: Announcement[]; loading: boolean; onSelect: (business: Business) => void; onAsk: (query: string) => void;
 }) {
   const [category, setCategory] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const filtered = businesses.filter(b => (!category || (b.category || 'Other') === category) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const [features, setFeatures] = useState<string[]>([])
+  const filtered = businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
   return <>
     <Text style={homeStyles.title}>Make a{ '\n' }local stop.</Text>
     <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
     <CategoryCircles categories={categoryCounts(businesses)} selected={category} onSelect={setCategory} />
-    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || !!query.trim()} onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
+    <FeatureFilter selected={features} onChange={setFeatures} />
+    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || features.length > 0 || !!query.trim()} onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
     {announcements.length > 0 && <>
       <Text style={homeStyles.sectionHeading}>From your local shops</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.announcementRow}>

@@ -7,6 +7,7 @@ import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
+import { HALAL_CERTIFIERS, SHOP_FEATURES } from '@/lib/shop-features'
 import {
   updateBusiness,
   uploadBusinessImage,
@@ -292,6 +293,8 @@ function ProfileTab() {
     instagram: business?.instagram ?? '',
     tiktok: business?.tiktok ?? '',
     youtube: business?.youtube ?? '',
+    features: business?.features ?? [],
+    halal_certifier: business?.halal_certifier ?? null,
   })
   const [hours, setHours] = React.useState<OpeningHours>(business?.opening_hours ?? {})
   const [saving, setSaving] = React.useState(false)
@@ -317,6 +320,8 @@ function ProfileTab() {
       instagram: business.instagram ?? '',
       tiktok: business.tiktok ?? '',
       youtube: business.youtube ?? '',
+      features: business.features ?? [],
+      halal_certifier: business.halal_certifier ?? null,
     })
     setHours(business.opening_hours ?? {})
     setPinTouched(true)
@@ -343,7 +348,7 @@ function ProfileTab() {
   async function handleSave() {
     setSaving(true)
     try {
-      await updateBusiness(business!.id, { ...form, opening_hours: hours })
+      await updateBusiness(business!.id, { ...form, halal_certifier: form.features.includes('halal') ? form.halal_certifier : null, opening_hours: hours })
       updateLocalBusiness({ ...form, opening_hours: hours })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -418,6 +423,37 @@ function ProfileTab() {
             ))}
           </select>
         </Field>
+        <Field label="What your shop offers">
+          <p className="mb-2 text-sm text-muted-foreground">Customers can filter shops by these. Only tick what is true for your shop.</p>
+          <div className="flex flex-wrap gap-2">
+            {SHOP_FEATURES.map((feature) => {
+              const active = form.features.includes(feature.id)
+              return (
+                <button
+                  type="button"
+                  key={feature.id}
+                  aria-pressed={active}
+                  onClick={() => setForm({ ...form, features: active ? form.features.filter((id) => id !== feature.id) : [...form.features, feature.id] })}
+                  className={'min-h-11 rounded-full px-4 text-sm font-semibold transition-colors ' + (active ? 'bg-olive text-olive-ink' : 'bg-card text-foreground ring-1 ring-foreground/10 hover:bg-sage')}
+                >
+                  {feature.label}
+                </button>
+              )
+            })}
+          </div>
+        </Field>
+        {form.features.includes('halal') && (
+          <Field label="Halal certification (optional)">
+            <select
+              className={inputClass}
+              value={form.halal_certifier ?? ''}
+              onChange={(e) => setForm({ ...form, halal_certifier: e.target.value || null })}
+            >
+              <option value="">Not certified</option>
+              {HALAL_CERTIFIERS.map((c) => <option key={c} value={c}>Certified by {c}</option>)}
+            </select>
+          </Field>
+        )}
         <Field label="Description">
           <textarea
             className={inputClass + ' h-24 py-3 resize-none'}

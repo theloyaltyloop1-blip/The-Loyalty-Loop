@@ -10,6 +10,7 @@ import { PageSkeleton } from '@/components/page-skeleton'
 import { ReviewsSection } from '@/components/reviews-section'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShopMap } from '@/components/shop-map'
+import { featureBadge } from '@/lib/shop-features'
 import {
   fetchBusinessBySlug,
   fetchMembership,
@@ -333,6 +334,11 @@ export function ShopDetail() {
           )}
         </h1>
         <p className="text-white/85 mb-2">{business.category}</p>
+        {business.features?.length ? (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {business.features.map((id) => <span key={id} className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-black">{featureBadge(id, business.halal_certifier)}</span>)}
+          </div>
+        ) : null}
         <p className="text-white/80 max-w-xl">{business.description}</p>
       </div>
 

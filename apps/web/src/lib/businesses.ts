@@ -39,6 +39,8 @@ export interface Business {
   reward_model: 'stamp_legacy' | 'spend_threshold'
   reward_threshold_pence: number | null
   manual_spend_max_pence: number
+  features: string[] | null
+  halal_certifier: string | null
   verification_status: 'unverified' | 'pending' | 'verified' | 'rejected'
   verification_document_path: string | null
   verification_document_label: string | null
