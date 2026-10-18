@@ -14,8 +14,8 @@ need Claude's sign-off before the next one starts.
 ## Reviews: shop replies broken, star summaries added (2026-10-18) - Claude
 
 - **Found.** Reviews save fine, including stars-only (POST 201 at 20:54 UTC; the owner deleted that test review at 20:55). The automatic shop reply never runs: the live `ai-review-reply` function has `verify_jwt: true`, but `supabase/config.toml` says `false`, and the `request_ai_review_reply` trigger calls it with no token. Gateway answers 401 (20:49 and 20:54), so drafts stay `queued` (review 5d34b1c0, Test Shop for ££).
-- **Not fixed yet.** Redeploying with `--no-verify-jwt` was blocked by auto mode; it needs the owner's OK. That's safe by design: trigger-only requests can only consume a queued claim (see `review-reply-handler.ts`). Afterwards, re-run queued drafts.
-- **Added (commit 96af927, not published).** `apps/shopper/src/ratings.ts` gives a "★ 4.6 (12)" summary on Home cards and rows, map rows, trending cards and the shop page, visible before joining. Checked: tsc clean, 21/21 tests. Needs an OTA (`eas update`, per platform) to reach phones.
+- **Fixed.** `ai-review-reply` redeployed with verify_jwt off (owner approved), matching config.toml. Re-ran review 5d34b1c0 via `net.http_post`: 200, draft `ready`. It was held for the owner (safety reason `offer_or_account`), not auto-posted; that's working as designed. The owner approves it on the Business app's Reviews page.
+- **Published (commit 96af927).** OTA "Star ratings on shop cards and pages", production channel. Runtime 1.0.1: Android 3dcaf9d4, iOS 3d2d1030. Runtime 1.0.0 (current store apps, published by setting the version to 1.0.0 temporarily, then restored): Android 35dfe338, iOS df78c4b4. New native modules are guarded with `requireOptionalNativeModule`, so they're safe on 1.0.0. Not yet checked on a phone.
 
 ---
 
