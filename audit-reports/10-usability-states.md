@@ -405,3 +405,24 @@ Regression run after fixes: all owner routes (fail/empty), customer routes, draw
 login → final /owner via /login > /login > /owner
 deep link after login → /owner/settings
 ```
+
+## Pass 9 – slow network (2.5s latency) & mark-all-read
+Loading skeleton visible at 0.9s on every data view (Settings renders from cached shop context, expected):
+```
+/dashboard @0.9s: skeleton=true blank=false "The Loyalty Loop Hello, a Discover local rewards All categor"
+/dashboard/rewards @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/news @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/favourites @0.9s: skeleton=true blank=false "The Loyalty Loop FAVOURITES Shops you've saved Loading…"
+/dashboard/activity @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/inbox @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/profile @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/dashboard/shop/x @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/owner @0.9s: skeleton=true blank=false "The Loyalty Loop ANALYTICS Know your customers 7d 30d 90d Lo"
+/owner/notifications @0.9s: skeleton=true blank=false "The Loyalty Loop Loading…"
+/owner/announcements @0.9s: skeleton=true blank=false "The Loyalty Loop CUSTOMER NEWS Announcements Share menu laun"
+/owner/reviews @0.9s: skeleton=true blank=false "The Loyalty Loop CUSTOMER FEEDBACK Reviews — from 0 reviews "
+/owner/support @0.9s: skeleton=true blank=false "The Loyalty Loop HELP CENTRE Help & support Send a request d"
+/owner/settings @0.9s: skeleton=false blank=false "The Loyalty Loop Shop settings Profile Loyalty & rewards Win"
+mark-all fail: ["Couldn’t mark all as read. Please try again."] unreadDotStillShown: 1 pageErrors: 0
+```
+- Fixed: mark-all-read failure now shows an alert and restores true read state (was silent).
