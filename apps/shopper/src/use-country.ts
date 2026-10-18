@@ -1,5 +1,5 @@
+import { showAlert } from './components/AppAlert'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert } from 'react-native'
 import { supabase } from './supabase'
 import { FALLBACK_COUNTRIES, findCountry, guessCountry, type Country } from './country'
 
@@ -41,7 +41,7 @@ export function useCountry(userId: string | null) {
       asked.current = true
       const guessed = findCountry(available, guess)
       const others = available.filter((country) => country.code !== guess)
-      Alert.alert(
+      showAlert(
         `Are you in ${guessed.name === 'United Kingdom' ? 'the UK' : guessed.name}?`,
         'We use this to show shops near you and prices in your currency. You can change it later in Settings.',
         [

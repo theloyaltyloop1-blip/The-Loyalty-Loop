@@ -1,5 +1,6 @@
+import { showAlert } from './AppAlert'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { requireOptionalNativeModule } from 'expo-modules-core'
 import { colors, fonts } from '../theme'
@@ -94,7 +95,7 @@ export function ExternalCards({ userId }: { userId: string }) {
   function confirmDelete() {
     const target = selected
     if (!target) return
-    Alert.alert('Delete this card?', 'This removes it from your wallet and this device. It does not close your account with the shop.', [
+    showAlert('Delete this card?', 'This removes it from your wallet and this device. It does not close your account with the shop.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete card', style: 'destructive', onPress: () => { void (async () => {
         setBusy(true); setMessage('')
