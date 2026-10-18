@@ -32,6 +32,11 @@
 - **Re-test with fix** (rolled back): same insert → `stamp_count=0 points=0 visits=0`. Verified afterwards that no trigger/function persisted.
 - Other INSERT/UPDATE policies were reviewed (rewards, transactions, notifications, reviews, review_replies, support_requests, reward_catalog, etc.). All are scoped to self, owner, staff permission, or admin. Minor: `reviews_update_author_or_admin` lets authors edit any column of their own review.
 
+### MEDIUM – profile protected columns (migration 0028, not yet applied)
+- `profiles_update_self` + column grants let a user rewrite `email` (the recipient for winback/thank-you emails, so a user could point platform email at any address), `stamp_code` and `referred_by`.
+- Fix: a BEFORE UPDATE trigger rejects direct API changes to those 3 columns. Rollback test: name edit succeeded; email change was blocked. The app's profile form only edits first/last name, phone and postcode.
+- Referral farming checked: `referrals.referred_id` is unique, so it's not exploitable.
+
 ### Edge function bugs fixed
 | Function | Issue | Fix |
 |---|---|---|
@@ -66,7 +71,7 @@ The remaining a11y failures are brand colours: `#C9622E` links on `#E8ECE2` have
 
 ## Open items / follow-ups
 - Set `VITE_SITE_URL` in prod env; default `https://theloyaltyloop.app` is a placeholder.
-- **Apply migrations 0026 + 0027 ASAP (0027 is critical)** and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you send-winback-emails business-coach-chat deep-business-report`).
+- **Apply migrations 0026–0028 ASAP (0027 is critical)** and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you send-winback-emails business-coach-chat deep-business-report`).
 - Edge functions use `Access-Control-Allow-Origin: *`; recommend restricting to the prod origin (risk low since auth is bearer-token).
 - CSP allows `'unsafe-inline'` styles (Tailwind/React inline styles). Verify hCaptcha/Maps load in a preview deploy; adjust CSP if Maps embed hosts differ.
 - If not deploying on Vercel, port headers to the host (Netlify `_headers`, nginx, etc.).
