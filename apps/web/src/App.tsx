@@ -28,6 +28,7 @@ import { CookieConsent } from '@/components/cookie-consent'
 import { OwnerTools } from '@/pages/owner/Tools'
 import { OwnerNotifications } from '@/pages/owner/Notifications'
 import { BrandWorkspace } from '@/pages/BrandWorkspace'
+import { NotFound } from '@/pages/NotFound'
 
 const queryClient = new QueryClient()
 
@@ -66,6 +67,7 @@ function App() {
               <Route path="/signup/owner" element={<Signup asOwner />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
             <CookieConsent />
           </BrowserRouter>

@@ -1,0 +1,55 @@
+# Audit 06 – Broken Links & Asset Routing
+
+Method: `vite build` (placeholder Supabase env) + `vite preview`, custom Playwright crawler (seeds = every route in `App.tsx` + unknown path; follows all internal `<a href>`; records any same-origin response ≥400, failed requests, and `href="#"`). Static grep of `to=`, `href=`, `navigate()`, `redirectTo`, `src=`.
+
+## Issues found & fixed
+| # | Issue | Fix |
+|---|---|---|
+| 1 | No catch-all route: unknown URLs rendered a blank page | `src/pages/NotFound.tsx` + `<Route path="*">` |
+| 2 | No SPA fallback for deploy: deep links (`/dashboard`, `/reset-password` from email) 404 on Vercel | `apps/web/vercel.json` rewrite → `/index.html` (excludes `/assets/`, favicon, icons) |
+| 3 | Landing "See all shops" was dead `href="#"` | `<Link to="/dashboard">` |
+| 4 | `<title>web</title>` | `The Loyalty Loop` |
+
+## Verified OK
+- All 28 declared routes + nav arrays (`dashboard-layout`, `owner-layout`) resolve; every internal link target exists.
+- `/dashboard/admin` → `/access` redirect: single hop (then auth guard → `/login`), no chains/loops.
+- `redirectTo` for password reset → `/reset-password` (route exists).
+- Assets: favicon, logo PNG, hashed JS/CSS — 0 errors. Canonical tags: none present.
+- External: Google Fonts 200; Google Maps blocked by sandbox egress (URL format standard `maps/search/?api=1`); `mailto:` not checkable.
+
+## Raw crawl output (post-fix)
+```
+200 / -> /
+200 /dashboard -> /login
+200 /dashboard/shop/demo -> /dashboard/shop/demo
+200 /dashboard/rewards -> /dashboard/rewards
+200 /dashboard/news -> /dashboard/news
+200 /dashboard/favourites -> /login
+200 /dashboard/profile -> /dashboard/profile
+200 /dashboard/activity -> /dashboard/activity
+200 /dashboard/inbox -> /dashboard/inbox
+200 /terms -> /terms
+200 /privacy -> /privacy
+200 /dashboard/admin -> /login
+200 /access -> /login
+200 /brand -> /login
+200 /owner -> /owner
+200 /owner/onboarding -> /owner/onboarding
+200 /owner/scan -> /login
+200 /owner/tools -> /login
+200 /owner/settings -> /login
+200 /owner/notifications -> /owner/notifications
+200 /owner/announcements -> /owner/announcements
+200 /owner/reviews -> /owner/reviews
+200 /owner/support -> /owner/support
+200 /login -> /login
+200 /signup -> /signup
+200 /signup/owner -> /signup/owner
+200 /forgot-password -> /forgot-password
+200 /reset-password -> /reset-password
+200 /does-not-exist [NotFound page] -> /does-not-exist
+ISSUES: 0
+
+```
+
+Result: **0 404s / 0 failed requests / 0 empty-hash links.**

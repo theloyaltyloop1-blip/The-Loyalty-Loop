@@ -278,9 +278,9 @@ export function Landing() {
               </span>
               <h2 className="text-4xl">A few loops you'll love</h2>
             </div>
-            <a href="#" className="font-bold text-primary flex items-center gap-1">
+            <Link to="/dashboard" className="font-bold text-primary flex items-center gap-1">
               See all shops <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
