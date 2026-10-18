@@ -2529,12 +2529,27 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 ## Shop feature filters (Halal, Vegan…) (2026-10-18) - Claude, built locally, NOT applied or released
 
 - Owner approved the list: halal, vegetarian, vegan, gluten_free, kids_friendly, wheelchair_accessible. Halal shows as "Halal (as stated by the shop)" unless the owner picks HMC or HFA certification.
-- `supabase/migrations/20261018090000_business_features.sql`: businesses.features text[] (allowed-list check), halal_certifier (HMC/HFA, only when halal is ticked), GIN index. **Not applied.** The version will change on apply; rename the file to match.
+- `supabase/migrations/20261018090000_business_features.sql`: businesses.features text[] (allowed-list check), halal_certifier (HMC/HFA, only when halal is ticked), GIN index. **Applied 2026-10-18 as 20261018002046** (file renamed). Verified: both checks present; 0 of 2 shops have features yet. Business (Test) OTA: update group 39802a7c-376f-4512-b9ec-ea5539769d9a.
 - `shop-features.ts` copied into apps/retailer/src, apps/shopper/src and apps/web/src/lib (keep all three in step with the constraint). Test: apps/shopper/src/shop-features.test.mjs 2/2.
 - Business app (App.tsx settings): a "What your shop offers" chip picker plus a halal certification choice; saved with the other shop details. Shopper app: filter chips under the category circles (a shop must match every chip), and badges on the shop page. Website: chips in owner Settings > Basics, a filter row on Home, and badges on ShopDetail.
 - Checks: retailer and shopper tsc passed; web tsc and `npm run build` passed. Not run on a device or in a browser.
 - **Order:** apply the migration before the business app or website ships, because they write `features` and the save would fail without the column. The shopper only reads via select(*), so it is safe either way.
 - Next: owner approves the migration, then a test-channel OTA for Business (Test), owner checks it, then shopper OTA and website deploy.
+## Warm sand background (2026-10-18) - Claude, owner-approved
+- Owner picked #E0CFB4. Shopper: apps/shopper/src/theme.ts overrides background #E0CFB4, card #FFFBF5, border #CDB896 and muted #474C45 (darker so secondary text stays readable); shopper files import colours from it. Commit 6920c52; shopper production OTA Android 3dfbd18a-4ecb-4eaf-902e-0c10dbe511c4, iOS 371938bd-5c3d-4b66-8ad9-489095ad642f.
+- Website: light-mode --color-background/card/border in apps/web/src/color-system.css (dark mode and admin unchanged). Commit 72eca60 pushed; Vercel was still deploying when checked. Local preview looked right.
+- Business app: ON HOLD (owner's choice) until the owner has checked the halal/vegan feature filters on Business (Test); its working tree carries that uncommitted work. The shared packages/design-tokens colours are still the old ones; the business app needs the same sand values when it ships.
+- Only Claude's colour lines were committed; the other session's shop-features work is untouched and uncommitted.
+
+## Shop feature filters RELEASED (2026-10-18) - Claude, owner-approved
+
+- Owner test on Business (Test): Test Shop saved features [halal, wheelchair_accessible] with halal_certifier HMC. DB confirmed.
+- Shopper filter edits were lost when commit 7ae0542 (new shopper home) rewrote HomeTab. Re-applied on top of it: FeatureFilter chips under the category circles, and badges on the shop page.
+- Commit 38a36fb (shop-features files only) pushed. Vercel success; the live Home chunk contains the filter.
+- Shopper production OTA: Android 38c773e1-7cf4-4ddb-b802-383b006a30e0, iOS 1b0d71c1-1200-4f81-adfe-a3837aab10ad.
+- Business production OTA (features settings only; £ off and black text were already shipped by 88be34a): Android 96678226-7a14-4424-bf8e-7142919d4509, iOS 1969a227-3b36-4250-b425-b741a97e3b6f.
+- Not checked on a phone after release. The test shop still has test data (rewards, stamps, features). Delete it and the two test accounts when testing is done.
+- Coordination note: two sessions edited apps/shopper/App.tsx in parallel. Check git log before shipping shopper changes.
 ## Copy-ready prompt for Claude Code
 
 Claude: review the deletion-client and wallet-format follow-up in apps/web/src/lib/businesses.ts, apps/retailer/App.tsx, apps/shopper/src/external-card-barcode.ts and components/ExternalCards.tsx. Check docs/CARD_WALLET_FORMAT_EVIDENCE.md, especially Nectar GS1/payload limits. Web build, retailer/shopper TypeScript and 8 focused tests passed; device/scanner acceptance remains unrun. Owner approval is still required: on tgukdabfvvoywawmzbdo first confirm authenticated UPDATE on public.profiles, then rollback-only dry-run and apply supabase/migrations/20261017230331_shopper_external_cards.sql, verify hosted RLS/cap/cascade, then deploy export-platform-backup. No production action has run in this follow-up. Do not run eas update, eas build, commit or push without owner approval.
