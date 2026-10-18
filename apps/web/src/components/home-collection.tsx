@@ -5,6 +5,7 @@ import type { Business, Membership, RewardCatalogItem } from '@/lib/businesses'
 import { getHomeProgress } from '@/lib/home-progress'
 import { formatMiles, nearestFirst, type Coords, type FeaturedReason } from '@/lib/distance'
 import type { LocationStatus } from '@/lib/use-user-location'
+import { resizedImage } from '@/lib/image'
 
 // Only the closest shops get a photo card. The rest wait behind a button, as quiet rows.
 const PHOTO_CARDS = 6
@@ -17,12 +18,16 @@ function Photo({ business, hero = false, distance, heroLabel }: { business: Busi
     <div className={'relative overflow-hidden ' + (hero ? 'h-64 sm:h-80' : 'h-36 sm:h-40')} style={{ backgroundColor: business.brand_color || 'var(--color-sage)' }}>
       <div className="absolute inset-0 grid place-items-center text-olive-ink/80" style={{ backgroundColor: business.brand_color || 'var(--color-olive)' }} aria-hidden="true">
         {business.logo_url && !failedLogo
-          ? <img src={business.logo_url} alt="" onError={() => setFailedLogo(true)} className="h-20 w-20 rounded-2xl bg-background object-contain p-2" />
+          ? <img src={resizedImage(business.logo_url, 160)} alt="" width={80} height={80} loading="lazy" decoding="async" onError={() => setFailedLogo(true)} className="h-20 w-20 rounded-2xl bg-background object-contain p-2" />
           : <span className="font-display text-6xl font-bold">{business.name.trim().charAt(0).toUpperCase() || <Store />}</span>}
       </div>
       {business.cover_url && <img
-        src={business.cover_url}
+        src={resizedImage(business.cover_url, hero ? 1080 : 640)}
         alt=""
+        width={hero ? 1080 : 640}
+        height={hero ? 320 : 160}
+        loading={hero ? 'eager' : 'lazy'}
+        decoding="async"
         onError={() => setFailedCover(true)}
         className={'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025] ' + (failedCover ? 'hidden' : '')}
       />}
@@ -38,7 +43,7 @@ function Mark({ business }: { business: Business }) {
   return (
     <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl font-display text-lg font-bold text-olive-ink" style={{ backgroundColor: business.brand_color || 'var(--color-olive)' }} aria-hidden="true">
       {business.logo_url && !failed
-        ? <img src={business.logo_url} alt="" onError={() => setFailed(true)} className="h-full w-full bg-background object-contain p-1" />
+        ? <img src={resizedImage(business.logo_url, 96)} alt="" width={44} height={44} loading="lazy" decoding="async" onError={() => setFailed(true)} className="h-full w-full bg-background object-contain p-1" />
         : business.name.trim().charAt(0).toUpperCase() || <Store className="h-5 w-5" />}
     </span>
   )

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { WHATSAPP_VISIBLE } from '@/lib/features'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -6,7 +6,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import { OwnerProvider } from '@/lib/owner-context'
 import { Landing } from '@/pages/Landing'
 import { CookieConsent } from '@/components/cookie-consent'
-import { BarePageSkeleton } from '@/components/page-skeleton'
+import { AuthPageSkeleton, BarePageSkeleton } from '@/components/page-skeleton'
 import { UsageTracker } from '@/components/usage-tracker'
 import { PlatformAnnouncementBanner } from '@/components/platform-announcement-banner'
 import { ThemeProvider } from '@/components/theme-toggle'
@@ -54,6 +54,10 @@ function WhatsAppPaused() {
   const [params] = useSearchParams()
   const shop = params.get('shop')
   return <Navigate to={shop && /^[a-z0-9-]{1,100}$/i.test(shop) ? `/dashboard/shop/${shop}` : '/'} replace />
+}
+
+function AuthRoute({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<AuthPageSkeleton />}>{children}</Suspense>
 }
 
 const queryClient = new QueryClient()
@@ -115,7 +119,7 @@ function App() {
                 <Route path="/access" element={<AccessPanel />} />
                 <Route path="/admin/shop-requests" element={<Navigate to="/access?view=shop-requests" replace />} />
                 <Route path="/admin/trending" element={<Navigate to="/access?view=trending" replace />} />
-                <Route path="/join" element={<Signup asOwner />} />
+                <Route path="/join" element={<AuthRoute><Signup asOwner /></AuthRoute>} />
                 <Route path="/brand" element={<BrandWorkspace />} />
                 <Route path="/owner" element={<OwnerAnalytics />} />
                 <Route path="/owner/onboarding" element={<OwnerOnboarding />} />
@@ -127,15 +131,15 @@ function App() {
                 <Route path="/owner/announcements" element={<OwnerAnnouncements />} />
                 <Route path="/owner/reviews" element={<OwnerReviews />} />
                 <Route path="/owner/support" element={<OwnerSupport />} />
-                <Route path="/login" element={<Login />} />
+                <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/whatsapp/onboarding" element={WHATSAPP_VISIBLE ? <WhatsAppOnboarding /> : <WhatsAppPaused />} />
                 <Route path="/whatsapp/card" element={WHATSAPP_VISIBLE ? <WhatsAppCard /> : <WhatsAppPaused />} />
                 <Route path="/whatsapp/start" element={WHATSAPP_VISIBLE ? <WhatsAppStart /> : <WhatsAppPaused />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/signup/owner" element={<Signup asOwner />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+                <Route path="/signup/owner" element={<AuthRoute><Signup asOwner /></AuthRoute>} />
+                <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+                <Route path="/reset-password" element={<AuthRoute><ResetPassword /></AuthRoute>} />
                 <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

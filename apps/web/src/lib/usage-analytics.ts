@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { loadSupabase } from '@/lib/supabase-lazy'
 
 const CONSENT_KEY = 'loyalty-loop-cookie-choice'
 
@@ -8,6 +8,7 @@ export function hasUsageAnalyticsConsent() {
 
 export async function trackUsageEvent(eventName: string, context?: string) {
   if (!hasUsageAnalyticsConsent()) return
+  const supabase = await loadSupabase()
   const { data } = await supabase.auth.getUser()
   if (!data.user) return
   await supabase.from('usage_events').insert({

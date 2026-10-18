@@ -7,9 +7,29 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Metric-matched fallbacks: Arial/Helvetica resized to the brand fonts' average
+   glyph width and line metrics, so text keeps its size and wrapping when the
+   web fonts swap in (no layout shift). Measured from the bundled woff2 files. */
+@font-face {
+  font-family: 'Geist Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Helvetica'), local('Roboto');
+  size-adjust: 108.64%;
+  ascent-override: 92.5%;
+  descent-override: 27.15%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Bricolage Grotesque Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Helvetica'), local('Roboto');
+  size-adjust: 104.47%;
+  ascent-override: 89.02%;
+  descent-override: 25.85%;
+  line-gap-override: 0%;
+}
+
 @theme {
-  --font-display: 'Bricolage Grotesque Variable', 'Geist Variable', system-ui, sans-serif;
-  --font-body: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque Fallback', system-ui, sans-serif;
+  --font-body: 'Geist Variable', 'Geist Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-sans: var(--font-body);
   /* Colour primitives and semantic light/dark/admin roles live in color-system.css. */
 

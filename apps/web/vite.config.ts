@@ -20,14 +20,15 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
-          if (id.includes('react') || id.includes('scheduler')) return 'react-vendor'
-          if (id.includes('@supabase')) return 'supabase-vendor'
-          if (id.includes('@tanstack')) return 'query-vendor'
-          if (id.includes('@react-google-maps')) return 'maps-vendor'
-          if (id.includes('@zxing')) return 'scanner-vendor'
-          if (id.includes('qrcode')) return 'qr-vendor'
-          if (id.includes('lucide-react')) return 'icons-vendor'
-          return 'vendor'
+          // Match exact package folders: a loose `includes('react')` also
+          // swallowed lucide-react, radix and google-maps into one 550 KB
+          // chunk loaded on every page. Everything else is left to Rolldown so
+          // it lands next to the routes that actually use it.
+          const parts = id.slice(id.lastIndexOf('node_modules/') + 'node_modules/'.length).split('/')
+          const pkg = parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0]
+          if (['react', 'react-dom', 'scheduler', 'react-router', 'react-router-dom'].includes(pkg)) return 'react-vendor'
+          if (pkg.startsWith('@supabase/')) return 'supabase-vendor'
+          return undefined
         },
       },
     },

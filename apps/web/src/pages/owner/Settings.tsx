@@ -37,6 +37,7 @@ import {
 import { canDeleteCurrentAccount, requestAccountDeletion } from '@/lib/engagement'
 import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { resizedImage } from '@/lib/image'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 
@@ -241,7 +242,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {photos.map((p) => (
             <div key={p.id} className="relative rounded-xl overflow-hidden aspect-square group">
-              <img src={p.url} alt="" className="h-full w-full object-cover" />
+              <img src={resizedImage(p.url, 320)} alt="" width={320} height={320} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button data-press-feedback
@@ -366,12 +367,12 @@ function ProfileTab() {
             className="h-40 relative bg-cover bg-center"
             style={{
               backgroundColor: business.brand_color,
-              backgroundImage: business.cover_url ? `url(${business.cover_url})` : undefined,
+              backgroundImage: business.cover_url ? `url(${resizedImage(business.cover_url, 640)})` : undefined,
             }}
           >
             <span className="absolute -bottom-5 left-5 h-12 w-12 rounded-xl bg-card flex items-center justify-center shadow overflow-hidden">
               {business.logo_url ? (
-                <img src={business.logo_url} alt="" className="h-full w-full object-cover" />
+                <img src={resizedImage(business.logo_url, 96)} alt="" width={48} height={48} decoding="async" className="h-full w-full object-cover" />
               ) : (
                 <Store className="h-5 w-5" style={{ color: business.brand_color }} />
               )}

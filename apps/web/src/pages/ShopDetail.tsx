@@ -26,6 +26,7 @@ import {
   type BusinessPhoto,
 } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
+import { resizedImage } from '@/lib/image'
 
 const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   Café: Coffee,
@@ -291,7 +292,7 @@ export function ShopDetail() {
         className="relative mb-6 flex min-h-[280px] flex-col justify-end rounded-3xl bg-cover bg-center p-6 text-white sm:p-10"
         style={{
           background: business.cover_url
-            ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
+            ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${resizedImage(business.cover_url, 1080)}) center/cover`
             : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
@@ -316,7 +317,7 @@ export function ShopDetail() {
           style={{ color: business.brand_color }}
         >
           {business.logo_url ? (
-            <img src={business.logo_url} alt={`${business.name} logo`} className="h-full w-full object-cover" />
+            <img src={resizedImage(business.logo_url, 160)} alt={`${business.name} logo`} width={64} height={64} decoding="async" className="h-full w-full object-cover" />
           ) : (
             business.name.charAt(0).toUpperCase()
           )}
@@ -529,7 +530,7 @@ export function ShopDetail() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {photos.map((p, index) => (
               <div key={p.id} className="rounded-xl overflow-hidden aspect-square">
-                <img src={p.url} alt={`${business.name} gallery photo ${index + 1}`} className="h-full w-full object-cover" />
+                <img src={resizedImage(p.url, 640)} alt={`${business.name} gallery photo ${index + 1}`} width={320} height={320} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </div>
             ))}
           </div>

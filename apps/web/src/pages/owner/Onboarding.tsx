@@ -6,7 +6,7 @@ import { useOwner } from '@/lib/owner-context'
 import { createBusiness, addRewardCatalogItem, type Business } from '@/lib/businesses'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import { LoopMark } from '@/components/loop-mark'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
@@ -158,7 +158,7 @@ export function OwnerOnboarding() {
     <div className="min-h-dvh bg-background flex items-center justify-center px-4 py-10 sm:p-6">
       <div className="w-full max-w-xl">
         <div className="flex items-center gap-2 justify-center mb-8">
-          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />
+          <LoopMark className="h-8 w-8 object-contain" />
           <span className="font-display font-semibold text-lg tracking-tight text-foreground">The Loyalty Loop</span>
         </div>
 

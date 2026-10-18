@@ -19,6 +19,21 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+  lighthouse:
+    runs-on: ubuntu-latest
+    needs: web
+    defaults: { run: { working-directory: apps/web } }
+    env:
+      # Placeholder project so the client boots; audited pages don't need data.
+      VITE_SUPABASE_URL: https://placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: apps/web/package-lock.json }
+      - run: npm ci
+      - run: npm run build
+      - run: npx --yes @lhci/cli@0.15.1 autorun
   api:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: apps/api } }

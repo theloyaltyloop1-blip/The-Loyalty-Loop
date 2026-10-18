@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { loadSupabase } from './supabase-lazy'
 
 export type AppRole = 'admin' | 'brand_head' | 'business_owner' | 'staff' | 'consumer'
 
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [rolesLoading, setRolesLoading] = React.useState(true)
 
   const loadRoles = React.useCallback(async (userId: string) => {
+    const supabase = await loadSupabase()
     const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId)
     if (!error && data) {
       const nextRoles = data.map((r) => r.role as AppRole)
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!session?.user) return
     setRolesLoading(true)
     try {
-      await supabase.rpc('ensure_current_user_bootstrap')
+      await (await loadSupabase()).rpc('ensure_current_user_bootstrap')
       await loadRoles(session.user.id)
     } finally {
       setRolesLoading(false)
@@ -44,16 +45,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, loadRoles])
 
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
+    let cancelled = false
+    let unsubscribe: (() => void) | undefined
+    void loadSupabase().then((supabase) => {
+      if (cancelled) return
+      supabase.auth.getSession().then(({ data }) => {
+        setSession(data.session)
+        setLoading(false)
+      })
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        setSession(newSession)
+      })
+      unsubscribe = () => listener.subscription.unsubscribe()
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
-    })
-
-    return () => listener.subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      unsubscribe?.()
+    }
   }, [])
 
   React.useEffect(() => {
@@ -67,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session?.user?.id])
 
   const signOut = React.useCallback(async () => {
-    await supabase.auth.signOut()
+    await (await loadSupabase()).auth.signOut()
     window.localStorage.clear()
     setRoles([])
   }, [])

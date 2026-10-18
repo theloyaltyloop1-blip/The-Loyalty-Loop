@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useAuth } from './auth-context'
-import { supabase } from './supabase'
-import { fetchOwnedBusinesses, fetchMyStaffBusinesses, type Business, type MyStaffMembership } from './businesses'
+import { loadSupabase } from './supabase-lazy'
+import type { Business, MyStaffMembership } from './businesses'
 
 interface OwnerContextValue {
   businesses: Business[]
@@ -18,6 +18,7 @@ interface OwnerContextValue {
 
 async function fetchBusinessIdsWithRewards(businessIds: string[]): Promise<Set<string>> {
   if (!businessIds.length) return new Set()
+  const supabase = await loadSupabase()
   const { data, error } = await supabase.from('reward_catalog').select('business_id').in('business_id', businessIds)
   if (error) throw error
   return new Set((data as { business_id: string }[]).map((row) => row.business_id))
@@ -43,6 +44,7 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
     if (!userId) return
     setLoading(true)
     try {
+      const { fetchOwnedBusinesses, fetchMyStaffBusinesses } = await import('./businesses')
       const [owned, staffOf] = await Promise.all([fetchOwnedBusinesses(userId), fetchMyStaffBusinesses(userId)])
       const withRewards = await fetchBusinessIdsWithRewards(owned.map((b) => b.id))
       setBusinesses(owned)

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { loadSupabase } from '@/lib/supabase-lazy'
 
 type Announcement = { id: string; title: string; body: string | null }
 
@@ -18,7 +18,7 @@ export function PlatformAnnouncementBanner() {
   const [items, setItems] = React.useState<Announcement[]>([])
 
   React.useEffect(() => {
-    void supabase
+    void loadSupabase().then((supabase) => supabase
       .from('platform_announcements')
       .select('id,title,body')
       .eq('is_active', true)
@@ -27,7 +27,7 @@ export function PlatformAnnouncementBanner() {
       .then(({ data }) => {
         const dismissed = new Set(readDismissed())
         setItems(((data ?? []) as Announcement[]).filter((item) => !dismissed.has(item.id)))
-      })
+      }))
   }, [])
 
   function dismiss(id: string) {

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import { LoopMark } from '@/components/loop-mark'
 
 export function AuthLayout({ title, children }: { title: string; children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -8,7 +8,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
     <div className="min-h-dvh bg-background p-3 sm:p-4 md:grid md:grid-cols-[minmax(320px,0.9fr)_1.1fr] md:gap-4">
       <aside className="relative hidden overflow-hidden rounded-[28px] bg-olive p-10 text-olive-ink md:flex md:flex-col md:justify-between">
         <Link to="/" className="flex items-center gap-3" aria-label="The Loyalty Loop home">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-olive-ink"><img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" /></span>
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-olive-ink"><LoopMark className="h-8 w-8 object-contain" /></span>
           <span className="font-display text-lg font-semibold tracking-tight">The Loyalty Loop</span>
         </Link>
         <div aria-hidden="true" className="relative mx-auto my-10 h-56 w-full max-w-sm">
@@ -29,7 +29,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
       <main className="flex min-h-[calc(100dvh-1.5rem)] flex-col rounded-[28px] bg-card px-6 py-8 sm:px-10 md:min-h-0 md:px-14 md:py-12">
         <div className="flex items-center justify-between gap-4 text-sm font-semibold">
           <Link to="/" className="flex items-center gap-2 md:invisible" aria-label="The Loyalty Loop home">
-            <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />
+            <LoopMark className="h-8 w-8 object-contain" />
             <span className="font-display">The Loyalty Loop</span>
           </Link>
           <div className="flex items-center gap-5">

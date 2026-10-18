@@ -3,7 +3,7 @@ import { NavLink, Link, Navigate } from 'react-router-dom'
 import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench, BookOpen } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import { LoopMark } from '@/components/loop-mark'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
@@ -93,7 +93,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <aside className="bg-olive text-olive-ink p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-6">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-olive-ink"><img src={loyaltyLoopLogo} alt="" className="h-7 w-7 object-contain" /></span>
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-olive-ink"><LoopMark className="h-7 w-7 object-contain" /></span>
           <span className="font-display text-[17px] font-semibold tracking-tight">The Loyalty Loop</span>
         </div>
 

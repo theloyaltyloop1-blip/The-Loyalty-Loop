@@ -7,6 +7,7 @@ import { SkeletonBlock } from '@/components/page-skeleton'
 import { fetchBusinesses, type Business } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
 import {AskShopDialog} from '@/components/shop-requests'
+import { resizedImage } from '@/lib/image'
 
 export function DiscoverPage() {
   const navigate = useNavigate()
@@ -31,7 +32,7 @@ export function DiscoverPage() {
     {loading ? <SkeletonBlock className="h-[560px] w-full rounded-3xl" /> : <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
       <BusinessesMap businesses={located} onSelect={setSelected} />
       <aside className="max-h-[560px] overflow-y-auto rounded-3xl bg-card p-2 ring-1 ring-foreground/8"><p className="px-3 pb-2 pt-3 text-sm font-semibold text-muted-foreground">{located.length} on the map</p>
-        {located.map((business) => { const active = selected?.id === business.id; return <button key={business.id} onClick={() => setSelected(business)} className={`w-full rounded-xl p-3 text-left transition-colors ${active ? 'bg-peach text-peach-ink' : 'hover:bg-secondary'}`}><div className="flex items-start gap-3">{business.logo_url ? <img src={business.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded-xl text-white" style={{ backgroundColor: business.brand_color }}><Store className="h-4 w-4" /></span>}<span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{business.name}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">{business.category ?? 'Local shop'}</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{business.address ?? 'Location confirmed'}</span></span></div></button> })}
+        {located.map((business) => { const active = selected?.id === business.id; return <button key={business.id} onClick={() => setSelected(business)} className={`w-full rounded-xl p-3 text-left transition-colors ${active ? 'bg-peach text-peach-ink' : 'hover:bg-secondary'}`}><div className="flex items-start gap-3">{business.logo_url ? <img src={resizedImage(business.logo_url, 96)} alt="" width={40} height={40} loading="lazy" decoding="async" className="h-10 w-10 rounded-xl object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded-xl text-white" style={{ backgroundColor: business.brand_color }}><Store className="h-4 w-4" /></span>}<span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{business.name}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">{business.category ?? 'Local shop'}</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{business.address ?? 'Location confirmed'}</span></span></div></button> })}
         {!located.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No mapped shops match this search yet.</p>}
       </aside>
     </div>}

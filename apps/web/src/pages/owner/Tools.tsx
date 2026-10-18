@@ -7,9 +7,10 @@ import { useOwner } from '@/lib/owner-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { supabase } from '@/lib/supabase'
 import { updateBusiness } from '@/lib/businesses'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark-256.webp'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { WHATSAPP_VISIBLE } from '@/lib/features'
+import { resizedImage } from '@/lib/image'
 
 type Member = { user_id: string; first_name: string | null; last_name: string | null; stamp_count: number; points_balance: number; visit_count: number; reward_progress_pence: number | null; last_activity_at: string | null; joined_at: string }
 
@@ -18,7 +19,7 @@ function ShopPoster({ business }: { business: { name: string; slug: string; logo
     ? `${window.location.origin}/whatsapp/start?shop=${encodeURIComponent(business.slug)}`
     : `${window.location.origin}/dashboard/shop/${business.slug}`
   const brandColor = business.brand_color || '#30442d'
-  return <div id="shop-poster" className="shop-poster-print" style={{ borderColor: brandColor }}><div className="shop-poster-topline" style={{ backgroundColor: brandColor }} /><div className="shop-poster-inner"><div className="shop-poster-platform"><img src={loyaltyLoopLogo} alt="The Loyalty Loop" /><span>The Loyalty Loop</span></div><div className="shop-poster-shop">{business.logo_url ? <img className="shop-poster-logo" src={business.logo_url} alt={`${business.name} logo`} /> : <span className="shop-poster-monogram" style={{ backgroundColor: brandColor }}>{business.name.charAt(0).toUpperCase()}</span>}<p className="shop-poster-kicker">LOCAL LOYALTY REWARDS</p><h2>{business.name}</h2><p className="shop-poster-subtitle">{business.category ? `${business.category} · ` : ''}Collect rewards when you visit</p></div><div className="shop-poster-qr-wrap"><QRCodeSVG value={shopUrl} size={230} level="H" includeMargin /></div><p className="shop-poster-scan">{business.whatsapp_onboarding_enabled ? 'Scan to join with WhatsApp' : 'Scan to join and start collecting'}</p><p className="shop-poster-detail">{business.whatsapp_onboarding_enabled ? 'No app download required · Start in WhatsApp' : 'No app download required · Your rewards stay in one place'}</p><div className="shop-poster-steps"><span><b>1</b> Scan</span><i /><span><b>2</b> Join</span><i /><span><b>3</b> Earn rewards</span></div></div></div>
+  return <div id="shop-poster" className="shop-poster-print" style={{ borderColor: brandColor }}><div className="shop-poster-topline" style={{ backgroundColor: brandColor }} /><div className="shop-poster-inner"><div className="shop-poster-platform"><img src={loyaltyLoopLogo} alt="The Loyalty Loop" width={256} height={256} /><span>The Loyalty Loop</span></div><div className="shop-poster-shop">{business.logo_url ? <img className="shop-poster-logo" src={resizedImage(business.logo_url, 320)} alt={`${business.name} logo`} /> : <span className="shop-poster-monogram" style={{ backgroundColor: brandColor }}>{business.name.charAt(0).toUpperCase()}</span>}<p className="shop-poster-kicker">LOCAL LOYALTY REWARDS</p><h2>{business.name}</h2><p className="shop-poster-subtitle">{business.category ? `${business.category} · ` : ''}Collect rewards when you visit</p></div><div className="shop-poster-qr-wrap"><QRCodeSVG value={shopUrl} size={230} level="H" includeMargin /></div><p className="shop-poster-scan">{business.whatsapp_onboarding_enabled ? 'Scan to join with WhatsApp' : 'Scan to join and start collecting'}</p><p className="shop-poster-detail">{business.whatsapp_onboarding_enabled ? 'No app download required · Start in WhatsApp' : 'No app download required · Your rewards stay in one place'}</p><div className="shop-poster-steps"><span><b>1</b> Scan</span><i /><span><b>2</b> Join</span><i /><span><b>3</b> Earn rewards</span></div></div></div>
 }
 
 export function OwnerTools() {

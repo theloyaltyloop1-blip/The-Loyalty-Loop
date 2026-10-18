@@ -2,7 +2,7 @@ import * as React from 'react'
 import { NavLink, Navigate, Link } from 'react-router-dom'
 import { Home, Map, Megaphone, Gift, Heart, User, LogOut, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import { LoopMark } from '@/components/loop-mark'
 import { LegalFooterLinks } from '@/components/legal-footer'
 
 const NAV_ITEMS = [
@@ -31,7 +31,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
           <Link to="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="The Loyalty Loop home">
-            <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />
+            <LoopMark className="h-8 w-8 object-contain" />
             <span className="hidden font-display text-[17px] font-semibold tracking-tight sm:inline">The Loyalty Loop</span>
           </Link>
           <nav aria-label="Customer navigation" className="hidden flex-1 items-center justify-center gap-1 lg:flex">

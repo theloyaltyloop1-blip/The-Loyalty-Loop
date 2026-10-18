@@ -7,6 +7,7 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { encodeRewardQr } from '@/lib/reward-qr'
 import { fetchMyRewards, type CustomerReward } from '@/lib/businesses'
+import { resizedImage } from '@/lib/image'
 
 function RewardCard({ reward }: { reward: CustomerReward }) {
   const redeemed = Boolean(reward.redeemed_at)
@@ -17,7 +18,7 @@ function RewardCard({ reward }: { reward: CustomerReward }) {
     <article className={'rounded-2xl bg-card ring-1 ring-foreground/8 overflow-hidden ' + (unavailable ? 'opacity-65' : '')}>
       <div className="p-6 flex gap-5 items-start">
         <div className="h-14 w-14 rounded-xl flex shrink-0 items-center justify-center text-white" style={{ backgroundColor: reward.business?.brand_color ?? '#E8703B' }}>
-          {reward.business?.logo_url ? <img src={reward.business.logo_url} alt="" className="h-full w-full rounded-xl object-cover" /> : <Gift className="h-6 w-6" />}
+          {reward.business?.logo_url ? <img src={resizedImage(reward.business.logo_url, 160)} alt="" width={56} height={56} loading="lazy" decoding="async" className="h-full w-full rounded-xl object-cover" /> : <Gift className="h-6 w-6" />}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-muted-foreground">{reward.business?.name ?? 'Local shop'}</p>

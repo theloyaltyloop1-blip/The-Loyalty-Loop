@@ -2,13 +2,18 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, BadgeCheck } from 'lucide-react'
 import type { Business, Membership } from '@/lib/businesses'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { resizedImage } from '@/lib/image'
 
 function ShopLogo({ business, size = 56 }: { business: Business; size?: number }) {
   if (business.logo_url) {
     return (
       <img
-        src={business.logo_url}
+        src={resizedImage(business.logo_url, size > 80 ? 320 : 160)}
         alt=""
+        width={size}
+        height={size}
+        loading="lazy"
+        decoding="async"
         className="rounded-xl object-cover shrink-0 ring-1 ring-foreground/8"
         style={{ width: size, height: size }}
       />
