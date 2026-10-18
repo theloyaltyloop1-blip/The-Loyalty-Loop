@@ -66,3 +66,6 @@ Each role was crawled with a fake session, with Supabase REST/auth/functions int
 | fonts.googleapis.com | 200 |
 | i.postimg.cc logo (thank-you email) | blocked here. **Risk:** the email logo is on a free third-party image host; move it to Supabase storage or `/public` |
 | esm.sh, react.dev, oxc.rs, swc.rs, github.com (README) | blocked/403 by the proxy; not verifiable |
+
+## Re-tests
+- Re-test 1–2 (2026-10-18T03:04Z, the 01:59 and 02:59 runs combined): public crawl + 5 role crawls, 0 issues each.
