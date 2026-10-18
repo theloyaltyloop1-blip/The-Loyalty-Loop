@@ -260,7 +260,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
         </>
       )}
 
-      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600 text-center">{error}</p>}
       {success && <p className="text-sm text-[#3FA34D] font-semibold text-center">{success}</p>}
     </div>
   )
@@ -395,7 +395,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         </button>
       )}
 
-      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600 text-center">{error}</p>}
       {success && <p className="text-sm text-[#3FA34D] font-semibold text-center">{success}</p>}
     </div>
   )

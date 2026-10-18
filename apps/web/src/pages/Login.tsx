@@ -59,7 +59,7 @@ export function Login() {
           required
           autoComplete="current-password"
         />
-        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm font-semibold text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={loading}

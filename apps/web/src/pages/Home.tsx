@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ShopCard } from '@/components/shop-card'
 import { fetchBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
+import { ListSkeleton, ErrorState } from '@/components/ui/states'
 
 const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   Café: Coffee,
@@ -43,6 +44,8 @@ export function Home() {
   const [businesses, setBusinesses] = React.useState<Business[]>([])
   const [memberships, setMemberships] = React.useState<Membership[]>([])
   const [fetching, setFetching] = React.useState(true)
+  const [failed, setFailed] = React.useState(false)
+  const [reload, setReload] = React.useState(0)
 
   React.useEffect(() => {
     if (!session?.user) return
@@ -53,15 +56,18 @@ export function Home() {
       .single()
       .then(({ data }) => setFirstName(data?.first_name ?? null))
 
+    setFetching(true)
+    setFailed(false)
     Promise.all([fetchBusinesses(), fetchMyMemberships(session.user.id)])
       .then(([b, m]) => {
         setBusinesses(b)
         setMemberships(m)
       })
+      .catch(() => setFailed(true))
       .finally(() => setFetching(false))
-  }, [session?.user])
+  }, [session?.user, reload])
 
-  if (loading || rolesLoading) return null
+  if (loading || rolesLoading) return <div className="min-h-screen bg-[#F7ECDC] p-8"><ListSkeleton /></div>
   if (!session) return <Navigate to="/login" replace />
   if (primaryRole === 'admin') return <Navigate to="/access" replace />
   if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />
@@ -95,7 +101,7 @@ export function Home() {
         <button
           onClick={() => setCategory('All')}
           className={
-            'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
+            'min-h-11 rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
             (category === 'All' ? 'bg-[#E8703B] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
           }
         >
@@ -106,7 +112,7 @@ export function Home() {
             key={cat}
             onClick={() => setCategory(cat)}
             className={
-              'rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
+              'min-h-11 rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
               (category === cat ? 'bg-[#E8703B] text-white' : 'bg-[#FBF6EC] text-[#1a1a1a]/70 border border-black/10')
             }
           >
@@ -115,7 +121,11 @@ export function Home() {
         ))}
       </div>
 
-      {!fetching && businesses.length === 0 ? (
+      {failed ? (
+        <ErrorState message="We couldn’t load shops." onRetry={() => setReload((n) => n + 1)} />
+      ) : fetching ? (
+        <ListSkeleton />
+      ) : businesses.length === 0 ? (
         <p className="text-[#1a1a1a]/50">No shops yet — check back soon.</p>
       ) : (
         <>

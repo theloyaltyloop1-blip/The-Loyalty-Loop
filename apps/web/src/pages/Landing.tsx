@@ -133,7 +133,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   return (
     <div className="rounded-[1.25rem] border-[3px] border-foreground bg-card p-5">
       <button
-        className="w-full flex items-center justify-between gap-4 text-left font-display font-bold text-lg"
+        className="w-full min-h-11 flex items-center justify-between gap-4 text-left font-display font-bold text-lg"
         onClick={() => setOpen((o) => !o)}
       >
         {q}
@@ -278,7 +278,7 @@ export function Landing() {
               </span>
               <h2 className="text-4xl">A few loops you'll love</h2>
             </div>
-            <a href="#" className="font-bold text-primary flex items-center gap-1">
+            <a href="/signup" className="inline-flex min-h-11 font-bold text-primary items-center gap-1">
               See all shops <ArrowRight className="h-4 w-4" />
             </a>
           </div>

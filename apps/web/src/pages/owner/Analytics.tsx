@@ -162,7 +162,7 @@ function DeepBusinessReportCard({
         to improve.
       </p>
 
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600 mb-3">{error}</p>}
 
       {report && (
         <>
@@ -246,7 +246,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
         {sending && <div className="rounded-xl px-4 py-2.5 text-sm bg-white text-[#1a1a1a]/40 self-start">Thinking…</div>}
       </div>
 
-      {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+      {error && <p role="alert" className="text-xs text-red-600 mb-2">{error}</p>}
 
       <div className="flex items-center gap-2">
         <input

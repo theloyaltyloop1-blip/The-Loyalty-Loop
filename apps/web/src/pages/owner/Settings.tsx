@@ -132,7 +132,7 @@ function BrandImageUpload({
       >
         <Upload className="h-3.5 w-3.5" /> {uploading ? 'Uploading…' : currentUrl ? 'Replace' : 'Upload'}
       </button>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p role="alert" className="text-xs text-red-600 mt-1">{error}</p>}
     </div>
   )
 }
@@ -259,7 +259,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         className="hidden"
         onChange={(e) => handleUpload(e.target.files?.[0])}
       />
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
     </SectionCard>
   )
 }
@@ -788,7 +788,7 @@ function WinbackTab() {
           </button>
         </div>
         {result && <p className="text-sm text-[#3FA34D] font-semibold mt-3">{result}</p>}
-        {error && <p className="text-sm text-red-600 font-semibold mt-3">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-600 font-semibold mt-3">{error}</p>}
       </SectionCard>
 
       <SectionCard title="Send history">
@@ -930,7 +930,7 @@ function VerificationTab() {
           >
             <FileCheck className="h-4 w-4" /> {file ? file.name : 'Choose file'}
           </button>
-          {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-600 mb-3">{error}</p>}
           <button
             onClick={handleSubmit}
             disabled={submitting || !file || !label.trim()}
@@ -1041,7 +1041,7 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
           onToggle={() => setPerms({ ...perms, can_respond_reviews: !perms.can_respond_reviews })}
         />
       </div>
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600 mb-3">{error}</p>}
       <button
         onClick={handleInvite}
         disabled={submitting}

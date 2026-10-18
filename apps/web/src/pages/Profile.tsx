@@ -134,7 +134,7 @@ export function ProfilePage() {
             <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Manual code</p>
             <div className="flex items-center gap-2">
               <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a]">{profile?.stamp_code}</p>
-              <button onClick={handleCopyCode} className="text-[#1a1a1a]/40 hover:text-[#1a1a1a]">
+              <button onClick={handleCopyCode} aria-label="Copy code" className="grid h-11 w-11 place-items-center text-[#1a1a1a]/40 hover:text-[#1a1a1a]">
                 {copied ? <Check className="h-4 w-4 text-[#3FA34D]" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -223,7 +223,7 @@ export function ProfilePage() {
 
       <SectionCard title="Invite a friend">
         <p className="text-sm text-[#1a1a1a]/55 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
-        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#E8703B] px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
+        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#E8703B] px-4 h-11 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
       </SectionCard>
 
       <button
@@ -232,7 +232,7 @@ export function ProfilePage() {
       >
         <LogOut className="h-4 w-4" /> Sign out
       </button>
-      <button onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
+      <button onClick={handleDelete} disabled={deleting} className="mt-4 flex min-h-11 items-center gap-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
     </DashboardLayout>
   )
 }

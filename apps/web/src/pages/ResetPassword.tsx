@@ -50,7 +50,7 @@ export function ResetPassword() {
               minLength={8}
               autoComplete="new-password"
             />
-            {error && <p className="text-destructive text-sm font-medium">{error}</p>}
+            {error && <p role="alert" className="text-destructive text-sm font-medium">{error}</p>}
             <Button type="submit" disabled={loading}>
               {loading ? 'Saving…' : 'Save new password'}
             </Button>

@@ -88,7 +88,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           required
           autoComplete="email"
         />
-        <label className="flex gap-2 text-sm text-[#1a1a1a]/70 items-start"><input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1" />I agree to the <a href="/terms" className="underline font-bold">Terms</a> and <a href="/privacy" className="underline font-bold">Privacy Notice</a>.</label>
+        <label className="flex gap-2 text-sm text-[#1a1a1a]/70 items-start"><input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0" />I agree to the <a href="/terms" className="underline font-bold">Terms</a> and <a href="/privacy" className="underline font-bold">Privacy Notice</a>.</label>
         <AuthInput
           type="password"
           placeholder="Password"
@@ -107,7 +107,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           minLength={8}
           autoComplete="new-password"
         />
-        {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm font-semibold text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={loading}
