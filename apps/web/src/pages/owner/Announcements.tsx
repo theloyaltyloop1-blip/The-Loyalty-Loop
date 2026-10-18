@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
 import { createAnnouncement, deleteAnnouncement, fetchOwnedAnnouncements, updateAnnouncement, type Announcement } from '@/lib/businesses'
+import { ListSkeleton, ErrorState } from '@/components/ui/states'
 
 const inputClass = 'w-full rounded-xl border border-black/10 bg-white/70 px-4 py-3 text-[#1a1a1a] outline-none focus:border-[#E8703B]'
 const errorText = (error: unknown, fallback: string) => {
@@ -20,23 +21,25 @@ export function OwnerAnnouncements() {
   const [body, setBody] = React.useState('')
   const [publishing, setPublishing] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [published, setPublished] = React.useState(false)
 
+  const [listState, setListState] = React.useState<'loading' | 'error' | 'ready'>('loading')
   const reload = React.useCallback(() => {
     if (!business) return
-    fetchOwnedAnnouncements(business.id).then(setItems).catch((err) => setError(errorText(err, 'Could not load announcements.')))
+    fetchOwnedAnnouncements(business.id).then((r) => { setItems(r); setListState('ready') }).catch(() => setListState('error'))
   }, [business])
   React.useEffect(() => { reload() }, [reload])
 
-  if (authLoading || ownerLoading) return null
+  if (authLoading || ownerLoading) return <OwnerLayout><ListSkeleton /></OwnerLayout>
   if (!session) return <Navigate to="/login" replace />
 
   async function publish(e: React.FormEvent) {
     e.preventDefault()
     if (!business || !title.trim()) return
-    setPublishing(true); setError(null)
+    setPublishing(true); setError(null); setPublished(false)
     try {
       await createAnnouncement(business.id, { title: title.trim(), body: body.trim() || null, is_active: true })
-      setTitle(''); setBody(''); reload()
+      setTitle(''); setBody(''); setPublished(true); reload()
     } catch (err) { setError(errorText(err, 'Could not publish announcement.')) } finally { setPublishing(false) }
   }
 
@@ -50,10 +53,11 @@ export function OwnerAnnouncements() {
         <input className={inputClass + ' mb-3'} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="e.g. Our summer menu is here" required />
         <textarea className={inputClass + ' min-h-28'} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} placeholder="Tell customers what’s new…" />
         {error && <p role="alert" className="mt-3 text-sm font-semibold text-red-600">{error}</p>}
+        {published && <p role="status" className="mt-3 text-sm font-semibold text-[#3FA34D]">Published — customers will see it on their News page.</p>}
         <button disabled={publishing} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#E8703B] text-white px-5 py-3 font-bold disabled:opacity-60"><Plus className="h-4 w-4" />{publishing ? 'Publishing…' : 'Publish update'}</button>
       </form>
       <h2 className="font-display text-xl font-bold text-[#1a1a1a] mb-4">Your updates</h2>
-      <div className="grid gap-4">{items.length === 0 ? <p className="text-[#1a1a1a]/55">No announcements yet.</p> : items.map((item) => <AnnouncementRow key={item.id} item={item} onChange={reload} />)}</div>
+      <div className="grid gap-4">{items.length === 0 ? (listState === 'error' ? <ErrorState message="We couldn’t load your updates." onRetry={reload} /> : listState === 'loading' ? <ListSkeleton rows={2} /> : <p className="text-[#1a1a1a]/55">No announcements yet.</p>) : items.map((item) => <AnnouncementRow key={item.id} item={item} onChange={reload} />)}</div>
     </>}
   </OwnerLayout>
 }

@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { ListSkeleton } from '@/components/ui/states'
 import { useOwner } from '@/lib/owner-context'
 import {
   updateBusiness,
@@ -1171,7 +1172,7 @@ export function OwnerSettings() {
   const { business, loading: ownerLoading } = useOwner()
   const [tab, setTab] = React.useState<TabKey>('profile')
 
-  if (loading) return null
+  if (loading) return <OwnerLayout><ListSkeleton /></OwnerLayout>
   if (!session) return <Navigate to="/login" replace />
 
   return (

@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { ListSkeleton } from '@/components/ui/states'
 
 export function OwnerComingSoon({ title }: { title: string }) {
   const { session, loading } = useAuth()
 
-  if (loading) return null
+  if (loading) return <OwnerLayout><ListSkeleton /></OwnerLayout>
   if (!session) return <Navigate to="/login" replace />
 
   return (

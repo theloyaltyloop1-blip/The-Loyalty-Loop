@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Camera, CameraOff, Check, Gift, ScanLine, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { ListSkeleton } from '@/components/ui/states'
 import { useOwner } from '@/lib/owner-context'
 import {
   awardProgress,
@@ -427,7 +428,7 @@ export function OwnerScan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canScan, canRedeem])
 
-  if (loading) return null
+  if (loading) return <OwnerLayout><ListSkeleton /></OwnerLayout>
   if (!session) return <Navigate to="/login" replace />
 
   return (
