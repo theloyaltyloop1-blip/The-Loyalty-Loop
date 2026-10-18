@@ -372,3 +372,18 @@ announce: ["insert failed"]
 support: ["insert failed"]
 promo: ["Couldn’t save the promotion. Please try again."]
 ```
+
+## Pass 7 – admin & franchise consoles
+| Severity | Issue | Fix |
+|---|---|---|
+| **High** | AccessTools (admin role grant/revoke, loyalty override, platform announcement) always showed success: Supabase resolves `{ error }` rather than throwing, so a denied RPC displayed "Role granted." | `act()` checks `error`; red `role=alert` on failure; buttons busy-disabled |
+| **High** | `/brand` redirected brand heads to `/owner` on load (role-loading race) | Wait for `rolesLoading` |
+| Med | BrandWorkspace brand list / roll-up fetch errors silent | Inline alert |
+| Med | owner/Tools member list error silent | Inline alert |
+| Low | Customer layout flashed then redirected owners while roles loaded | Skeleton until roles known |
+
+Verified (mock RPC 400 vs 200):
+```
+postfail ["permission denied for function"]
+empty ["Role granted."]
+```

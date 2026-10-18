@@ -2,6 +2,7 @@ import * as React from 'react'
 import { NavLink, Navigate } from 'react-router-dom'
 import { Home, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import { ListSkeleton } from '@/components/ui/states'
 import { SidebarShell } from '@/components/ui/mobile-nav'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 
@@ -16,7 +17,8 @@ const NAV_ITEMS = [
 ]
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole } = useAuth()
+  const { signOut, primaryRole, rolesLoading } = useAuth()
+  if (rolesLoading) return <div className="min-h-screen bg-[#F7ECDC] p-8"><ListSkeleton /></div>
   if (primaryRole === 'admin') return <Navigate to="/access" replace />
   if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />
   if (primaryRole === 'business_owner') return <Navigate to="/owner" replace />
