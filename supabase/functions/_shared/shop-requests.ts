@@ -23,7 +23,7 @@ export function readPlace(p:GooglePlace):Place|null {
     phone:p.nationalPhoneNumber?.slice(0,100)??null,primary_type:p.primaryType?.slice(0,100)??null};
 }
 export type SearchStore={user:(jwt:string)=>Promise<string|null>;consume:(id:string)=>Promise<boolean>;consumeDetails:(id:string,count:number,admin:boolean)=>Promise<boolean>;listed:(place:Place)=>Promise<string|null>;mine:(id:string)=>Promise<{place_id:string;count:number}[]>;isAdmin?:(id:string)=>Promise<boolean>};
-export const shopCors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'};
+export const shopCors={'Access-Control-Allow-Origin':"https://www.the-loyalty-loop.com",'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'};
 export function searchHandler(store:SearchStore,fetchFn:typeof fetch,env:(name:string)=>string|undefined) {
  return async(req:Request):Promise<Response>=>{
   const json=(v:unknown,status=200)=>Response.json(v,{status,headers:shopCors});

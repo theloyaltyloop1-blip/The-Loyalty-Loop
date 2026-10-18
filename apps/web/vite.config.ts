@@ -1,10 +1,20 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv, type UserConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command, mode }) => {
+  // A production build without Supabase config ships a blank page, so fail the build instead.
+  if (command === 'build') {
+    const env = { ...loadEnv(mode, process.cwd(), 'VITE_'), ...process.env }
+    const missing = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].filter((key) => !env[key])
+    if (missing.length) throw new Error(`Missing build environment variables: ${missing.join(', ')}`)
+  }
+  return config
+})
+
+const config: UserConfig = {
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -32,4 +42,4 @@ export default defineConfig({
       },
     },
   },
-})
+}

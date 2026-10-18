@@ -11,6 +11,14 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Owner voice line, basic version (2026-10-18) - Claude
+- What: the owner calls a Twilio number, enters a PIN, and describes a feature. Twilio transcribes it into `voice_requests`, and an SMS confirms it was logged. Built on a branch only; it never deploys.
+- Files: `supabase/functions/voice-call/index.ts`, `supabase/migrations/20261018180000_voice_requests.sql`, `supabase/config.toml` (voice-call, verify_jwt=false), `docs/VOICE_LINE_SETUP.md`.
+- Checks: code only. `deno check` couldn't run (no local deno, and the edge-runtime types need `openai` installed). **Not deployed, migration not applied, not tested with a real call.**
+- Update: migration applied and `voice-call` deployed to tgukdabfvvoywawmzbdo with verify_jwt off. A GET returns 405 and a POST returns 503 "Not configured", because no TWILIO_* or VOICE_* secrets exist on the project yet.
+- Update 2026-10-19: added and deployed a call-me link (`?step=callme&key=VOICE_TRIGGER_KEY`, where Twilio rings the owner), because the trial account only has a US number. The owner check now accepts the owner as either From or To. A request without the key returns 503 until the secrets exist. Not yet tested with a real call.
+- Next (owner): claim the Twilio trial number, then set VOICE_TRIGGER_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, VOICE_OWNER_PHONE and VOICE_PIN on the project. Next (Claude): apply the migration, deploy `voice-call`, point the Twilio number at it, test a call, then create the scheduled pick-up task.
+
 ## Shopper: branded pop-ups (2026-10-18) - Claude
 
 - Owner disliked the grey system Alert box (seen on the country question). New `apps/shopper/src/components/AppAlert.tsx`: `showAlert()` has the same arguments as `Alert.alert` and shows a bottom sheet (uses `Sheet`) with a tinted icon badge, display font and pill buttons (main action filled orange, red when destructive, Cancel last). `<AppAlertHost />` is mounted in `App`. Calls fall back to the system Alert if the host isn't mounted. All 41 shopper `Alert.alert` calls were switched.
@@ -2625,6 +2633,18 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - New apps/shopper/src/launch-update.ts (`useLaunchUpdate`): on cold start it checks, fetches and `reloadAsync()`s into a newer update behind the existing loading spinner. It gives up after 6s or on error and opens the current version. Skipped in dev and when updates are disabled. Wired into AppRoot in App.tsx. tsc passes. Not run on a device.
 - Release: an OTA helps existing users from their next launch. New store installs need a new shopper store build (owner asked for this behaviour). Business app not changed.
 - Next (owner): approve commit + OTA, then a shopper store build/submit when ready.
+
+## Audit fix-list applied LIVE (2026-10-19) - Claude, owner-approved ("apply everything to the live DB and deploy")
+
+- Checked the 9-item list against live tgukdabfvvoywawmzbdo before changing anything. Stale items: (1) `VITE_SITE_URL` is read nowhere in apps/web, so there is nothing to set. (3) `businesses.is_active` already exists live.
+- (5) Reviews: the existing `enforce_review_update_scope` trigger already blocked changes to user_id/business_id. It now also blocks non-admin changes to `id`/`created_at`, so authors can change only rating and body. Column grants are unchanged on purpose: the web review upsert sends user_id/business_id. No reviews exist live yet, so it is not exercised on real data.
+- (6) RLS initplan: every public policy now uses `(select auth.uid())` (DO-block rewrite). (7) The six FOR ALL write policies (announcements, business_photos, reward_catalog, staff_members, business_feature_settings, platform_announcements) are split into _ins/_upd/_del. Their USING clause is OR'd into each table's SELECT policy, so read access is unchanged. (8) 60 FK indexes added (public + whatsapp_archive). (9) Dropped 4 unused indexes that cover no FK. Kept 4 that cover FKs, plus the new voice_requests index.
+- Migration: supabase/migrations/20261019100000_review_scope_and_db_performance.sql (applied via MCP as `review_scope_and_db_performance`). Performance advisor after the change: initplan 0, multiple_permissive 0, unindexed FK 0. "Unused index" now lists the brand-new indexes, which is expected.
+- Smoke test: a signed-in non-member sees the 1 approved business and catalog as before. NOTE, pre-existing and unchanged: role `anon` gets "permission denied for function is_active_staff_of" when reading businesses, because has_role and the other helpers are granted to authenticated only. Confirm no logged-out web screen queries businesses.
+- (4) CORS: 16 functions plus _shared/fidel-card-http.ts and _shared/shop-requests.ts now return `Access-Control-Allow-Origin: https://www.the-loyalty-loop.com` instead of `*`. map-pin stays `*` (public images); whatsapp-handoff already used an allow-list. Redeployed 22 functions with live verify_jwt settings preserved (`--no-verify-jwt` for ai-review-reply, create-apple-wallet-pass, send-owner-legal-documents, shop-request-notify). OPTIONS checks return the domain. Native apps are unaffected (CORS is browser-only). Local web dev against live functions from localhost is now blocked for these functions.
+- (2) Live site bundle contains the Supabase URL, so production env is set. apps/web/vite.config.ts now fails `vite build` if VITE_SUPABASE_URL/ANON_KEY are missing (tested both ways). I can't reach Vercel from here: the CLI/MCP are logged into a different team, so the env list was not inspected directly.
+- Not touched: voice-call function, its migration, config.toml change and docs/VOICE_LINE_SETUP.md (someone else's uncommitted work).
+- Next (Codex): browser-check owner flows that call functions (analytics, coach chat, staff creation, wallet pass, delete shop) on www for CORS errors. Check the anon helper-grant note above.
 
 ## Copy-ready prompt for Claude Code
 

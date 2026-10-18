@@ -20,7 +20,7 @@ const WALLET_KEY_JSON = Deno.env.get("GOOGLE_WALLET_SERVICE_ACCOUNT_KEY");
 const ISSUER_ID = Deno.env.get("GOOGLE_WALLET_ISSUER_ID") ?? "3388000000023187932";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://www.the-loyalty-loop.com",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
