@@ -32,6 +32,8 @@
 | `send-visit-thank-you` | Owner/staff could email **any** user by passing an arbitrary `user_id` (non-member ⇒ `member` null ⇒ opt-out bypassed) | Require membership; reject otherwise |
 | `delete-my-account` | Skipped `can_delete_current_account()` guard; a direct call deleted shop owners (cascade risk) | Server now calls the RPC as the user and refuses if not allowed |
 
+| `send-winback-emails` | Shop name, customer `first_name` and `brand_color` were put into the email HTML without escaping, so a customer could inject HTML into marketing emails sent from the platform | Escape HTML; `brand_color` must be a hex value |
+
 (Syntax-checked with the TypeScript compiler: 0 diagnostics. A full `deno check` was blocked because the sandbox couldn't resolve esm.sh imports.)
 
 ### Browser test (Chromium, prod headers incl. CSP served locally)
@@ -52,9 +54,12 @@
 
 The remaining a11y failures are brand colours: `#C9622E` links on `#E8ECE2` have 3.3:1 contrast, white on `#E8703B` buttons has 3.1:1, and the cookie-banner button is under the 24px target size. These are design decisions, so I left them unchanged.
 
+- Client: no `dangerouslySetInnerHTML`/`eval`, and no open redirects (password reset uses `window.location.origin`).
+
 ## Open items / follow-ups
 - Set `VITE_SITE_URL` in prod env; default `https://theloyaltyloop.app` is a placeholder.
-- Apply migration 0026 and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you`).
+- Apply migration 0026 and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you send-winback-emails`).
+- `business-coach-chat` / `deep-business-report` (AI) have no per-owner rate limit, so cost abuse is limited to authenticated owners. Recommend reusing `check_daily_limit`.
 - Edge functions use `Access-Control-Allow-Origin: *`; recommend restricting to the prod origin (risk low since auth is bearer-token).
 - CSP allows `'unsafe-inline'` styles (Tailwind/React inline styles). Verify hCaptcha/Maps load in a preview deploy; adjust CSP if Maps embed hosts differ.
 - If not deploying on Vercel, port headers to the host (Netlify `_headers`, nginx, etc.).

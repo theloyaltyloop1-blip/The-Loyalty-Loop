@@ -22,6 +22,8 @@ function genCoupon() {
   return "COMEBACK" + Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
+const escapeHtml = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -115,11 +117,13 @@ Deno.serve(async (req: Request) => {
         (Date.now() - new Date(member.last_activity_at ?? member.joined_at).getTime()) / (24 * 60 * 60 * 1000)
       );
       const subject = `We miss you at ${business.name}!`;
-      const greeting = profile.first_name ? `Hi ${profile.first_name},` : "Hi there,";
+      const shopName = escapeHtml(business.name);
+      const brandColor = /^#[0-9a-fA-F]{3,8}$/.test(business.brand_color ?? "") ? business.brand_color : "#E8703B";
+      const greeting = profile.first_name ? `Hi ${escapeHtml(profile.first_name)},` : "Hi there,";
       const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <h2 style="color:${business.brand_color}">${greeting}</h2>
-        <p>It's been a while since your last visit to <strong>${business.name}</strong> — come back and use code <strong>${coupon}</strong> for a little something extra on us.</p>
-        <p style="color:#888;font-size:13px">You're receiving this because you're a member of ${business.name}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
+        <h2 style="color:${brandColor}">${greeting}</h2>
+        <p>It's been a while since your last visit to <strong>${shopName}</strong> — come back and use code <strong>${coupon}</strong> for a little something extra on us.</p>
+        <p style="color:#888;font-size:13px">You're receiving this because you're a member of ${shopName}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
       </div>`;
 
       try {
