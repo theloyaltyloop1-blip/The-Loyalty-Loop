@@ -4,7 +4,7 @@ import { Check, Store, MapPin, Palette, ArrowRight, ArrowLeft } from 'lucide-rea
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { createBusiness, type Business } from '@/lib/businesses'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.webp'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']

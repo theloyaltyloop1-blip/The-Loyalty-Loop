@@ -2,7 +2,7 @@ import * as React from 'react'
 import { NavLink, Navigate } from 'react-router-dom'
 import { Home, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.webp'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },

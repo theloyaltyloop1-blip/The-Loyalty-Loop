@@ -16,8 +16,45 @@
 | robots.txt / sitemap.xml | missing | generated at build by `seoFiles` Vite plugin from `VITE_SITE_URL`; app routes disallowed |
 | Favicon / PWA | svg only | `favicon.ico`, `apple-touch-icon.png`, `manifest.webmanifest`, 192/512 + maskable icons |
 
+## Pass 2 – deeper testing
+
+### Supabase security advisors (project tgukdabfvvoywawmzbdo)
+- `rls_enabled_no_policy` (INFO, 25 tables): RLS on and no policies, so access is deny-by-default. These are internal or log tables, so this is OK.
+- `anon_security_definer_function_executable` (WARN, 2): `deliver_shop_announcement()`, `notify_reward_redeemed()` are trigger functions exposed via RPC → **fixed in `supabase/migrations/0026_revoke_trigger_fn_execute.sql`** (file only, not yet applied to prod).
+- `authenticated_security_definer_function_executable` (WARN, 62): every function was checked for an auth guard. All mutating/admin functions call `admin_assert()`, `has_role`, or check `auth.uid()` ownership. Helpers (`has_role`, `is_active_staff_of`, `staff_has_permission`, `spend_next_tier`, `card_linked_business_ids`) are read-only boolean/lookup helpers; minor info-disclosure only.
+- `auth_leaked_password_protection` (WARN): **enable in Dashboard → Auth → Password security** (manual).
+- Storage: `owner_verification_docs` is private, with owner-folder/admin read policies. Public buckets (logos/covers/gallery) only allow image MIME types up to 5 MB, and owners can only write into their own business folder. OK.
+
+### Edge function bugs fixed
+| Function | Issue | Fix |
+|---|---|---|
+| `send-visit-thank-you` | Staff check queried non-existent column `is_active` (real: `status`), so staff were always rejected | `.eq('status','active')` |
+| `send-visit-thank-you` | Owner/staff could email **any** user by passing an arbitrary `user_id` (non-member ⇒ `member` null ⇒ opt-out bypassed) | Require membership; reject otherwise |
+| `delete-my-account` | Skipped `can_delete_current_account()` guard; a direct call deleted shop owners (cascade risk) | Server now calls the RPC as the user and refuses if not allowed |
+
+(Syntax-checked with the TypeScript compiler: 0 diagnostics. A full `deno check` was blocked because the sandbox couldn't resolve esm.sh imports.)
+
+### Browser test (Chromium, prod headers incl. CSP served locally)
+9 routes (`/ /login /signup /signup/owner /terms /privacy /forgot-password /dashboard /owner`): all render, per-route titles correct, manifest served, **0 CSP violations / page errors**. CSP tightened: removed unused `maps.googleapis.com`/`www.google.com` (Maps is only an outbound link; hCaptcha kept for future captcha).
+
+### Performance fixes
+- Route-level code splitting (`React.lazy` + `Suspense`); Landing stays eager. Single 705 kB bundle → initial ≈279 kB app + 207 kB supabase + per-route chunks.
+- Logo PNG 137 kB → WebP 9 kB.
+- Google Fonts moved from CSS `@import` (render-blocking chain) to `<link>` + preconnect.
+
+### Lighthouse (mobile, local server)
+| Page | Perf | A11y | Best practices | SEO | LCP | CLS |
+|---|---|---|---|---|---|---|
+| `/` before | 71 | 92 | 100 | 100 | – | – |
+| `/` after | 75 | 92 | 100 | 100 | 4.2 s | 0 |
+| `/login` before | 59 | 85 | 100 | 100 | 5.7 s | 0.187 |
+| `/login` after | 71 | 85 | 100 | 100 | 5.0 s | 0 |
+
+The remaining a11y failures are brand colours: `#C9622E` links on `#E8ECE2` have 3.3:1 contrast, white on `#E8703B` buttons has 3.1:1, and the cookie-banner button is under the 24px target size. These are design decisions, so I left them unchanged.
+
 ## Open items / follow-ups
 - Set `VITE_SITE_URL` in prod env; default `https://theloyaltyloop.app` is a placeholder.
+- Apply migration 0026 and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you`).
 - Edge functions use `Access-Control-Allow-Origin: *`; recommend restricting to the prod origin (risk low since auth is bearer-token).
 - CSP allows `'unsafe-inline'` styles (Tailwind/React inline styles). Verify hCaptcha/Maps load in a preview deploy; adjust CSP if Maps embed hosts differ.
 - If not deploying on Vercel, port headers to the host (Netlify `_headers`, nginx, etc.).
