@@ -254,3 +254,18 @@ Diff:  26 files changed, 63 insertions(+), 63 deletions(-)
 
 ## After
 - 320px + 200% zoom re-scan (consumer): 0 overflow, 0 offscreen, 0 overlap, 0 contrast (excluding intentional `truncate` and disabled button).
+
+---
+# Final summary (2026-10-18 16:34 UTC)
+
+**Coverage:** 27 routes × 5 breakpoints (320/390/768/1280/1920) × 5 auth states (public, consumer, business_owner, admin, brand_head) + 200% text zoom + interactive states (FAQ, cookie banner). ~700 full-page screenshots per full sweep.
+
+**Totals (before → after):** horizontal overflow 10 → 0 · offscreen elements 226 → 0 · contrast failures 504 → 0 (excl. disabled button, WCAG-exempt) · covered controls (cookie banner/FAB) mitigated · sibling overlaps 0 throughout.
+
+**Functional bugs found by the visual crawl (fixed):** role/owner loading race causing wrong redirects on deep links to /owner/*, /owner/tools, /brand.
+
+**Key changes:** darker brand tokens (primary #c2410c, green #1e7a50, violet #7a4fc4) and hardcoded oranges/blue; low-alpha text raised to AA; responsive sidebar → top bar for customer, owner and admin layouts; cookie banner reserves space; shop hero overlay + wrapping; zoom-safe grids/header.
+
+**Known residuals:** cookie banner and Security FAB overlap content at initial scroll by design (content scrollable clear); long shop names intentionally truncated in owner switcher; audit ran against mocked Supabase data — verify with real data before release. Brand colour change should be signed off by design.
+
+Commits on `audit/01-visual-css`; scripts in `audit-reports/scripts/`.
