@@ -47,3 +47,10 @@ src/lib/platform-health.ts: PlatformHealthCheck
 - `npm run build` (tsc -b + vite): pass before & after; JS 234.36 kB (75.34 gz), CSS 44.39 kB – unchanged (orphans were never bundled).
 - `npm run lint` (oxlint): 0 errors, 3 pre-existing exhaustive-deps warnings in owner/Settings.tsx.
 - Repo shrink: 6 files deleted + 13 lines of dead code/CSS.
+
+## Second pass (deep checks)
+- `tsc --noUnusedLocals --noUnusedParameters`: 0 findings.
+- knip classMembers/enumMembers/duplicates: 0 findings.
+- Every supabase edge function is invoked from src or migrations (none orphaned).
+- No TODO/FIXME/console.log in src.
+- Exports referenced only in own file are all types used in signatures (AppRole, ButtonProps, LoyaltyConfig, PlatformHealthCheck, ReviewReply, WebResearchSource) – kept.
