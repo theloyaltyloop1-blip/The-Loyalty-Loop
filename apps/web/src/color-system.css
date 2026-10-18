@@ -91,9 +91,9 @@
 }
 
 @theme {
-  --color-background: #E0CFB4; /* warm sand, matches the shopper app (2026-10-18) */
+  --color-background: var(--palette-neutral-100);
   --color-foreground: #000000;
-  --color-card: #FFFBF5;
+  --color-card: var(--palette-neutral-50);
   --color-card-foreground: #000000;
   --color-primary: var(--palette-orange-700);
   --color-primary-foreground: var(--palette-neutral-50);
@@ -110,7 +110,7 @@
   --color-destructive-foreground: var(--palette-neutral-50);
   --color-destructive-subtle: var(--palette-red-50);
   --color-destructive-border: var(--palette-red-700);
-  --color-border: #CDB896;
+  --color-border: var(--palette-neutral-300);
   --color-input: var(--palette-neutral-500);
   --color-ring: var(--palette-orange-700);
   --color-muted: var(--palette-neutral-200);

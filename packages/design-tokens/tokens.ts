@@ -10,9 +10,9 @@
  */
 
 export const colors = {
-  background: '#E0CFB4', // warm sand (owner's pick, 2026-10-18), was #F3F4EF
+  background: '#F3F4EF',
   foreground: '#1C2620',
-  card: '#FFFBF5', // warm white, was #FCFCFA
+  card: '#FCFCFA',
   primary: '#C4531F',
   primaryHover: '#A8461A',
   accent: '#E8703B',
@@ -20,7 +20,7 @@ export const colors = {
   ink: '#1C2620',
   muted: '#5A635C',
   destructive: '#DC2626',
-  border: '#CDB896', // warm line, was #DCDFD6
+  border: '#DCDFD6',
 
   olive: '#3E5235',
   oliveInk: '#F1F4EC',
