@@ -1,4 +1,7 @@
 import { supabase } from './supabase'
+import type { Database } from './database.types'
+
+export type LoyaltyType = Database['public']['Enums']['loyalty_type']
 
 export type LoyaltyConfig = {
   stamps_required?: number
@@ -31,7 +34,7 @@ export interface Business {
   logo_url: string | null
   cover_url: string | null
   opening_hours: OpeningHours | null
-  loyalty_type: 'stamp_card' | 'points' | 'tiered'
+  loyalty_type: LoyaltyType
   loyalty_config: LoyaltyConfig
   verification_status: 'unverified' | 'pending' | 'verified' | 'rejected'
   verification_document_path: string | null

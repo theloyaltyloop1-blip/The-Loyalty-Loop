@@ -1,8 +1,6 @@
 import * as React from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Database } from '@/lib/database.types'
-
-type AppRole = Database['public']['Enums']['app_role']
+import type { AppRole } from '@/lib/auth-context'
 const input = 'mt-2 w-full rounded-xl border border-white/15 bg-black/20 px-3 h-10 text-sm text-white'
 export function AccessTools() {
   const [email, setEmail] = React.useState(''); const [role, setRole] = React.useState<AppRole>('consumer'); const [message, setMessage] = React.useState(''); const [ann, setAnn] = React.useState({ title: '', body: '' }); const [businessId, setBusinessId] = React.useState(''); const [threshold, setThreshold] = React.useState(10)

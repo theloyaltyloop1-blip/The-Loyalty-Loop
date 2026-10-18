@@ -1,8 +1,9 @@
 import * as React from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import type { Database } from './database.types'
 
-export type AppRole = 'admin' | 'brand_head' | 'business_owner' | 'staff' | 'consumer'
+export type AppRole = Database['public']['Enums']['app_role']
 
 const ROLE_PRIORITY: AppRole[] = ['admin', 'brand_head', 'business_owner', 'staff', 'consumer']
 

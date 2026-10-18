@@ -27,6 +27,7 @@ import {
   type BusinessPhoto,
   type OpeningHours,
   type DayHours,
+  type LoyaltyType,
 } from '@/lib/businesses'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
@@ -450,7 +451,7 @@ function ProfileTab() {
   )
 }
 
-const UNIT_LABEL: Record<'stamp_card' | 'points' | 'tiered', string> = {
+const UNIT_LABEL: Record<LoyaltyType, string> = {
   stamp_card: 'Stamp',
   points: 'Point',
   tiered: 'Visit',

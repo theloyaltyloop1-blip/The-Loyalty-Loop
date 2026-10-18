@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { fetchActivity, type ActivityItem } from '@/lib/engagement'
 
-const labels: Record<ActivityItem['type'], string> = { stamp: 'Stamp collected', points_earn: 'Points earned', points_spend: 'Points spent', redeem: 'Reward redeemed' }
+const labels: Record<ActivityItem['type'], string> = { stamp: 'Stamp collected', points_earn: 'Points earned', points_spend: 'Points spent', spend: 'Purchase', redeem: 'Reward redeemed' }
 export function ActivityPage() {
   const { session, loading } = useAuth(); const [items, setItems] = React.useState<ActivityItem[]>([]); const [ready, setReady] = React.useState(false)
   React.useEffect(() => { if (session?.user) void fetchActivity(session.user.id).then(setItems).catch(reportError).finally(() => setReady(true)) }, [session?.user])

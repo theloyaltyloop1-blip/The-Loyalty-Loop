@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
+import type { Database } from './database.types'
 
-export type ActivityItem = { id: string; type: 'stamp' | 'redeem' | 'points_earn' | 'points_spend'; value: number; note: string | null; created_at: string; business: { name: string; brand_color: string } | null }
+export type ActivityItem = { id: string; type: Database['public']['Enums']['transaction_type']; value: number; note: string | null; created_at: string; business: { name: string; brand_color: string } | null }
 export type InboxItem = { id: string; title: string; body: string | null; link: string | null; kind: string; read_at: string | null; created_at: string; business: { name: string } | null }
 
 type Joined<T> = { business: T | T[] | null }

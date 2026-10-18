@@ -54,3 +54,17 @@ Build: `tsc -b && vite build` ✓ (JS 234 kB / 75 kB gzip). No type errors.
 - 2× `only-export-components`, 1× `consistent-return` (effect cleanup in Scan).
 
 Regenerate types after migrations: Supabase MCP `generate_typescript_types` or `supabase gen types typescript --project-id tgukdabfvvoywawmzbdo > apps/web/src/lib/database.types.ts`.
+
+---
+
+## Pass 3 — Schema drift & dead code
+
+### Schema drift fixed
+- `ActivityItem.type` was missing DB enum value `spend` → Activity page would render an undefined label for such rows. Now derived from `Enums['transaction_type']`; label "Purchase" added.
+- `AppRole`, `LoyaltyType` now derived from generated DB enums (removed 3 hand-copied unions).
+- Lint warnings: 42 → 41.
+
+### Dead code (knip, `knip.txt`) — reported, not deleted (file deletion blocked by sandbox policy; needs owner decision)
+- Unused files: `src/pages/ComingSoon.tsx`, `src/pages/owner/OwnerComingSoon.tsx`.
+- Unused exports: `getVerificationDocUrl`, `applyReferralCode`, `acceptLegal`, `ButtonProps`, `PlatformHealthCheck` (type).
+- ⚠️ `acceptLegal` (writes `legal_acceptances`) is never called; Signup only sets `legal_accepted` in auth metadata. Verify a DB trigger records acceptances, otherwise legal-consent audit trail is missing. Same for unused `applyReferralCode` (referral redemption not wired in UI).

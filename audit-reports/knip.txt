@@ -1,0 +1,16 @@
+Unused files (2)
+src/pages/ComingSoon.tsx           
+src/pages/owner/OwnerComingSoon.tsx
+Unused exports (4)
+getVerificationDocUrl  function  src/lib/businesses.ts:546:23     
+Constants                        src/lib/database.types.ts:3315:14
+applyReferralCode      function  src/lib/engagement.ts:23:23      
+acceptLegal            function  src/lib/engagement.ts:24:23      
+Unused exported types (7)
+ButtonProps          interface  src/components/ui/button.tsx:28:18
+Tables               type       src/lib/database.types.ts:3202:13 
+TablesInsert         type       src/lib/database.types.ts:3231:13 
+TablesUpdate         type       src/lib/database.types.ts:3256:13 
+Enums                type       src/lib/database.types.ts:3281:13 
+CompositeTypes       type       src/lib/database.types.ts:3298:13 
+PlatformHealthCheck  interface  src/lib/platform-health.ts:3:18   
