@@ -14,7 +14,7 @@ need Claude's sign-off before the next one starts.
 ## Shopper: branded pop-ups (2026-10-18) - Claude
 
 - Owner disliked the grey system Alert box (seen on the country question). New `apps/shopper/src/components/AppAlert.tsx`: `showAlert()` has the same arguments as `Alert.alert` and shows a bottom sheet (uses `Sheet`) with a tinted icon badge, display font and pill buttons (main action filled orange, red when destructive, Cancel last). `<AppAlertHost />` is mounted in `App`. Calls fall back to the system Alert if the host isn't mounted. All 41 shopper `Alert.alert` calls were switched.
-- Checked: tsc clean, 21/21 tests, `expo export --platform android` bundles. **Not seen on a device, not published.** Pure JS, so it can ship by OTA (both runtimes, as with the star summary).
+- Checked: tsc clean, 21/21 tests, `expo export --platform android` bundles. **Published by OTA** (owner asked), production channel. Runtime 1.0.1: Android 20b8cfda, iOS 3414179e. Runtime 1.0.0: Android e56fe8b7, iOS 2f843b2e (`Sheet` is already in the 1.0.0 builds). Not yet seen on a device.
 - Open: a drag-dismiss on the country question saves nothing (the guess is used for that session and it isn't asked again until restart). The Business app still uses the system Alert.
 
 ---
