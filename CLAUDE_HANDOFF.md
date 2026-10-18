@@ -11,6 +11,16 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Shopper 1.0.1 submitted to both stores (2026-10-18) - Claude
+
+- Built from commit d6bdc11 (includes "check for an update on launch", the countries work and `expo-location`/`expo-localization`). EAS records gitCommitHash d6bdc11c4c858a33808f23903f4e17088ca7c968 for both builds. Build numbers committed in d12691a.
+- **Android** build c84d6ab7 (versionCode 132): submitted to the Play production track, sent for review.
+- **iOS** build bed38d9c (build 14): Apple processing VALID. App Store version 1.0.1 created via the ASC API with that build, "What's new" set (en-GB), review submission sent. State **WAITING_FOR_REVIEW**, released automatically after approval.
+- **Business app was not rebuilt.** It is still the store 1.0.0; its 1.0.1 country changes are committed but unbuilt.
+- **Next.** (Owner) Watch for the Apple and Google review results. (Claude/Codex) Build and submit Business 1.0.1 when the owner asks. Pakistan phone/WhatsApp login is proposed, not started.
+
+---
+
 ## Countries: Pakistan support and 1.0.1 store builds (2026-10-18) - Claude
 
 - **What changed.** New `countries` table (GB: GBP, card-linking on; PK: PKR, whole rupees, card-linking off, `amount_scale` 300). `profiles.country_code` (null until the shopper confirms) and `businesses.country_code` (default GB). Spend caps and discount limits now scale per country, enforced by triggers `businesses_country_amounts` and `reward_catalog_country_amounts`. Migration `20261018120000_countries.sql` **applied to live** (owner approved); checked afterwards: both existing shops GB, cap 20000 unchanged.
