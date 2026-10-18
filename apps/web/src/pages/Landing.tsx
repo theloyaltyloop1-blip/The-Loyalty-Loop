@@ -31,7 +31,7 @@ const STEPS = [
     color: 'bg-accent',
     step: 'STEP 1',
     title: 'Discover',
-    description: 'Browse shops, cafés and studios near you on a friendly map.',
+    description: 'Browse shops, cafés and studios near you in one friendly list.',
   },
   {
     icon: Stamp,
@@ -103,7 +103,7 @@ const FAQS = [
   },
   {
     q: 'Which shops can I use it at?',
-    a: 'Any independent shop that has set up a card on The Loyalty Loop — check the map to see what’s live near you.',
+    a: 'Any independent shop that has set up a card on The Loyalty Loop — browse the app to see what’s live near you.',
   },
   {
     q: 'What happens to my paper stamp cards?',

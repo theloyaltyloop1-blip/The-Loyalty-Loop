@@ -23,3 +23,11 @@
 
 ## Checks
 - `tsc -b`: pass. `oxlint src`: 0 errors (3 pre-existing exhaustive-deps warnings in Settings.tsx).
+
+## Pass 2
+| # | Issue | Fix |
+|---|---|---|
+| 8 | ShopDetail reward tile said "N stamps" for points/visit-based shops | Uses loyalty unit |
+| 9 | Owner test button said "Simulate stamp" for points/visit shops | Uses loyalty unit |
+| 10 | Landing promised a "map" — no map feature exists | Copy changed to list/browse |
+- Verified: Scan, Activity, Rewards, Analytics, win-back/thank-you emails use loyalty-neutral or unit-aware wording.

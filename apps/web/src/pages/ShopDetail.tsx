@@ -361,7 +361,7 @@ export function ShopDetail() {
                 disabled={stamping}
                 className="flex items-center gap-2 rounded-full border border-dashed border-[#1a1a1a]/30 px-5 h-10 font-semibold text-sm text-[#1a1a1a]/70 disabled:opacity-50"
               >
-                <Zap className="h-4 w-4" /> {stamping ? 'Adding…' : 'Simulate stamp (owner testing)'}
+                <Zap className="h-4 w-4" /> {stamping ? 'Adding…' : `Simulate ${unit} (owner testing)`}
               </button>
             </div>
           )}
@@ -396,7 +396,7 @@ export function ShopDetail() {
           <div>
             <p className="font-semibold text-[#1a1a1a]">{rewardTitle}</p>
             <p className="text-sm text-[#1a1a1a]/50">{rewardSubtitle}</p>
-            <p className="text-xs text-[#1a1a1a]/40 mt-0.5">{stampsRequired} stamps</p>
+            <p className="text-xs text-[#1a1a1a]/40 mt-0.5">{stampsRequired} {unit}s</p>
           </div>
         </div>
       </div>
