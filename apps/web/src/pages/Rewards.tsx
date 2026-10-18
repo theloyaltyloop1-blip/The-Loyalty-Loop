@@ -1,10 +1,10 @@
-import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { Gift, Ticket } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { fetchMyRewards, type CustomerReward } from '@/lib/businesses'
+import { useLoad, ListSkeleton, ErrorState } from '@/components/ui/states'
 
 function RewardCard({ reward }: { reward: CustomerReward }) {
   const redeemed = Boolean(reward.redeemed_at)
@@ -38,16 +38,11 @@ function RewardCard({ reward }: { reward: CustomerReward }) {
 
 export function RewardsPage() {
   const { session, loading } = useAuth()
-  const [rewards, setRewards] = React.useState<CustomerReward[]>([])
-  const [ready, setReady] = React.useState(false)
+  const { data, status, retry } = useLoad(() => fetchMyRewards(session!.user.id), !!session?.user, [session?.user?.id])
+  const rewards: CustomerReward[] = data ?? []
 
-  React.useEffect(() => {
-    if (!session?.user) return
-    fetchMyRewards(session.user.id).then(setRewards).finally(() => setReady(true))
-  }, [session?.user])
-
-  if (loading || !ready) return null
-  if (!session) return <Navigate to="/login" replace />
+  if (!loading && !session) return <Navigate to="/login" replace />
+  if (loading || status !== 'ready') return <DashboardLayout>{status === 'error' ? <ErrorState message="We couldn’t load your rewards." onRetry={retry} /> : <ListSkeleton />}</DashboardLayout>
 
   const available = rewards.filter((reward) => !reward.redeemed_at && (!reward.expires_at || new Date(reward.expires_at) >= new Date()))
   const past = rewards.filter((reward) => !available.includes(reward))
@@ -62,6 +57,7 @@ export function RewardsPage() {
           <Ticket className="h-9 w-9 mx-auto text-[#E8703B] mb-3" />
           <h2 className="font-display text-xl font-bold text-[#1a1a1a]">No rewards yet</h2>
           <p className="text-sm text-[#1a1a1a]/55 mt-2">Keep collecting stamps or points at your favourite shops — your reward will appear here automatically.</p>
+          <a href="/dashboard" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-[#E8703B] px-6 font-bold text-white">Browse shops</a>
         </div>
       ) : <div className="grid gap-5 md:grid-cols-2">{available.map((reward) => <RewardCard key={reward.id} reward={reward} />)}</div>}
       {past.length > 0 && <><h2 className="font-display text-xl font-bold text-[#1a1a1a] mt-10 mb-4">Past rewards</h2><div className="grid gap-4 md:grid-cols-2">{past.map((reward) => <RewardCard key={reward.id} reward={reward} />)}</div></>}

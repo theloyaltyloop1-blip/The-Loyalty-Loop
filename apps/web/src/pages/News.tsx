@@ -1,17 +1,16 @@
-import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Megaphone } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { fetchAnnouncements, type Announcement } from '@/lib/businesses'
+import { useLoad, ListSkeleton, ErrorState } from '@/components/ui/states'
 
 export function NewsPage() {
   const { session, loading } = useAuth()
-  const [items, setItems] = React.useState<Announcement[]>([])
-  const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { if (session) fetchAnnouncements().then(setItems).finally(() => setReady(true)) }, [session])
-  if (loading || !ready) return null
-  if (!session) return <Navigate to="/login" replace />
+  const { data, status, retry } = useLoad(fetchAnnouncements, !!session, [session?.user?.id])
+  const items: Announcement[] = data ?? []
+  if (!loading && !session) return <Navigate to="/login" replace />
+  if (loading || status !== 'ready') return <DashboardLayout>{status === 'error' ? <ErrorState message="We couldn’t load shop news." onRetry={retry} /> : <ListSkeleton />}</DashboardLayout>
   return <DashboardLayout>
     <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">From local shops</p>
     <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a]">News</h1>
