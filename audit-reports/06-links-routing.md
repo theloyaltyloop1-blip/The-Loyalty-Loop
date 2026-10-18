@@ -71,3 +71,6 @@ Each role was crawled with a fake session, with Supabase REST/auth/functions int
 - Re-test 1–2 (2026-10-18T03:04Z, the 01:59 and 02:59 runs combined): public crawl + 5 role crawls, 0 issues each.
 - Re-test 3 (2026-10-18T04:04Z): 6 crawls, 0 issues.
 - Re-test 4 (2026-10-18T05:04Z): 6 crawls, 0 issues.
+- Re-test 5 / final (2026-10-18T06:04Z): 6 crawls, 0 issues.
+
+**Final: 5-hour window complete — 0 broken links/assets across all re-tests.**
