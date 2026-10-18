@@ -278,22 +278,23 @@ export function OwnerAnalytics() {
   const [statsLoading, setStatsLoading] = React.useState(true)
   const [webResearch, setWebResearch] = React.useState<DeepBusinessReport | null>(null)
 
+  const businessId = business?.id
   React.useEffect(() => {
-    if (!business) return
+    if (!businessId) return
     setStatsLoading(true)
-    Promise.all([fetchPeriodStats(business.id, period), fetchTotalsStats(business.id)])
+    Promise.all([fetchPeriodStats(businessId, period), fetchTotalsStats(businessId)])
       .then(([p, t]) => {
         setStats(p)
         setTotals(t)
       })
       .finally(() => setStatsLoading(false))
-  }, [business?.id, period])
+  }, [businessId, period])
 
   React.useEffect(() => {
-    if (!business) return
+    if (!businessId) return
     setWebResearch(null)
-    fetchLatestWebResearch(business.id).then(setWebResearch)
-  }, [business?.id])
+    fetchLatestWebResearch(businessId).then(setWebResearch)
+  }, [businessId])
 
   if (loading || rolesLoading || ownerLoading) return null
   if (!session) return <Navigate to="/login" replace />

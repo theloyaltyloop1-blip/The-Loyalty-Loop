@@ -135,10 +135,11 @@ export function ShopDetail() {
       .then(({ data }) => setStampCode(data?.stamp_code ?? null))
   }, [userId])
 
+  const businessId = business?.id
   React.useEffect(() => {
-    if (!userId || !business) return
-    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
-  }, [userId, business?.id])
+    if (!userId || !businessId) return
+    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(businessId)))
+  }, [userId, businessId])
 
   async function handleToggleFavourite() {
     if (!session?.user || !business) return

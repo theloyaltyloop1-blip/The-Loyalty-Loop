@@ -1,0 +1,27 @@
+
+> web@0.0.0 build
+> tsc -b && vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vite.config.ts:11:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.0 building client environment for production...
+[2Ktransforming...Found 1 warning while optimizing generated CSS:
+
+[2m│   }[22m
+[2m│ }[22m
+[2m│[22m @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
+[2m┆[22m        [33m[2m^--[22m @import rules must precede all rules aside from @charset and @layer statements[39m
+[2m┆[22m
+[2m│ @layer base {[22m
+[2m│   * {[22m
+
+✓ 1935 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                               0.45 kB │ gzip:  0.29 kB
+dist/assets/loyalty-loop-logo-viiVMMkb.png  137.28 kB
+dist/assets/index-DfSP2lff.css               44.39 kB │ gzip:  8.28 kB
+dist/assets/index-BQMS8MaG.js               234.36 kB │ gzip: 75.34 kB
+
+✓ built in 956ms

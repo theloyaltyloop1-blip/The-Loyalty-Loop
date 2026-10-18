@@ -37,6 +37,8 @@ export interface Business {
   verification_document_label: string | null
   verification_submitted_at: string | null
   verification_rejection_reason: string | null
+  /** Not yet in the businesses table schema (see audit-reports/03). */
+  is_active?: boolean
 }
 
 export interface RewardCatalogItem {

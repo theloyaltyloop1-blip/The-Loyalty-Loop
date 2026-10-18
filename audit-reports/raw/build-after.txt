@@ -1,0 +1,14 @@
+
+> web@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.0 building client environment for production...
+[2Ktransforming...✓ 1935 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                               0.45 kB │ gzip:  0.29 kB
+dist/assets/loyalty-loop-logo-viiVMMkb.png  137.28 kB
+dist/assets/index-B3F29aYm.css               44.45 kB │ gzip:  8.31 kB
+dist/assets/index-Bx9OUXec.js               234.36 kB │ gzip: 75.34 kB
+
+✓ built in 923ms

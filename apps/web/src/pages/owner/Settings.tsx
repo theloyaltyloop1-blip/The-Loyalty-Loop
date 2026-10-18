@@ -280,7 +280,7 @@ function ProfileTab() {
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
 
-  React.useEffect(() => {
+  const resetFromBusiness = React.useEffectEvent(() => {
     if (!business) return
     setForm({
       name: business.name,
@@ -293,7 +293,8 @@ function ProfileTab() {
       instagram: business.instagram ?? '',
     })
     setHours(business.opening_hours ?? {})
-  }, [business?.id])
+  })
+  React.useEffect(() => resetFromBusiness(), [business?.id])
 
   if (!business) return null
 
@@ -466,7 +467,7 @@ function LoyaltyTab() {
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
 
-  React.useEffect(() => {
+  const resetLoyaltyFromBusiness = React.useEffectEvent(() => {
     if (!business) return
     setLoyaltyType(business.loyalty_type)
     setBrandColor(business.brand_color)
@@ -474,7 +475,8 @@ function LoyaltyTab() {
     setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
     fetchRewardCatalog(business.id).then(setCatalog)
-  }, [business?.id])
+  })
+  React.useEffect(() => resetLoyaltyFromBusiness(), [business?.id])
 
   if (!business) return null
 
@@ -729,13 +731,14 @@ function WinbackTab() {
   const [result, setResult] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
+  const businessId = business?.id
   const loadLog = React.useCallback(() => {
-    if (!business) return
+    if (!businessId) return
     setLoadingLog(true)
-    fetchWinbackLog(business.id)
+    fetchWinbackLog(businessId)
       .then(setLog)
       .finally(() => setLoadingLog(false))
-  }, [business?.id])
+  }, [businessId])
 
   React.useEffect(() => {
     loadLog()
@@ -1123,10 +1126,11 @@ function StaffTab() {
   const [staff, setStaff] = React.useState<StaffMember[]>([])
   const [loadingStaff, setLoadingStaff] = React.useState(true)
 
+  const businessId = business?.id
   React.useEffect(() => {
-    if (!business) return
-    fetchStaffMembers(business.id).then(setStaff).finally(() => setLoadingStaff(false))
-  }, [business?.id])
+    if (!businessId) return
+    fetchStaffMembers(businessId).then(setStaff).finally(() => setLoadingStaff(false))
+  }, [businessId])
 
   if (!business) return null
 
