@@ -65,6 +65,11 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });
     }
 
+    const { data: withinLimit, error: limitErr } = await authed.rpc("check_daily_limit", { _action: "ai_coach_chat", _limit: 60 });
+    if (limitErr || !withinLimit) {
+      return new Response(JSON.stringify({ error: "daily limit reached" }), { status: 429, headers: jsonHeaders });
+    }
+
     const systemPrompt = `You are the Business Coach inside The Loyalty Loop, a neighbourhood loyalty-card app. You're helping the owner of "${business.name}" (a ${business.category ?? "local"} shop running a ${business.loyalty_type} loyalty program). Give specific, practical, small-business marketing/retention advice grounded in the stats provided below when relevant. Keep answers concise (a few sentences to a short paragraph, not an essay), conversational, no markdown headers. If you don't have enough data to answer precisely, say so and suggest what would help.\n\nCurrent stats:\n${JSON.stringify(stats ?? {}, null, 2)}`;
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {

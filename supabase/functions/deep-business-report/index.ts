@@ -95,6 +95,11 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });
     }
 
+    const { data: withinLimit, error: limitErr } = await authed.rpc("check_daily_limit", { _action: "ai_deep_report", _limit: 5 });
+    if (limitErr || !withinLimit) {
+      return new Response(JSON.stringify({ error: "daily limit reached" }), { status: 429, headers: jsonHeaders });
+    }
+
     const locationBits = [business.address, business.postcode].filter(Boolean).join(", ");
     const searchQueries = [
       `${business.name} ${locationBits} google reviews`,

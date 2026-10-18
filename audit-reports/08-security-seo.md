@@ -33,6 +33,7 @@
 | `delete-my-account` | Skipped `can_delete_current_account()` guard; a direct call deleted shop owners (cascade risk) | Server now calls the RPC as the user and refuses if not allowed |
 
 | `send-winback-emails` | Shop name, customer `first_name` and `brand_color` were put into the email HTML without escaping, so a customer could inject HTML into marketing emails sent from the platform | Escape HTML; `brand_color` must be a hex value |
+| `business-coach-chat`, `deep-business-report` | No rate limit on paid AI/scrape calls | `check_daily_limit` per user: 60 chats/day, 5 reports/day → HTTP 429 |
 
 (Syntax-checked with the TypeScript compiler: 0 diagnostics. A full `deno check` was blocked because the sandbox couldn't resolve esm.sh imports.)
 
@@ -58,8 +59,7 @@ The remaining a11y failures are brand colours: `#C9622E` links on `#E8ECE2` have
 
 ## Open items / follow-ups
 - Set `VITE_SITE_URL` in prod env; default `https://theloyaltyloop.app` is a placeholder.
-- Apply migration 0026 and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you send-winback-emails`).
-- `business-coach-chat` / `deep-business-report` (AI) have no per-owner rate limit, so cost abuse is limited to authenticated owners. Recommend reusing `check_daily_limit`.
+- Apply migration 0026 and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you send-winback-emails business-coach-chat deep-business-report`).
 - Edge functions use `Access-Control-Allow-Origin: *`; recommend restricting to the prod origin (risk low since auth is bearer-token).
 - CSP allows `'unsafe-inline'` styles (Tailwind/React inline styles). Verify hCaptcha/Maps load in a preview deploy; adjust CSP if Maps embed hosts differ.
 - If not deploying on Vercel, port headers to the host (Netlify `_headers`, nginx, etc.).
