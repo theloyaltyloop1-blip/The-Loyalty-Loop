@@ -25,6 +25,13 @@
 - `auth_leaked_password_protection` (WARN): **enable in Dashboard → Auth → Password security** (manual).
 - Storage: `owner_verification_docs` is private, with owner-folder/admin read policies. Public buckets (logos/covers/gallery) only allow image MIME types up to 5 MB, and owners can only write into their own business folder. OK.
 
+### CRITICAL – membership balance forgery (fixed in migration, not yet applied)
+- `memberships_insert_self` only checks `user_id = auth.uid()`, and `authenticated` has INSERT on `stamp_count`, `points_balance`, `visit_count`, `reward_progress_pence`, `current_tier`. The `enforce_membership_update_scope` trigger only covers UPDATE.
+- **Proof** (transaction forced to roll back, prod unchanged): as a customer, `insert into memberships(user_id,business_id,stamp_count,points_balance,visit_count) values (me, shop, 999, 99999, 500)` → **succeeded, stamp_count=999 points=99999**.
+- **Fix:** `supabase/migrations/0027_membership_insert_balance_guard.sql`, a BEFORE INSERT trigger that resets every balance/progress column when `current_user` is `authenticated`/`anon` (direct API). SECURITY DEFINER RPCs and service-role paths are unaffected. The app's own insert (`upsert {user_id,business_id}`) is unaffected.
+- **Re-test with fix** (rolled back): same insert → `stamp_count=0 points=0 visits=0`. Verified afterwards that no trigger/function persisted.
+- Other INSERT/UPDATE policies were reviewed (rewards, transactions, notifications, reviews, review_replies, support_requests, reward_catalog, etc.). All are scoped to self, owner, staff permission, or admin. Minor: `reviews_update_author_or_admin` lets authors edit any column of their own review.
+
 ### Edge function bugs fixed
 | Function | Issue | Fix |
 |---|---|---|
@@ -59,7 +66,7 @@ The remaining a11y failures are brand colours: `#C9622E` links on `#E8ECE2` have
 
 ## Open items / follow-ups
 - Set `VITE_SITE_URL` in prod env; default `https://theloyaltyloop.app` is a placeholder.
-- Apply migration 0026 and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you send-winback-emails business-coach-chat deep-business-report`).
+- **Apply migrations 0026 + 0027 ASAP (0027 is critical)** and deploy edited edge functions (`supabase db push`, `supabase functions deploy delete-my-account send-visit-thank-you send-winback-emails business-coach-chat deep-business-report`).
 - Edge functions use `Access-Control-Allow-Origin: *`; recommend restricting to the prod origin (risk low since auth is bearer-token).
 - CSP allows `'unsafe-inline'` styles (Tailwind/React inline styles). Verify hCaptcha/Maps load in a preview deploy; adjust CSP if Maps embed hosts differ.
 - If not deploying on Vercel, port headers to the host (Netlify `_headers`, nginx, etc.).
