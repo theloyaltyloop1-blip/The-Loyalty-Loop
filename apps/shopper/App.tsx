@@ -20,7 +20,8 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { HomeCollection, homeStyles } from './src/components/HomeCollection'
+import { CategoryCircles, HomeCollection, homeStyles } from './src/components/HomeCollection'
+import { categoryCounts } from './src/home-rails'
 import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
@@ -1546,38 +1547,6 @@ function ShopDetail({
 // Home tab
 // ---------------------------------------------------------------------
 
-function CategoryPills({
-  businesses,
-  selected,
-  onSelect,
-}: {
-  businesses: Business[]
-  selected: string | null
-  onSelect: (category: string | null) => void
-}) {
-  const counts = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const b of businesses) {
-      const key = b.category || 'Other'
-      map.set(key, (map.get(key) || 0) + 1)
-    }
-    return [...map.entries()]
-  }, [businesses])
-
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
-      <Pressable onPress={() => onSelect(null)} style={[styles.pill, selected === null && styles.pillActive]}>
-        <Text style={[styles.pillText, selected === null && styles.pillTextActive]}>All categories</Text>
-      </Pressable>
-      {counts.map(([category, count]) => (
-        <Pressable key={category} onPress={() => onSelect(category)} style={[styles.pill, selected === category && styles.pillActive]}>
-          <Text style={[styles.pillText, selected === category && styles.pillTextActive]}>{category} · {count}</Text>
-        </Pressable>
-      ))}
-    </ScrollView>
-  )
-}
-
 function AnnouncementCard({ announcement }: { announcement: Announcement }) {
   return (
     <View style={styles.announcementCard}>
@@ -1640,8 +1609,8 @@ function HomeTab({ businesses, memberships, catalog, announcements, loading, onS
   return <>
     <Text style={homeStyles.title}>Make a{ '\n' }local stop.</Text>
     <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
-    <CategoryPills businesses={businesses} selected={category} onSelect={setCategory} />
-    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || !!query.trim()} onSelect={onSelect} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
+    <CategoryCircles categories={categoryCounts(businesses)} selected={category} onSelect={setCategory} />
+    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || !!query.trim()} onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
     {announcements.length > 0 && <>
       <Text style={homeStyles.sectionHeading}>From your local shops</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.announcementRow}>

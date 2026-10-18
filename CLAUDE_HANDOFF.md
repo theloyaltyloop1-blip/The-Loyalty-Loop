@@ -2519,6 +2519,13 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Rollback if needed: `eas update:roll-back-to-embedded` or republish the previous group per platform.
 - Next: owner device checks of the wallet (offline CRUD, physical scanner incl. Nectar), a £ off redeem on a real shop, and a real shop deletion with images. Claude watches Sentry for new shopper and business errors.
 
+## Shopper home: delivery-app style rows (2026-10-18) - Claude, local only
+- Owner asked for the home screen to mix the current look with Uber Eats/Deliveroo style swipeable rows.
+- New order: title and search; round category buttons (swipe, tap again to clear); hero carousel (most-visited or closest shop, then Trending picks, up to 5 slides, with dots); "Your cards" swipe row (closest to a reward first, "Reward ready" pill); "Near you" (or "Find your next favourite" with no location); "Trending on the Loop"; "New on the Loop" (only with 6+ shops); a row for each of the top 4 categories with 2+ shops, each with "See all", which sets that category; "All shops" behind a Browse button. Search or a category shows one plain list nearest first. Announcements and the Ask a shop card are unchanged below.
+- Files: apps/shopper/src/home-rails.ts (pure row logic) + home-rails.test.cjs; src/components/HomeCollection.tsx rewritten; App.tsx swaps CategoryPills (removed) for CategoryCircles.
+- Checks: shopper tsc PASS; node tests 12/12 PASS (home-rails + home-progress); local Android expo export bundles. NOT seen on a device: no web preview exists for the shopper app.
+- Not shipped, not committed. Next: owner looks at it on a phone (OTA on the owner's go-ahead), then tweaks.
+
 ## Copy-ready prompt for Claude Code
 
 Claude: review the deletion-client and wallet-format follow-up in apps/web/src/lib/businesses.ts, apps/retailer/App.tsx, apps/shopper/src/external-card-barcode.ts and components/ExternalCards.tsx. Check docs/CARD_WALLET_FORMAT_EVIDENCE.md, especially Nectar GS1/payload limits. Web build, retailer/shopper TypeScript and 8 focused tests passed; device/scanner acceptance remains unrun. Owner approval is still required: on tgukdabfvvoywawmzbdo first confirm authenticated UPDATE on public.profiles, then rollback-only dry-run and apply supabase/migrations/20261017230331_shopper_external_cards.sql, verify hosted RLS/cap/cascade, then deploy export-platform-backup. No production action has run in this follow-up. Do not run eas update, eas build, commit or push without owner approval.
