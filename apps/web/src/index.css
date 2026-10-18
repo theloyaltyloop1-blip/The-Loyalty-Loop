@@ -1,9 +1,8 @@
 @import 'tailwindcss';
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
 
 @theme {
-  --font-display: 'Baloo 2', sans-serif;
-  --font-body: 'Quicksand', sans-serif;
+  --font-display: 'Baloo 2 Variable', 'Baloo 2', sans-serif;
+  --font-body: 'Quicksand Variable', 'Quicksand', sans-serif;
 
   --color-background: #f9ede2;
   --color-foreground: #40281c;

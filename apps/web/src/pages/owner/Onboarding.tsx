@@ -4,7 +4,7 @@ import { Check, Store, MapPin, Palette, ArrowRight, ArrowLeft } from 'lucide-rea
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { createBusiness, type Business } from '@/lib/businesses'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import { BrandLogo } from '@/components/brand-logo'
 
 const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
@@ -81,7 +81,7 @@ export function OwnerOnboarding() {
     <div className="min-h-screen bg-[#F7ECDC] flex items-center justify-center p-6">
       <div className="w-full max-w-xl">
         <div className="flex items-center gap-2 justify-center mb-8">
-          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
+          <BrandLogo priority className="h-8 w-8 object-contain rounded-full" />
           <span className="font-display font-extrabold text-lg text-[#1a1a1a]">The Loyalty Loop</span>
         </div>
 

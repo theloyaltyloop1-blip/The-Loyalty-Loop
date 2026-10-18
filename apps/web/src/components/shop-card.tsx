@@ -8,6 +8,10 @@ function ShopLogo({ business, size = 56 }: { business: Business; size?: number }
       <img
         src={business.logo_url}
         alt=""
+        width={size}
+        height={size}
+        loading="lazy"
+        decoding="async"
         className="rounded-xl border border-black/10 object-cover shrink-0"
         style={{ width: size, height: size }}
       />

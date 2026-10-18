@@ -233,7 +233,7 @@ export function ShopDetail() {
           style={{ color: business.brand_color }}
         >
           {business.logo_url ? (
-            <img src={business.logo_url} alt="" className="h-full w-full object-cover" />
+            <img src={business.logo_url} alt="" width={64} height={64} fetchPriority="high" decoding="async" className="h-full w-full object-cover" />
           ) : (
             business.name.charAt(0).toUpperCase()
           )}
@@ -412,7 +412,7 @@ export function ShopDetail() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {photos.map((p) => (
               <div key={p.id} className="rounded-xl overflow-hidden aspect-square">
-                <img src={p.url} alt="" className="h-full w-full object-cover" />
+                <img src={p.url} alt="" width={300} height={300} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </div>
             ))}
           </div>

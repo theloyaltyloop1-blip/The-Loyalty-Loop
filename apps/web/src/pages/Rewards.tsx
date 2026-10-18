@@ -15,7 +15,7 @@ function RewardCard({ reward }: { reward: CustomerReward }) {
     <article className={'rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden ' + (unavailable ? 'opacity-65' : '')}>
       <div className="p-6 flex gap-5 items-start">
         <div className="h-14 w-14 rounded-2xl flex shrink-0 items-center justify-center text-white" style={{ backgroundColor: reward.business?.brand_color ?? '#E8703B' }}>
-          {reward.business?.logo_url ? <img src={reward.business.logo_url} alt="" className="h-full w-full rounded-2xl object-cover" /> : <Gift className="h-6 w-6" />}
+          {reward.business?.logo_url ? <img src={reward.business.logo_url} alt="" width={56} height={56} loading="lazy" decoding="async" className="h-full w-full rounded-2xl object-cover" /> : <Gift className="h-6 w-6" />}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/45">{reward.business?.name ?? 'Local shop'}</p>

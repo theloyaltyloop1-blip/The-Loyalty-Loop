@@ -1,0 +1,254 @@
+[
+  {
+    "url": "http://localhost:4173/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost--2026_10_18_12_09_22.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost--2026_10_18_12_09_22.report.json",
+    "summary": {
+      "performance": 0.96,
+      "accessibility": 0.92,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost--2026_10_18_12_09_35.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost--2026_10_18_12_09_35.report.json",
+    "summary": {
+      "performance": 0.96,
+      "accessibility": 0.92,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/login",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-login-2026_10_18_12_09_58.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-login-2026_10_18_12_09_58.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.85,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/login",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-login-2026_10_18_12_10_21.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-login-2026_10_18_12_10_21.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.85,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/signup",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-signup-2026_10_18_12_10_44.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-signup-2026_10_18_12_10_44.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.93,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/signup",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-signup-2026_10_18_12_10_55.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-signup-2026_10_18_12_10_55.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.93,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/dashboard",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard-2026_10_18_12_11_06.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard-2026_10_18_12_11_06.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.85,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/dashboard",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard-2026_10_18_12_11_18.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard-2026_10_18_12_11_18.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.85,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/dashboard/shop/demo",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard_shop_demo-2026_10_18_12_11_41.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard_shop_demo-2026_10_18_12_11_41.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.9,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/dashboard/shop/demo",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard_shop_demo-2026_10_18_12_12_03.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard_shop_demo-2026_10_18_12_12_03.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.9,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/owner",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-owner-2026_10_18_12_12_25.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-owner-2026_10_18_12_12_25.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.9,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/owner",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-owner-2026_10_18_12_12_36.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-owner-2026_10_18_12_12_36.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.9,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/terms",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-terms-2026_10_18_12_12_47.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-terms-2026_10_18_12_12_47.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.91,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/terms",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-terms-2026_10_18_12_13_10.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-terms-2026_10_18_12_13_10.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.91,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost--2026_10_18_12_09_47.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost--2026_10_18_12_09_47.report.json",
+    "summary": {
+      "performance": 0.96,
+      "accessibility": 0.92,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/login",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-login-2026_10_18_12_10_10.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-login-2026_10_18_12_10_10.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.85,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/signup",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-signup-2026_10_18_12_10_32.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-signup-2026_10_18_12_10_32.report.json",
+    "summary": {
+      "performance": 0.95,
+      "accessibility": 0.93,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/dashboard",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard-2026_10_18_12_11_29.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard-2026_10_18_12_11_29.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.85,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4173/dashboard/shop/demo",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard_shop_demo-2026_10_18_12_11_52.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-dashboard_shop_demo-2026_10_18_12_11_52.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.9,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/owner",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-owner-2026_10_18_12_12_14.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-owner-2026_10_18_12_12_14.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.9,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/terms",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-terms-2026_10_18_12_12_59.report.html",
+    "jsonPath": "/home/user/The-Loyalty-Loop/audit-reports/lhci-final/localhost-terms-2026_10_18_12_12_59.report.json",
+    "summary": {
+      "performance": 0.94,
+      "accessibility": 0.91,
+      "best-practices": 1,
+      "seo": 0.82
+    }
+  }
+]

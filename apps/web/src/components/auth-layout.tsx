@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import { BrandLogo } from '@/components/brand-logo'
 
 export function AuthLayout({ title, children }: { title: string; children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -8,7 +8,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
     <div className="min-h-screen flex items-center justify-center bg-[#EAEAE5] p-4">
       <div className="w-full max-w-4xl rounded-md border border-[#d8d8d0] bg-white shadow-sm grid md:grid-cols-[420px_1fr] overflow-hidden">
         <div className="bg-[#F8E4C6] flex items-center justify-center p-10">
-          <img src={loyaltyLoopLogo} alt="The Loyalty Loop" className="w-full max-w-xs object-contain" />
+          <BrandLogo variant="full" priority alt="The Loyalty Loop" className="w-full max-w-xs h-auto object-contain" />
         </div>
 
         <div className="bg-[#E8ECE2] p-8 md:p-12 flex flex-col relative">

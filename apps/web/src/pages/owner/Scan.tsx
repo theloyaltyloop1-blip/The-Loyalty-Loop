@@ -103,7 +103,7 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
 
   return (
     <div className="rounded-xl overflow-hidden bg-black relative mb-4 aspect-square max-w-xs mx-auto">
-      <video ref={videoRef} muted playsInline className="w-full h-full object-cover" />
+      <video ref={videoRef} muted playsInline width={640} height={480} className="w-full h-full object-cover" />
       {!running && !error && (
         <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black/40">
           Starting camera…

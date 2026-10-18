@@ -3,7 +3,7 @@ import { NavLink, Link, Navigate } from 'react-router-dom'
 import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
+import { BrandLogo } from '@/components/brand-logo'
 
 const OWNER_NAV_ITEMS = [
   { label: 'Analytics', to: '/owner', icon: LineChart, end: true },
@@ -92,7 +92,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex bg-[#F7ECDC]">
       <aside className="w-64 shrink-0 border-r border-black/5 flex flex-col p-5">
         <div className="flex items-center gap-2 px-2 mb-6">
-          <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
+          <BrandLogo priority className="h-8 w-8 object-contain rounded-full" />
           <span className="font-display font-extrabold text-lg text-[#1a1a1a]">The Loyalty Loop</span>
         </div>
 

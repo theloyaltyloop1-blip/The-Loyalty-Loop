@@ -1,33 +1,34 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/lib/auth-context'
 import { OwnerProvider } from '@/lib/owner-context'
 import { Landing } from '@/pages/Landing'
-import { Home } from '@/pages/Home'
-import { ShopDetail } from '@/pages/ShopDetail'
-import { RewardsPage } from '@/pages/Rewards'
-import { NewsPage } from '@/pages/News'
-import { FavouritesPage } from '@/pages/Favourites'
-import { ProfilePage } from '@/pages/Profile'
-import { OwnerAnalytics } from '@/pages/owner/Analytics'
-import { OwnerOnboarding } from '@/pages/owner/Onboarding'
-import { OwnerScan } from '@/pages/owner/Scan'
-import { OwnerSettings } from '@/pages/owner/Settings'
-import { OwnerAnnouncements } from '@/pages/owner/Announcements'
-import { OwnerReviews } from '@/pages/owner/Reviews'
-import { OwnerSupport } from '@/pages/owner/Support'
-import { AccessPanel } from '@/pages/AccessPanel'
+const Home = lazy(() => import('@/pages/Home').then((m) => ({ default: m.Home })))
+const ShopDetail = lazy(() => import('@/pages/ShopDetail').then((m) => ({ default: m.ShopDetail })))
+const RewardsPage = lazy(() => import('@/pages/Rewards').then((m) => ({ default: m.RewardsPage })))
+const NewsPage = lazy(() => import('@/pages/News').then((m) => ({ default: m.NewsPage })))
+const FavouritesPage = lazy(() => import('@/pages/Favourites').then((m) => ({ default: m.FavouritesPage })))
+const ProfilePage = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.ProfilePage })))
+const OwnerAnalytics = lazy(() => import('@/pages/owner/Analytics').then((m) => ({ default: m.OwnerAnalytics })))
+const OwnerOnboarding = lazy(() => import('@/pages/owner/Onboarding').then((m) => ({ default: m.OwnerOnboarding })))
+const OwnerScan = lazy(() => import('@/pages/owner/Scan').then((m) => ({ default: m.OwnerScan })))
+const OwnerSettings = lazy(() => import('@/pages/owner/Settings').then((m) => ({ default: m.OwnerSettings })))
+const OwnerAnnouncements = lazy(() => import('@/pages/owner/Announcements').then((m) => ({ default: m.OwnerAnnouncements })))
+const OwnerReviews = lazy(() => import('@/pages/owner/Reviews').then((m) => ({ default: m.OwnerReviews })))
+const OwnerSupport = lazy(() => import('@/pages/owner/Support').then((m) => ({ default: m.OwnerSupport })))
+const AccessPanel = lazy(() => import('@/pages/AccessPanel').then((m) => ({ default: m.AccessPanel })))
 import { Login } from '@/pages/Login'
 import { Signup } from '@/pages/Signup'
-import { ForgotPassword } from '@/pages/ForgotPassword'
-import { ResetPassword } from '@/pages/ResetPassword'
-import { ActivityPage } from '@/pages/Activity'
-import { InboxPage } from '@/pages/Inbox'
-import { LegalPage } from '@/pages/Legal'
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword').then((m) => ({ default: m.ForgotPassword })))
+const ResetPassword = lazy(() => import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPassword })))
+const ActivityPage = lazy(() => import('@/pages/Activity').then((m) => ({ default: m.ActivityPage })))
+const InboxPage = lazy(() => import('@/pages/Inbox').then((m) => ({ default: m.InboxPage })))
+const LegalPage = lazy(() => import('@/pages/Legal').then((m) => ({ default: m.LegalPage })))
 import { CookieConsent } from '@/components/cookie-consent'
-import { OwnerTools } from '@/pages/owner/Tools'
-import { OwnerNotifications } from '@/pages/owner/Notifications'
-import { BrandWorkspace } from '@/pages/BrandWorkspace'
+const OwnerTools = lazy(() => import('@/pages/owner/Tools').then((m) => ({ default: m.OwnerTools })))
+const OwnerNotifications = lazy(() => import('@/pages/owner/Notifications').then((m) => ({ default: m.OwnerNotifications })))
+const BrandWorkspace = lazy(() => import('@/pages/BrandWorkspace').then((m) => ({ default: m.BrandWorkspace })))
 
 const queryClient = new QueryClient()
 
@@ -37,6 +38,7 @@ function App() {
       <AuthProvider>
         <OwnerProvider>
           <BrowserRouter>
+            <Suspense fallback={<div className="min-h-screen" />}>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/dashboard" element={<Home />} />
@@ -67,6 +69,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
+            </Suspense>
             <CookieConsent />
           </BrowserRouter>
         </OwnerProvider>

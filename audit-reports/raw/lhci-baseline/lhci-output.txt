@@ -1,0 +1,95 @@
+✅  .lighthouseci/ directory writable
+✅  Configuration file found
+✅  Chrome installation found
+⚠️   GitHub token not set
+Healthcheck passed!
+
+Started a web server with "npx vite preview --port 4173 --strictPort"...
+Running Lighthouse 3 time(s) on http://localhost:4173/
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/login
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/signup
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/dashboard
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/dashboard/shop/demo
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/owner
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/terms
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Done running Lighthouse!
+
+Checking assertions against 7 URL(s), 21 total run(s)
+
+3 result(s) for [1mhttp://localhost:4173/login[0m :
+
+  [31m✘[0m  [1mcumulative-layout-shift[0m failure for [1mmaxNumericValue[0m assertion
+       Cumulative Layout Shift
+       https://web.dev/articles/cls
+
+        expected: <=[32m0.1[0m
+           found: [31m0.18746238336467885[0m
+      [2mall values: 0.18746238336467885, 0.18746238336467885, 0.18746238336467885[0m
+
+
+  ⚠️  [1mcategories[0m.performance warning for [1mminScore[0m assertion
+        expected: >=[32m0.9[0m
+           found: [31m0.86[0m
+      [2mall values: 0.86, 0.86, 0.86[0m
+
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2704.8174[0m
+      [2mall values: 2752.846, 2706.996, 2704.8174[0m
+
+3 result(s) for [1mhttp://localhost:4173/signup[0m :
+
+  [31m✘[0m  [1mcumulative-layout-shift[0m failure for [1mmaxNumericValue[0m assertion
+       Cumulative Layout Shift
+       https://web.dev/articles/cls
+
+        expected: <=[32m0.1[0m
+           found: [31m0.20969930056379935[0m
+      [2mall values: 0.20969930056379935, 0.20969930056379935, 0.20969930056379935[0m
+
+
+  ⚠️  [1mcategories[0m.performance warning for [1mminScore[0m assertion
+        expected: >=[32m0.9[0m
+           found: [31m0.85[0m
+      [2mall values: 0.85, 0.85, 0.85[0m
+
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2704.5159000000003[0m
+      [2mall values: 2704.5159000000003, 2757.73895, 2705.9118[0m
+
+Assertion failed. Exiting with status code 1.
+
+Dumping 21 reports to disk at /home/user/The-Loyalty-Loop/audit-reports/lhci-baseline...
+Done writing reports to disk.
+
+assert command failed. Exiting with status code 1.

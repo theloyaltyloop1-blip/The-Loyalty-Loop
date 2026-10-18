@@ -233,7 +233,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {photos.map((p) => (
             <div key={p.id} className="relative rounded-xl overflow-hidden aspect-square group">
-              <img src={p.url} alt="" className="h-full w-full object-cover" />
+              <img src={p.url} alt="" width={300} height={300} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               <button
                 onClick={() => handleDelete(p.id)}
                 className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -323,7 +323,7 @@ function ProfileTab() {
           >
             <span className="absolute -bottom-5 left-5 h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow overflow-hidden">
               {business.logo_url ? (
-                <img src={business.logo_url} alt="" className="h-full w-full object-cover" />
+                <img src={business.logo_url} alt="" width={48} height={48} decoding="async" className="h-full w-full object-cover" />
               ) : (
                 <Store className="h-5 w-5" style={{ color: business.brand_color }} />
               )}

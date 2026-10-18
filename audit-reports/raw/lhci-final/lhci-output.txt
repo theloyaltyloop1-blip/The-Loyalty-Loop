@@ -1,0 +1,105 @@
+✅  .lighthouseci/ directory writable
+✅  Configuration file found
+✅  Chrome installation found
+⚠️   GitHub token not set
+Healthcheck passed!
+
+Started a web server with "npx vite preview --port 4173 --strictPort"...
+Running Lighthouse 3 time(s) on http://localhost:4173/
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/login
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/signup
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/dashboard
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/dashboard/shop/demo
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/owner
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Running Lighthouse 3 time(s) on http://localhost:4173/terms
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Done running Lighthouse!
+
+Checking assertions against 7 URL(s), 21 total run(s)
+
+1 result(s) for [1mhttp://localhost:4173/login[0m :
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2563.88235[0m
+      [2mall values: 2569.0822000000003, 2566.9538, 2563.88235[0m
+
+1 result(s) for [1mhttp://localhost:4173/signup[0m :
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2563.6695[0m
+      [2mall values: 2572.5636, 2575.2645, 2563.6695[0m
+
+1 result(s) for [1mhttp://localhost:4173/dashboard[0m :
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2617.9515499999998[0m
+      [2mall values: 2662.8086000000003, 2617.9515499999998, 2627.6725[0m
+
+1 result(s) for [1mhttp://localhost:4173/dashboard/shop/demo[0m :
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2615.2795[0m
+      [2mall values: 2623.34965, 2620.8329, 2615.2795[0m
+
+1 result(s) for [1mhttp://localhost:4173/owner[0m :
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2618.0827[0m
+      [2mall values: 2658.5512, 2618.0827, 2629.94805[0m
+
+1 result(s) for [1mhttp://localhost:4173/terms[0m :
+
+  ⚠️  [1mlargest-contentful-paint[0m warning for [1mmaxNumericValue[0m assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+
+        expected: <=[32m2500[0m
+           found: [31m2618.5248[0m
+      [2mall values: 2633.8129, 2622.4256, 2618.5248[0m
+
+All results processed!
+
+Dumping 21 reports to disk at /home/user/The-Loyalty-Loop/audit-reports/lhci-final...
+Done writing reports to disk.
+
+Done running autorun.
