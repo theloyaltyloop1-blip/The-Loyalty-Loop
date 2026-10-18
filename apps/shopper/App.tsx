@@ -29,6 +29,7 @@ import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
 import { shopMoney } from './src/money'
 import { useCountry } from './src/use-country'
+import { ratingLabel, ratingStats } from './src/ratings'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -316,6 +317,8 @@ type Business = {
   id: string
   name: string
   country_code?: string | null
+  rating_avg?: number | null
+  rating_count?: number | null
   category?: string | null
   description?: string | null
   address?: string | null
@@ -1173,6 +1176,8 @@ function ShopDetail({
   }, [business.id, userId])
 
   const myReview = reviews.find((review) => review.user_id === userId)
+  // Worked out from the reviews loaded on this page, so it updates as soon as someone posts.
+  const pageRating = ratingLabel(ratingStats(reviews.map((review) => ({ business_id: business.id, rating: review.rating }))).get(business.id) ?? {})
 
   async function saveReview() {
     const cleaned = reviewBody.trim()
@@ -1364,6 +1369,12 @@ function ShopDetail({
           {business.category || 'Local business'}
           {business.address ? ` · ${formatAddress(business.address)}` : ''}
         </Text>
+        {pageRating ? (
+          <Text style={[styles.muted, { color: foreground, fontWeight: '700', marginTop: 4 }]}>
+            {pageRating}{' '}
+            <Text style={{ fontWeight: '400' }}>{reviews.length === 1 ? 'review' : 'reviews'}</Text>
+          </Text>
+        ) : null}
         {business.features?.length ? (
           <View style={featureStyles.row}>
             {business.features.map(id => (
@@ -1606,7 +1617,7 @@ function TrendingCard({ business, onPress }: { business: Business; onPress: () =
       </View>
       <View style={styles.trendingContent}>
         <Text style={styles.trendingName} numberOfLines={1}>{business.name}</Text>
-        <Text style={styles.muted} numberOfLines={1}>{business.category || 'Local business'}</Text>
+        <Text style={styles.muted} numberOfLines={1}>{[ratingLabel(business), business.category || 'Local business'].filter(Boolean).join(' · ')}</Text>
       </View>
     </Pressable>
   )
@@ -1624,7 +1635,7 @@ function NearbyRow({ business, onPress }: { business: Business; onPress: () => v
       )}
       <View style={{ flex: 1 }}>
         <Text style={styles.shopName} numberOfLines={1}>{business.name}</Text>
-        <Text style={styles.nearbyCategory} numberOfLines={1}>{business.category || 'Local business'}</Text>
+        <Text style={styles.nearbyCategory} numberOfLines={1}>{[ratingLabel(business), business.category || 'Local business'].filter(Boolean).join(' · ')}</Text>
         {business.address ? <Text style={styles.nearbyAddress} numberOfLines={1}>{formatAddress(business.address)}</Text> : null}
       </View>
       <ArrowRightIcon />
@@ -2282,7 +2293,10 @@ function AppHome({ session }: { session: Session }) {
       if (favs.error) throw favs.error
       setPlatformNotices(notices.error ? [] : ((notices.data || []) as PlatformNotice[]))
       setHomeCatalog(catalogRows.error ? [] : (catalogRows.data || []))
-      setBusinesses(shops.data || [])
+      // Star summaries for every shop, so people can see them before joining.
+      const ratings = await supabase.from('reviews').select('business_id,rating')
+      const stats = ratingStats(ratings.error ? [] : ratings.data || [])
+      setBusinesses((shops.data || []).map((shop: Business) => ({ ...shop, ...stats.get(shop.id) })))
       setMemberships(memberRows.data || [])
       setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business })))
       // Only shops this customer has actually joined (and hasn't opted out of
