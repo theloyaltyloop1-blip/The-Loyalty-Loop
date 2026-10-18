@@ -6,7 +6,7 @@ const routes=['/','/dashboard','/dashboard/shop/b1','/dashboard/rewards','/dashb
 const widths=(process.env.W||'320,390,768,1280,1920').split(',').map(Number);
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
 const res=[];
-for(const w of widths){const ctx=await b.newContext({viewport:{width:w,height:900}});if(process.env.MOCK)await install(ctx);
+for(const w of widths){const ctx=await b.newContext({viewport:{width:w,height:900}});if(process.env.MOCK)await install(ctx);if(process.env.ZOOM)await ctx.addInitScript(z=>document.addEventListener('DOMContentLoaded',()=>{document.documentElement.style.fontSize=z}),process.env.ZOOM);
 for(const r of routes){const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message.slice(0,120)));
 try{await p.goto('http://localhost:4174'+r,{waitUntil:'networkidle',timeout:15000});}catch(e){}
 await p.waitForTimeout(400);
