@@ -4,6 +4,7 @@ import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Tras
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
+import { CATEGORIES, categoryCopy, categoryOptions } from '@/lib/categories'
 import {
   updateBusiness,
   uploadBusinessImage,
@@ -28,7 +29,6 @@ import {
   type DayHours,
 } from '@/lib/businesses'
 
-const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
 
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
 
@@ -368,7 +368,7 @@ function ProfileTab() {
             value={form.category ?? ''}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           >
-            {CATEGORIES.map((c) => (
+            {categoryOptions(business.category).map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -520,7 +520,7 @@ function LoyaltyTab() {
         </p>
         <input
           className={inputClass}
-          placeholder="e.g. Free coffee just for joining"
+          placeholder={`e.g. ${categoryCopy(business?.category).signupReward}`}
           value={signupReward}
           onChange={(e) => setSignupReward(e.target.value)}
         />
@@ -678,7 +678,7 @@ function LoyaltyTab() {
           <Field label="Title">
             <input
               className={inputClass}
-              placeholder="Free coffee"
+              placeholder={categoryCopy(business?.category).rewardTitle}
               value={newReward.title}
               onChange={(e) => setNewReward({ ...newReward, title: e.target.value })}
             />
@@ -686,7 +686,7 @@ function LoyaltyTab() {
           <Field label="Description">
             <input
               className={inputClass}
-              placeholder="Any size, any time"
+              placeholder={categoryCopy(business?.category).rewardDescription}
               value={newReward.description}
               onChange={(e) => setNewReward({ ...newReward, description: e.target.value })}
             />

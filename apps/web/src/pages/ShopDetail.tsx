@@ -1,11 +1,12 @@
 import * as React from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Zap, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ReviewsSection } from '@/components/reviews-section'
+import { categoryCopy } from '@/lib/categories'
 import {
   fetchBusinessBySlug,
   fetchMembership,
@@ -21,12 +22,6 @@ import {
   type RewardCatalogItem,
   type BusinessPhoto,
 } from '@/lib/businesses'
-
-const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Café: Coffee,
-  Restaurant: Coffee,
-  Barber: Scissors,
-}
 
 const UNIT_LABEL: Record<string, string> = {
   stamp_card: 'stamp',
@@ -156,7 +151,7 @@ export function ShopDetail() {
   if (!session) return <Navigate to="/login" replace />
   if (!business) return <Navigate to="/dashboard" replace />
 
-  const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
+  const StampIcon = business.category && business.category !== 'Other' ? categoryCopy(business.category).icon : Star
   const isOwner = session.user.id === business.owner_id
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
   const rewardTitle = catalog[0]?.title ?? 'Free reward'

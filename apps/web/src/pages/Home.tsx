@@ -1,21 +1,16 @@
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Search, Sparkles, Coffee, Scissors, UtensilsCrossed, Store } from 'lucide-react'
+import { Search, Sparkles } from 'lucide-react'
+import { categoryCopy } from '@/lib/categories'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ShopCard } from '@/components/shop-card'
 import { fetchBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
 
-const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Café: Coffee,
-  Restaurant: UtensilsCrossed,
-  Barber: Scissors,
-}
-
 function TrendingCard({ business }: { business: Business }) {
   const navigate = useNavigate()
-  const Icon = CATEGORY_ICON[business.category ?? ''] ?? Store
+  const Icon = categoryCopy(business.category).icon
 
   return (
     <button
@@ -40,6 +35,7 @@ export function Home() {
   const { session, loading, rolesLoading, primaryRole } = useAuth()
   const [firstName, setFirstName] = React.useState<string | null>(null)
   const [category, setCategory] = React.useState<string>('All')
+  const [query, setQuery] = React.useState('')
   const [businesses, setBusinesses] = React.useState<Business[]>([])
   const [memberships, setMemberships] = React.useState<Membership[]>([])
   const [fetching, setFetching] = React.useState(true)
@@ -74,12 +70,20 @@ export function Home() {
     acc[cat] = (acc[cat] ?? 0) + 1
     return acc
   }, {})
-  const filtered = category === 'All' ? businesses : businesses.filter((b) => b.category === category)
+  const q = query.trim().toLowerCase()
+  const filtered = businesses.filter(
+    (b) =>
+      (category === 'All' || (b.category ?? 'Other') === category) &&
+      (!q || [b.name, b.category, b.description].some((v) => v?.toLowerCase().includes(q))),
+  )
 
   return (
     <DashboardLayout>
       <div className="relative mb-8">
         <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search shops"
           placeholder="Search shops, cafés, salons…"
           className="h-14 w-full rounded-full border border-black/10 bg-[#FBF6EC] pl-14 pr-5 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/40 outline-none"
         />
