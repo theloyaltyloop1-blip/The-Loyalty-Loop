@@ -11,7 +11,7 @@ export function NewsPage() {
   const [items, setItems] = React.useState<Announcement[]>([])
   const [ready, setReady] = React.useState(false)
   React.useEffect(() => { if (session) fetchAnnouncements(session.user.id).then(setItems).finally(() => setReady(true)) }, [session])
-  if (loading || !ready) return <PageSkeleton />
+  if (loading || (session && !ready)) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   return <DashboardLayout>
     <h1 className="text-3xl font-display font-bold tracking-tight text-foreground sm:text-4xl">News</h1>

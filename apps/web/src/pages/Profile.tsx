@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
 import { User, Bell, LogOut, Copy, Check, Trash2, Share2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
@@ -51,6 +52,8 @@ export function ProfilePage() {
   const [settings, setSettings] = React.useState<SettingsData | null>(null)
   const [form, setForm] = React.useState({ first_name: '', last_name: '', phone: '', postcode: '' })
   const [ready, setReady] = React.useState(false)
+  const [loadError, setLoadError] = React.useState(false)
+  const [reloadKey, setReloadKey] = React.useState(0)
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
@@ -64,6 +67,10 @@ export function ProfilePage() {
       supabase.from('profiles').select('first_name,last_name,phone,postcode,stamp_code').eq('id', session.user.id).single(),
       supabase.from('user_settings').select('notify_offers,notify_rewards,notify_stamps').eq('user_id', session.user.id).single(),
     ]).then(([p, s]) => {
+      // Without the real profile the form would be blank, and saving it would
+      // wipe the stored details, so a failed load blocks editing.
+      if (p.error || s.error) { setLoadError(true); return }
+      setLoadError(false)
       if (p.data) {
         setProfile(p.data as ProfileData)
         setForm({
@@ -75,23 +82,23 @@ export function ProfilePage() {
       }
       if (s.data) setSettings(s.data as SettingsData)
       getReferralCode(session.user.id).then(setReferralCode).catch(() => undefined)
-      setReady(true)
-    })
-  }, [session?.user])
+    }).catch(() => setLoadError(true)).finally(() => setReady(true))
+  }, [session?.user, reloadKey])
 
-  if (loading || !ready) return <PageSkeleton variant="detail" />
+  if (loading || (session && !ready)) return <PageSkeleton variant="detail" />
   if (!session) return <Navigate to="/login" replace />
 
   async function handleSaveProfile() {
-    if (!session?.user) return
+    if (!session?.user || !profile || loadError) return
     setSaving(true)
     try {
       const { error } = await supabase.from('profiles').update(form).eq('id', session.user.id)
-      if (!error) {
-        setProfile((prev) => (prev ? { ...prev, ...form } : prev))
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-      }
+      if (error) throw error
+      setProfile((prev) => (prev ? { ...prev, ...form } : prev))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      toast.error('We could not save your details. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -101,7 +108,11 @@ export function ProfilePage() {
     if (!session?.user || !settings) return
     const next = { ...settings, [key]: !settings[key] }
     setSettings(next)
-    await supabase.from('user_settings').update({ [key]: next[key] }).eq('user_id', session.user.id)
+    const { error } = await supabase.from('user_settings').update({ [key]: next[key] }).eq('user_id', session.user.id)
+    if (error) {
+      setSettings((current) => (current ? { ...current, [key]: settings[key] } : current))
+      toast.error('We could not update that setting. Please try again.')
+    }
   }
 
   function handleCopyCode() {
@@ -127,6 +138,12 @@ export function ProfilePage() {
   return (
     <DashboardLayout>
       <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-8 sm:text-4xl">Your account</h1>
+      {loadError && (
+        <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive">
+          <span>We couldn’t load your profile, so editing is paused to keep your details safe.</span>
+          <button data-press-feedback onClick={() => { setReady(false); setReloadKey((k) => k + 1) }} className="min-h-11 rounded-full bg-destructive px-4 font-semibold text-white">Try again</button>
+        </div>
+      )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[340px_1fr]">
         <div className="grid gap-5 lg:sticky lg:top-24">
@@ -175,7 +192,7 @@ export function ProfilePage() {
             </div>
             <button data-press-feedback
               onClick={handleSaveProfile}
-              disabled={saving}
+              disabled={saving || loadError || !profile}
               className="mt-1 flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <User className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}

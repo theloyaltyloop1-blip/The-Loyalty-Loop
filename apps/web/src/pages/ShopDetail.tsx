@@ -2,7 +2,8 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, UtensilsCrossed, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -29,7 +30,7 @@ import { usePageMeta } from '@/lib/use-page-meta'
 
 const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   Café: Coffee,
-  Restaurant: Coffee,
+  Restaurant: UtensilsCrossed,
   Barber: Scissors,
 }
 
@@ -84,6 +85,7 @@ export function ShopDetail() {
   const [shared, setShared] = React.useState(false)
   const [joinError, setJoinError] = React.useState<string | null>(null)
   const [justJoined, setJustJoined] = React.useState(false)
+  const [loadError, setLoadError] = React.useState(false)
 
   // Supabase fires onAuthStateChange multiple times in quick succession after
   // login/navigation (INITIAL_SESSION, token refresh, etc.), each producing a
@@ -104,17 +106,25 @@ export function ShopDetail() {
   const refetch = React.useCallback(async () => {
     if (!slug || !userId) return
     const thisRequestId = ++requestIdRef.current
-    const biz = await fetchBusinessBySlug(slug)
-    if (!biz) {
-      if (thisRequestId === requestIdRef.current) setReady(true)
+    let biz: Business | null
+    let m: Membership | null, cat: RewardCatalogItem[], pics: BusinessPhoto[]
+    try {
+      biz = await fetchBusinessBySlug(slug)
+      if (!biz) {
+        if (thisRequestId === requestIdRef.current) setReady(true)
+        return
+      }
+      ;[m, cat, pics] = await Promise.all([
+        fetchMembership(userId, biz.id),
+        fetchRewardCatalog(biz.id),
+        fetchBusinessPhotos(biz.id),
+      ])
+    } catch {
+      if (thisRequestId === requestIdRef.current) { setLoadError(true); setReady(true) }
       return
     }
-    const [m, cat, pics] = await Promise.all([
-      fetchMembership(userId, biz.id),
-      fetchRewardCatalog(biz.id),
-      fetchBusinessPhotos(biz.id),
-    ])
-    if (thisRequestId !== requestIdRef.current) return // a newer refetch already landed — drop this stale result
+    if (thisRequestId !== requestIdRef.current) return
+    setLoadError(false) // a newer refetch already landed — drop this stale result
     setBusiness(biz)
     const applyMembership = () => setMembership(m)
     const documentWithViewTransition = document as Document & { startViewTransition?: (update: () => void) => unknown }
@@ -206,8 +216,19 @@ export function ShopDetail() {
     }
   }
 
-  if (loading || !ready) return <PageSkeleton variant="detail" />
+  if (loading || (session && !ready)) return <PageSkeleton variant="detail" />
   if (!session) return <Navigate to="/login" replace />
+  if (loadError && !business) {
+    return (
+      <DashboardLayout>
+        <div role="alert" className="mx-auto max-w-md rounded-3xl bg-card p-8 text-center ring-1 ring-foreground/8">
+          <h1 className="font-display text-2xl font-semibold">We couldn’t load this shop</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Check your connection and try again.</p>
+          <button data-press-feedback onClick={() => { setReady(false); void refetch() }} className="mt-5 min-h-11 rounded-full bg-primary px-5 font-semibold text-primary-foreground">Try again</button>
+        </div>
+      </DashboardLayout>
+    )
+  }
   if (!business) return <Navigate to="/dashboard" replace />
 
   // Customers earn by spending; each reward unlocks at a £ amount (ARCH_PLAN.md §4.11).
@@ -250,11 +271,15 @@ export function ShopDetail() {
     if (!session?.user || !business || !membership) return
     const next = !optedIn
     setOptedIn(next)
-    await supabase
+    const { error } = await supabase
       .from('memberships')
       .update({ promos_opted_out: !next })
       .eq('user_id', session.user.id)
       .eq('business_id', business.id)
+    if (error) {
+      setOptedIn(!next)
+      toast.error('We could not update your promotion setting. Please try again.')
+    }
   }
 
   async function handleShare() {
@@ -515,7 +540,7 @@ export function ShopDetail() {
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {spendShop
                     ? `Unlocks after spending ${poundsLabel(tier?.spend_threshold_pence ?? targetPence)}`
-                    : `${stampsRequired} ${unit}s`}
+                    : `${stampsRequired} ${unit}${stampsRequired === 1 ? '' : 's'}`}
                 </p>
               </div>
             </div>

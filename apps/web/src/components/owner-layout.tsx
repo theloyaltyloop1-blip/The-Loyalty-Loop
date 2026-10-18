@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const OWNER_NAV_ITEMS = [
@@ -76,10 +77,11 @@ function BusinessSwitcher() {
 }
 
 export function OwnerLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole, roles } = useAuth()
+  const { signOut, primaryRole, rolesLoading, roles } = useAuth()
   const { businesses, staffBusinesses, business, loading, needsRewardSetup } = useOwner()
   const isOwner = businesses.length > 0
   const navItems = isOwner ? OWNER_NAV_ITEMS : STAFF_NAV_ITEMS
+  if (rolesLoading) return <BarePageSkeleton />
   if (!['admin', 'brand_head', 'business_owner', 'staff'].includes(primaryRole ?? '')) return <Navigate to="/dashboard" replace />
   // Setup is mandatory: an owner with no shop, or a shop with no reward yet,
   // can't reach any owner page until onboarding is finished.

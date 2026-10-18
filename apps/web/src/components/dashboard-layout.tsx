@@ -4,6 +4,7 @@ import { Home, Map, Megaphone, Gift, Heart, User, LogOut, Bell } from 'lucide-re
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
+import { BarePageSkeleton } from '@/components/page-skeleton'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },
@@ -19,7 +20,8 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   (isActive ? 'bg-peach text-peach-ink' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole } = useAuth()
+  const { signOut, primaryRole, rolesLoading } = useAuth()
+  if (rolesLoading) return <BarePageSkeleton />
   if (primaryRole === 'admin') return <Navigate to="/access" replace />
   if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />
   if (primaryRole === 'business_owner') return <Navigate to="/owner" replace />

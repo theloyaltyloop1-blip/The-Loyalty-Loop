@@ -22,9 +22,9 @@ function ShopPoster({ business }: { business: { name: string; slug: string; logo
 }
 
 export function OwnerTools() {
-  const { session, loading } = useAuth(); const { business, updateLocalBusiness } = useOwner(); const [members, setMembers] = React.useState<Member[]>([]); const [form, setForm] = React.useState({ title: '', body: '', audience: 'all' }); const [sent, setSent] = React.useState(false); const [busy, setBusy] = React.useState(false); const [whatsAppBusy, setWhatsAppBusy] = React.useState(false)
+  const { session, loading } = useAuth(); const { business, updateLocalBusiness, loading: ownerLoading } = useOwner(); const [members, setMembers] = React.useState<Member[]>([]); const [form, setForm] = React.useState({ title: '', body: '', audience: 'all' }); const [sent, setSent] = React.useState(false); const [busy, setBusy] = React.useState(false); const [whatsAppBusy, setWhatsAppBusy] = React.useState(false)
   React.useEffect(() => { if (business) supabase.rpc('get_business_members', { _business_id: business.id }).then(({ data }) => setMembers((data ?? []) as Member[])) }, [business])
-  if (loading) return <BarePageSkeleton />; if (!session) return <Navigate to="/login" replace />; if (!business) return <Navigate to="/owner/onboarding" replace />
+  if (loading || ownerLoading) return <BarePageSkeleton />; if (!session) return <Navigate to="/login" replace />; if (!business) return <Navigate to="/owner/onboarding" replace />
   const activeBusiness = business; const complete = [activeBusiness.description, activeBusiness.address, activeBusiness.logo_url, activeBusiness.cover_url].filter(Boolean).length
   async function savePromo(e: React.FormEvent) { e.preventDefault(); if (!form.title || !form.body) return; setBusy(true); const { error } = await supabase.from('business_promotions').insert({ business_id: activeBusiness.id, ...form }); setBusy(false); if (!error) { setForm({ title: '', body: '', audience: 'all' }); setSent(true) } }
   async function toggleWhatsApp() {
