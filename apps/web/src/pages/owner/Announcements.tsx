@@ -26,6 +26,7 @@ export function OwnerAnnouncements() {
   const [listState, setListState] = React.useState<'loading' | 'error' | 'ready'>('loading')
   const reload = React.useCallback(() => {
     if (!business) return
+    setListState('loading')
     fetchOwnedAnnouncements(business.id).then((r) => { setItems(r); setListState('ready') }).catch(() => setListState('error'))
   }, [business])
   React.useEffect(() => { reload() }, [reload])
@@ -57,7 +58,7 @@ export function OwnerAnnouncements() {
         <button disabled={publishing} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#E8703B] text-white px-5 py-3 font-bold disabled:opacity-60"><Plus className="h-4 w-4" />{publishing ? 'Publishing…' : 'Publish update'}</button>
       </form>
       <h2 className="font-display text-xl font-bold text-[#1a1a1a] mb-4">Your updates</h2>
-      <div className="grid gap-4">{items.length === 0 ? (listState === 'error' ? <ErrorState message="We couldn’t load your updates." onRetry={reload} /> : listState === 'loading' ? <ListSkeleton rows={2} /> : <p className="text-[#1a1a1a]/55">No announcements yet.</p>) : items.map((item) => <AnnouncementRow key={item.id} item={item} onChange={reload} />)}</div>
+      <div className="grid gap-4">{listState === 'error' ? <ErrorState message="We couldn’t load your updates." onRetry={reload} /> : items.length === 0 ? (listState === 'loading' ? <ListSkeleton rows={2} /> : <p className="text-[#1a1a1a]/55">No announcements yet.</p>) : items.map((item) => <AnnouncementRow key={item.id} item={item} onChange={reload} />)}</div>
     </>}
   </OwnerLayout>
 }

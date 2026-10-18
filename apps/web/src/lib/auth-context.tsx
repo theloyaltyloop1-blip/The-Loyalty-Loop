@@ -22,25 +22,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = React.useState<Session | null>(null)
   const [roles, setRoles] = React.useState<AppRole[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [rolesLoading, setRolesLoading] = React.useState(true)
+  // Roles are "loading" until they have been fetched for the current user id. Deriving this
+  // (rather than toggling a flag in an effect) closes the window where a fresh session
+  // rendered with no roles and role-gated layouts redirected owners away.
+  const [rolesUserId, setRolesUserId] = React.useState<string | null>(null)
+  const [refreshing, setRefreshing] = React.useState(false)
+  const rolesRequestRef = React.useRef(0)
+  const userId = session?.user?.id ?? null
+  const rolesLoading = loading || refreshing || (userId !== null && rolesUserId !== userId)
 
-  const loadRoles = React.useCallback(async (userId: string) => {
-    const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId)
+  const loadRoles = React.useCallback(async (uid: string) => {
+    const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', uid)
     if (!error && data) {
       setRoles(data.map((r) => r.role as AppRole))
     }
   }, [])
 
   const refreshRoles = React.useCallback(async () => {
-    if (!session?.user) return
-    setRolesLoading(true)
+    if (!userId) return
+    const req = ++rolesRequestRef.current
+    setRefreshing(true)
     try {
       await supabase.rpc('ensure_current_user_bootstrap')
-      await loadRoles(session.user.id)
+      await loadRoles(userId)
     } finally {
-      setRolesLoading(false)
+      if (req === rolesRequestRef.current) {
+        setRolesUserId(userId)
+        setRefreshing(false)
+      }
     }
-  }, [session, loadRoles])
+  }, [userId, loadRoles])
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -56,16 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   React.useEffect(() => {
-    if (session?.user) {
+    if (userId) {
       refreshRoles()
-    } else if (!loading) {
-      // Only settle once the initial session check is done; settling earlier let
-      // role-gated layouts redirect before roles loaded (owners bounced on refresh).
+    } else {
+      rolesRequestRef.current++
       setRoles([])
-      setRolesLoading(false)
+      setRolesUserId(null)
+      setRefreshing(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, loading])
+  }, [userId])
 
   const signOut = React.useCallback(async () => {
     await supabase.auth.signOut()

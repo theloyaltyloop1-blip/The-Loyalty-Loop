@@ -17,16 +17,19 @@ export function FavouritesPage() {
 
   React.useEffect(() => {
     if (!session?.user) return
+    let live = true
     setFetching(true)
     setFailed(false)
     Promise.all([fetchFavouriteBusinesses(session.user.id), fetchMyMemberships(session.user.id)])
       .then(([b, m]) => {
+        if (!live) return
         setBusinesses(b)
         setMemberships(m)
       })
-      .catch(() => setFailed(true))
-      .finally(() => setFetching(false))
-  }, [session?.user, reload])
+      .catch(() => { if (live) setFailed(true) })
+      .finally(() => { if (live) setFetching(false) })
+    return () => { live = false }
+  }, [session?.user?.id, reload])
 
   if (loading) return <DashboardLayout><ListSkeleton /></DashboardLayout>
   if (!session) return <Navigate to="/login" replace />

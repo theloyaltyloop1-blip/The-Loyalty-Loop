@@ -20,9 +20,9 @@ export function ForgotPassword() {
       redirectTo: `${window.location.origin}/reset-password`,
     })
     setLoading(false)
-    // Rate limits and outages are surfaced; anything else shows the same message
+    // Rate limits, outages and network failures (status 0) are surfaced; anything else shows the same message
     // whether or not the address exists — prevents account enumeration.
-    if (error && (error.status === 429 || (error.status ?? 500) >= 500)) {
+    if (error && (error.status === 429 || !error.status || error.status >= 500)) {
       setError(error.status === 429 ? 'Too many requests. Please wait a minute and try again.' : 'We couldn’t send the link right now. Please try again.')
       return
     }

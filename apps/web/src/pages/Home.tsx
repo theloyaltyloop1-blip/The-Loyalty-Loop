@@ -56,16 +56,19 @@ export function Home() {
       .single()
       .then(({ data }) => setFirstName(data?.first_name ?? null))
 
+    let live = true
     setFetching(true)
     setFailed(false)
     Promise.all([fetchBusinesses(), fetchMyMemberships(session.user.id)])
       .then(([b, m]) => {
+        if (!live) return
         setBusinesses(b)
         setMemberships(m)
       })
-      .catch(() => setFailed(true))
-      .finally(() => setFetching(false))
-  }, [session?.user, reload])
+      .catch(() => { if (live) setFailed(true) })
+      .finally(() => { if (live) setFetching(false) })
+    return () => { live = false }
+  }, [session?.user?.id, reload])
 
   if (loading || rolesLoading) return <div className="min-h-screen bg-[#F7ECDC] p-8"><ListSkeleton /></div>
   if (!session) return <Navigate to="/login" replace />

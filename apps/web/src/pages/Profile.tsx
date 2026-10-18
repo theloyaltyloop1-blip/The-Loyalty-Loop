@@ -80,7 +80,7 @@ export function ProfilePage() {
       getReferralCode(session.user.id).then(setReferralCode).catch(() => undefined)
       setReady(true)
     })
-  }, [session?.user, reload])
+  }, [session?.user?.id, reload])
 
   if (!loading && !session) return <Navigate to="/login" replace />
   if (loading || !ready) return <DashboardLayout><ListSkeleton /></DashboardLayout>

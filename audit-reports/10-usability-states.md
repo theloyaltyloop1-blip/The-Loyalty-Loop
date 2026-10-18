@@ -387,3 +387,21 @@ Verified (mock RPC 400 vs 200):
 postfail ["permission denied for function"]
 empty ["Role granted."]
 ```
+
+## Pass 8 – self code review of this branch (10 findings → 7 fixed)
+| Finding | Action |
+|---|---|
+| Role race still possible after a later login (flag-based `rolesLoading`); roles fetched twice per load | `rolesLoading` now derived from "roles fetched for current user id"; request-id guard; single fetch per user |
+| ForgotPassword treated network failures (status 0) as success | Status 0 / missing surfaced as error |
+| Owner Reviews/Support/Announcements hid load errors when a list was already shown; retry gave no feedback | Error shown regardless of list; loading state reset on retry |
+| Home/Favourites/Profile refetched (skeleton flash) on every token refresh; no stale guard | Keyed on user id; stale responses ignored |
+| Analytics: fast period switching could show stale stats/error | Stale guard |
+| Mobile drawer: closed drawer still tabbable; no focus management | `invisible` when closed (<md); focus moves to Close on open, back to Menu on close |
+| Mark-all-read failure silently reverts | Not changed (low) |
+| Duplicate state machines / skeleton markup | Not changed (cleanup only) |
+
+Regression run after fixes: all owner routes (fail/empty), customer routes, drawer (6/6), mutations, forms, brand console — all pass. Login flow:
+```
+login → final /owner via /login > /login > /owner
+deep link after login → /owner/settings
+```

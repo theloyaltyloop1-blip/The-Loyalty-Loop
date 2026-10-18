@@ -283,15 +283,18 @@ export function OwnerAnalytics() {
 
   React.useEffect(() => {
     if (!business) return
+    let live = true // ignore responses from a superseded period/shop
     setStatsLoading(true)
     setStatsError(false)
     Promise.all([fetchPeriodStats(business.id, period), fetchTotalsStats(business.id)])
       .then(([p, t]) => {
+        if (!live) return
         setStats(p)
         setTotals(t)
       })
-      .catch(() => setStatsError(true))
-      .finally(() => setStatsLoading(false))
+      .catch(() => { if (live) setStatsError(true) })
+      .finally(() => { if (live) setStatsLoading(false) })
+    return () => { live = false }
   }, [business?.id, period, statsReload])
 
   React.useEffect(() => {
