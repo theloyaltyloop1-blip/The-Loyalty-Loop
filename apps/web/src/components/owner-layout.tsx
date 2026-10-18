@@ -70,7 +70,7 @@ function BusinessSwitcher() {
   if (staffBusinesses.length > 0) {
     return (
       <div className="mb-6 rounded-2xl border border-black/10 bg-[#FBF6EC] px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Working at</p>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Working at</p>
         <p className="font-semibold text-[#1a1a1a] truncate">
           {staffBusinesses.length === 1 ? staffBusinesses[0].business.name : `${staffBusinesses.length} shops`}
         </p>
@@ -82,30 +82,31 @@ function BusinessSwitcher() {
 }
 
 export function OwnerLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole } = useAuth()
+  const { signOut, primaryRole, rolesLoading } = useAuth()
   const { businesses, staffBusinesses } = useOwner()
   const isOwner = businesses.length > 0
   const navItems = isOwner ? OWNER_NAV_ITEMS : STAFF_NAV_ITEMS
+  if (rolesLoading) return null
   if (!['admin', 'brand_head', 'business_owner', 'staff'].includes(primaryRole ?? '')) return <Navigate to="/dashboard" replace />
 
   return (
-    <div className="min-h-screen flex bg-[#F7ECDC]">
-      <aside className="w-64 shrink-0 border-r border-black/5 flex flex-col p-5">
-        <div className="flex items-center gap-2 px-2 mb-6">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#F7ECDC]">
+      <aside className="w-full md:w-64 shrink-0 border-b md:border-b-0 md:border-r border-black/5 flex flex-col p-3 md:p-5">
+        <div className="flex items-center gap-2 px-2 mb-3 md:mb-6">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
           <span className="font-display font-extrabold text-lg text-[#1a1a1a]">The Loyalty Loop</span>
         </div>
 
         <BusinessSwitcher />
 
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto -mx-1 px-1 md:mx-0 md:px-0">
           {navItems.map(({ label, to, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               className={({ isActive }) =>
-                'flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ' +
+                'flex shrink-0 items-center gap-3 rounded-2xl px-4 py-3 font-semibold whitespace-nowrap transition-colors ' +
                 (isActive ? 'bg-[#C2410C] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
               }
             >
@@ -115,11 +116,11 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-1">
+        <div className="mt-2 md:mt-auto flex flex-row flex-wrap md:flex-col gap-1">
           {(isOwner || staffBusinesses.length === 0) && (
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/75 hover:bg-black/5 transition-colors"
             >
               <ArrowLeftRight className="h-5 w-5" />
               Switch to customer view
@@ -127,7 +128,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           )}
           <button
             onClick={signOut}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/75 hover:bg-black/5 transition-colors"
           >
             <LogOut className="h-5 w-5" />
             Sign out
@@ -135,7 +136,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 max-w-5xl">{children}</main>
+      <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 max-w-5xl">{children}</main>
     </div>
   )
 }

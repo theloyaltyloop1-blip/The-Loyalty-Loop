@@ -65,7 +65,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B]'
+  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/70 outline-none focus:border-[#E8703B]'
 
 function BrandImageUpload({
   label,
@@ -104,7 +104,7 @@ function BrandImageUpload({
       <p className="text-sm font-semibold text-[#1a1a1a] mb-1.5">{label}</p>
       <div
         onClick={() => inputRef.current?.click()}
-        className="h-32 rounded-xl border-2 border-dashed border-black/15 flex flex-col items-center justify-center gap-1 text-[#1a1a1a]/40 text-sm cursor-pointer overflow-hidden bg-white/40 hover:border-[#E8703B]/50 transition-colors"
+        className="h-32 rounded-xl border-2 border-dashed border-black/15 flex flex-col items-center justify-center gap-1 text-[#1a1a1a]/70 text-sm cursor-pointer overflow-hidden bg-white/40 hover:border-[#E8703B]/50 transition-colors"
         style={
           currentUrl
             ? { backgroundImage: `url(${currentUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -161,7 +161,7 @@ function OpeningHoursEditor({ hours, onChange }: { hours: OpeningHours; onChange
               onClick={() => onChange({ ...hours, [key]: { ...day, closed: !day.closed } })}
               className={
                 'rounded-full px-3 h-8 text-xs font-bold ' +
-                (day.closed ? 'bg-black/5 text-[#1a1a1a]/40' : 'bg-[#DFF3E3] text-[#3FA34D]')
+                (day.closed ? 'bg-black/5 text-[#1a1a1a]/70' : 'bg-[#DFF3E3] text-[#3FA34D]')
               }
             >
               {day.closed ? 'Closed' : 'Open'}
@@ -174,7 +174,7 @@ function OpeningHoursEditor({ hours, onChange }: { hours: OpeningHours; onChange
                   onChange={(e) => onChange({ ...hours, [key]: { ...day, open: e.target.value } })}
                   className="h-8 rounded-lg border border-black/10 bg-white px-2 text-sm"
                 />
-                <span className="text-[#1a1a1a]/30">–</span>
+                <span className="text-[#1a1a1a]/70">–</span>
                 <input
                   type="time"
                   value={day.close}
@@ -223,12 +223,12 @@ function GalleryTab({ businessId }: { businessId: string }) {
 
   return (
     <SectionCard title="Gallery">
-      <p className="text-sm text-[#1a1a1a]/50 mb-4">
+      <p className="text-sm text-[#1a1a1a]/70 mb-4">
         Extra photos shown on your shop page — your space, your food, your work. PNG, JPEG, WEBP or GIF, up to 5MB
         each.
       </p>
       {loadingPhotos ? (
-        <p className="text-sm text-[#1a1a1a]/40">Loading…</p>
+        <p className="text-sm text-[#1a1a1a]/70">Loading…</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {photos.map((p) => (
@@ -245,7 +245,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
           <button
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="rounded-xl border-2 border-dashed border-black/15 aspect-square flex flex-col items-center justify-center gap-1 text-[#1a1a1a]/40 hover:border-[#E8703B]/50 transition-colors disabled:opacity-50"
+            className="rounded-xl border-2 border-dashed border-black/15 aspect-square flex flex-col items-center justify-center gap-1 text-[#1a1a1a]/70 hover:border-[#E8703B]/50 transition-colors disabled:opacity-50"
           >
             <ImageIcon className="h-5 w-5" />
             <span className="text-xs font-semibold">{uploading ? 'Uploading…' : 'Add photo'}</span>
@@ -312,7 +312,7 @@ function ProfileTab() {
   return (
     <>
       <SectionCard>
-        <p className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-3">Storefront preview</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-3">Storefront preview</p>
         <div className="rounded-2xl overflow-hidden border border-black/10">
           <div
             className="h-40 relative bg-cover bg-center"
@@ -331,13 +331,13 @@ function ProfileTab() {
           </div>
           <div className="bg-white pt-8 pb-4 px-5">
             <p className="font-display font-bold text-[#1a1a1a]">{form.name || business.name}</p>
-            <p className="text-sm text-[#1a1a1a]/50">{form.category}</p>
+            <p className="text-sm text-[#1a1a1a]/70">{form.category}</p>
           </div>
         </div>
       </SectionCard>
 
       <SectionCard title="Brand images">
-        <p className="text-sm text-[#1a1a1a]/50 mb-4">
+        <p className="text-sm text-[#1a1a1a]/70 mb-4">
           A logo is shown as your shop's image across The Loyalty Loop (home feed, stamp card, announcements).
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -514,7 +514,7 @@ function LoyaltyTab() {
   return (
     <>
       <SectionCard title="Sign-up reward">
-        <p className="text-sm text-[#1a1a1a]/50 mb-3">
+        <p className="text-sm text-[#1a1a1a]/70 mb-3">
           Something free just for joining your loyalty card — shown on your shop page so customers know what
           to expect before they sign up.
         </p>
@@ -528,7 +528,7 @@ function LoyaltyTab() {
 
       <SectionCard title="Brand & loyalty">
         <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Loyalty program type</p>
-        <p className="text-sm text-[#1a1a1a]/50 mb-3">How will customers earn rewards? You can change this any time.</p>
+        <p className="text-sm text-[#1a1a1a]/70 mb-3">How will customers earn rewards? You can change this any time.</p>
         <div className="grid sm:grid-cols-3 gap-3 mb-6">
           {[
             { value: 'stamp_card' as const, title: 'Stamps', desc: 'Classic punch card. One stamp per visit, fills a grid.' },
@@ -544,7 +544,7 @@ function LoyaltyTab() {
               }
             >
               <p className="font-bold text-[#1a1a1a] mb-1">{opt.title}</p>
-              <p className="text-xs text-[#1a1a1a]/50">{opt.desc}</p>
+              <p className="text-xs text-[#1a1a1a]/70">{opt.desc}</p>
             </button>
           ))}
         </div>
@@ -572,7 +572,7 @@ function LoyaltyTab() {
               ))}
             </div>
 
-            <p className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-2">Card preview</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-2">Card preview</p>
             <div className="rounded-xl border border-black/10 bg-white p-4 max-w-[220px]">
               <div
                 className="h-11 w-11 rounded-lg flex items-center justify-center text-white font-display font-bold mb-3"
@@ -581,9 +581,9 @@ function LoyaltyTab() {
                 {business.name.charAt(0).toUpperCase()}
               </div>
               <p className="font-bold text-sm text-[#1a1a1a]">{business.name}</p>
-              <p className="text-[10px] uppercase text-[#1a1a1a]/40 mb-2">{business.category}</p>
+              <p className="text-[10px] uppercase text-[#1a1a1a]/70 mb-2">{business.category}</p>
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1 text-[#1a1a1a]/60">
+                <span className="flex items-center gap-1 text-[#1a1a1a]/75">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: brandColor }} /> Tap to join
                 </span>
                 <span className="font-bold text-[#A84B1E]">View →</span>
@@ -600,14 +600,14 @@ function LoyaltyTab() {
                 value={stampsRequired}
                 onChange={(e) => setStampsRequired(Number(e.target.value))}
               />
-              <span className="text-xs text-[#1a1a1a]/40 mt-1 block">
+              <span className="text-xs text-[#1a1a1a]/70 mt-1 block">
                 Used for shops without a reward catalogue. If you add catalogue tiers below, customers earn
                 each tier's reward instead.
               </span>
             </Field>
 
             <p className="text-sm font-semibold text-[#1a1a1a] mb-1.5">{unit} icon</p>
-            <p className="text-xs text-[#1a1a1a]/40 mb-2">
+            <p className="text-xs text-[#1a1a1a]/70 mb-2">
               Pick a preset or type your own emoji — this is what fills each slot on the card.
             </p>
             <div className="flex flex-wrap gap-2 mb-2">
@@ -630,7 +630,7 @@ function LoyaltyTab() {
               onChange={(e) => setStampIcon(e.target.value)}
             />
 
-            <p className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-2">Card preview</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-2">Card preview</p>
             <div className="flex gap-1.5 flex-wrap">
               {Array.from({ length: Math.min(stampsRequired, 5) }).map((_, i) => (
                 <div
@@ -648,7 +648,7 @@ function LoyaltyTab() {
 
       <SectionCard>
         <h3 className="font-display font-bold text-[#1a1a1a] mb-1">Reward catalogue *</h3>
-        <p className="text-sm text-[#1a1a1a]/50 mb-4">
+        <p className="text-sm text-[#1a1a1a]/70 mb-4">
           Tell customers what they can earn — shown on your shop page before they join. Required: add at
           least one reward here to unlock scanning.
         </p>
@@ -662,11 +662,11 @@ function LoyaltyTab() {
               >
                 <div>
                   <p className="font-semibold text-[#1a1a1a]">{r.title}</p>
-                  <p className="text-xs text-[#1a1a1a]/50">
+                  <p className="text-xs text-[#1a1a1a]/70">
                     {r.description} · {r.stamp_threshold} {unit.toLowerCase()}{r.stamp_threshold === 1 ? '' : 's'}
                   </p>
                 </div>
-                <button onClick={() => handleDeleteReward(r.id)} className="text-[#1a1a1a]/40 hover:text-red-600">
+                <button onClick={() => handleDeleteReward(r.id)} className="text-[#1a1a1a]/70 hover:text-red-600">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -765,7 +765,7 @@ function WinbackTab() {
   return (
     <>
       <SectionCard title="Send win-back emails">
-        <p className="text-sm text-[#1a1a1a]/50 mb-4">
+        <p className="text-sm text-[#1a1a1a]/70 mb-4">
           Emails members who haven't visited in a while, with a one-off coupon code, to bring them back.
           Skips anyone already emailed in the last 30 days or opted out of promos.
         </p>
@@ -793,9 +793,9 @@ function WinbackTab() {
 
       <SectionCard title="Send history">
         {loadingLog ? (
-          <p className="text-sm text-[#1a1a1a]/40">Loading…</p>
+          <p className="text-sm text-[#1a1a1a]/70">Loading…</p>
         ) : log.length === 0 ? (
-          <p className="text-sm text-[#1a1a1a]/40">No win-back emails sent yet.</p>
+          <p className="text-sm text-[#1a1a1a]/70">No win-back emails sent yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {log.map((entry) => (
@@ -805,7 +805,7 @@ function WinbackTab() {
               >
                 <div>
                   <p className="font-semibold text-[#1a1a1a]">{entry.recipient_email}</p>
-                  <p className="text-xs text-[#1a1a1a]/50">
+                  <p className="text-xs text-[#1a1a1a]/70">
                     {entry.days_inactive} days inactive · code {entry.coupon_code} ·{' '}
                     {new Date(entry.sent_at).toLocaleDateString()}
                   </p>
@@ -886,7 +886,7 @@ function VerificationTab() {
           </span>
           <div>
             <p className="font-display font-bold text-[#1a1a1a]">{meta.label}</p>
-            <p className="text-xs text-[#1a1a1a]/50">
+            <p className="text-xs text-[#1a1a1a]/70">
               {status === 'verified' && business.verification_document_label
                 ? `Verified from ${business.verification_document_label}`
                 : status === 'pending'
@@ -897,7 +897,7 @@ function VerificationTab() {
             </p>
           </div>
         </div>
-        <p className="text-sm text-[#1a1a1a]/50">
+        <p className="text-sm text-[#1a1a1a]/70">
           A verified badge shows customers your shop is a real, checked business. It doesn't affect whether your
           shop is live — that already happened when you finished onboarding.
         </p>
@@ -905,7 +905,7 @@ function VerificationTab() {
 
       {canSubmit && (
         <SectionCard title="Submit proof of business">
-          <p className="text-sm text-[#1a1a1a]/50 mb-4">
+          <p className="text-sm text-[#1a1a1a]/70 mb-4">
             A VAT certificate, Companies House certificate, or a recent utility bill in your business's name.
             PNG, JPEG, WEBP or PDF, up to 10MB. Stored privately — only you and Loyalty Loop admins can see it.
           </p>
@@ -960,7 +960,7 @@ function PermissionToggle({
       onClick={onToggle}
       className={
         'flex items-center gap-2 rounded-full border-2 px-3.5 h-9 text-sm font-semibold transition-colors ' +
-        (active ? 'border-[#E8703B] bg-[#C2410C]/10 text-[#A84B1E]' : 'border-black/10 text-[#1a1a1a]/40')
+        (active ? 'border-[#E8703B] bg-[#C2410C]/10 text-[#A84B1E]' : 'border-black/10 text-[#1a1a1a]/70')
       }
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -994,7 +994,7 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
 
   return (
     <SectionCard title="Invite staff">
-      <p className="text-sm text-[#1a1a1a]/50 mb-4">
+      <p className="text-sm text-[#1a1a1a]/70 mb-4">
         You set their initial password — they can sign in immediately with the same login screen as owners, no
         confirmation email needed. Re-inviting a revoked email reuses the same account.
       </p>
@@ -1079,7 +1079,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
           <p className="font-semibold text-[#1a1a1a]">
             {staff.name} {revoked && <span className="text-xs font-bold text-red-600 uppercase ml-1">Revoked</span>}
           </p>
-          <p className="text-xs text-[#1a1a1a]/50">{staff.invited_email}</p>
+          <p className="text-xs text-[#1a1a1a]/70">{staff.invited_email}</p>
         </div>
         <button
           onClick={toggleStatus}
@@ -1136,9 +1136,9 @@ function StaffTab() {
 
       <SectionCard title="Staff">
         {loadingStaff ? (
-          <p className="text-sm text-[#1a1a1a]/40">Loading…</p>
+          <p className="text-sm text-[#1a1a1a]/70">Loading…</p>
         ) : staff.length === 0 ? (
-          <p className="text-sm text-[#1a1a1a]/40">No staff added yet.</p>
+          <p className="text-sm text-[#1a1a1a]/70">No staff added yet.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {staff.map((s) => (
@@ -1154,7 +1154,7 @@ function StaffTab() {
 function ComingSoonPanel({ label }: { label: string }) {
   return (
     <SectionCard>
-      <p className="text-[#1a1a1a]/50">{label} lands here soon.</p>
+      <p className="text-[#1a1a1a]/70">{label} lands here soon.</p>
     </SectionCard>
   )
 }
@@ -1180,7 +1180,7 @@ export function OwnerSettings() {
               'flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ' +
               (tab === key
                 ? 'border-[#1a1a1a] text-[#1a1a1a]'
-                : 'border-transparent text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70')
+                : 'border-transparent text-[#1a1a1a]/70 hover:text-[#1a1a1a]/70')
             }
           >
             <Icon className="h-4 w-4" /> {label}
@@ -1189,7 +1189,7 @@ export function OwnerSettings() {
       </div>
 
       {ownerLoading ? null : !business ? (
-        <p className="text-[#1a1a1a]/50">You don't have a shop yet.</p>
+        <p className="text-[#1a1a1a]/70">You don't have a shop yet.</p>
       ) : (
         <>
           {tab === 'profile' && <ProfileTab />}

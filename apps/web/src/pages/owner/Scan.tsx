@@ -94,7 +94,7 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
 
   if (!detector) {
     return (
-      <div className="rounded-xl bg-black/5 p-4 text-sm text-[#1a1a1a]/50 flex items-center gap-2 mb-4">
+      <div className="rounded-xl bg-black/5 p-4 text-sm text-[#1a1a1a]/70 flex items-center gap-2 mb-4">
         <CameraOff className="h-4 w-4 shrink-0" /> Camera scanning isn't supported in this browser — use the code
         entry below.
       </div>
@@ -202,7 +202,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/30">or manual code</span>
+        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/70">or manual code</span>
         <div className="flex-1 h-px bg-black/10" />
       </div>
 
@@ -244,7 +244,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
                 value={amount}
                 onChange={(e) => setAmount(Math.max(1, Math.min(50, Number(e.target.value))))}
               />
-              <span className="text-sm text-[#1a1a1a]/50">{unit}{amount === 1 ? '' : 's'}</span>
+              <span className="text-sm text-[#1a1a1a]/70">{unit}{amount === 1 ? '' : 's'}</span>
             </div>
           </div>
           <button
@@ -254,7 +254,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           >
             <Check className="h-4 w-4" /> {busy ? 'Awarding…' : `Award ${amount} ${unit}${amount === 1 ? '' : 's'}`}
           </button>
-          <button onClick={reset} className="text-sm font-semibold text-[#1a1a1a]/50 self-center">
+          <button onClick={reset} className="text-sm font-semibold text-[#1a1a1a]/70 self-center">
             Cancel
           </button>
         </>
@@ -353,7 +353,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/30">or manual code</span>
+        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/70">or manual code</span>
         <div className="flex-1 h-px bg-black/10" />
       </div>
 
@@ -432,14 +432,14 @@ export function OwnerScan() {
 
   return (
     <OwnerLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Scan</p>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Scan</p>
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-6 flex items-center gap-3">
         <ScanLine className="h-7 w-7 text-[#E8703B]" /> Award & redeem
       </h1>
 
       {!activeBusinessId ? (
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/50">
+          <p className="text-[#1a1a1a]/70">
             {isOwner ? 'Set up a shop first.' : "You're not an active staff member at any shop yet."}
           </p>
         </div>
@@ -461,7 +461,7 @@ export function OwnerScan() {
 
           {!canScan && !canRedeem ? (
             <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 text-center">
-              <p className="text-[#1a1a1a]/50">You don't have permission to scan or redeem at this shop yet.</p>
+              <p className="text-[#1a1a1a]/70">You don't have permission to scan or redeem at this shop yet.</p>
             </div>
           ) : (
             <>
@@ -474,7 +474,7 @@ export function OwnerScan() {
                       onClick={() => setMode(key)}
                       className={
                         'flex-1 h-10 rounded-full text-sm font-bold capitalize transition-colors flex items-center justify-center gap-1.5 ' +
-                        (mode === key ? 'bg-[#C2410C] text-white' : 'text-[#1a1a1a]/50')
+                        (mode === key ? 'bg-[#C2410C] text-white' : 'text-[#1a1a1a]/70')
                       }
                     >
                       {key === 'award' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}

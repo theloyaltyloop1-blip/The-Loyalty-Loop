@@ -205,7 +205,7 @@ export function ShopDetail() {
     <DashboardLayout>
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm font-semibold text-[#1a1a1a]/60 hover:text-[#1a1a1a] mb-4"
+        className="flex items-center gap-2 text-sm font-semibold text-[#1a1a1a]/75 hover:text-[#1a1a1a] mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
@@ -258,8 +258,8 @@ export function ShopDetail() {
             Your reward
           </span>
           <p className="text-xl font-display font-bold text-[#1a1a1a]">{rewardTitle}</p>
-          <p className="text-sm text-[#1a1a1a]/50 mb-1">{rewardSubtitle}</p>
-          <p className="text-sm text-[#1a1a1a]/50 mb-6">
+          <p className="text-sm text-[#1a1a1a]/70 mb-1">{rewardSubtitle}</p>
+          <p className="text-sm text-[#1a1a1a]/70 mb-6">
             Collect {stampsRequired} {unit}
             {stampsRequired === 1 ? '' : 's'} to unlock it.
           </p>
@@ -283,7 +283,7 @@ export function ShopDetail() {
                   ? 'Your visits'
                   : 'Your stamp card'}
             </h2>
-            <p className="text-sm font-semibold text-[#1a1a1a]/60">
+            <p className="text-sm font-semibold text-[#1a1a1a]/75">
               {progress} / {stampsRequired} · {rewardTitle}
             </p>
           </div>
@@ -299,7 +299,7 @@ export function ShopDetail() {
                   }}
                 />
               </div>
-              <p className="text-sm text-[#1a1a1a]/50 mt-2">
+              <p className="text-sm text-[#1a1a1a]/70 mt-2">
                 {Math.max(0, stampsRequired - progress)} more point{stampsRequired - progress === 1 ? '' : 's'} to{' '}
                 {rewardTitle.toLowerCase()}.
               </p>
@@ -347,12 +347,12 @@ export function ShopDetail() {
           <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6">
             <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Manual code</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Manual code</p>
               <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a] mb-3">
                 {stampCode ?? '—'}
               </p>
               <p className="font-semibold text-[#1a1a1a] mb-1">Show this to staff</p>
-              <p className="text-sm text-[#1a1a1a]/50 max-w-sm">
+              <p className="text-sm text-[#1a1a1a]/70 max-w-sm">
                 They scan the code to add a {unit}, or type the manual code above. {Math.max(0, stampsRequired - progress)} {unit}
                 {Math.max(0, stampsRequired - progress) === 1 ? '' : 's'} to your next reward.
               </p>
@@ -374,7 +374,7 @@ export function ShopDetail() {
           <div className="border-t border-black/10 mt-6 pt-5 flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="font-semibold text-[#1a1a1a]">Promotions from {business.name}</p>
-              <p className="text-sm text-[#1a1a1a]/50">
+              <p className="text-sm text-[#1a1a1a]/70">
                 {optedIn
                   ? "You'll get occasional offers and re-engagement messages."
                   : "You won't receive promo notifications from this shop."}
@@ -396,12 +396,12 @@ export function ShopDetail() {
         </p>
         <div className="rounded-xl bg-black/5 flex items-center gap-4 p-4">
           <span className="h-10 w-10 rounded-full bg-[#EFE1C8] flex items-center justify-center shrink-0">
-            <Lock className="h-4 w-4 text-[#1a1a1a]/60" />
+            <Lock className="h-4 w-4 text-[#1a1a1a]/75" />
           </span>
           <div>
             <p className="font-semibold text-[#1a1a1a]">{rewardTitle}</p>
-            <p className="text-sm text-[#1a1a1a]/50">{rewardSubtitle}</p>
-            <p className="text-xs text-[#1a1a1a]/40 mt-0.5">{stampsRequired} stamps</p>
+            <p className="text-sm text-[#1a1a1a]/70">{rewardSubtitle}</p>
+            <p className="text-xs text-[#1a1a1a]/70 mt-0.5">{stampsRequired} stamps</p>
           </div>
         </div>
       </div>
@@ -433,7 +433,7 @@ export function ShopDetail() {
                   key={key}
                   className={
                     'flex items-center justify-between py-2 text-sm ' +
-                    (isToday ? 'font-bold text-[#1a1a1a]' : 'text-[#1a1a1a]/60')
+                    (isToday ? 'font-bold text-[#1a1a1a]' : 'text-[#1a1a1a]/75')
                   }
                 >
                   <span>
@@ -461,7 +461,7 @@ export function ShopDetail() {
           >
             <MapPin className="h-4 w-4 text-[#E8703B]" /> {business.address}
             {business.postcode ? `, ${business.postcode}` : ''}
-            <Navigation className="h-3.5 w-3.5 text-[#1a1a1a]/40 ml-1" />
+            <Navigation className="h-3.5 w-3.5 text-[#1a1a1a]/70 ml-1" />
           </a>
         ) : (
           <div />

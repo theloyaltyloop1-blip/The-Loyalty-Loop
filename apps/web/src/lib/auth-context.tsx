@@ -22,7 +22,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = React.useState<Session | null>(null)
   const [roles, setRoles] = React.useState<AppRole[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [rolesLoading, setRolesLoading] = React.useState(true)
+  const [rolesLoadingState, setRolesLoading] = React.useState(true)
+  const [rolesUserId, setRolesUserId] = React.useState<string | null>(null)
+  // Treat roles as loading until they have been fetched for the current user, so
+  // role-gated layouts don't redirect during the render between session and roles.
+  const rolesLoading = rolesLoadingState || (!!session?.user && rolesUserId !== session.user.id)
 
   const loadRoles = React.useCallback(async (userId: string) => {
     const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId)
@@ -38,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.rpc('ensure_current_user_bootstrap')
       await loadRoles(session.user.id)
     } finally {
+      setRolesUserId(session.user.id)
       setRolesLoading(false)
     }
   }, [session, loadRoles])

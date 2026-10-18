@@ -16,7 +16,7 @@ const STEPS = [
 ] as const
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B]'
+  'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/70 outline-none focus:border-[#E8703B]'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -95,7 +95,7 @@ export function OwnerOnboarding() {
                     ? 'bg-[#3FA34D] border-[#3FA34D] text-white'
                     : i === step
                       ? 'bg-[#C2410C] border-[#E8703B] text-white'
-                      : 'bg-white border-black/10 text-[#1a1a1a]/30')
+                      : 'bg-white border-black/10 text-[#1a1a1a]/70')
                 }
               >
                 {i < step ? <Check className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
@@ -113,7 +113,7 @@ export function OwnerOnboarding() {
             {step === 1 && 'Where are you?'}
             {step === 2 && 'Make it yours'}
           </h1>
-          <p className="text-sm text-[#1a1a1a]/50 mb-6">
+          <p className="text-sm text-[#1a1a1a]/70 mb-6">
             {step === 0 && 'The basics — you can change all of this later.'}
             {step === 1 && "Shown to customers on your shop page. It's fine to skip this and add it later."}
             {step === 2 && 'Pick a brand color and how customers will earn rewards.'}
@@ -189,7 +189,7 @@ export function OwnerOnboarding() {
               </div>
 
               <p className="text-sm font-semibold text-[#1a1a1a] mb-1">Loyalty program type</p>
-              <p className="text-xs text-[#1a1a1a]/40 mb-3">You can change this any time.</p>
+              <p className="text-xs text-[#1a1a1a]/70 mb-3">You can change this any time.</p>
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {[
                   { value: 'stamp_card' as const, title: 'Stamps' },
@@ -203,7 +203,7 @@ export function OwnerOnboarding() {
                       'rounded-xl border-2 py-3 font-bold text-sm ' +
                       (form.loyalty_type === opt.value
                         ? 'border-[#E8703B] bg-white text-[#1a1a1a]'
-                        : 'border-black/10 bg-white/40 text-[#1a1a1a]/60')
+                        : 'border-black/10 bg-white/40 text-[#1a1a1a]/75')
                     }
                   >
                     {opt.title}
@@ -229,7 +229,7 @@ export function OwnerOnboarding() {
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="flex items-center gap-1.5 text-sm font-semibold text-[#1a1a1a]/50 disabled:opacity-0"
+              className="flex items-center gap-1.5 text-sm font-semibold text-[#1a1a1a]/70 disabled:opacity-0"
             >
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
@@ -254,7 +254,7 @@ export function OwnerOnboarding() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-[#1a1a1a]/40 mt-4">
+        <p className="text-center text-xs text-[#1a1a1a]/70 mt-4">
           Your shop goes live the moment you finish — no waiting for approval. You can add a logo, cover photo
           and gallery from Settings afterwards.
         </p>

@@ -94,3 +94,123 @@ Diff:  26 files changed, 63 insertions(+), 63 deletions(-)
 - Authenticated routes (/dashboard/*, /owner/*, /access, /brand) redirect to the login screen without a live Supabase backend, so their in-app layouts were only audited via shared class replacements, not rendered. Rerun with real env vars to cover them.
 - No z-index/overlap anomalies detected in rendered public pages; the detector covers overflow/clipping/contrast only for overlaps visible as offscreen elements.
 - Pre-existing oxlint warnings (Settings.tsx exhaustive-deps) unrelated, left as is.
+
+---
+# Pass 2 – authenticated routes (2026-10-18 12:00 UTC)
+
+- Added `scripts/mock.mjs`: Playwright route mock for Supabase (fake session in localStorage, fixture rows with long names, role via `ROLES` env). `scripts/run2.sh <out>` crawls as consumer, business_owner, admin+brand_head.
+- Now rendered: /dashboard, /dashboard/{rewards,news,favourites,profile,activity,inbox}, /owner, /owner/{scan,settings,notifications,announcements,reviews,support}, /access. (/dashboard/shop/:id, /brand and /owner/tools error on mock data shape, not on real behaviour; not visually audited.)
+
+## Scores (authed, 3 roles × 4 breakpoints)
+| Pass | h-overflow | offscreen | contrast |
+|---|---|---|---|
+| Before | 4 | 224 | 224 |
+| After | 0 | 0 | 4 (disabled "Post reply" button only; WCAG-exempt) |
+
+## Raw before-scan
+```
+56 contrast button.flex.items-center.gap-3.rounded-2xl Sign out 3.24 | 390/dashboard,390/dashboard/rewards,390/dashboard/news,390/dashboard/favourites
+28 contrast a.flex.items-center.gap-3.rounded-2xl Switch to customer view 3.24 | 390/owner,390/owner/scan,390/owner/settings,390/owner/notifications
+8 contrast p.text-xs.font-semibold.uppercase.tracking-wide Coffee 3.3 | 390/dashboard,390/dashboard/favourites,768/dashboard,768/dashboard/favourites
+8 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Your loyalty 2.46 | 390/dashboard/rewards,390/dashboard/activity,768/dashboard/rewards,768/dashboard/activity
+4 contrast p.text-sm.text-[#1a1a1a]/50.mb-1 Hello, Customer 3.24 | 390/dashboard,768/dashboard,1280/dashboard,1920/dashboard
+4 contrast p.flex.items-center.gap-2.text-xs Trending nearby 4.3 | 390/dashboard,768/dashboard,1280/dashboard,1920/dashboard
+4 contrast p.flex.items-center.gap-1.5.text-sm Coffee 4.42 | 390/dashboard,768/dashboard,1280/dashboard,1920/dashboard
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Nearby 4.3 | 390/dashboard,768/dashboard,1280/dashboard,1920/dashboard
+4 contrast p.text-[#1a1a1a]/55.mt-2.mb-7 Your earned rewards are ready  3.71 | 390/dashboard/rewards,768/dashboard/rewards,1280/dashboard/rewards,1920/dashboard/rewards
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide The Very Long Named Neighbourh 2.84 | 390/dashboard/rewards,768/dashboard/rewards,1280/dashboard/rewards,1920/dashboard/rewards
+4 contrast p.mt-2.text-sm.text-[#1a1a1a]/55 Show this code to the shop whe 3.8 | 390/dashboard/rewards,768/dashboard/rewards,1280/dashboard/rewards,1920/dashboard/rewards
+4 contrast p.text-xs.font-bold.text-[#1a1a1a]/45.uppercase Reward code 2.85 | 390/dashboard/rewards,768/dashboard/rewards,1280/dashboard/rewards,1920/dashboard/rewards
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide From local shops 2.46 | 390/dashboard/news,768/dashboard/news,1280/dashboard/news,1920/dashboard/news
+4 contrast p.text-[#1a1a1a]/55.mt-2.mb-7 Fresh updates, menus and good  3.71 | 390/dashboard/news,768/dashboard/news,1280/dashboard/news,1920/dashboard/news
+4 contrast p.text-xs.text-[#1a1a1a]/45 October 18 2.84 | 390/dashboard/news,768/dashboard/news,1280/dashboard/news,1920/dashboard/news
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Favourites 2.46 | 390/dashboard/favourites,768/dashboard/favourites,1280/dashboard/favourites,1920/dashboard/favourites
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Profile 2.46 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-sm.text-[#1a1a1a]/50.mb-4 Show this QR code or manual co 3.3 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-[10px].font-bold.uppercase.tracking-wide Manual code 2.49 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-sm Choose what shops can notify y 3.3 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-xs.text-[#1a1a1a]/50 When you earn a stamp, point o 3.3 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-xs.text-[#1a1a1a]/50 When a reward is ready to rede 3.3 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-xs.text-[#1a1a1a]/50 Occasional deals from shops yo 3.3 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-sm.text-[#1a1a1a]/55.mb-3 Share your personal link. When 3.8 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast button.mt-4.flex.items-center.gap-2 Delete my account 4.09 | 390/dashboard/profile,768/dashboard/profile,1280/dashboard/profile,1920/dashboard/profile
+4 contrast p.text-[#1a1a1a]/55.mt-2.mb-7 Every stamp, point and reward  3.71 | 390/dashboard/activity,768/dashboard/activity,1280/dashboard/activity,1920/dashboard/activity
+4 contrast p.text-xs.text-black/65 Keep going to unlock 3.04 | 390/dashboard/activity,768/dashboard/activity,1280/dashboard/activity,1920/dashboard/activity
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Analytics 2.46 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast button.px-4.py-2.5.text-sm.font-semibold detailed 2.46 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast span.flex.items-center.gap-1.text-xs flat 2.49 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast p.text-sm.text-[#1a1a1a]/50.mt-0.5 New members 3.3 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast p.text-sm.text-[#1a1a1a]/50.mt-0.5 Stamps given 3.3 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast p.text-sm.text-[#1a1a1a]/50.mt-0.5 Rewards earned 3.3 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast p.text-sm.text-[#1a1a1a]/50.mt-0.5 Rewards redeemed 3.3 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast p.text-sm.text-[#1a1a1a]/50.mb-4 Scans Google reviews and your  3.3 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast p.text-sm.text-[#1a1a1a]/40 Ask anything — "How do I get m 2.49 | 390/owner,768/owner,1280/owner,1920/owner
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Scan 2.46 | 390/owner/scan,768/owner/scan,1280/owner/scan,1920/owner/scan
+4 contrast span.text-xs.font-bold.uppercase.tracking-wide or manual code 1.93 | 390/owner/scan,768/owner/scan,1280/owner/scan,1920/owner/scan
+4 contrast button.flex.items-center.gap-1.5.px-4 Loyalty & rewards 2.46 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast button.flex.items-center.gap-1.5.px-4 Win-back emails 2.46 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast button.flex.items-center.gap-1.5.px-4 Verification 2.46 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast button.flex.items-center.gap-1.5.px-4 Staff 2.46 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast button.flex.items-center.gap-1.5.px-4 Help & support 2.46 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast button.flex.items-center.gap-1.5.px-4 Danger zone 2.46 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast p.text-xs.font-bold.uppercase.tracking-wide Storefront preview 2.49 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast p.text-sm.text-[#1a1a1a]/50 Coffee 3.36 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast p.text-sm.text-[#1a1a1a]/50.mb-4 A logo is shown as your shop's 3.3 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast div.h-32.rounded-xl.border-2.border-dashed Drag image here or pick file 2.5 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast button.rounded-full.px-3.h-8.text-xs Closed 2.45 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast p.text-sm.text-[#1a1a1a]/50.mb-4 Extra photos shown on your sho 3.3 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast span.text-xs.font-semibold Add photo 2.49 | 390/owner/settings,768/owner/settings,1280/owner/settings,1920/owner/settings
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Customer news 2.46 | 390/owner/announcements,768/owner/announcements,1280/owner/announcements,1920/owner/announcements
+4 contrast p.text-[#1a1a1a]/55.mt-2.mb-7 Share menu launches, events an 3.71 | 390/owner/announcements,768/owner/announcements,1280/owner/announcements,1920/owner/announcements
+4 contrast p.mt-3.text-xs.text-[#1a1a1a]/40 Published 10/18/2026 2.49 | 390/owner/announcements,768/owner/announcements,1280/owner/announcements,1920/owner/announcements
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Customer feedback 2.46 | 390/owner/reviews,768/owner/reviews,1280/owner/reviews,1920/owner/reviews
+4 contrast p.text-sm.text-[#1a1a1a]/50 from 3 reviews 3.3 | 390/owner/reviews,768/owner/reviews,1280/owner/reviews,1920/owner/reviews
+4 contrast p.text-xs.text-[#1a1a1a]/40 10/18/2026 2.49 | 390/owner/reviews,768/owner/reviews,1280/owner/reviews,1920/owner/reviews
+4 contrast button.rounded-xl.bg-[#C2410C].px-4.py-2 Post reply 2.79 | 390/owner/reviews,768/owner/reviews,1280/owner/reviews,1920/owner/reviews
+4 contrast p.text-xs.font-extrabold.uppercase.tracking-wide Help centre 2.46 | 390/owner/support,768/owner/support,1280/owner/support,1920/owner/support
+4 contrast p.mt-2.mb-7.text-[#1a1a1a]/55 Send a request directly to the 3.71 | 390/owner/support,768/owner/support,1280/owner/support,1920/owner/support
+4 contrast p.text-xs.uppercase.tracking-wide.text-white/40 Platform operations 3.83 | 390/access,768/access,1280/access,1920/access
+2 h-overflow   848 | 390/dashboard,768/dashboard
+2 offscreen main.flex-1.p-8.max-w-5xl  848 | 390/dashboard,768/dashboard
+2 offscreen div.relative.mb-8  816 | 390/dashboard,768/dashboard
+2 offscreen input.h-14.w-full.rounded-full.border  816 | 390/dashboard,768/dashboard
+2 offscreen p.text-sm.text-[#1a1a1a]/50.mb-1  816 | 390/dashboard,768/dashboard
+2 offscreen h1.text-3xl.font-display.font-extrabold.text-[#1a1a1a]  816 | 390/dashboard,768/dashboard
+2 offscreen div.flex.flex-wrap.gap-2.mb-8  816 | 390/dashboard,768/dashboard
+2 offscreen p.flex.items-center.gap-2.text-xs  816 | 390/dashboard,768/dashboard
+2 offscreen p.text-xs.font-extrabold.uppercase.tracking-wide  816 | 390/dashboard,768/dashboard
+```
+
+## Fixes
+- **Bug: role-gated redirect race** (`lib/auth-context.tsx`): for one render after the session loads, `rolesLoading` was false with no roles, so `OwnerLayout` redirected deep links (e.g. /owner/scan, /owner/settings) to /dashboard → /owner. `rolesLoading` now stays true until roles have loaded for the current user. Guards added in `OwnerLayout`/`DashboardLayout`.
+- **Mobile layout** (`dashboard-layout.tsx`, `owner-layout.tsx`, `AccessPanel.tsx`): fixed 256/288px sidebar crushed content to ~130px at 390px and caused horizontal scroll (848px on /dashboard, 640px on /access). Below `md` the sidebar is now a top bar with a horizontally scrolling nav; main gets `min-w-0` and smaller padding. BrandWorkspace padding reduced on mobile. Security FAB smaller on mobile.
+- **Contrast**: `text-[#1a1a1a]/30–55`→/70, /60→/75, `text-black/30,45,55`→/65, `text-white/40,50`→/70 (Access panel), sidebar Sign out / Switch view /50→/75, Delete account red-600→red-700, locked badges in Activity no longer dimmed with opacity-65.
+
+## Files changed in pass 2
+- apps/web/src/components/dashboard-layout.tsx
+- apps/web/src/components/owner-layout.tsx
+- apps/web/src/components/reviews-section.tsx
+- apps/web/src/components/shop-card.tsx
+- apps/web/src/lib/auth-context.tsx
+- apps/web/src/pages/AccessPanel.tsx
+- apps/web/src/pages/Activity.tsx
+- apps/web/src/pages/BrandWorkspace.tsx
+- apps/web/src/pages/ComingSoon.tsx
+- apps/web/src/pages/Favourites.tsx
+- apps/web/src/pages/Home.tsx
+- apps/web/src/pages/Inbox.tsx
+- apps/web/src/pages/News.tsx
+- apps/web/src/pages/Profile.tsx
+- apps/web/src/pages/Rewards.tsx
+- apps/web/src/pages/ShopDetail.tsx
+- apps/web/src/pages/owner/Analytics.tsx
+- apps/web/src/pages/owner/Announcements.tsx
+- apps/web/src/pages/owner/Notifications.tsx
+- apps/web/src/pages/owner/Onboarding.tsx
+- apps/web/src/pages/owner/OwnerComingSoon.tsx
+- apps/web/src/pages/owner/Reviews.tsx
+- apps/web/src/pages/owner/Scan.tsx
+- apps/web/src/pages/owner/Settings.tsx
+- apps/web/src/pages/owner/Support.tsx
+- apps/web/src/pages/owner/Tools.tsx
+- audit-reports/scripts/crawl.mjs

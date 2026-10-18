@@ -1,0 +1,2 @@
+const m={};for(const d of process.argv.slice(2))for(const x of require(d)){const u=(x.issues.find(i=>i.t=="_len")||{}).url;for(const i of x.issues){if(i.t[0]=="_"||i.t=="jserror")continue;const k=i.t+" "+(i.tag||"").slice(0,90)+" "+(i.text||"")+" "+(i.cr||"")+(i.sw||"")+(i.right||"");(m[k]=m[k]||new Set()).add(x.w+u)}}
+for(const [k,v] of Object.entries(m).sort((a,b)=>b[1].size-a[1].size))console.log(v.size,k.slice(0,200),"|",[...v].slice(0,4).join(","))

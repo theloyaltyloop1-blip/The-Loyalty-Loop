@@ -46,7 +46,7 @@ export function ShopCard({ business, membership }: { business: Business; members
           <BadgeCheck className="h-4 w-4 text-[#3B82C4] shrink-0" aria-label="Verified" />
         )}
       </h3>
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#1a1a1a]/50 mt-1 mb-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#1a1a1a]/70 mt-1 mb-4">
         {business.category}
       </p>
 

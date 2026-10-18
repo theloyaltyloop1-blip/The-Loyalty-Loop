@@ -1,12 +1,13 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
+import {install} from './mock.mjs';
 const out = process.argv[2]; fs.mkdirSync(out,{recursive:true});
-const routes=['/','/dashboard','/dashboard/shop/1','/dashboard/rewards','/dashboard/news','/dashboard/favourites','/dashboard/profile','/dashboard/activity','/dashboard/inbox','/terms','/privacy','/access','/brand','/owner','/owner/onboarding','/owner/scan','/owner/tools','/owner/settings','/owner/notifications','/owner/announcements','/owner/reviews','/owner/support','/login','/signup','/signup/owner','/forgot-password','/reset-password'];
+const routes=['/','/dashboard','/dashboard/shop/b1','/dashboard/rewards','/dashboard/news','/dashboard/favourites','/dashboard/profile','/dashboard/activity','/dashboard/inbox','/terms','/privacy','/access','/brand','/owner','/owner/onboarding','/owner/scan','/owner/tools','/owner/settings','/owner/notifications','/owner/announcements','/owner/reviews','/owner/support','/login','/signup','/signup/owner','/forgot-password','/reset-password'];
 const widths=[390,768,1280,1920];
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
 const res=[];
-for(const w of widths){const ctx=await b.newContext({viewport:{width:w,height:900}});
-for(const r of routes){const p=await ctx.newPage();
+for(const w of widths){const ctx=await b.newContext({viewport:{width:w,height:900}});if(process.env.MOCK)await install(ctx);
+for(const r of routes){const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message.slice(0,120)));
 try{await p.goto('http://localhost:4174'+r,{waitUntil:'networkidle',timeout:15000});}catch(e){}
 await p.waitForTimeout(400);
 const issues=await p.evaluate(()=>{const o=[];const W=document.documentElement.clientWidth;
@@ -23,8 +24,8 @@ if(r.right>W+1&&!el.closest('[class*="overflow-x"],[class*="overflow-hidden"]'))
 const own=[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim());
 if(own){if((cs.overflow==='hidden'||cs.textOverflow==='ellipsis')&&el.scrollWidth>el.clientWidth+1&&cs.textOverflow!=='ellipsis')o.push({t:'clipped',tag});
 const bgc=bgOf(el);if(bgc){const op=opa(el);const f=rgba(cs.color);f[3]*=op;const fg=L(mix(f,bgc)),bg=L(bgc);const cr=(Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05);const big=parseFloat(cs.fontSize)>=18.66||(parseFloat(cs.fontSize)>=14&&+cs.fontWeight>=700);if(cr<(big?3:4.5))o.push({t:'contrast',tag,cr:+cr.toFixed(2),text:el.textContent.trim().slice(0,30)})}}}
-return o});
+o.push({t:'_len',n:document.body.innerText.length,url:location.pathname});return o});
 const name=`${w}${r.replace(/\//g,'_')||'_root'}.png`;await p.screenshot({path:`${out}/${name}`,fullPage:true});
-res.push({w,r,issues});await p.close();}await ctx.close();}
+if(errs.length)issues.push({t:'jserror',tag:errs[0]});res.push({w,r,issues});await p.close();}await ctx.close();}
 await b.close();fs.writeFileSync(out+'/results.json',JSON.stringify(res,null,1));
 const sum={};for(const x of res)for(const i of x.issues){const k=i.t;sum[k]=(sum[k]||0)+1}console.log(sum);

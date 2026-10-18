@@ -28,7 +28,7 @@ function TrendingCard({ business }: { business: Business }) {
       />
       <div className="p-4">
         <h3 className="font-display font-bold text-lg text-[#1a1a1a]">{business.name}</h3>
-        <p className="flex items-center gap-1.5 text-sm text-[#1a1a1a]/60 mt-1">
+        <p className="flex items-center gap-1.5 text-sm text-[#1a1a1a]/75 mt-1">
           <Icon className="h-4 w-4" /> {business.category}
         </p>
       </div>
@@ -81,12 +81,12 @@ export function Home() {
       <div className="relative mb-8">
         <input
           placeholder="Search shops, cafés, salons…"
-          className="h-14 w-full rounded-full border border-black/10 bg-[#FBF6EC] pl-14 pr-5 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/40 outline-none"
+          className="h-14 w-full rounded-full border border-black/10 bg-[#FBF6EC] pl-14 pr-5 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/70 outline-none"
         />
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#1a1a1a]/60" />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#1a1a1a]/75" />
       </div>
 
-      <p className="text-sm text-[#1a1a1a]/50 mb-1">
+      <p className="text-sm text-[#1a1a1a]/70 mb-1">
         Hello, {firstName ?? session.user.email?.split('@')[0]}
       </p>
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-5">Discover local rewards</h1>
@@ -116,10 +116,10 @@ export function Home() {
       </div>
 
       {!fetching && businesses.length === 0 ? (
-        <p className="text-[#1a1a1a]/50">No shops yet — check back soon.</p>
+        <p className="text-[#1a1a1a]/70">No shops yet — check back soon.</p>
       ) : (
         <>
-          <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/60 mb-4">
+          <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/75 mb-4">
             <Sparkles className="h-4 w-4 text-[#E8703B]" /> Trending nearby
           </p>
           <div className="flex gap-4 overflow-x-auto pb-2 mb-10">
@@ -128,7 +128,7 @@ export function Home() {
             ))}
           </div>
 
-          <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/60 mb-4">Nearby</p>
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/75 mb-4">Nearby</p>
           <div className="grid sm:grid-cols-2 gap-5">
             {filtered.map((business) => (
               <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />

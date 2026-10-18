@@ -32,7 +32,7 @@ function Delta({ current, prev }: { current: number; prev: number }) {
   }
   if (pct === 0) {
     return (
-      <span className="flex items-center gap-1 text-xs font-bold text-[#1a1a1a]/40">
+      <span className="flex items-center gap-1 text-xs font-bold text-[#1a1a1a]/70">
         <Minus className="h-3.5 w-3.5" /> flat
       </span>
     )
@@ -69,7 +69,7 @@ function StatTile({
         <Delta current={value} prev={prev} />
       </div>
       <p className="text-3xl font-display font-extrabold text-[#1a1a1a]">{value}</p>
-      <p className="text-sm text-[#1a1a1a]/50 mt-0.5">{label}</p>
+      <p className="text-sm text-[#1a1a1a]/70 mt-0.5">{label}</p>
     </div>
   )
 }
@@ -104,9 +104,9 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
         <p className="font-display font-bold text-[#1a1a1a]">What changed in the last {period} days</p>
       </div>
       {loading ? (
-        <p className="text-sm text-[#1a1a1a]/40">Thinking…</p>
+        <p className="text-sm text-[#1a1a1a]/70">Thinking…</p>
       ) : error ? (
-        <p className="text-sm text-[#1a1a1a]/50">{error}</p>
+        <p className="text-sm text-[#1a1a1a]/70">{error}</p>
       ) : (
         <p className="text-sm text-[#1a1a1a]/80 leading-relaxed">{summary}</p>
       )}
@@ -157,7 +157,7 @@ function DeepBusinessReportCard({
           {loading ? 'Researching…' : report ? 'Refresh research' : 'Research my shop online'}
         </button>
       </div>
-      <p className="text-sm text-[#1a1a1a]/50 mb-4">
+      <p className="text-sm text-[#1a1a1a]/70 mb-4">
         Scans Google reviews and your shop's web presence, then writes up what customers are saying and where
         to improve.
       </p>
@@ -226,7 +226,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
 
       <div ref={scrollRef} className="flex flex-col gap-3 max-h-80 overflow-y-auto mb-4 pr-1">
         {messages.length === 0 && (
-          <p className="text-sm text-[#1a1a1a]/40">
+          <p className="text-sm text-[#1a1a1a]/70">
             Ask anything — "How do I get more repeat visits?", "Is my reward threshold too high?"...
           </p>
         )}
@@ -243,7 +243,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
             {m.content}
           </div>
         ))}
-        {sending && <div className="rounded-xl px-4 py-2.5 text-sm bg-white text-[#1a1a1a]/40 self-start">Thinking…</div>}
+        {sending && <div className="rounded-xl px-4 py-2.5 text-sm bg-white text-[#1a1a1a]/70 self-start">Thinking…</div>}
       </div>
 
       {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
@@ -305,7 +305,7 @@ export function OwnerAnalytics() {
     <OwnerLayout>
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Analytics</p>
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Analytics</p>
           <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a]">Know your customers</h1>
         </div>
         {business && (
@@ -316,7 +316,7 @@ export function OwnerAnalytics() {
                 onClick={() => setPeriod(p)}
                 className={
                   'px-4 h-9 rounded-full text-sm font-bold transition-colors ' +
-                  (period === p ? 'bg-[#C2410C] text-white' : 'text-[#1a1a1a]/50 hover:text-[#1a1a1a]')
+                  (period === p ? 'bg-[#C2410C] text-white' : 'text-[#1a1a1a]/70 hover:text-[#1a1a1a]')
                 }
               >
                 {p}d
@@ -328,11 +328,11 @@ export function OwnerAnalytics() {
 
       {!business ? (
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/50">Set up a shop to see analytics.</p>
+          <p className="text-[#1a1a1a]/70">Set up a shop to see analytics.</p>
         </div>
       ) : statsLoading || !stats || !totals ? (
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/40">Loading stats…</p>
+          <p className="text-[#1a1a1a]/70">Loading stats…</p>
         </div>
       ) : (
         <>
@@ -345,7 +345,7 @@ export function OwnerAnalytics() {
                   'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px capitalize transition-colors ' +
                   (view === key
                     ? 'border-[#1a1a1a] text-[#1a1a1a]'
-                    : 'border-transparent text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70')
+                    : 'border-transparent text-[#1a1a1a]/70 hover:text-[#1a1a1a]/70')
                 }
               >
                 {key}
@@ -386,7 +386,7 @@ export function OwnerAnalytics() {
                   ].map(([label, value]) => (
                     <div key={label as string}>
                       <p className="text-2xl font-display font-extrabold text-[#1a1a1a]">{value}</p>
-                      <p className="text-xs text-[#1a1a1a]/50">{label}</p>
+                      <p className="text-xs text-[#1a1a1a]/70">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -405,7 +405,7 @@ export function OwnerAnalytics() {
                     <div key={label as string} className="flex items-center justify-between py-3 text-sm">
                       <span className="text-[#1a1a1a]/70">{label}</span>
                       <div className="flex items-center gap-4">
-                        <span className="text-[#1a1a1a]/40">
+                        <span className="text-[#1a1a1a]/70">
                           {prev} → {cur}
                         </span>
                         <Delta current={cur as number} prev={prev as number} />

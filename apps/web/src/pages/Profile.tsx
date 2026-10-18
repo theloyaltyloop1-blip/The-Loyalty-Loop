@@ -22,7 +22,7 @@ interface SettingsData {
 }
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B]'
+  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/70 outline-none focus:border-[#E8703B]'
 
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
@@ -121,20 +121,20 @@ export function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Profile</p>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Profile</p>
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-6">Your account</h1>
 
       <SectionCard title="Your stamp card code">
-        <p className="text-sm text-[#1a1a1a]/50 mb-4">
+        <p className="text-sm text-[#1a1a1a]/70 mb-4">
           Show this QR code or manual code to staff at any shop if they can't scan it directly.
         </p>
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Manual code</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Manual code</p>
             <div className="flex items-center gap-2">
               <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a]">{profile?.stamp_code}</p>
-              <button onClick={handleCopyCode} className="text-[#1a1a1a]/40 hover:text-[#1a1a1a]">
+              <button onClick={handleCopyCode} className="text-[#1a1a1a]/70 hover:text-[#1a1a1a]">
                 {copied ? <Check className="h-4 w-4 text-[#3FA34D]" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -186,7 +186,7 @@ export function ProfilePage() {
 
       {settings && (
         <SectionCard title="Notifications">
-          <div className="flex items-center gap-2 mb-4 text-[#1a1a1a]/50">
+          <div className="flex items-center gap-2 mb-4 text-[#1a1a1a]/70">
             <Bell className="h-4 w-4" />
             <p className="text-sm">Choose what shops can notify you about.</p>
           </div>
@@ -200,7 +200,7 @@ export function ProfilePage() {
             <div key={key} className="flex items-center justify-between py-3 border-t border-black/5 first:border-t-0">
               <div>
                 <p className="font-semibold text-[#1a1a1a]">{label}</p>
-                <p className="text-xs text-[#1a1a1a]/50">{desc}</p>
+                <p className="text-xs text-[#1a1a1a]/70">{desc}</p>
               </div>
               <button
                 onClick={() => handleToggleSetting(key)}
@@ -222,7 +222,7 @@ export function ProfilePage() {
       )}
 
       <SectionCard title="Invite a friend">
-        <p className="text-sm text-[#1a1a1a]/55 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
+        <p className="text-sm text-[#1a1a1a]/70 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
         <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#C2410C] px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
       </SectionCard>
 
@@ -232,7 +232,7 @@ export function ProfilePage() {
       >
         <LogOut className="h-4 w-4" /> Sign out
       </button>
-      <button onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
+      <button onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-700 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
     </DashboardLayout>
   )
 }
