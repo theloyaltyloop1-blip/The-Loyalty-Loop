@@ -11,6 +11,14 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Reviews: shop replies broken, star summaries added (2026-10-18) - Claude
+
+- **Found.** Reviews save fine, including stars-only (POST 201 at 20:54 UTC; the owner deleted that test review at 20:55). The automatic shop reply never runs: the live `ai-review-reply` function has `verify_jwt: true`, but `supabase/config.toml` says `false`, and the `request_ai_review_reply` trigger calls it with no token. Gateway answers 401 (20:49 and 20:54), so drafts stay `queued` (review 5d34b1c0, Test Shop for ££).
+- **Not fixed yet.** Redeploying with `--no-verify-jwt` was blocked by auto mode; it needs the owner's OK. That's safe by design: trigger-only requests can only consume a queued claim (see `review-reply-handler.ts`). Afterwards, re-run queued drafts.
+- **Added (commit 96af927, not published).** `apps/shopper/src/ratings.ts` gives a "★ 4.6 (12)" summary on Home cards and rows, map rows, trending cards and the shop page, visible before joining. Checked: tsc clean, 21/21 tests. Needs an OTA (`eas update`, per platform) to reach phones.
+
+---
+
 ## Shopper 1.0.1 submitted to both stores (2026-10-18) - Claude
 
 - Built from commit d6bdc11 (includes "check for an update on launch", the countries work and `expo-location`/`expo-localization`). EAS records gitCommitHash d6bdc11c4c858a33808f23903f4e17088ca7c968 for both builds. Build numbers committed in d12691a.
