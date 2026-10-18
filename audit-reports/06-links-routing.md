@@ -74,3 +74,8 @@ Each role was crawled with a fake session, with Supabase REST/auth/functions int
 - Re-test 5 / final (2026-10-18T06:04Z): 6 crawls, 0 issues.
 
 **Final: 5-hour window complete — 0 broken links/assets across all re-tests.**
+
+## Follow-up: email logo
+- `main` had already moved email logos off postimg to `https://www.the-loyalty-loop.com/logo-for-emails` (`apps/web/public/logo-for-emails.png` + a root `vercel.json` rewrite). This branch is behind `main`, so the risk flagged above was already fixed there.
+- As requested, there is now also a copy in Supabase Storage: public bucket `brand`, at `https://tgukdabfvvoywawmzbdo.supabase.co/storage/v1/object/public/brand/loyalty-loop-logo.png` (400×248 PNG, 8,788 bytes, sha256 `e96797868e30…548e`, verified byte-for-byte). The email templates were not changed.
+- Also note that `apps/web/vercel.json` on this branch duplicates the SPA rewrite already in the root `vercel.json` on `main`. Drop it when merging.
