@@ -7,7 +7,7 @@ import { useOwner } from '@/lib/owner-context'
 import { createAnnouncement, deleteAnnouncement, fetchOwnedAnnouncements, updateAnnouncement, type Announcement } from '@/lib/businesses'
 import { ListSkeleton, ErrorState } from '@/components/ui/states'
 
-const inputClass = 'w-full rounded-xl border border-black/10 bg-white/70 px-4 py-3 text-[#1a1a1a] outline-none focus:border-[#E8703B]'
+const inputClass = 'w-full rounded-xl border border-black/10 bg-white/70 px-4 py-3 text-[#1a1a1a] outline-none focus:border-[#E8703B] focus-visible:ring-2 focus-visible:ring-[#E8703B]/40'
 const errorText = (error: unknown, fallback: string) => {
   if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') return error.message
   return fallback

@@ -251,7 +251,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
 
       <div className="flex items-center gap-2">
         <input
-          className="h-11 flex-1 rounded-full border border-black/10 bg-white px-4 text-sm outline-none focus:border-[#E8703B]"
+          className="h-11 flex-1 rounded-full border border-black/10 bg-white px-4 text-sm outline-none focus:border-[#E8703B] focus-visible:ring-2 focus-visible:ring-[#E8703B]/40"
           placeholder="Ask the coach…"
           value={input}
           onChange={(e) => setInput(e.target.value)}

@@ -16,7 +16,7 @@ const STEPS = [
 ] as const
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B]'
+  'h-12 w-full rounded-xl border border-black/10 bg-white px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B] focus-visible:ring-2 focus-visible:ring-[#E8703B]/40'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

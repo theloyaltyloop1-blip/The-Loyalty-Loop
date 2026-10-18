@@ -30,8 +30,9 @@ export function AuthLayout({ title, children }: { title: string; children: React
 export function AuthInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
+      aria-label={props.placeholder}
       {...props}
-      className="h-14 w-full rounded-lg border-[1.5px] border-[#1a1a1a] bg-white px-4 text-base font-bold text-[#1a1a1a] placeholder:text-[#1a1a1a] placeholder:font-bold outline-none focus:border-[#4B6142]"
+      className="h-14 w-full rounded-lg border-[1.5px] border-[#1a1a1a] bg-white px-4 text-base font-bold text-[#1a1a1a] placeholder:text-[#1a1a1a] placeholder:font-bold outline-none focus:border-[#4B6142] focus-visible:ring-2 focus-visible:ring-[#4B6142]/50"
     />
   )
 }

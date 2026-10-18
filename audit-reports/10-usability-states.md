@@ -435,3 +435,16 @@ initial cards: 3
 "zzz" empty state: true cards: 0
 after clear cards: 3 query: ""
 ```
+
+## Pass 11 – keyboard focus visibility (Tab ×40 per page, 1280px)
+- Inputs app-wide only changed a 1px border colour on focus → added `focus-visible` ring to shared input styles (11 files).
+- AuthInput (login/signup/reset) used placeholder as its only label → `aria-label` defaults to placeholder; focus ring added.
+```
+/: tabbed 39, no visible focus: 0
+/login: tabbed 37, no visible focus: 0
+/signup: tabbed 38, no visible focus: 0
+/forgot-password: tabbed 35, no visible focus: 0
+/dashboard: tabbed 37, no visible focus: 0
+/dashboard/profile: tabbed 39, no visible focus: 0
+```
+Before: /login 2, /signup 5, /forgot-password 1, /dashboard/profile 1 controls without visible focus.

@@ -209,7 +209,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
+          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B] focus-visible:ring-2 focus-visible:ring-[#E8703B]/40"
           placeholder="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -241,7 +241,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
                 type="number"
                 min={1}
                 max={50}
-                className="h-12 w-24 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-[#E8703B]"
+                className="h-12 w-24 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-[#E8703B] focus-visible:ring-2 focus-visible:ring-[#E8703B]/40"
                 value={amount}
                 onChange={(e) => setAmount(Math.max(1, Math.min(50, Number(e.target.value))))}
               />
@@ -360,7 +360,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
+          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B] focus-visible:ring-2 focus-visible:ring-[#E8703B]/40"
           placeholder="Reward's short code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -448,7 +448,7 @@ export function OwnerScan() {
         <div className="max-w-md">
           {!isOwner && staffBusinesses.length > 1 && (
             <select
-              className="h-11 w-full rounded-xl border border-black/10 bg-white px-4 mb-4 font-semibold text-[#1a1a1a] outline-none focus:border-[#E8703B]"
+              className="h-11 w-full rounded-xl border border-black/10 bg-white px-4 mb-4 font-semibold text-[#1a1a1a] outline-none focus:border-[#E8703B] focus-visible:ring-2 focus-visible:ring-[#E8703B]/40"
               value={activeBusinessId}
               onChange={(e) => setStaffBizId(e.target.value)}
             >
