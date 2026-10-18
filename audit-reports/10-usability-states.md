@@ -185,6 +185,168 @@ signup-noagree: url=/signup invalidNative=3 messages=[]
 | Landing | Dead `href="#"` "See all shops" → `/signup`; FAQ toggles 44px |
 | Cookie banner, auth Back, footer links, category chips, Legal back link, Profile copy/delete/invite, Signup checkbox | ≥44px targets |
 
+## Pass 3 – owner portal (browser, mocked business_owner role)
+Mocks: user_roles→business_owner, businesses→1 shop; all other calls → 500 ("fail") or [] ("empty").
+
+### Bugs found & fixed
+| Severity | Issue | Fix |
+|---|---|---|
+| **High** | Auth race: `rolesLoading` flipped false before the session was read, so `OwnerLayout` redirected owners to /dashboard → /owner on every refresh/deep link of any owner page (scan, tools, settings, notifications, …) | `auth-context.tsx` settles roles only after initial session check; `OwnerLayout` shows skeleton while roles load |
+| **High** | Owner + customer layouts had a fixed 256px sidebar on phones → 206px content, horizontal scroll (scrollWidth 462 @390px) | New `SidebarShell` (`components/ui/mobile-nav.tsx`): off-canvas drawer < md, top bar w/ 44px menu button |
+| Med | Analytics: stats fetch failure left "Loading stats…" forever + unhandled rejection | ErrorState + retry, skeleton |
+| Med | owner/Tools redirected to onboarding before owner context loaded | Wait for `ownerLoading` |
+| Med | Settings: photos, reward catalog, win-back log, staff fetch failures unhandled (page errors, silent) | Inline `role=alert` messages |
+| Low | Landing hero badge overflowed viewport by 14px | Offset reduced on mobile |
+| Low | Undersized owner controls (period chips 36px, tabs 42px, Scan/Tools buttons 40px, hours chips 32px, colour swatches 32px, Upload 36px, Regenerate 16px) | All ≥44px |
+
+### Drawer / modal behaviour (`mobile.txt`)
+```
+/owner: scrollWidth=390 ok
+/owner/scan: scrollWidth=390 ok
+/owner/tools: scrollWidth=390 ok
+/owner/settings: scrollWidth=390 ok
+/owner/notifications: scrollWidth=390 ok
+/owner/announcements: scrollWidth=390 ok
+/owner/reviews: scrollWidth=390 ok
+/owner/support: scrollWidth=390 ok
+/dashboard: scrollWidth=390 ok
+/dashboard/rewards: scrollWidth=390 ok
+/dashboard/profile: scrollWidth=390 ok
+/: scrollWidth=390 ok
+/login: scrollWidth=390 ok
+/signup: scrollWidth=390 ok
+/terms: scrollWidth=390 ok
+drawer hidden initially: true
+opens on menu tap: true
+closes on Escape: true
+closes on backdrop: true
+closes on X: true
+closes on navigate: true http://localhost:4173/owner/reviews
+```
+
+### Owner routes, forced failure
+```
+## /owner → /owner alerts=["Something went wrongWe couldn’t load your stats. Check your "] skeleton=false pageErrors=0
+  text: ANALYTICS Know your customers 7d 30d 90d Something went wrong We couldn’t load your stats. Check your connection and try again. Try again
+  undersized(0): 
+## /owner/scan → /owner/scan alerts=[] skeleton=false pageErrors=0
+  text: SCAN Award & redeem Add Stamp Redeem Reward Scan customer QR OR MANUAL CODE Find
+  undersized(0): 
+## /owner/tools → /owner/tools alerts=[] skeleton=false pageErrors=0
+  text: GROWTH TOOLS Grow your shop Printable QR poster Test Cafe Join our loyalty rewards Scan to start collecting Print poster Setup checklist 0/4 shop details comple
+  undersized(0): 
+## /owner/settings → /owner/settings alerts=["Couldn’t load your photos. Refresh to try again."] skeleton=false pageErrors=0
+  text: Shop settings Profile Loyalty & rewards Win-back emails Verification Staff Help & support Danger zone STOREFRONT PREVIEW Test Cafe Cafe Brand images A logo is s
+  undersized(0): 
+## /owner/notifications → /owner/notifications alerts=["Something went wrongWe couldn’t load notifications. Check yo"] skeleton=false pageErrors=0
+  text: Something went wrong We couldn’t load notifications. Check your connection and try again. Try again
+  undersized(0): 
+## /owner/announcements → /owner/announcements alerts=["boom"] skeleton=false pageErrors=0
+  text: CUSTOMER NEWS Announcements Share menu launches, events and updates with customers on the News page. Create an update boom Publish update Your updates No announ
+  undersized(0): 
+## /owner/reviews → /owner/reviews alerts=["boom"] skeleton=false pageErrors=0
+  text: CUSTOMER FEEDBACK Reviews — from 0 reviews boom No customer reviews yet.
+  undersized(0): 
+## /owner/support → /owner/support alerts=["boom"] skeleton=false pageErrors=0
+  text: HELP CENTRE Help & support Send a request directly to the Loyalty Loop team. New request Low priority Normal priority High priority boom Send request Your reque
+  undersized(0): 
+```
+### Owner routes, empty data
+```
+## /owner → /owner alerts=[] skeleton=false pageErrors=0
+  text: ANALYTICS Know your customers 7d 30d 90d Simplified Detailed flat 0 New members flat 0 Stamps given flat 0 Rewards earned flat 0 Rewards redeemed What changed i
+  undersized(0): 
+## /owner/scan → /owner/scan alerts=[] skeleton=false pageErrors=0
+  text: SCAN Award & redeem Add Stamp Redeem Reward Scan customer QR OR MANUAL CODE Find
+  undersized(0): 
+## /owner/tools → /owner/tools alerts=[] skeleton=false pageErrors=0
+  text: GROWTH TOOLS Grow your shop Printable QR poster Test Cafe Join our loyalty rewards Scan to start collecting Print poster Setup checklist 0/4 shop details comple
+  undersized(0): 
+## /owner/settings → /owner/settings alerts=[] skeleton=false pageErrors=0
+  text: Shop settings Profile Loyalty & rewards Win-back emails Verification Staff Help & support Danger zone STOREFRONT PREVIEW Test Cafe Cafe Brand images A logo is s
+  undersized(0): 
+## /owner/notifications → /owner/notifications alerts=[] skeleton=false pageErrors=0
+  text: SHOP UPDATES Notifications Mark all read No shop notifications yet.
+  undersized(0): 
+## /owner/announcements → /owner/announcements alerts=[] skeleton=false pageErrors=0
+  text: CUSTOMER NEWS Announcements Share menu launches, events and updates with customers on the News page. Create an update Publish update Your updates No announcemen
+  undersized(0): 
+## /owner/reviews → /owner/reviews alerts=[] skeleton=false pageErrors=0
+  text: CUSTOMER FEEDBACK Reviews — from 0 reviews No customer reviews yet.
+  undersized(0): 
+## /owner/support → /owner/support alerts=[] skeleton=false pageErrors=0
+  text: HELP CENTRE Help & support Send a request directly to the Loyalty Loop team. New request Low priority Normal priority High priority Send request Your requests N
+  undersized(0): 
+```
+### Settings tabs (each clicked)
+```
+## tab Profile alerts=["Couldn’t load your photos. Refresh to try again."] pageErrors=0 
+  undersized(0): 
+## tab Loyalty & rewards alerts=["Couldn’t load your rewards. Refresh to try again."] pageErrors=0 
+  undersized(1): input 42x48 "text" .h-12 w-full rounded-xl border border-black/10 bg-w
+## tab Win-back emails alerts=["Couldn’t load the win-back log. Please try again."] pageErrors=0 
+  undersized(0): 
+## tab Verification alerts=[] pageErrors=0 
+  undersized(0): 
+## tab Staff alerts=[] pageErrors=0 
+  undersized(0): 
+## tab Help & support alerts=[] pageErrors=0 
+  undersized(0): 
+## tab Danger zone alerts=[] pageErrors=0 
+  undersized(0): 
+```
+
+### Final customer/public tap-target scan
+```
+## / → / | interactive=21 alert=false skeleton=false | "The Loyalty Loop Sign up or log in SW17 · SW12 · now live Your high street, in your pocket"
+undersized: 0
+## /login → /login | interactive=10 alert=false skeleton=false | "Welcome back Log in New here? – Sign up as a customer Run a shop? – Sign up as a Loyalty"
+undersized: 0
+## /signup → /signup | interactive=15 alert=false skeleton=false | "Welcome to The Loyalty Loop I agree to the Terms and Privacy Notice . Sign up Already reg"
+undersized: 3
+- input 20x20 "checkbox" .mt-0.5 h-5 w-5 shrink-0
+- a 41x20 "Terms" .underline font-bold
+- a 88x40 "Privacy Notice" .underline font-bold
+## /signup/owner → /signup/owner | interactive=15 alert=false skeleton=false | "Welcome to The Loyalty Loop I agree to the Terms and Privacy Notice . Create shop account "
+undersized: 3
+- input 20x20 "checkbox" .mt-0.5 h-5 w-5 shrink-0
+- a 41x20 "Terms" .underline font-bold
+- a 88x40 "Privacy Notice" .underline font-bold
+## /forgot-password → /forgot-password | interactive=6 alert=false skeleton=false | "Reset your password Send reset link Back to sign in Your privacy choices We use essentia"
+undersized: 0
+## /reset-password → /reset-password | interactive=5 alert=false skeleton=false | "Choose a new password Save new password Your privacy choices We use essential storage to"
+undersized: 0
+## /terms → /terms | interactive=4 alert=false skeleton=false | "← The Loyalty Loop EFFECTIVE 7 AUGUST 2026 Terms of service Using The Loyalty Loop The "
+undersized: 0
+## /privacy → /privacy | interactive=4 alert=false skeleton=false | "← The Loyalty Loop EFFECTIVE 7 AUGUST 2026 Privacy notice What we store We store the ac"
+undersized: 0
+## /dashboard → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /dashboard/rewards → /dashboard/rewards | interactive=12 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /dashboard/news → /dashboard/news | interactive=12 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /dashboard/favourites → /dashboard/favourites | interactive=12 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /dashboard/activity → /dashboard/activity | interactive=12 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /dashboard/inbox → /dashboard/inbox | interactive=12 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /dashboard/profile → /dashboard/profile | interactive=20 alert=false skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /owner → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /owner/notifications → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /owner/settings → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+## /owner/scan → /dashboard | interactive=14 alert=true skeleton=false | "The Loyalty Loop The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign"
+undersized: 0
+```
+
 ## Remaining (not changed)
 - owner/Tools member-list fetch ignores errors (non-critical).
 - No automated a11y/Lighthouse scoring available offline; no test suite exists in repo.
+- Customer layout floating "Security" button (`dashboard-layout.tsx`) has no action — dead control; intent unclear, left for product decision.
+- Announcements/Reviews/Support show raw backend messages (e.g. "boom" in mocks) and the empty state simultaneously on failure.
+- Desktop sidebar unchanged (verified visible at 1280px, menu button hidden).

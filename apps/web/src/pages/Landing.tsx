@@ -213,7 +213,7 @@ export function Landing() {
               <ShopRowIllustration className="w-full h-auto" />
             </div>
 
-            <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-accent border-[3px] border-foreground shadow-sticker flex flex-col items-center justify-center text-center rotate-6">
+            <div className="absolute -top-6 -right-2 sm:-right-6 h-24 w-24 rounded-full bg-accent border-[3px] border-foreground shadow-sticker flex flex-col items-center justify-center text-center rotate-6">
               <span className="font-display font-extrabold text-sm leading-none">FREE</span>
               <span className="text-[10px] font-bold uppercase leading-none mt-1">to join</span>
             </div>

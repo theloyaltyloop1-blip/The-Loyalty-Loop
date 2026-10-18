@@ -191,7 +191,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
       <div className="flex items-center justify-center">
         <button
           onClick={() => setCameraOn((c) => !c)}
-          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-[#1a1a1a]"
+          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-11 font-semibold text-sm text-[#1a1a1a]"
         >
           {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {cameraOn ? 'Stop camera' : 'Scan customer QR'}
@@ -342,7 +342,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
       <div className="flex items-center justify-center">
         <button
           onClick={() => setCameraOn((c) => !c)}
-          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-10 font-semibold text-sm text-[#1a1a1a]"
+          className="flex items-center gap-2 rounded-full border border-black/15 px-4 h-11 font-semibold text-sm text-[#1a1a1a]"
         >
           {cameraOn ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {cameraOn ? 'Stop camera' : 'Scan reward QR'}
@@ -473,7 +473,7 @@ export function OwnerScan() {
                       key={key}
                       onClick={() => setMode(key)}
                       className={
-                        'flex-1 h-10 rounded-full text-sm font-bold capitalize transition-colors flex items-center justify-center gap-1.5 ' +
+                        'flex-1 h-11 rounded-full text-sm font-bold capitalize transition-colors flex items-center justify-center gap-1.5 ' +
                         (mode === key ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/50')
                       }
                     >

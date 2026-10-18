@@ -128,7 +128,7 @@ function BrandImageUpload({
       <button
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="mt-2 flex items-center gap-2 rounded-full border border-black/15 px-4 h-9 text-sm font-semibold text-[#1a1a1a] disabled:opacity-40"
+        className="mt-2 flex items-center gap-2 rounded-full border border-black/15 px-4 h-11 text-sm font-semibold text-[#1a1a1a] disabled:opacity-40"
       >
         <Upload className="h-3.5 w-3.5" /> {uploading ? 'Uploading…' : currentUrl ? 'Replace' : 'Upload'}
       </button>
@@ -160,7 +160,7 @@ function OpeningHoursEditor({ hours, onChange }: { hours: OpeningHours; onChange
             <button
               onClick={() => onChange({ ...hours, [key]: { ...day, closed: !day.closed } })}
               className={
-                'rounded-full px-3 h-8 text-xs font-bold ' +
+                'rounded-full px-3 h-11 min-w-11 text-xs font-bold ' +
                 (day.closed ? 'bg-black/5 text-[#1a1a1a]/40' : 'bg-[#DFF3E3] text-[#3FA34D]')
               }
             >
@@ -172,14 +172,14 @@ function OpeningHoursEditor({ hours, onChange }: { hours: OpeningHours; onChange
                   type="time"
                   value={day.open}
                   onChange={(e) => onChange({ ...hours, [key]: { ...day, open: e.target.value } })}
-                  className="h-8 rounded-lg border border-black/10 bg-white px-2 text-sm"
+                  className="h-11 rounded-lg border border-black/10 bg-white px-2 text-sm"
                 />
                 <span className="text-[#1a1a1a]/30">–</span>
                 <input
                   type="time"
                   value={day.close}
                   onChange={(e) => onChange({ ...hours, [key]: { ...day, close: e.target.value } })}
-                  className="h-8 rounded-lg border border-black/10 bg-white px-2 text-sm"
+                  className="h-11 rounded-lg border border-black/10 bg-white px-2 text-sm"
                 />
               </>
             )}
@@ -198,7 +198,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    fetchBusinessPhotos(businessId).then(setPhotos).finally(() => setLoadingPhotos(false))
+    fetchBusinessPhotos(businessId).then(setPhotos).catch(() => setError('Couldn’t load your photos. Refresh to try again.')).finally(() => setLoadingPhotos(false))
   }, [businessId])
 
   async function handleUpload(file: File | undefined) {
@@ -462,6 +462,7 @@ function LoyaltyTab() {
   const [stampIcon, setStampIcon] = React.useState(business?.loyalty_config.stamp_icon ?? '⭐')
   const [signupReward, setSignupReward] = React.useState(business?.loyalty_config.signup_reward_title ?? '')
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
+  const [catalogError, setCatalogError] = React.useState(false)
   const [newReward, setNewReward] = React.useState({ title: '', description: '', stamp_threshold: 10 })
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
@@ -473,7 +474,8 @@ function LoyaltyTab() {
     setStampsRequired(business.loyalty_config.stamps_required ?? 10)
     setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
-    fetchRewardCatalog(business.id).then(setCatalog)
+    setCatalogError(false)
+    fetchRewardCatalog(business.id).then(setCatalog).catch(() => setCatalogError(true))
   }, [business?.id])
 
   if (!business) return null
@@ -557,7 +559,7 @@ function LoyaltyTab() {
                 type="color"
                 value={brandColor}
                 onChange={(e) => setBrandColor(e.target.value)}
-                className="h-10 w-10 rounded-lg border border-black/10"
+                className="h-11 w-11 shrink-0 rounded-lg border border-black/10"
               />
               <input className={inputClass} value={brandColor} onChange={(e) => setBrandColor(e.target.value)} />
             </div>
@@ -566,7 +568,7 @@ function LoyaltyTab() {
                 <button
                   key={c}
                   onClick={() => setBrandColor(c)}
-                  className="h-8 w-8 rounded-full border-2"
+                  className="h-11 w-11 rounded-full border-2"
                   style={{ backgroundColor: c, borderColor: c === brandColor ? '#1a1a1a' : 'transparent' }}
                 />
               ))}
@@ -616,7 +618,7 @@ function LoyaltyTab() {
                   key={icon}
                   onClick={() => setStampIcon(icon)}
                   className={
-                    'h-9 w-9 rounded-lg border-2 flex items-center justify-center text-lg ' +
+                    'h-11 w-11 rounded-lg border-2 flex items-center justify-center text-lg ' +
                     (icon === stampIcon ? 'border-[#E8703B]' : 'border-black/10')
                   }
                 >
@@ -635,7 +637,7 @@ function LoyaltyTab() {
               {Array.from({ length: Math.min(stampsRequired, 5) }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-9 w-9 rounded-full flex items-center justify-center text-base"
+                  className="h-11 w-11 rounded-full flex items-center justify-center text-base"
                   style={{ backgroundColor: i < 3 ? brandColor : 'transparent', border: i < 3 ? 'none' : '1px solid rgba(0,0,0,0.15)' }}
                 >
                   {stampIcon}
@@ -653,6 +655,7 @@ function LoyaltyTab() {
           least one reward here to unlock scanning.
         </p>
 
+        {catalogError && <p role="alert" className="text-sm text-red-600 mb-3">Couldn’t load your rewards. Refresh to try again.</p>}
         {catalog.length > 0 && (
           <div className="flex flex-col gap-2 mb-4">
             {catalog.map((r) => (
@@ -734,6 +737,7 @@ function WinbackTab() {
     setLoadingLog(true)
     fetchWinbackLog(business.id)
       .then(setLog)
+      .catch(() => setError('Couldn’t load the win-back log. Please try again.'))
       .finally(() => setLoadingLog(false))
   }, [business?.id])
 
@@ -959,7 +963,7 @@ function PermissionToggle({
     <button
       onClick={onToggle}
       className={
-        'flex items-center gap-2 rounded-full border-2 px-3.5 h-9 text-sm font-semibold transition-colors ' +
+        'flex items-center gap-2 rounded-full border-2 px-3.5 h-11 text-sm font-semibold transition-colors ' +
         (active ? 'border-[#E8703B] bg-[#E8703B]/10 text-[#C9622E]' : 'border-black/10 text-[#1a1a1a]/40')
       }
     >
@@ -1085,7 +1089,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
           onClick={toggleStatus}
           disabled={busy}
           className={
-            'rounded-full px-4 h-9 text-sm font-bold disabled:opacity-50 ' +
+            'rounded-full px-4 h-11 text-sm font-bold disabled:opacity-50 ' +
             (revoked ? 'bg-[#3FA34D] text-white' : 'border border-red-300 text-red-600')
           }
         >
@@ -1122,10 +1126,11 @@ function StaffTab() {
   const { business } = useOwner()
   const [staff, setStaff] = React.useState<StaffMember[]>([])
   const [loadingStaff, setLoadingStaff] = React.useState(true)
+  const [staffError, setStaffError] = React.useState(false)
 
   React.useEffect(() => {
     if (!business) return
-    fetchStaffMembers(business.id).then(setStaff).finally(() => setLoadingStaff(false))
+    fetchStaffMembers(business.id).then(setStaff).catch(() => setStaffError(true)).finally(() => setLoadingStaff(false))
   }, [business?.id])
 
   if (!business) return null
@@ -1135,7 +1140,9 @@ function StaffTab() {
       <InviteStaffForm businessId={business.id} onInvited={(s) => setStaff([s, ...staff.filter((x) => x.id !== s.id)])} />
 
       <SectionCard title="Staff">
-        {loadingStaff ? (
+        {staffError ? (
+          <p role="alert" className="text-sm text-red-600">Couldn’t load your staff list. Refresh to try again.</p>
+        ) : loadingStaff ? (
           <p className="text-sm text-[#1a1a1a]/40">Loading…</p>
         ) : staff.length === 0 ? (
           <p className="text-sm text-[#1a1a1a]/40">No staff added yet.</p>
@@ -1177,7 +1184,7 @@ export function OwnerSettings() {
             key={key}
             onClick={() => setTab(key)}
             className={
-              'flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ' +
+              'flex min-h-11 items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ' +
               (tab === key
                 ? 'border-[#1a1a1a] text-[#1a1a1a]'
                 : 'border-transparent text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70')

@@ -2,6 +2,7 @@ import * as React from 'react'
 import { NavLink, Navigate } from 'react-router-dom'
 import { Home, Megaphone, Gift, Heart, User, Shield, LogOut, History, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import { SidebarShell } from '@/components/ui/mobile-nav'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-logo.png'
 
 const NAV_ITEMS = [
@@ -22,8 +23,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (primaryRole === 'staff') return <Navigate to="/owner/scan" replace />
 
   return (
-    <div className="min-h-screen flex bg-[#F7ECDC]">
-      <aside className="w-64 shrink-0 border-r border-black/5 flex flex-col p-5">
+    <SidebarShell sidebar={<>
         <div className="flex items-center gap-2 px-2 mb-8">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain rounded-full" />
           <span className="font-display font-extrabold text-lg text-[#1a1a1a]">The Loyalty Loop</span>
@@ -56,9 +56,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             Sign out
           </button>
         </div>
-      </aside>
-
-      <main className="flex-1 p-8 max-w-5xl">{children}</main>
+      </>}>
+      {children}
 
       <button
         title="Security"
@@ -66,6 +65,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       >
         <Shield className="h-6 w-6" />
       </button>
-    </div>
+    </SidebarShell>
   )
 }
