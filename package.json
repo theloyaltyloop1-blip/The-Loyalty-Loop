@@ -6,6 +6,7 @@
     "dev:web": "npm --prefix apps/web run dev",
     "build:web": "npm --prefix apps/web run build",
     "lint:web": "npm --prefix apps/web run lint",
-    "typecheck:web": "npm --prefix apps/web run typecheck"
+    "typecheck:web": "npm --prefix apps/web run typecheck",
+    "lint:functions": "apps/web/node_modules/.bin/oxlint -c apps/web/.oxlintrc.json supabase/functions"
   }
 }

@@ -68,3 +68,6 @@ Regenerate types after migrations: Supabase MCP `generate_typescript_types` or `
 - Unused files: `src/pages/ComingSoon.tsx`, `src/pages/owner/OwnerComingSoon.tsx`.
 - Unused exports: `getVerificationDocUrl`, `applyReferralCode`, `acceptLegal`, `ButtonProps`, `PlatformHealthCheck` (type).
 - `acceptLegal` is redundant: signup trigger (migration 0024) inserts `legal_acceptances` from `legal_accepted` metadata — safe to remove. `applyReferralCode` is unused (referral redemption not wired in UI) — product decision.
+
+## Pass 4 — Supabase edge functions
+- Linted `supabase/functions/*` with same config (`npm run lint:functions`): 1 error — unused `amount` in `send-visit-thank-you` — removed. Now 0 errors / 0 warnings. (Source change only; redeploy required to take effect, no behaviour change.)
