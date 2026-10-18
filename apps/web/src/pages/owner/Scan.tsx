@@ -42,7 +42,7 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
   const [running, setRunning] = React.useState(false)
 
   React.useEffect(() => {
-    if (!active || !detector) return
+    if (!active || !detector) return undefined
     let cancelled = false
     let raf = 0
 

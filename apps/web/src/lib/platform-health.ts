@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export interface PlatformHealthCheck { label: string; detail: string; ok: boolean }
+interface PlatformHealthCheck { label: string; detail: string; ok: boolean }
 
 export async function fetchPlatformHealth(): Promise<PlatformHealthCheck[]> {
   const { data, error } = await supabase.functions.invoke('platform-health', { body: {} })

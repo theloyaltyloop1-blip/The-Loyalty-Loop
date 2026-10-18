@@ -138,7 +138,7 @@ export function ShopDetail() {
   React.useEffect(() => {
     if (!userId || !business) return
     fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
-  }, [userId, business?.id])
+  }, [userId, business])
 
   async function handleToggleFavourite() {
     if (!session?.user || !business) return

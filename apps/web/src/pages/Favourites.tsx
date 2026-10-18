@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ShopCard } from '@/components/shop-card'
 import { fetchFavouriteBusinesses, fetchMyMemberships, type Business, type Membership } from '@/lib/businesses'
+import { StatusCard, StatusText } from '@/components/ui/states'
 
 export function FavouritesPage() {
   const { session, loading } = useAuth()
@@ -33,14 +34,14 @@ export function FavouritesPage() {
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-6">Shops you've saved</h1>
 
       {fetching ? (
-        <p className="text-[#1a1a1a]/40">Loading…</p>
+        <StatusText className="text-base" />
       ) : businesses.length === 0 ? (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
+        <StatusCard>
           <Heart className="h-8 w-8 text-[#1a1a1a]/20 mx-auto mb-3" />
           <p className="text-[#1a1a1a]/50">
             No favourites yet — tap the heart on a shop's page to save it here.
           </p>
-        </div>
+        </StatusCard>
       ) : (
         <div className="grid sm:grid-cols-2 gap-5">
           {businesses.map((business) => (

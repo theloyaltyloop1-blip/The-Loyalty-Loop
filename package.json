@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "scripts": {
     "dev:web": "npm --prefix apps/web run dev",
-    "build:web": "npm --prefix apps/web run build"
+    "build:web": "npm --prefix apps/web run build",
+    "gen:types": "npx supabase gen types typescript --project-id tgukdabfvvoywawmzbdo > apps/web/src/lib/database.types.ts",
+    "test:web": "npm --prefix apps/web test"
   }
 }

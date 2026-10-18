@@ -1,3 +1,4 @@
+import { StatusCard, StatusText } from '@/components/ui/states'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Users, Stamp, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink } from 'lucide-react'
@@ -287,13 +288,13 @@ export function OwnerAnalytics() {
         setTotals(t)
       })
       .finally(() => setStatsLoading(false))
-  }, [business?.id, period])
+  }, [business, period])
 
   React.useEffect(() => {
     if (!business) return
     setWebResearch(null)
     fetchLatestWebResearch(business.id).then(setWebResearch)
-  }, [business?.id])
+  }, [business])
 
   if (loading || rolesLoading || ownerLoading) return null
   if (!session) return <Navigate to="/login" replace />
@@ -331,9 +332,9 @@ export function OwnerAnalytics() {
           <p className="text-[#1a1a1a]/50">Set up a shop to see analytics.</p>
         </div>
       ) : statsLoading || !stats || !totals ? (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/40">Loading stats…</p>
-        </div>
+        <StatusCard>
+          <StatusText className="text-base">Loading stats…</StatusText>
+        </StatusCard>
       ) : (
         <>
           <div className="flex gap-1 border-b border-black/10 mb-6">

@@ -30,3 +30,7 @@ If you are developing a production application, we recommend enabling type-aware
 ```
 
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+## Database types
+
+`src/lib/database.types.ts` is generated. After every migration run `npm run gen:types` from the repo root and commit the result.

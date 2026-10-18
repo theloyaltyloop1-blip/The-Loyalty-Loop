@@ -5,6 +5,7 @@ import { Gift, Ticket } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { fetchMyRewards, type CustomerReward } from '@/lib/businesses'
+import { StatusCard } from '@/components/ui/states'
 
 function RewardCard({ reward }: { reward: CustomerReward }) {
   const redeemed = Boolean(reward.redeemed_at)
@@ -58,11 +59,11 @@ export function RewardsPage() {
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a]">Rewards</h1>
       <p className="text-[#1a1a1a]/55 mt-2 mb-7">Your earned rewards are ready to use here.</p>
       {available.length === 0 ? (
-        <div className="rounded-2xl bg-[#FBF6EC] p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <StatusCard>
           <Ticket className="h-9 w-9 mx-auto text-[#E8703B] mb-3" />
           <h2 className="font-display text-xl font-bold text-[#1a1a1a]">No rewards yet</h2>
           <p className="text-sm text-[#1a1a1a]/55 mt-2">Keep collecting stamps or points at your favourite shops — your reward will appear here automatically.</p>
-        </div>
+        </StatusCard>
       ) : <div className="grid gap-5 md:grid-cols-2">{available.map((reward) => <RewardCard key={reward.id} reward={reward} />)}</div>}
       {past.length > 0 && <><h2 className="font-display text-xl font-bold text-[#1a1a1a] mt-10 mb-4">Past rewards</h2><div className="grid gap-4 md:grid-cols-2">{past.map((reward) => <RewardCard key={reward.id} reward={reward} />)}</div></>}
     </DashboardLayout>

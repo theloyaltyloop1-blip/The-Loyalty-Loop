@@ -1,3 +1,4 @@
+import { StatusText } from '@/components/ui/states'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
@@ -228,7 +229,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         each.
       </p>
       {loadingPhotos ? (
-        <p className="text-sm text-[#1a1a1a]/40">Loading…</p>
+        <StatusText />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {photos.map((p) => (
@@ -293,7 +294,7 @@ function ProfileTab() {
       instagram: business.instagram ?? '',
     })
     setHours(business.opening_hours ?? {})
-  }, [business?.id])
+  }, [business])
 
   if (!business) return null
 
@@ -474,7 +475,7 @@ function LoyaltyTab() {
     setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
     fetchRewardCatalog(business.id).then(setCatalog)
-  }, [business?.id])
+  }, [business])
 
   if (!business) return null
 
@@ -735,7 +736,7 @@ function WinbackTab() {
     fetchWinbackLog(business.id)
       .then(setLog)
       .finally(() => setLoadingLog(false))
-  }, [business?.id])
+  }, [business])
 
   React.useEffect(() => {
     loadLog()
@@ -793,9 +794,9 @@ function WinbackTab() {
 
       <SectionCard title="Send history">
         {loadingLog ? (
-          <p className="text-sm text-[#1a1a1a]/40">Loading…</p>
+          <StatusText />
         ) : log.length === 0 ? (
-          <p className="text-sm text-[#1a1a1a]/40">No win-back emails sent yet.</p>
+          <StatusText>No win-back emails sent yet.</StatusText>
         ) : (
           <div className="flex flex-col gap-2">
             {log.map((entry) => (
@@ -1126,7 +1127,7 @@ function StaffTab() {
   React.useEffect(() => {
     if (!business) return
     fetchStaffMembers(business.id).then(setStaff).finally(() => setLoadingStaff(false))
-  }, [business?.id])
+  }, [business])
 
   if (!business) return null
 
@@ -1136,9 +1137,9 @@ function StaffTab() {
 
       <SectionCard title="Staff">
         {loadingStaff ? (
-          <p className="text-sm text-[#1a1a1a]/40">Loading…</p>
+          <StatusText />
         ) : staff.length === 0 ? (
-          <p className="text-sm text-[#1a1a1a]/40">No staff added yet.</p>
+          <StatusText>No staff added yet.</StatusText>
         ) : (
           <div className="flex flex-col gap-3">
             {staff.map((s) => (

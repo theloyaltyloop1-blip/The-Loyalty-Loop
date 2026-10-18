@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/lib/database.types'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -61,7 +62,7 @@ export function ProfilePage() {
       supabase.from('user_settings').select('notify_offers,notify_rewards,notify_stamps').eq('user_id', session.user.id).single(),
     ]).then(([p, s]) => {
       if (p.data) {
-        setProfile(p.data as ProfileData)
+        setProfile(p.data)
         setForm({
           first_name: p.data.first_name ?? '',
           last_name: p.data.last_name ?? '',
@@ -69,7 +70,7 @@ export function ProfilePage() {
           postcode: p.data.postcode ?? '',
         })
       }
-      if (s.data) setSettings(s.data as SettingsData)
+      if (s.data) setSettings(s.data)
       getReferralCode(session.user.id).then(setReferralCode).catch(() => undefined)
       setReady(true)
     })
@@ -97,7 +98,7 @@ export function ProfilePage() {
     if (!session?.user || !settings) return
     const next = { ...settings, [key]: !settings[key] }
     setSettings(next)
-    await supabase.from('user_settings').update({ [key]: next[key] }).eq('user_id', session.user.id)
+    await supabase.from('user_settings').update({ [key]: next[key] } as TablesUpdate<'user_settings'>).eq('user_id', session.user.id)
   }
 
   function handleCopyCode() {

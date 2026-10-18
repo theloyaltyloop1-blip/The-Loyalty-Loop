@@ -28,7 +28,7 @@ function isoDaysAgo(days: number) {
 }
 
 async function countRows(
-  table: string,
+  table: 'rewards' | 'transactions',
   businessId: string,
   extra: (q: any) => any,
   from?: string,
@@ -189,7 +189,7 @@ export async function sendCoachMessage(
   return (data as { reply: string }).reply
 }
 
-export interface WebResearchSource {
+interface WebResearchSource {
   url: string
   title: string
 }

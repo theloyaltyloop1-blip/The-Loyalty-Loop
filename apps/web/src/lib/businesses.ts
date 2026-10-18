@@ -1,6 +1,7 @@
+import type { TablesUpdate } from './database.types'
 import { supabase } from './supabase'
 
-export interface LoyaltyConfig {
+interface LoyaltyConfig {
   stamps_required?: number
   stamp_icon?: string
   signup_reward_title?: string
@@ -80,7 +81,7 @@ export async function fetchOwnedBusinesses(ownerId: string): Promise<Business[]>
 }
 
 export async function updateBusiness(id: string, patch: Partial<Business>): Promise<Business> {
-  const { data, error } = await supabase.from('businesses').update(patch).eq('id', id).select().single()
+  const { data, error } = await supabase.from('businesses').update(patch as TablesUpdate<'businesses'>).eq('id', id).select().single()
   if (error) throw error
   return data as Business
 }
@@ -161,7 +162,7 @@ export async function uploadBusinessImage(
   if (uploadError) throw uploadError
 
   const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path)
-  return updateBusiness(businessId, { [field]: publicUrl.publicUrl } as Partial<Business>)
+  return updateBusiness(businessId, { [field]: publicUrl.publicUrl })
 }
 
 export async function fetchMyMemberships(userId: string): Promise<Membership[]> {
@@ -195,7 +196,7 @@ export async function joinBusiness(userId: string, businessId: string): Promise<
     .select()
     .single()
   if (error) throw error
-  return data as Membership
+  return data
 }
 
 export async function fetchRewardCatalog(businessId: string): Promise<RewardCatalogItem[]> {
@@ -218,7 +219,7 @@ export async function addRewardCatalogItem(
     .select()
     .single()
   if (error) throw error
-  return data as RewardCatalogItem
+  return data
 }
 
 export async function deleteRewardCatalogItem(id: string) {
@@ -334,7 +335,7 @@ export interface Announcement {
   business: Pick<Business, 'name' | 'brand_color' | 'logo_url'> | null
 }
 
-export interface ReviewReply {
+interface ReviewReply {
   id: string
   review_id: string
   business_id: string
@@ -372,7 +373,7 @@ export async function upsertReview(businessId: string, userId: string, rating: n
     .select()
     .single()
   if (error) throw error
-  return data as ShopReview
+  return data
 }
 
 export async function deleteReview(id: string) {
@@ -388,7 +389,7 @@ export async function replyToReview(review: ShopReview, ownerId: string, body: s
     .select()
     .single()
   if (error) throw error
-  return data as ReviewReply
+  return data
 }
 
 export async function fetchMyRewards(userId: string): Promise<CustomerReward[]> {
@@ -433,13 +434,13 @@ export async function fetchOwnedAnnouncements(businessId: string): Promise<Annou
 export async function createAnnouncement(businessId: string, values: Pick<Announcement, 'title' | 'body' | 'is_active'>) {
   const { data, error } = await supabase.from('announcements').insert({ business_id: businessId, ...values }).select().single()
   if (error) throw error
-  return data as Announcement
+  return data
 }
 
 export async function updateAnnouncement(id: string, values: Partial<Pick<Announcement, 'title' | 'body' | 'is_active'>>) {
   const { data, error } = await supabase.from('announcements').update(values).eq('id', id).select().single()
   if (error) throw error
-  return data as Announcement
+  return data
 }
 
 export async function deleteAnnouncement(id: string) {
@@ -550,10 +551,10 @@ export async function reviewBusinessVerification(businessId: string, approve: bo
   const { data, error } = await supabase.rpc('admin_review_business_verification', {
     _business_id: businessId,
     _approve: approve,
-    _reason: reason ?? null,
+    _reason: reason,
   })
   if (error) throw error
-  return data as Business
+  return data
 }
 
 export interface SupportRequest {
@@ -568,13 +569,13 @@ export interface SupportRequest {
   resolved_at: string | null
   resolved_by: string | null
   created_at: string
-  business: Pick<Business, 'name'> | null
+  business?: Pick<Business, 'name'> | null
 }
 
 export async function createSupportRequest(businessId: string, userId: string, values: Pick<SupportRequest, 'subject' | 'body' | 'priority'>) {
   const { data, error } = await supabase.from('support_requests').insert({ business_id: businessId, user_id: userId, ...values }).select().single()
   if (error) throw error
-  return data as SupportRequest
+  return data
 }
 
 export async function fetchMySupportRequests(businessId: string): Promise<SupportRequest[]> {
@@ -592,7 +593,7 @@ export async function fetchAdminSupportRequests(): Promise<SupportRequest[]> {
 export async function resolveSupportRequest(id: string, response = '') {
   const { data, error } = await supabase.from('support_requests').update({ status: 'resolved', admin_response: response.trim() || null, resolved_at: new Date().toISOString() }).eq('id', id).select().single()
   if (error) throw error
-  return data as SupportRequest
+  return data
 }
 
 // ---------------------------------------------------------------------
@@ -776,7 +777,7 @@ export async function uploadGalleryPhoto(businessId: string, file: File, sortOrd
     .select()
     .single()
   if (error) throw error
-  return data as BusinessPhoto
+  return data
 }
 
 export async function deleteBusinessPhoto(id: string) {

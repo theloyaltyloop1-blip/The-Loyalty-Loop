@@ -2,7 +2,7 @@ import * as React from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
-export type AppRole = 'admin' | 'brand_head' | 'business_owner' | 'staff' | 'consumer'
+type AppRole = 'admin' | 'brand_head' | 'business_owner' | 'staff' | 'consumer'
 
 const ROLE_PRIORITY: AppRole[] = ['admin', 'brand_head', 'business_owner', 'staff', 'consumer']
 
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadRoles = React.useCallback(async (userId: string) => {
     const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId)
     if (!error && data) {
-      setRoles(data.map((r) => r.role as AppRole))
+      setRoles(data.map((r) => r.role))
     }
   }, [])
 
