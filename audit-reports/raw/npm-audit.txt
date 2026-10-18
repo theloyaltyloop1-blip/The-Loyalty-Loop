@@ -1,0 +1,15 @@
+Severity: high
+nanoid: custom generators can loop indefinitely when size is zero - https://github.com/advisories/GHSA-2v37-7h3g-55p8
+fix available via `npm audit fix`
+node_modules/nanoid
+
+source-map-js  1.0.0 - 1.2.1
+Severity: high
+source-map-js allows event-loop denial of service through indexed source-map section offsets - https://github.com/advisories/GHSA-68fv-2mgg-jv7q
+fix available via `npm audit fix`
+node_modules/source-map-js
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix

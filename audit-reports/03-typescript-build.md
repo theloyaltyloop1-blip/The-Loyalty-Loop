@@ -39,3 +39,9 @@ Scope: `apps/web` (Vite 8 + React 19 + TS 6). Raw logs in `audit-reports/raw/`.
 
 ## Notes
 - No SSR/SSG (client-only SPA), so no hydration/SSR failures applicable. No dynamic imports present.
+
+## Pass 3 – dependencies, bundle, accessibility
+- `npm audit`: 2 high (nanoid 3.3.17 → 3.3.20, source-map-js 1.2.1 → 1.2.2; both build-time transitive deps of Vite/PostCSS) → fixed with `npm audit fix`; now 0 vulnerabilities (`raw/npm-audit.txt`).
+- Bundle: tried `React.lazy` splitting of owner/admin/brand routes. With Vite 8/rolldown it **increased** eager JS from 234 kB to 403 kB (React's CJS interop is duplicated into a shared chunk), so it was reverted. Current: one 234 kB JS chunk (75 kB gzip). Revisit with `manualChunks` if the bundle grows.
+- Accessibility (axe-core 4.10, WCAG 2 A/AA, public routes; `raw/axe.txt`): /login, /signup, /signup/owner pass. One issue type: **colour contrast** on /, /forgot-password, /reset-password, /terms, /privacy. White text on brand orange `#E8703B` is about 3:1; AA needs 4.5:1. Not changed, because the fix means darkening the brand colour (e.g. `#C2551F`) or using bolder/larger text — a design call.
+- Re-run: tsc 0 errors, oxlint 0 warnings, build 0 warnings, smoke 29/29 OK.

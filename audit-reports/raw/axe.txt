@@ -1,0 +1,13 @@
+/ 
+  serious color-contrast x27: em:nth-child(1) ; em:nth-child(2) ; a[href$="signup"] > .h-14.px-8.whitespace-nowrap
+/login OK
+/signup OK
+/signup/owner OK
+/forgot-password 
+  serious color-contrast x2: .inline-flex ; .bg-\[\#E8703B\]
+/reset-password 
+  serious color-contrast x2: .inline-flex ; .bg-\[\#E8703B\]
+/terms 
+  serious color-contrast x4: .text-\[\#C9622E\] ; .text-xs ; .mt-8
+/privacy 
+  serious color-contrast x4: .text-\[\#C9622E\] ; .text-xs ; .mt-8
