@@ -206,7 +206,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    fetchBusinessPhotos(businessId).then(setPhotos).finally(() => setLoadingPhotos(false))
+    fetchBusinessPhotos(businessId).then(setPhotos).catch(() => setError('We couldn’t load your gallery. Refresh to try again.')).finally(() => setLoadingPhotos(false))
   }, [businessId])
 
   async function handleUpload(file: File | undefined) {
@@ -225,8 +225,10 @@ function GalleryTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string) {
+    const before = photos
     setPhotos(photos.filter((p) => p.id !== id))
-    await deleteBusinessPhoto(id)
+    setError(null)
+    try { await deleteBusinessPhoto(id) } catch { setPhotos(before); setError('We couldn’t delete that photo. Please try again.') }
   }
 
   return (
@@ -247,7 +249,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
                   <button data-press-feedback
                     onClick={() => handleDelete(p.id)}
                     aria-label="Delete this photo"
-                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs"
+                    className="absolute top-1.5 right-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity h-11 w-11 rounded-full bg-black/60 text-white flex items-center justify-center text-xs"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -574,6 +576,7 @@ function StampLoyaltyTab() {
   const [newReward, setNewReward] = React.useState({ title: '', description: '', stamp_threshold: 10 })
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
+  const [catalogError, setCatalogError] = React.useState(false)
 
   React.useEffect(() => {
     if (!business) return
@@ -582,7 +585,8 @@ function StampLoyaltyTab() {
     setStampsRequired(business.loyalty_config.stamps_required ?? 10)
     setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
-    fetchRewardCatalog(business.id).then(setCatalog)
+    setCatalogError(false)
+    fetchRewardCatalog(business.id).then(setCatalog).catch(() => setCatalogError(true))
   }, [business?.id])
 
   if (!business) return null
@@ -622,6 +626,7 @@ function StampLoyaltyTab() {
 
   return (
     <>
+      {catalogError && <p role="alert" className="mb-4 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">We couldn’t load your rewards. Refresh the page before editing them so nothing is overwritten.</p>}
       <SectionCard title="Sign-up reward">
         <p className="text-sm text-muted-foreground mb-3">
           Something free just for joining your loyalty card, shown on your shop page so customers know what
@@ -860,12 +865,14 @@ function SpendLoyaltyTab() {
   const [rewardError, setRewardError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
+  const [catalogError, setCatalogError] = React.useState(false)
 
   React.useEffect(() => {
     if (!business) return
     setBrandColor(business.brand_color)
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
-    fetchRewardCatalog(business.id).then(setCatalog)
+    setCatalogError(false)
+    fetchRewardCatalog(business.id).then(setCatalog).catch(() => setCatalogError(true))
   }, [business?.id])
 
   if (!business) return null
@@ -916,6 +923,7 @@ function SpendLoyaltyTab() {
 
   return (
     <>
+      {catalogError && <p role="alert" className="mb-4 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">We couldn’t load your rewards. Refresh the page before editing them so nothing is overwritten.</p>}
       <SectionCard title="Sign-up reward">
         <p className="text-sm text-muted-foreground mb-3">
           Something free just for joining your loyalty card, shown on your shop page so customers know what
@@ -1085,12 +1093,15 @@ function WinbackTab() {
   const [sending, setSending] = React.useState(false)
   const [result, setResult] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [logError, setLogError] = React.useState(false)
 
   const loadLog = React.useCallback(() => {
     if (!business) return
     setLoadingLog(true)
+    setLogError(false)
     fetchWinbackLog(business.id)
       .then(setLog)
+      .catch(() => setLogError(true))
       .finally(() => setLoadingLog(false))
   }, [business?.id])
 
@@ -1151,6 +1162,8 @@ function WinbackTab() {
       <SectionCard title="Send history">
         {loadingLog ? (
           <div role="status" aria-label="Loading email history" className="space-y-2"><span className="sr-only">Loading email history</span><SkeletonBlock className="h-14" /><SkeletonBlock className="h-14" /></div>
+        ) : logError ? (
+          <p role="alert" className="text-sm text-destructive">We couldn’t load your send history. <button type="button" onClick={loadLog} className="font-semibold underline">Try again</button></p>
         ) : log.length === 0 ? (
           <p className="text-sm text-muted-foreground">No win-back emails sent yet.</p>
         ) : (
@@ -1479,10 +1492,11 @@ function StaffTab() {
   const { business } = useOwner()
   const [staff, setStaff] = React.useState<StaffMember[]>([])
   const [loadingStaff, setLoadingStaff] = React.useState(true)
+  const [staffError, setStaffError] = React.useState(false)
 
   React.useEffect(() => {
     if (!business) return
-    fetchStaffMembers(business.id).then(setStaff).finally(() => setLoadingStaff(false))
+    fetchStaffMembers(business.id).then(setStaff).catch(() => setStaffError(true)).finally(() => setLoadingStaff(false))
   }, [business?.id])
 
   if (!business) return null
@@ -1494,6 +1508,8 @@ function StaffTab() {
       <SectionCard title="Staff">
         {loadingStaff ? (
           <div role="status" aria-label="Loading staff" className="space-y-3"><span className="sr-only">Loading staff</span><SkeletonBlock className="h-20" /><SkeletonBlock className="h-20" /></div>
+        ) : staffError ? (
+          <p role="alert" className="text-sm text-destructive">We couldn’t load your staff list. Refresh the page to try again.</p>
         ) : staff.length === 0 ? (
           <p className="text-sm text-muted-foreground">No staff added yet.</p>
         ) : (

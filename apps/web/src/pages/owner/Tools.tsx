@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import { Navigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { Download, Users, Megaphone, Power, CheckCircle2 } from 'lucide-react'
@@ -26,7 +27,7 @@ export function OwnerTools() {
   React.useEffect(() => { if (business) supabase.rpc('get_business_members', { _business_id: business.id }).then(({ data }) => setMembers((data ?? []) as Member[])) }, [business])
   if (loading || ownerLoading) return <BarePageSkeleton />; if (!session) return <Navigate to="/login" replace />; if (!business) return <Navigate to="/owner/onboarding" replace />
   const activeBusiness = business; const complete = [activeBusiness.description, activeBusiness.address, activeBusiness.logo_url, activeBusiness.cover_url].filter(Boolean).length
-  async function savePromo(e: React.FormEvent) { e.preventDefault(); if (!form.title || !form.body) return; setBusy(true); const { error } = await supabase.from('business_promotions').insert({ business_id: activeBusiness.id, ...form }); setBusy(false); if (!error) { setForm({ title: '', body: '', audience: 'all' }); setSent(true) } }
+  async function savePromo(e: React.FormEvent) { e.preventDefault(); if (!form.title || !form.body) return; setBusy(true); const { error } = await supabase.from('business_promotions').insert({ business_id: activeBusiness.id, ...form }); setBusy(false); if (error) { toast.error('We couldn’t save that promotion. Please try again.'); return } setForm({ title: '', body: '', audience: 'all' }); setSent(true) }
   async function toggleWhatsApp() {
     setWhatsAppBusy(true)
     try {
