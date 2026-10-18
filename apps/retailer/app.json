@@ -11,7 +11,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.theloyaltyloop.retailer",
       "appleTeamId": "9QSSA475TR",
-      "buildNumber": "11",
+      "buildNumber": "12",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Allow The Loyalty Loop for Business to use your camera to scan a customer's loyalty QR code.",
@@ -25,7 +25,7 @@
     },
     "android": {
       "package": "com.theloyaltyloop.retailer",
-      "versionCode": 130,
+      "versionCode": 131,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FDF8EA",

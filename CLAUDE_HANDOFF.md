@@ -11,6 +11,17 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Countries: Pakistan support and 1.0.1 store builds (2026-10-18) - Claude
+
+- **What changed.** New `countries` table (GB: GBP, card-linking on; PK: PKR, whole rupees, card-linking off, `amount_scale` 300). `profiles.country_code` (null until the shopper confirms) and `businesses.country_code` (default GB). Spend caps and discount limits now scale per country, enforced by triggers `businesses_country_amounts` and `reward_catalog_country_amounts`. Migration `20261018120000_countries.sql` **applied to live** (owner approved); checked afterwards: both existing shops GB, cap 20000 unchanged.
+- **Shopper.** `src/country.ts` guesses the country from the time zone, then the phone region (`expo-localization`, guarded with `requireOptionalNativeModule`). `src/use-country.ts` asks once, saves it to the profile, and adds a Settings row for changing it. Home and the map filter to the shopper's country. Card-linking is hidden where the country disallows it. `src/money.ts` formats amounts per shop (screens, home cards, Android widget).
+- **Business app.** Country chips at shop sign-up. `src/money.ts` uses the open shop's currency for all amounts, labels and limits (`setActiveCountry`).
+- **Checks.** `tsc --noEmit` clean in both apps. Node tests: shopper 19/19, business 8/8 (new `money.test.mjs`). Not tried on a device.
+- **Builds.** Commits cc4cbf8, ac24405. The 1.0.0 builds were cancelled because 1.0.0 is already live on iOS. 1.0.1 builds were started with `--auto-submit`: shopper Android 131 / iOS 13, business Android 131 / iOS 12. Android goes to the production track and is sent for review. iOS: EAS uploads to App Store Connect only; App Store version 1.0.1 still has to be created and submitted for review (ASC API or the website).
+- **Open.** (Claude) Once the iOS builds have processed, create version 1.0.1 and submit it for review. (Codex) Lock a shop's `country_code` after it has activity; update the website for Pakistan; localise address/postcode fields further; Urdu.
+
+---
+
 ## App Store badge on the website (2026-10-15) - Claude
 
 - Owner reported both iOS apps live. Apple's public lookup (`itunes.apple.com/lookup?id=...&country=gb`) lists the **shopper** (id 6809930346, v1.0) but returns 0 results for the **Business app** (id 6813259329, bundle com.theloyaltyloop.retailer) in GB and US, and its App Store page 404s. The homepage badge in `apps/web/src/components/store-badges.tsx` is now per app: shopper `iosLive: true`, business `iosLive: false` (still "Coming soon"). Commit eab1231, deployed and checked on the live homepage (screenshot).
@@ -2562,6 +2573,18 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Spacing: 143 margin/padding/gap values in App.tsx and components snapped to a 4-pt scale (values under 4 or over 40 untouched). tsc passes; home-rails tests 4/4.
 - Background left at #F3F4EF (owner said the sand was reverted). Business app and website were not audited.
 - **RELEASED (owner OK, 2026-10-18):** commit cea4749; shopper production OTA Android bd8e0bab-750f-4cd6-b876-e85f49b489b3, iOS b7694ffb-a082-4f29-bf5b-2d903ffeb01f. Not seen on a device before release. Roll back with eas update:roll-back-to-embedded or republish the previous groups (Android 38c773e1…, iOS 1b0d71c1…).
+## Audit visibility inventory (2026-10-18) - Codex
+
+- Read-only Git inventory confirmed locally available origin/audit branches 01, 02, 03, 04, 07, 08 (including stale-base and v2), 09 and 10, plus Claude accessibility and links/routing branches. Branch trees include audit-reports markdown, scripts and raw outputs (TypeScript/build/lint/axe/Lighthouse). Local references were inspected; no fetch, audit rerun, merge or deployment performed. Cannot guarantee unseen/unpushed Claude work or latest remote state. Working tree was clean before this documentation update.
+- Prior wallet/deletion handoff remains applicable; this inventory does not approve or supersede its pending hosted migration, deployment or device checks.
+
+## Detailed audit evidence review (2026-10-18) - Codex
+
+- Read all ten Claude audit reports, historical security report, selected raw outputs, branch divergence and security SQL. Saved verbatim report snapshots with commit manifest and interpretation/limitations in docs/audit-review-2026-10-18/. No fetch, test rerun, merge or production action.
+- Confirmed audits 01–07, 09 and 10 share August 7 base d752640, with 253 current-main commits absent. Security 08 was rebuilt on main 763fb37; report says migrations applied and email functions deployed, but hosted state was not independently rechecked. Earlier claim of general audit visibility must not imply current-main verification.
+- Visual branch advanced to 2063bb2 (pass-4 loading fixes) while inventory was underway; snapshot pinned. Report ends pass 3. Raw npm-audit file on audit 03 is pre-fix evidence despite report's final zero claim. Type-aware warning counts are staged. Branch palette/nav/router/bundle decisions conflict and require selective review; do not wholesale merge old branches.
+- Review completed; no implementation milestone or sequence changed. Changed paths: this handoff plus docs/audit-review-2026-10-18/*.md and sources.json. Verification: Git reads succeeded; saved reports checked against pinned source content. Tests not rerun; current-main/device/inbox/scanner/manual accessibility acceptance remains unverified. Prior wallet/deletion work and approval constraints remain applicable.
+
 ## Copy-ready prompt for Claude Code
 
-Claude: review the deletion-client and wallet-format follow-up in apps/web/src/lib/businesses.ts, apps/retailer/App.tsx, apps/shopper/src/external-card-barcode.ts and components/ExternalCards.tsx. Check docs/CARD_WALLET_FORMAT_EVIDENCE.md, especially Nectar GS1/payload limits. Web build, retailer/shopper TypeScript and 8 focused tests passed; device/scanner acceptance remains unrun. Owner approval is still required: on tgukdabfvvoywawmzbdo first confirm authenticated UPDATE on public.profiles, then rollback-only dry-run and apply supabase/migrations/20261017230331_shopper_external_cards.sql, verify hosted RLS/cap/cascade, then deploy export-platform-backup. No production action has run in this follow-up. Do not run eas update, eas build, commit or push without owner approval.
+Read docs/audit-review-2026-10-18/README.md and sources.json, then compare each of the ten pinned audit reports with current main. Most audit branches start at August 7 commit d752640 and omit 253 main commits; preserve current features, fonts and design and do not merge them wholesale. First independently verify the security report's hosted protections read-only, then identify which role-loading, failure-state, responsive and accessibility findings still reproduce on current main. Acceptance: a current-main finding matrix separating already fixed, reproducible, outdated and unverified issues, with test evidence and conflicting branch implementations identified. No product-owner input is needed for read-only review; obtain approval before production writes/deployment, and retain prior wallet/deletion handoff requirements.
