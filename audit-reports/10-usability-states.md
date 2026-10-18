@@ -426,3 +426,12 @@ Loading skeleton visible at 0.9s on every data view (Settings renders from cache
 mark-all fail: ["Couldn’t mark all as read. Please try again."] unreadDotStillShown: 1 pageErrors: 0
 ```
 - Fixed: mark-all-read failure now shows an alert and restores true read state (was silent).
+
+## Pass 10 – search & filters
+- **High**: Home search input was purely decorative (no state, no filtering) and had `outline-none` with no focus ring. Now filters by name/category/address/postcode combined with category chips; 0-result empty state with 'Clear filters' CTA; focus ring added.
+```
+initial cards: 3
+"salon" cards: 1
+"zzz" empty state: true cards: 0
+after clear cards: 3 query: ""
+```

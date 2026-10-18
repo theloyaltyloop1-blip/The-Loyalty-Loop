@@ -41,6 +41,7 @@ export function Home() {
   const { session, loading, rolesLoading, primaryRole } = useAuth()
   const [firstName, setFirstName] = React.useState<string | null>(null)
   const [category, setCategory] = React.useState<string>('All')
+  const [query, setQuery] = React.useState('')
   const [businesses, setBusinesses] = React.useState<Business[]>([])
   const [memberships, setMemberships] = React.useState<Membership[]>([])
   const [fetching, setFetching] = React.useState(true)
@@ -83,14 +84,23 @@ export function Home() {
     acc[cat] = (acc[cat] ?? 0) + 1
     return acc
   }, {})
-  const filtered = category === 'All' ? businesses : businesses.filter((b) => b.category === category)
+  const q = query.trim().toLowerCase()
+  const filtered = businesses.filter(
+    (b) =>
+      (category === 'All' || b.category === category) &&
+      (!q || [b.name, b.category, b.address, b.postcode].some((v) => v?.toLowerCase().includes(q))),
+  )
 
   return (
     <DashboardLayout>
       <div className="relative mb-8">
         <input
+          type="search"
+          aria-label="Search shops"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Search shops, cafés, salons…"
-          className="h-14 w-full rounded-full border border-black/10 bg-[#FBF6EC] pl-14 pr-5 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/40 outline-none"
+          className="h-14 w-full rounded-full border border-black/10 bg-[#FBF6EC] pl-14 pr-5 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/40 outline-none focus-visible:ring-2 focus-visible:ring-[#E8703B]"
         />
         <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#1a1a1a]/60" />
       </div>
@@ -142,11 +152,20 @@ export function Home() {
           </div>
 
           <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/60 mb-4">Nearby</p>
-          <div className="grid sm:grid-cols-2 gap-5">
-            {filtered.map((business) => (
-              <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
-            ))}
-          </div>
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl bg-[#FBF6EC] p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+              <Search className="h-8 w-8 mx-auto mb-3 text-[#E8703B]" />
+              <p className="font-display text-lg font-bold text-[#1a1a1a]">No shops match{q ? ` “${query.trim()}”` : ''}</p>
+              <p className="mt-1 text-sm text-[#1a1a1a]/55">Try a different name or category.</p>
+              <button onClick={() => { setQuery(''); setCategory('All') }} className="mt-4 min-h-11 rounded-full bg-[#E8703B] px-6 font-bold text-white">Clear filters</button>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-5">
+              {filtered.map((business) => (
+                <ShopCard key={business.id} business={business} membership={membershipByBusiness.get(business.id)} />
+              ))}
+            </div>
+          )}
         </>
       )}
     </DashboardLayout>
