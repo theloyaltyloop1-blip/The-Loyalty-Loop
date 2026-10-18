@@ -23,7 +23,7 @@ export function AskShopDialog({open,onOpenChange,initialQuery=''}:{open:boolean;
   return()=>{cancelled=true;clearTimeout(timer)}
  },[open,query])
  async function request(row:Result){setBusy(true);setError('');try{const {data,error:e}=await supabase.rpc('request_shop',{p_place:row.token});if(e)throw e;setRows(prev=>prev.map(r=>r.place.place_id===row.place.place_id?{...r,requested:true,count:data.count}:r))}catch{setError('Could not record your request. Search again and retry.')}finally{setBusy(false)}}
- async function view(id:string){try{const path=await shopPath(id);onOpenChange(false);navigate(path)}catch{setError('Could not open that shop. Please try again.')}}
+ async function view(id:string){try{const path=await shopPath(id);onOpenChange(false);void navigate(path)}catch{setError('Could not open that shop. Please try again.')}}
  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
   <DialogTitle className="font-display text-2xl">Ask them to join</DialogTitle><DialogDescription>We'll let them know local shoppers want them. If they join, we'll tell you.</DialogDescription>
   <input type="search" aria-label="Shop name and town" placeholder="Shop name and town" value={query} onChange={e=>setQuery(e.target.value)} className="h-12 rounded-xl border border-input bg-background px-4 outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"/>
@@ -54,7 +54,7 @@ export function RequestedShops(){
   const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setSeen(true);observer.disconnect()}});observer.observe(el);return()=>observer.disconnect()},[seen])
  useEffect(()=>{if(!seen||!rows.length)return;let cancelled=false;void hydrateShopNames(rows.map(r=>r.place_id),20).then(()=>{if(!cancelled)setRows(prev=>named(prev))});return()=>{cancelled=true}},[seen,rows.length])
  async function withdraw(id:string){setBusy(true);const {error:e}=await supabase.rpc('withdraw_shop_request',{p_place_id:id});if(e)setError('Could not withdraw your request. Please try again.');else await load();setBusy(false)}
- async function view(id:string){try{navigate(await shopPath(id))}catch{setError('Could not open that shop. Please try again.')}}
+ async function view(id:string){try{void navigate(await shopPath(id))}catch{setError('Could not open that shop. Please try again.')}}
  return <section ref={section} className="rounded-2xl bg-card p-6 ring-1 ring-foreground/8 sm:p-7"><h2 className="font-display text-xl font-semibold tracking-tight">Shops you've asked for</h2>{error&&<p role="alert">{error}</p>}{!rows.length&&!error&&<p className="mt-2 text-muted-foreground">Your requested shops will appear here.</p>}
   {rows.map(row=><div key={row.place_id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-4 last:border-b-0"><div><strong>{row.name??'A shop you asked for'}</strong>{row.address&&<p>{row.address}</p>}<p>{requestStatus[row.status]??'Request recorded'} · {row.count} {row.count===1?'person has':'people have'} asked</p></div>{row.business_id&&<button className="underline" onClick={()=>void view(row.business_id!)}>View shop</button>}<button disabled={busy} className="underline disabled:opacity-50" onClick={()=>void withdraw(row.place_id)}>Withdraw</button></div>)}
   {rows.some(row=>row.name)&&<p className="mt-3 text-right text-xs text-muted-foreground">Google Maps</p>}

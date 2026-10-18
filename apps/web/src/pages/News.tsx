@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import { Navigate } from 'react-router-dom'
 import { Megaphone } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
@@ -10,7 +11,7 @@ export function NewsPage() {
   const { session, loading } = useAuth()
   const [items, setItems] = React.useState<Announcement[]>([])
   const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { if (session) fetchAnnouncements(session.user.id).then(setItems).finally(() => setReady(true)) }, [session])
+  React.useEffect(() => { if (session) fetchAnnouncements(session.user.id).then(setItems).catch(() => toast.error('Could not load shop news. Please refresh.')).finally(() => setReady(true)) }, [session])
   if (loading || (session && !ready)) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   return <DashboardLayout>

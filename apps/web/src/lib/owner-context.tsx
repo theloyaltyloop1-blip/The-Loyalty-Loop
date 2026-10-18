@@ -59,7 +59,7 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   }, [userId])
 
   React.useEffect(() => {
-    refetch()
+    void refetch()
   }, [refetch])
 
   const setBusinessId = React.useCallback((id: string) => {

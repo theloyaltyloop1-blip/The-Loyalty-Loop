@@ -1588,7 +1588,7 @@ function DangerTab() {
     try {
       await deleteOwnedBusiness(shop.id, deleteName)
       await refetch()
-      navigate('/owner')
+      void navigate('/owner')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete your shop.')
     } finally { setBusy(false) }
@@ -1600,7 +1600,7 @@ function DangerTab() {
     try {
       await transferOwnedBusinessOwnership(shop.id, newOwnerEmail)
       await refetch()
-      navigate('/owner/settings?tab=danger', { replace: true })
+      void navigate('/owner/settings?tab=danger', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not transfer this shop.')
     } finally { setTransferring(false) }
@@ -1614,7 +1614,7 @@ function DangerTab() {
       if (!window.confirm('Delete your account and personal data? This cannot be undone.')) return
       await requestAccountDeletion()
       await signOut()
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete your account.')
     } finally { setDeletingAccount(false) }

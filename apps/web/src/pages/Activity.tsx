@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import { Navigate } from 'react-router-dom'
 import { History, Award } from 'lucide-react'
 import { SkeletonBlock } from '@/components/page-skeleton'
@@ -15,7 +16,7 @@ export function ActivityPage() {
 export function ActivityFeed({ userId }: { userId: string }) {
   const [items, setItems] = React.useState<ActivityItem[]>([])
   const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { fetchActivity(userId).then(setItems).finally(() => setReady(true)) }, [userId])
+  React.useEffect(() => { fetchActivity(userId).then(setItems).catch(() => toast.error('Could not load your activity.')).finally(() => setReady(true)) }, [userId])
 
   const badges = [
     { name: 'First visit', done: items.some((x) => x.type === 'stamp' || x.type === 'spend') },

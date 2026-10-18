@@ -77,7 +77,7 @@ function CameraScanner({ onResult, active, scanCycle = 0 }: { onResult: (value: 
         if (!cancelled) setError('Camera access was blocked or unavailable. Check your browser permission, then use the manual code below if needed.')
       }
     }
-    start()
+    void start()
 
     return () => {
       cancelled = true

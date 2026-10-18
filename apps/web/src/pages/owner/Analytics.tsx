@@ -158,7 +158,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [businessId, period, stats, totals])
 
   React.useEffect(() => {
-    generate()
+    void generate()
   }, [generate])
 
   return (

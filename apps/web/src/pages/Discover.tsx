@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import { MapPin, Search, Store } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -18,7 +19,7 @@ export function DiscoverPage() {
 
   usePageMeta({ title: 'Shop map | The Loyalty Loop', description: 'Find local Loyalty Loop shops on the map.', path: '/dashboard/discover', robots: 'noindex,nofollow,noarchive' })
 
-  React.useEffect(() => { fetchBusinesses().then(setBusinesses).finally(() => setLoading(false)) }, [])
+  React.useEffect(() => { fetchBusinesses().then(setBusinesses).catch(() => toast.error('Could not load shops. Please refresh.')).finally(() => setLoading(false)) }, [])
 
   const filtered = businesses.filter((business) => `${business.name} ${business.category ?? ''} ${business.address ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()))
   const located = filtered.filter((business) => business.lat != null && business.lng != null)

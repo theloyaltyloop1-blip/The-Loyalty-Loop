@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, loadRoles])
 
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
     })
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (session?.user) {
-      refreshRoles()
+      void refreshRoles()
     } else {
       setRoles([])
       setRolesUserId(null)

@@ -138,7 +138,7 @@ export function ShopDetail() {
   }, [slug, userId])
 
   React.useEffect(() => {
-    refetch()
+    void refetch()
   }, [refetch])
 
   const shopStructuredData = business
@@ -196,7 +196,7 @@ export function ShopDetail() {
 
   React.useEffect(() => {
     if (!userId || !business) return
-    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
+    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id))).catch(() => undefined)
   }, [userId, business?.id])
 
   async function handleToggleFavourite() {

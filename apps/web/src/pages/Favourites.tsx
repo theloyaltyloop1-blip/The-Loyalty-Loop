@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { toast } from 'sonner'
 import { Navigate } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
@@ -20,6 +21,7 @@ export function FavouritesPage() {
         setBusinesses(b)
         setMemberships(m)
       })
+      .catch(() => toast.error('Could not load your favourites. Please refresh.'))
       .finally(() => setFetching(false))
   }, [session?.user])
 

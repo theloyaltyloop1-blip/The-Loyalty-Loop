@@ -117,7 +117,7 @@ export function ProfilePage() {
 
   function handleCopyCode() {
     if (!profile) return
-    navigator.clipboard.writeText(profile.stamp_code)
+    void navigator.clipboard.writeText(profile.stamp_code)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }

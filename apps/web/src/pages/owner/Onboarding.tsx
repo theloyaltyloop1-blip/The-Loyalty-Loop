@@ -146,7 +146,7 @@ export function OwnerOnboarding() {
       markRewardsReady(target.id)
       await refetch()
       setBusinessId(target.id)
-      navigate('/owner')
+      void navigate('/owner')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create your shop. Try again.')
     } finally {

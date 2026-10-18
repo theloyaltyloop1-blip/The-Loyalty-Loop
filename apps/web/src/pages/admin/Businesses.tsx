@@ -26,7 +26,7 @@ export function Businesses() {
         <p className="my-2 text-sm">This removes the shop, loyalty progress, rewards, reviews and files. Type the exact shop name to confirm.</p>
         <input className={inputCls} aria-label="Confirm shop name" value={confirmation} onChange={e => setConfirmation(e.target.value)} />
         <div className="mt-3 flex gap-2">
-          <button className={btnDanger} disabled={pending || confirmation.trim() !== deleting.name} onClick={() => void act(() => deleteOwnedBusiness(deleting.id, confirmation), 'Shop permanently deleted', () => { setDeleting(null); setConfirmation(''); list.reload() })}>Delete shop permanently</button>
+          <button className={btnDanger} disabled={pending || confirmation.trim() !== deleting.name} onClick={() => void act(() => deleteOwnedBusiness(deleting.id, confirmation), 'Shop permanently deleted', () => { setDeleting(null); setConfirmation(''); void list.reload() })}>Delete shop permanently</button>
           <button disabled={pending} onClick={() => { setDeleting(null); setConfirmation('') }}>Cancel</button>
         </div>
       </section>}
