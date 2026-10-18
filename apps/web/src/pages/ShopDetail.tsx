@@ -66,6 +66,7 @@ export function ShopDetail() {
   const { session, loading } = useAuth()
 
   const [business, setBusiness] = React.useState<Business | null>(null)
+  const businessId = business?.id
   const [membership, setMembership] = React.useState<Membership | null>(null)
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
   const [photos, setPhotos] = React.useState<BusinessPhoto[]>([])
@@ -136,9 +137,9 @@ export function ShopDetail() {
   }, [userId])
 
   React.useEffect(() => {
-    if (!userId || !business) return
-    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
-  }, [userId, business?.id])
+    if (!userId || !businessId) return
+    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(businessId)))
+  }, [userId, businessId])
 
   async function handleToggleFavourite() {
     if (!session?.user || !business) return

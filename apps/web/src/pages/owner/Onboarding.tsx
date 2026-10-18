@@ -60,7 +60,7 @@ export function OwnerOnboarding() {
   if (businesses.length > 0) return <Navigate to="/owner" replace />
 
   const canContinue =
-    step === 0 ? form.name.trim().length > 0 && form.category : step === 1 ? true : true
+    step === 0 ? form.name.trim().length > 0 && Boolean(form.category) : true
 
   async function handleCreate() {
     setCreating(true)

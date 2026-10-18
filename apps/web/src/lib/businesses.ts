@@ -18,6 +18,7 @@ export interface Business {
   id: string
   owner_id: string
   name: string
+  is_active?: boolean
   slug: string
   category: string | null
   description: string | null

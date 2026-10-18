@@ -15,14 +15,14 @@ export function Login() {
     setError(null)
 
     setLoading(true)
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
     setLoading(false)
 
-    if (error) {
-      setError(error.message)
+    if (authError) {
+      setError(authError.message)
       return
     }
     await supabase.rpc('ensure_current_user_bootstrap')

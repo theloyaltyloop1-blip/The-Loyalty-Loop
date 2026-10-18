@@ -31,7 +31,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       return
     }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -46,8 +46,8 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
     })
     setLoading(false)
 
-    if (error) {
-      setError(error.message)
+    if (authError) {
+      setError(authError.message)
       return
     }
     setCheckEmailSent(true)

@@ -27,14 +27,19 @@ function isoDaysAgo(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 }
 
+function baseCount(table: string, businessId: string) {
+  return supabase.from(table).select('id', { count: 'exact', head: true }).eq('business_id', businessId)
+}
+type CountQuery = ReturnType<typeof baseCount>
+
 async function countRows(
   table: string,
   businessId: string,
-  extra: (q: any) => any,
+  extra: (q: CountQuery) => CountQuery,
   from?: string,
   to?: string
 ): Promise<number> {
-  let q = supabase.from(table).select('id', { count: 'exact', head: true }).eq('business_id', businessId)
+  let q = baseCount(table, businessId)
   q = extra(q)
   if (from) q = q.gte('created_at', from)
   if (to) q = q.lt('created_at', to)

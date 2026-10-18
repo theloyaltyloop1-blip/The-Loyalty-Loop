@@ -22,11 +22,11 @@ export function ResetPassword() {
     }
 
     setLoading(true)
-    const { error } = await supabase.auth.updateUser({ password })
+    const { error: authError } = await supabase.auth.updateUser({ password })
     setLoading(false)
 
-    if (error) {
-      setError(error.message)
+    if (authError) {
+      setError(authError.message)
       return
     }
     setDone(true)

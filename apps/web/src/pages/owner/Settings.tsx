@@ -293,6 +293,8 @@ function ProfileTab() {
       instagram: business.instagram ?? '',
     })
     setHours(business.opening_hours ?? {})
+    // Re-sync only when the selected shop changes so unsaved edits are kept.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [business?.id])
 
   if (!business) return null
@@ -474,6 +476,9 @@ function LoyaltyTab() {
     setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
     fetchRewardCatalog(business.id).then(setCatalog)
+    // Re-sync local form state only when the selected shop changes, not on every
+    // local patch, so unsaved edits are not clobbered.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [business?.id])
 
   if (!business) return null
@@ -729,13 +734,14 @@ function WinbackTab() {
   const [result, setResult] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
+  const businessId = business?.id
   const loadLog = React.useCallback(() => {
-    if (!business) return
+    if (!businessId) return
     setLoadingLog(true)
-    fetchWinbackLog(business.id)
+    fetchWinbackLog(businessId)
       .then(setLog)
       .finally(() => setLoadingLog(false))
-  }, [business?.id])
+  }, [businessId])
 
   React.useEffect(() => {
     loadLog()
@@ -1123,10 +1129,12 @@ function StaffTab() {
   const [staff, setStaff] = React.useState<StaffMember[]>([])
   const [loadingStaff, setLoadingStaff] = React.useState(true)
 
+  const businessId = business?.id
+
   React.useEffect(() => {
-    if (!business) return
-    fetchStaffMembers(business.id).then(setStaff).finally(() => setLoadingStaff(false))
-  }, [business?.id])
+    if (!businessId) return
+    fetchStaffMembers(businessId).then(setStaff).finally(() => setLoadingStaff(false))
+  }, [businessId])
 
   if (!business) return null
 

@@ -3,15 +3,18 @@ import { supabase } from './supabase'
 export type ActivityItem = { id: string; type: 'stamp' | 'redeem' | 'points_earn' | 'points_spend'; value: number; note: string | null; created_at: string; business: { name: string; brand_color: string } | null }
 export type InboxItem = { id: string; title: string; body: string | null; link: string | null; kind: string; read_at: string | null; created_at: string; business: { name: string } | null }
 
+type Joined<T> = { business: T | T[] | null }
+function unwrapBusiness<R extends Joined<unknown>>(row: R) { return { ...row, business: Array.isArray(row.business) ? row.business[0] ?? null : row.business } }
+
 export async function fetchActivity(userId: string) {
   const { data, error } = await supabase.from('transactions').select('id,type,value,note,created_at,business:businesses(name,brand_color)').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
   if (error) throw error
-  return (data ?? []).map((row: any) => ({ ...row, business: Array.isArray(row.business) ? row.business[0] ?? null : row.business })) as ActivityItem[]
+  return (data ?? []).map(unwrapBusiness) as ActivityItem[]
 }
 export async function fetchInbox(userId: string) {
   const { data, error } = await supabase.from('notifications').select('id,title,body,link,kind,read_at,created_at,business:businesses(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
   if (error) throw error
-  return (data ?? []).map((row: any) => ({ ...row, business: Array.isArray(row.business) ? row.business[0] ?? null : row.business })) as InboxItem[]
+  return (data ?? []).map(unwrapBusiness) as InboxItem[]
 }
 export async function markInboxRead(id: string) { const { error } = await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id); if (error) throw error }
 export async function markAllInboxRead(userId: string) { const { error } = await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', userId).is('read_at', null); if (error) throw error }

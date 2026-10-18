@@ -1,0 +1,2 @@
+src/lib/auth-context.tsx:84:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/lib/owner-context.tsx:71:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
