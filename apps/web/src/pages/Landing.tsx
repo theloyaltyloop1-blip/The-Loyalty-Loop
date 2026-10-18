@@ -135,9 +135,11 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       <button
         className="w-full flex items-center justify-between gap-4 text-left font-display font-bold text-lg"
         onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
       >
         {q}
         <span
+          aria-hidden="true"
           className={`shrink-0 h-8 w-8 rounded-full border-[2.5px] border-foreground flex items-center justify-center ${
             open ? 'bg-accent' : 'bg-card'
           }`}
@@ -145,7 +147,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           {open ? <X className="h-4 w-4" strokeWidth={3} /> : <Plus className="h-4 w-4" strokeWidth={3} />}
         </span>
       </button>
-      {open && <p className="mt-3 text-foreground/70">{a}</p>}
+      {open && <p className="mt-3 text-foreground/80">{a}</p>}
     </div>
   )
 }
@@ -190,7 +192,7 @@ export function Landing() {
                 pocket.
               </em>
             </h1>
-            <p className="text-lg text-foreground/70 mb-8 max-w-md">
+            <p className="text-lg text-foreground/80 mb-8 max-w-md">
               One little app for every coffee, croissant and haircut from Tooting Bec to Balham Hill.
               Collect stamps. Unlock rewards. Keep it local.
             </p>
@@ -237,7 +239,7 @@ export function Landing() {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] font-bold uppercase mt-3 text-foreground/60">3 more for a free flat white</p>
+              <p className="text-[11px] font-bold uppercase mt-3 text-foreground/80">3 more for a free flat white</p>
             </div>
           </div>
         </section>
@@ -248,7 +250,7 @@ export function Landing() {
             HOW IT WORKS
           </span>
           <h2 className="text-4xl md:text-5xl mb-3">Three taps to a free flat white</h2>
-          <p className="text-foreground/70 mb-10">No more bulging wallets full of paper cards. Here's the loop.</p>
+          <p className="text-foreground/80 mb-10">No more bulging wallets full of paper cards. Here's the loop.</p>
 
           <div className="grid md:grid-cols-3 gap-6 text-left mb-10">
             {STEPS.map(({ icon: Icon, color, step, title, description, textLight }) => (
@@ -261,9 +263,9 @@ export function Landing() {
                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-[2.5px] border-foreground text-foreground mb-4">
                   <Icon className="h-6 w-6" />
                 </span>
-                <p className="text-xs font-bold uppercase opacity-70 mb-1">{step}</p>
+                <p className="text-xs font-bold uppercase mb-1">{step}</p>
                 <h3 className="text-2xl mb-1">{title}</h3>
-                <p className={textLight ? 'text-white/90' : 'text-foreground/70'}>{description}</p>
+                <p className={textLight ? 'text-white/90' : 'text-foreground/80'}>{description}</p>
               </div>
             ))}
           </div>
@@ -294,14 +296,14 @@ export function Landing() {
                 </div>
                 <div className="p-4">
                   <h3 className="font-display font-bold text-lg">{name}</h3>
-                  <p className="text-xs text-foreground/60 mb-3">{meta}</p>
+                  <p className="text-xs text-foreground/80 mb-3">{meta}</p>
                   <ShopDots filled={filled} total={Math.min(total, 5)} color={dotColor} />
                   {total > 5 && (
                     <div className="mt-2">
                       <ShopDots filled={Math.max(filled - 5, 0)} total={total - 5} color={dotColor} />
                     </div>
                   )}
-                  <p className="text-[11px] font-bold uppercase text-foreground/50 mt-3">{reward}</p>
+                  <p className="text-[11px] font-bold uppercase text-foreground/80 mt-3">{reward}</p>
                 </div>
               </div>
             ))}
@@ -315,7 +317,7 @@ export function Landing() {
               FAQ
             </span>
             <h2 className="text-4xl mb-3">Questions from the queue</h2>
-            <p className="text-foreground/70 mb-8">
+            <p className="text-foreground/80 mb-8">
               Can't find what you're after? <a href="mailto:hello@theloyaltyloop.app" className="text-primary underline">Drop us a line</a>.
             </p>
             <span className="inline-flex h-16 w-16 rounded-full bg-primary text-white items-center justify-center border-[3px] border-foreground">
@@ -371,7 +373,7 @@ export function Landing() {
         </section>
       </main>
 
-      <footer className="border-t-[3px] border-foreground/10 py-8 text-center text-sm text-foreground/60">
+      <footer className="border-t-[3px] border-foreground/10 py-8 text-center text-sm text-foreground/80">
         © {new Date().getFullYear()} The Loyalty Loop. Made for the high street.
       </footer>
     </div>

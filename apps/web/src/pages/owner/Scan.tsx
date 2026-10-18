@@ -94,7 +94,7 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
 
   if (!detector) {
     return (
-      <div className="rounded-xl bg-black/5 p-4 text-sm text-[#1a1a1a]/50 flex items-center gap-2 mb-4">
+      <div className="rounded-xl bg-black/5 p-4 text-sm text-[#1a1a1a]/70 flex items-center gap-2 mb-4">
         <CameraOff className="h-4 w-4 shrink-0" /> Camera scanning isn't supported in this browser — use the code
         entry below.
       </div>
@@ -202,13 +202,13 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/30">or manual code</span>
+        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/70">or manual code</span>
         <div className="flex-1 h-px bg-black/10" />
       </div>
 
       <div className="flex items-center gap-2">
-        <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
+        <input aria-label="Customer's manual code"
+          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#B93D0E]"
           placeholder="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -236,32 +236,32 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
           <div>
             <p className="text-sm font-semibold text-[#1a1a1a] mb-1.5">Amount to award</p>
             <div className="flex items-center gap-2">
-              <input
+              <input aria-label="Amount"
                 type="number"
                 min={1}
                 max={50}
-                className="h-12 w-24 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-[#E8703B]"
+                className="h-12 w-24 rounded-xl border border-black/10 bg-white px-4 font-bold outline-none focus:border-[#B93D0E]"
                 value={amount}
                 onChange={(e) => setAmount(Math.max(1, Math.min(50, Number(e.target.value))))}
               />
-              <span className="text-sm text-[#1a1a1a]/50">{unit}{amount === 1 ? '' : 's'}</span>
+              <span className="text-sm text-[#1a1a1a]/70">{unit}{amount === 1 ? '' : 's'}</span>
             </div>
           </div>
           <button
             onClick={handleAward}
             disabled={busy}
-            className="h-12 rounded-full bg-[#E8703B] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+            className="h-12 rounded-full bg-[#B93D0E] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Check className="h-4 w-4" /> {busy ? 'Awarding…' : `Award ${amount} ${unit}${amount === 1 ? '' : 's'}`}
           </button>
-          <button onClick={reset} className="text-sm font-semibold text-[#1a1a1a]/50 self-center">
+          <button onClick={reset} className="text-sm font-semibold text-[#1a1a1a]/70 self-center">
             Cancel
           </button>
         </>
       )}
 
       {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-      {success && <p className="text-sm text-[#3FA34D] font-semibold text-center">{success}</p>}
+      {success && <p className="text-sm text-[#24722B] font-semibold text-center">{success}</p>}
     </div>
   )
 }
@@ -353,13 +353,13 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-black/10" />
-        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/30">or manual code</span>
+        <span className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]/70">or manual code</span>
         <div className="flex-1 h-px bg-black/10" />
       </div>
 
       <div className="flex items-center gap-2">
-        <input
-          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#E8703B]"
+        <input aria-label="Reward's short code"
+          className="h-12 flex-1 rounded-xl border border-black/10 bg-white px-4 font-mono font-bold tracking-widest uppercase outline-none focus:border-[#B93D0E]"
           placeholder="Reward's short code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -376,7 +376,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       {reward && (
         <div className="rounded-xl bg-black/5 px-4 py-3 flex items-center gap-3">
-          <Gift className="h-5 w-5 text-[#8E5FC2] shrink-0" />
+          <Gift className="h-5 w-5 text-[#6B3FA0] shrink-0" />
           <div>
             <p className="font-semibold text-[#1a1a1a]">{reward.title}</p>
             {alreadyRedeemed && <p className="text-xs text-red-600 font-semibold">Already redeemed</p>}
@@ -389,14 +389,14 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         <button
           onClick={handleRedeem}
           disabled={busy}
-          className="h-12 rounded-full bg-[#E8703B] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+          className="h-12 rounded-full bg-[#B93D0E] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <Check className="h-4 w-4" /> {busy ? 'Redeeming…' : 'Redeem reward'}
         </button>
       )}
 
       {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-      {success && <p className="text-sm text-[#3FA34D] font-semibold text-center">{success}</p>}
+      {success && <p className="text-sm text-[#24722B] font-semibold text-center">{success}</p>}
     </div>
   )
 }
@@ -432,22 +432,22 @@ export function OwnerScan() {
 
   return (
     <OwnerLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Scan</p>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Scan</p>
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-6 flex items-center gap-3">
-        <ScanLine className="h-7 w-7 text-[#E8703B]" /> Award & redeem
+        <ScanLine className="h-7 w-7 text-[#B93D0E]" /> Award & redeem
       </h1>
 
       {!activeBusinessId ? (
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/50">
+          <p className="text-[#1a1a1a]/70">
             {isOwner ? 'Set up a shop first.' : "You're not an active staff member at any shop yet."}
           </p>
         </div>
       ) : (
         <div className="max-w-md">
           {!isOwner && staffBusinesses.length > 1 && (
-            <select
-              className="h-11 w-full rounded-xl border border-black/10 bg-white px-4 mb-4 font-semibold text-[#1a1a1a] outline-none focus:border-[#E8703B]"
+            <select aria-label="Shop"
+              className="h-11 w-full rounded-xl border border-black/10 bg-white px-4 mb-4 font-semibold text-[#1a1a1a] outline-none focus:border-[#B93D0E]"
               value={activeBusinessId}
               onChange={(e) => setStaffBizId(e.target.value)}
             >
@@ -461,7 +461,7 @@ export function OwnerScan() {
 
           {!canScan && !canRedeem ? (
             <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 text-center">
-              <p className="text-[#1a1a1a]/50">You don't have permission to scan or redeem at this shop yet.</p>
+              <p className="text-[#1a1a1a]/70">You don't have permission to scan or redeem at this shop yet.</p>
             </div>
           ) : (
             <>
@@ -474,7 +474,7 @@ export function OwnerScan() {
                       onClick={() => setMode(key)}
                       className={
                         'flex-1 h-10 rounded-full text-sm font-bold capitalize transition-colors flex items-center justify-center gap-1.5 ' +
-                        (mode === key ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/50')
+                        (mode === key ? 'bg-[#B93D0E] text-white' : 'text-[#1a1a1a]/70')
                       }
                     >
                       {key === 'award' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}

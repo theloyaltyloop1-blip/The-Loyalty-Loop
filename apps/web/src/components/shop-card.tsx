@@ -43,10 +43,10 @@ export function ShopCard({ business, membership }: { business: Business; members
       <h3 className="font-display font-bold text-xl text-[#1a1a1a] mt-4 flex items-center gap-1.5">
         {business.name}
         {business.verification_status === 'verified' && (
-          <BadgeCheck className="h-4 w-4 text-[#3B82C4] shrink-0" aria-label="Verified" />
+          <BadgeCheck className="h-4 w-4 text-[#1D5A94] shrink-0" aria-label="Verified" />
         )}
       </h3>
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#1a1a1a]/50 mt-1 mb-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#1a1a1a]/70 mt-1 mb-4">
         {business.category}
       </p>
 
@@ -55,7 +55,7 @@ export function ShopCard({ business, membership }: { business: Business; members
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: business.brand_color }} />
           {joined ? "You're a member" : 'Tap to join'}
         </span>
-        <span className="flex items-center gap-1 text-sm font-bold text-[#C9622E]">
+        <span className="flex items-center gap-1 text-sm font-bold text-[#A8431A]">
           View <ArrowRight className="h-3.5 w-3.5" />
         </span>
       </div>

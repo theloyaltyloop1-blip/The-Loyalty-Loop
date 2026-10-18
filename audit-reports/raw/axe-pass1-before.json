@@ -1,0 +1,407 @@
+{
+ "total": 99,
+ "out": {
+  "/": {
+   "url": "http://localhost:4173/",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 27,
+     "targets": [
+      "em:nth-child(1) |   Element has insufficient color contrast of 2.97 (foreground color: #ee5a2c, background color: #f9ede2, font size: 45.0pt (60px), font weight: bold). Expected contrast ratio of 3:1",
+      "em:nth-child(2) |   Element has insufficient color contrast of 2.97 (foreground color: #ee5a2c, background color: #f9ede2, font size: 45.0pt (60px), font weight: bold). Expected contrast ratio of 3:1",
+      "a[href$=\"signup\"] > .h-14.px-8.whitespace-nowrap |   Element has insufficient color contrast of 3.42 (foreground color: #ffffff, background color: #ee5a2c, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".mt-3.text-\\[11px\\].text-foreground\\/60 |   Element has insufficient color contrast of 3.82 (foreground color: #8c7c73, background color: #fdf9f5, font size: 8.3pt (11px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".p-6.rounded-\\[1\\.25rem\\].shadow-sticker:nth-child(1) > .opacity-70.mb-1.uppercase |   Element has insufficient color contrast of 3.71 (foreground color: #77511e, background color: #f6af23, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".p-6.rounded-\\[1\\.25rem\\].shadow-sticker:nth-child(1) > .text-foreground\\/70 |   Element has insufficient color contrast of 3.75 (foreground color: #77501e, background color: #f6af23, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/shop/1": {
+   "url": "http://localhost:4173/dashboard/shop/1",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/rewards": {
+   "url": "http://localhost:4173/dashboard/rewards",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/news": {
+   "url": "http://localhost:4173/dashboard/news",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/favourites": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/profile": {
+   "url": "http://localhost:4173/dashboard/profile",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/activity": {
+   "url": "http://localhost:4173/dashboard/activity",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/inbox": {
+   "url": "http://localhost:4173/dashboard/inbox",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/terms": {
+   "url": "http://localhost:4173/terms",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 4,
+     "targets": [
+      ".text-\\[\\#C9622E\\] |   Element has insufficient color contrast of 3.41 (foreground color: #c9622e, background color: #f7ecdc, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 2.8 (foreground color: #97948e, background color: #fbf6ec, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".mt-8 |   Element has insufficient color contrast of 3.91 (foreground color: #7e7b76, background color: #fbf6ec, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/privacy": {
+   "url": "http://localhost:4173/privacy",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 4,
+     "targets": [
+      ".text-\\[\\#C9622E\\] |   Element has insufficient color contrast of 3.41 (foreground color: #c9622e, background color: #f7ecdc, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 2.8 (foreground color: #97948e, background color: #fbf6ec, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".mt-8 |   Element has insufficient color contrast of 3.91 (foreground color: #7e7b76, background color: #fbf6ec, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/access": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/brand": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner": {
+   "url": "http://localhost:4173/owner",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/onboarding": {
+   "url": "http://localhost:4173/owner/onboarding",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/scan": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/tools": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/settings": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/notifications": {
+   "url": "http://localhost:4173/owner/notifications",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/announcements": {
+   "url": "http://localhost:4173/owner/announcements",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/reviews": {
+   "url": "http://localhost:4173/owner/reviews",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/owner/support": {
+   "url": "http://localhost:4173/owner/support",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/login": {
+   "url": "http://localhost:4173/login",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 5,
+     "targets": [
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".text-xs |   Element has insufficient color contrast of 3.19 (foreground color: #81837e, background color: #e8ece2, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/signup": {
+   "url": "http://localhost:4173/signup",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 4,
+     "targets": [
+      "a[href$=\"login\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"owner\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/signup/owner": {
+   "url": "http://localhost:4173/signup/owner",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 4,
+     "targets": [
+      "a[href$=\"login\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      "a[href$=\"signup\"] |   Element has insufficient color contrast of 3.32 (foreground color: #c9622e, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".absolute |   Element has insufficient color contrast of 3.79 (foreground color: #2f6fed, background color: #e8ece2, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/forgot-password": {
+   "url": "http://localhost:4173/forgot-password",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 2,
+     "targets": [
+      ".inline-flex |   Element has insufficient color contrast of 3.42 (foreground color: #ffffff, background color: #ee5a2c, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/reset-password": {
+   "url": "http://localhost:4173/reset-password",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 2,
+     "targets": [
+      ".inline-flex |   Element has insufficient color contrast of 3.42 (foreground color: #ffffff, background color: #ee5a2c, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".bg-\\[\\#E8703B\\] |   Element has insufficient color contrast of 3.08 (foreground color: #ffffff, background color: #e8703b, font size: 10.5pt (14px), font weight: bold). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  }
+ }
+}

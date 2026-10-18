@@ -37,7 +37,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               end={end}
               className={({ isActive }) =>
                 'flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ' +
-                (isActive ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
+                (isActive ? 'bg-[#B93D0E] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
               }
             >
               <Icon className="h-5 w-5" />
@@ -50,7 +50,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="mt-auto flex flex-col gap-1">
           <button
             onClick={signOut}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/70 hover:bg-black/5 transition-colors"
           >
             <LogOut className="h-5 w-5" />
             Sign out

@@ -8,12 +8,12 @@
   --color-background: #f9ede2;
   --color-foreground: #40281c;
   --color-card: #fdf9f5;
-  --color-primary: #ee5a2c;
+  --color-primary: #b93d0e;
   --color-primary-glow: #f27b52;
   --color-secondary: #f0dcc0;
   --color-accent: #f6af23;
-  --color-fun-green: #30a66f;
-  --color-fun-violet: #9069d3;
+  --color-fun-green: #1a7048;
+  --color-fun-violet: #6b46b8;
   --color-destructive: #dc2626;
   --color-border: #e0c4a8;
 
@@ -40,4 +40,16 @@
     font-family: var(--font-display);
     font-weight: 700;
   }
+}
+
+/* Unlayered so it wins over Tailwind's `outline-none` utility: keyboard focus is always visible. */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline-offset: 0;
 }

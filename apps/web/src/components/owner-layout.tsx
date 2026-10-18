@@ -27,12 +27,23 @@ function BusinessSwitcher() {
 
   const isOwner = businesses.length > 0
 
+  React.useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
+
   if (isOwner) {
     if (!business) return null
     return (
       <div className="relative mb-6">
         <button
           onClick={() => setOpen((o) => !o)}
+          aria-haspopup={businesses.length > 1 ? 'listbox' : undefined}
+          aria-expanded={businesses.length > 1 ? open : undefined}
           className="w-full flex items-center justify-between gap-2 rounded-2xl border border-black/10 bg-[#FBF6EC] px-4 py-3 font-semibold text-[#1a1a1a]"
         >
           <span className="flex items-center gap-2 truncate">
@@ -70,7 +81,7 @@ function BusinessSwitcher() {
   if (staffBusinesses.length > 0) {
     return (
       <div className="mb-6 rounded-2xl border border-black/10 bg-[#FBF6EC] px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Working at</p>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Working at</p>
         <p className="font-semibold text-[#1a1a1a] truncate">
           {staffBusinesses.length === 1 ? staffBusinesses[0].business.name : `${staffBusinesses.length} shops`}
         </p>
@@ -106,7 +117,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               end={end}
               className={({ isActive }) =>
                 'flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ' +
-                (isActive ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
+                (isActive ? 'bg-[#B93D0E] text-white' : 'text-[#1a1a1a]/80 hover:bg-black/5')
               }
             >
               <Icon className="h-5 w-5" />
@@ -119,7 +130,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           {(isOwner || staffBusinesses.length === 0) && (
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/70 hover:bg-black/5 transition-colors"
             >
               <ArrowLeftRight className="h-5 w-5" />
               Switch to customer view
@@ -127,7 +138,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           )}
           <button
             onClick={signOut}
-            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/50 hover:bg-black/5 transition-colors"
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-[#1a1a1a]/70 hover:bg-black/5 transition-colors"
           >
             <LogOut className="h-5 w-5" />
             Sign out

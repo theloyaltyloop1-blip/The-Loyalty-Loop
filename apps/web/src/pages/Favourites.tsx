@@ -29,15 +29,15 @@ export function FavouritesPage() {
 
   return (
     <DashboardLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Favourites</p>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Favourites</p>
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-6">Shops you've saved</h1>
 
       {fetching ? (
-        <p className="text-[#1a1a1a]/40">Loading…</p>
+        <p className="text-[#1a1a1a]/70">Loading…</p>
       ) : businesses.length === 0 ? (
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
           <Heart className="h-8 w-8 text-[#1a1a1a]/20 mx-auto mb-3" />
-          <p className="text-[#1a1a1a]/50">
+          <p className="text-[#1a1a1a]/70">
             No favourites yet — tap the heart on a shop's page to save it here.
           </p>
         </div>

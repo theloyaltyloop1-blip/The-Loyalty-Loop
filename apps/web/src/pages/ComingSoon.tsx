@@ -11,7 +11,7 @@ export function ComingSoon({ title }: { title: string }) {
   return (
     <DashboardLayout>
       <h1 className="text-3xl font-bold text-[#1a1a1a] mb-4">{title}</h1>
-      <p className="text-[#1a1a1a]/60 font-semibold">Coming soon.</p>
+      <p className="text-[#1a1a1a]/70 font-semibold">Coming soon.</p>
     </DashboardLayout>
   )
 }

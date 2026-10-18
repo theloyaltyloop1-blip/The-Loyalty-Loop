@@ -17,8 +17,8 @@ export function ShopRowIllustration({ className }: { className?: string }) {
         <polygon points="35,180 105,120 175,180" fill="#40281C" />
         <rect x="55" y="200" width="30" height="40" fill="#fff" stroke="#40281C" strokeWidth="3" />
         <rect x="125" y="200" width="30" height="40" fill="#fff" stroke="#40281C" strokeWidth="3" />
-        <rect x="75" y="270" width="60" height="60" fill="#EE5A2C" stroke="#40281C" strokeWidth="4" />
-        <rect x="40" y="250" width="130" height="20" fill="#EE5A2C" stroke="#40281C" strokeWidth="3" />
+        <rect x="75" y="270" width="60" height="60" fill="#b93d0e" stroke="#40281C" strokeWidth="4" />
+        <rect x="40" y="250" width="130" height="20" fill="#b93d0e" stroke="#40281C" strokeWidth="3" />
         <text x="105" y="264" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff" fontFamily="sans-serif">
           COFFEE
         </text>
@@ -35,10 +35,10 @@ export function ShopRowIllustration({ className }: { className?: string }) {
           GREEN GROCER
         </text>
         <rect x="185" y="262" width="130" height="30" fill="#fff" stroke="#40281C" strokeWidth="3" />
-        <circle cx="205" cy="277" r="7" fill="#EE5A2C" />
+        <circle cx="205" cy="277" r="7" fill="#b93d0e" />
         <circle cx="225" cy="277" r="7" fill="#F6AF23" />
         <circle cx="245" cy="277" r="7" fill="#30A66F" />
-        <circle cx="265" cy="277" r="7" fill="#EE5A2C" />
+        <circle cx="265" cy="277" r="7" fill="#b93d0e" />
         <circle cx="285" cy="277" r="7" fill="#F6AF23" />
         <rect x="210" y="295" width="80" height="35" fill="#40281C" opacity="0.08" />
       </g>

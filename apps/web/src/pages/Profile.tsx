@@ -22,7 +22,7 @@ interface SettingsData {
 }
 
 const inputClass =
-  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/35 outline-none focus:border-[#E8703B]'
+  'h-12 w-full rounded-xl border border-black/10 bg-white/60 px-4 font-medium text-[#1a1a1a] placeholder:text-[#1a1a1a]/70 outline-none focus:border-[#B93D0E]'
 
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
@@ -121,21 +121,21 @@ export function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Profile</p>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Profile</p>
       <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a] mb-6">Your account</h1>
 
       <SectionCard title="Your stamp card code">
-        <p className="text-sm text-[#1a1a1a]/50 mb-4">
+        <p className="text-sm text-[#1a1a1a]/70 mb-4">
           Show this QR code or manual code to staff at any shop if they can't scan it directly.
         </p>
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Manual code</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Manual code</p>
             <div className="flex items-center gap-2">
               <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a]">{profile?.stamp_code}</p>
-              <button onClick={handleCopyCode} className="text-[#1a1a1a]/40 hover:text-[#1a1a1a]">
-                {copied ? <Check className="h-4 w-4 text-[#3FA34D]" /> : <Copy className="h-4 w-4" />}
+              <button onClick={handleCopyCode} className="text-[#1a1a1a]/70 hover:text-[#1a1a1a]">
+                {copied ? <Check className="h-4 w-4 text-[#24722B]" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -145,14 +145,14 @@ export function ProfilePage() {
       <SectionCard title="Personal details">
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="First name">
-            <input
+            <input aria-label="First name"
               className={inputClass}
               value={form.first_name}
               onChange={(e) => setForm({ ...form, first_name: e.target.value })}
             />
           </Field>
           <Field label="Last name">
-            <input
+            <input aria-label="Last name"
               className={inputClass}
               value={form.last_name}
               onChange={(e) => setForm({ ...form, last_name: e.target.value })}
@@ -161,14 +161,14 @@ export function ProfilePage() {
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Phone">
-            <input
+            <input aria-label="Phone"
               className={inputClass}
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
           </Field>
           <Field label="Postcode">
-            <input
+            <input aria-label="Postcode"
               className={inputClass}
               value={form.postcode}
               onChange={(e) => setForm({ ...form, postcode: e.target.value })}
@@ -178,7 +178,7 @@ export function ProfilePage() {
         <button
           onClick={handleSaveProfile}
           disabled={saving}
-          className="flex items-center gap-2 rounded-full bg-[#E8703B] text-white font-bold px-6 h-12 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-[#B93D0E] text-white font-bold px-6 h-12 disabled:opacity-50"
         >
           <User className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
         </button>
@@ -186,7 +186,7 @@ export function ProfilePage() {
 
       {settings && (
         <SectionCard title="Notifications">
-          <div className="flex items-center gap-2 mb-4 text-[#1a1a1a]/50">
+          <div className="flex items-center gap-2 mb-4 text-[#1a1a1a]/70">
             <Bell className="h-4 w-4" />
             <p className="text-sm">Choose what shops can notify you about.</p>
           </div>
@@ -200,13 +200,13 @@ export function ProfilePage() {
             <div key={key} className="flex items-center justify-between py-3 border-t border-black/5 first:border-t-0">
               <div>
                 <p className="font-semibold text-[#1a1a1a]">{label}</p>
-                <p className="text-xs text-[#1a1a1a]/50">{desc}</p>
+                <p className="text-xs text-[#1a1a1a]/70">{desc}</p>
               </div>
               <button
                 onClick={() => handleToggleSetting(key)}
                 className={
                   'h-7 w-12 rounded-full transition-colors relative shrink-0 ' +
-                  (settings[key] ? 'bg-[#E8703B]' : 'bg-black/10')
+                  (settings[key] ? 'bg-[#B93D0E]' : 'bg-black/10')
                 }
               >
                 <span
@@ -222,8 +222,8 @@ export function ProfilePage() {
       )}
 
       <SectionCard title="Invite a friend">
-        <p className="text-sm text-[#1a1a1a]/55 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
-        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#E8703B] px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
+        <p className="text-sm text-[#1a1a1a]/70 mb-3">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
+        <div className="flex flex-wrap gap-3 items-center"><p className="font-mono font-bold tracking-widest">{referralCode || 'Loading…'}</p><button onClick={handleCopyReferral} disabled={!referralCode} className="flex items-center gap-2 rounded-full bg-[#B93D0E] px-4 h-10 text-sm font-bold text-white"><Share2 className="h-4 w-4"/>{copied ? 'Copied!' : 'Copy invite link'}</button></div>
       </SectionCard>
 
       <button
