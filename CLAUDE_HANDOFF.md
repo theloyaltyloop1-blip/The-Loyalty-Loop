@@ -11,6 +11,16 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Security audit 08: DB insert holes closed in production (2026-10-18) - Claude
+
+- **Applied to prod** (owner asked): migrations `20261018120228`–`20261018120729`. These close a **critical** hole where a customer could self-insert a membership with any stamp/points balance, a **high** hole where owners could create pre-verified/trending shops, profile email/stamp_code/referred_by rewrites, and trigger fns exposed as RPC.
+- **Deployed:** `send-visit-thank-you` v22 (now requires membership) and `send-winback-emails` v24 (HTML-escaped).
+- **Checks actually run:** rollback-only exploit tests before and after on prod; review of client insert paths in web/shopper/retailer; TS syntax check. No full `deno check` and no end-to-end function call (the sandbox has no outbound access).
+- **Next (Codex):** smoke-test shop join (web + shopper), owner shop creation (retailer) and a thank-you email from Scan on prod. Report: `audit-reports/08-security-seo.md`.
+- **Open (owner):** enable leaked-password protection in Supabase Auth.
+
+---
+
 ## App Store badge on the website (2026-10-15) - Claude
 
 - Owner reported both iOS apps live. Apple's public lookup (`itunes.apple.com/lookup?id=...&country=gb`) lists the **shopper** (id 6809930346, v1.0) but returns 0 results for the **Business app** (id 6813259329, bundle com.theloyaltyloop.retailer) in GB and US, and its App Store page 404s. The homepage badge in `apps/web/src/components/store-badges.tsx` is now per app: shopper `iosLive: true`, business `iosLive: false` (still "Coming soon"). Commit eab1231, deployed and checked on the live homepage (screenshot).

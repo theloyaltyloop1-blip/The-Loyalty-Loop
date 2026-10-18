@@ -120,12 +120,14 @@ Deno.serve(async (req: Request) => {
         (Date.now() - new Date(member.last_activity_at ?? member.joined_at).getTime()) / (24 * 60 * 60 * 1000)
       );
       const subject = `We miss you at ${business.name}!`;
-      const greeting = profile.first_name ? `Hi ${profile.first_name},` : "Hi there,";
+      const shopName = escapeHtml(business.name);
+      const brandColor = /^#[0-9a-fA-F]{3,8}$/.test(business.brand_color ?? "") ? business.brand_color : "#4F6438";
+      const greeting = profile.first_name ? `Hi ${escapeHtml(profile.first_name)},` : "Hi there,";
       const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
         <div style="text-align:center;margin:0 0 20px"><img src="https://www.the-loyalty-loop.com/logo-for-emails" alt="The Loyalty Loop" width="160" style="display:inline-block;width:160px;max-width:100%;height:auto"></div>
-        <h2 style="color:${business.brand_color}">${greeting}</h2>
-        <p>It's been a while since your last visit to <strong>${business.name}</strong> — come back and use code <strong>${coupon}</strong> for a little something extra on us.</p>
-        <p style="color:#888;font-size:13px">You're receiving this because you're a member of ${business.name}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
+        <h2 style="color:${brandColor}">${greeting}</h2>
+        <p>It's been a while since your last visit to <strong>${shopName}</strong> — come back and use code <strong>${coupon}</strong> for a little something extra on us.</p>
+        <p style="color:#888;font-size:13px">You're receiving this because you're a member of ${shopName}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
       </div>`;
 
       try {
@@ -183,3 +185,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "internal error" }), { status: 500, headers: jsonHeaders });
   }
 });
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
