@@ -173,7 +173,7 @@ forgot-err: url=/forgot-password invalidNative=0 messages=["We couldn’t send t
 forgot-ok: url=/forgot-password invalidNative=0 messages=["If an account exists for a@b.co, we've sent a password reset link to it."]
 signup-noagree: url=/signup invalidNative=3 messages=[]
 ```
-(login-empty / signup-noagree blocked by native  validation — intended.)
+(login-empty / signup-noagree blocked by native `required` validation — intended.)
 
 ### Pass 2 fixes
 | Area | Fix |
@@ -181,8 +181,8 @@ signup-noagree: url=/signup invalidNative=3 messages=[]
 | Home, Favourites | Skeleton loading; ErrorState + retry (previously silent / "No shops yet" on failure) |
 | owner/Tools | Promo save & deactivation errors were silent → inline alert; skeleton while auth loads |
 | ForgotPassword | 429/5xx swallowed as "sent" → readable error (enumeration protection kept otherwise) |
-| All inline errors (21) |  for screen-reader announcement |
-| Landing | Dead  "See all shops" → ; FAQ toggles 44px |
+| All inline errors (21) | `role="alert"` for screen-reader announcement |
+| Landing | Dead `href="#"` "See all shops" → `/signup`; FAQ toggles 44px |
 | Cookie banner, auth Back, footer links, category chips, Legal back link, Profile copy/delete/invite, Signup checkbox | ≥44px targets |
 
 ## Remaining (not changed)
