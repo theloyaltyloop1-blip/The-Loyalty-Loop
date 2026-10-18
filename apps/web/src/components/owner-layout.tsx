@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { NavLink, Link, Navigate } from 'react-router-dom'
+import { ListSkeleton } from '@/components/ui/states'
 import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
@@ -82,10 +83,12 @@ function BusinessSwitcher() {
 }
 
 export function OwnerLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole } = useAuth()
+  const { signOut, primaryRole, rolesLoading } = useAuth()
   const { businesses, staffBusinesses } = useOwner()
   const isOwner = businesses.length > 0
   const navItems = isOwner ? OWNER_NAV_ITEMS : STAFF_NAV_ITEMS
+  // Wait for roles before deciding: redirecting on a null role bounced owners to /dashboard on refresh.
+  if (rolesLoading) return <div className="min-h-screen bg-[#F7ECDC] p-8"><ListSkeleton /></div>
   if (!['admin', 'brand_head', 'business_owner', 'staff'].includes(primaryRole ?? '')) return <Navigate to="/dashboard" replace />
 
   return (

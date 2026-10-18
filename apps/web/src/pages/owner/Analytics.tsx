@@ -18,6 +18,7 @@ import {
   type CoachMessage,
   type DeepBusinessReport,
 } from '@/lib/analytics'
+import { ListSkeleton, ErrorState } from '@/components/ui/states'
 
 const PERIODS: Period[] = [7, 30, 90]
 
@@ -110,7 +111,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
       ) : (
         <p className="text-sm text-[#1a1a1a]/80 leading-relaxed">{summary}</p>
       )}
-      <button onClick={generate} disabled={loading} className="mt-3 text-xs font-bold text-[#C9622E] disabled:opacity-40">
+      <button onClick={generate} disabled={loading} className="mt-3 inline-flex min-h-11 items-center text-xs font-bold text-[#C9622E] disabled:opacity-40">
         Regenerate
       </button>
     </div>
@@ -152,7 +153,7 @@ function DeepBusinessReportCard({
         <button
           onClick={handleResearch}
           disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-[#1a1a1a] text-white text-sm font-bold px-4 h-9 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-[#1a1a1a] text-white text-sm font-bold px-4 h-11 disabled:opacity-50"
         >
           {loading ? 'Researching…' : report ? 'Refresh research' : 'Research my shop online'}
         </button>
@@ -276,26 +277,30 @@ export function OwnerAnalytics() {
   const [stats, setStats] = React.useState<PeriodStats | null>(null)
   const [totals, setTotals] = React.useState<TotalsStats | null>(null)
   const [statsLoading, setStatsLoading] = React.useState(true)
+  const [statsError, setStatsError] = React.useState(false)
+  const [statsReload, setStatsReload] = React.useState(0)
   const [webResearch, setWebResearch] = React.useState<DeepBusinessReport | null>(null)
 
   React.useEffect(() => {
     if (!business) return
     setStatsLoading(true)
+    setStatsError(false)
     Promise.all([fetchPeriodStats(business.id, period), fetchTotalsStats(business.id)])
       .then(([p, t]) => {
         setStats(p)
         setTotals(t)
       })
+      .catch(() => setStatsError(true))
       .finally(() => setStatsLoading(false))
-  }, [business?.id, period])
+  }, [business?.id, period, statsReload])
 
   React.useEffect(() => {
     if (!business) return
     setWebResearch(null)
-    fetchLatestWebResearch(business.id).then(setWebResearch)
+    fetchLatestWebResearch(business.id).then(setWebResearch).catch(() => setWebResearch(null))
   }, [business?.id])
 
-  if (loading || rolesLoading || ownerLoading) return null
+  if (loading || rolesLoading || ownerLoading) return <OwnerLayout><ListSkeleton /></OwnerLayout>
   if (!session) return <Navigate to="/login" replace />
   if (roles.includes('business_owner') && businesses.length === 0 && staffBusinesses.length === 0) {
     return <Navigate to="/owner/onboarding" replace />
@@ -315,7 +320,7 @@ export function OwnerAnalytics() {
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={
-                  'px-4 h-9 rounded-full text-sm font-bold transition-colors ' +
+                  'px-4 h-11 rounded-full text-sm font-bold transition-colors ' +
                   (period === p ? 'bg-[#E8703B] text-white' : 'text-[#1a1a1a]/50 hover:text-[#1a1a1a]')
                 }
               >
@@ -330,10 +335,10 @@ export function OwnerAnalytics() {
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
           <p className="text-[#1a1a1a]/50">Set up a shop to see analytics.</p>
         </div>
+      ) : statsError ? (
+        <ErrorState message="We couldn’t load your stats." onRetry={() => setStatsReload((n) => n + 1)} />
       ) : statsLoading || !stats || !totals ? (
-        <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-10 text-center">
-          <p className="text-[#1a1a1a]/40">Loading stats…</p>
-        </div>
+        <ListSkeleton rows={3} />
       ) : (
         <>
           <div className="flex gap-1 border-b border-black/10 mb-6">
@@ -342,7 +347,7 @@ export function OwnerAnalytics() {
                 key={key}
                 onClick={() => setView(key)}
                 className={
-                  'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px capitalize transition-colors ' +
+                  'min-h-11 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px capitalize transition-colors ' +
                   (view === key
                     ? 'border-[#1a1a1a] text-[#1a1a1a]'
                     : 'border-transparent text-[#1a1a1a]/40 hover:text-[#1a1a1a]/70')

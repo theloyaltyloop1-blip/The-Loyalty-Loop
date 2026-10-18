@@ -58,12 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (session?.user) {
       refreshRoles()
-    } else {
+    } else if (!loading) {
+      // Only settle once the initial session check is done; settling earlier let
+      // role-gated layouts redirect before roles loaded (owners bounced on refresh).
       setRoles([])
       setRolesLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id])
+  }, [session?.user?.id, loading])
 
   const signOut = React.useCallback(async () => {
     await supabase.auth.signOut()
