@@ -53,3 +53,16 @@ ISSUES: 0
 ```
 
 Result: **0 404s / 0 failed requests / 0 empty-hash links.**
+
+## Pass 2 – signed-in crawl (mocked Supabase, `06-scripts/authcrawl.js`)
+Each role was crawled with a fake session, with Supabase REST/auth/functions intercepted. Total: 145 page loads across admin, business_owner, staff, consumer and brand_head.
+- 0 same-origin 4xx/5xx responses, 0 failed requests, 0 broken `<img>`, 0 `href="#"`.
+- Role redirects are each a single hop: admin→`/access`, brand_head→`/brand`→`/owner`, business_owner→`/owner`, staff→`/owner/scan`, consumer→`/dashboard`, a bad shop slug→`/dashboard`.
+- An initial admin JS error (`null.length`) only happened because the mock returned `null` from RPCs; with realistic `[]` responses there was no error. This is not an app bug.
+
+## External links (sandbox egress blocks most hosts)
+| URL | Result |
+|---|---|
+| fonts.googleapis.com | 200 |
+| i.postimg.cc logo (thank-you email) | blocked here. **Risk:** the email logo is on a free third-party image host; move it to Supabase storage or `/public` |
+| esm.sh, react.dev, oxc.rs, swc.rs, github.com (README) | blocked/403 by the proxy; not verifiable |

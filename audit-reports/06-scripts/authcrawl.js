@@ -1,0 +1,31 @@
+const {chromium}=require('playwright-core');const fs=require('fs');
+const B='http://localhost:4173',SB='http://127.0.0.1:54321';
+const role=process.argv[2]||'admin';
+const user={id:'00000000-0000-0000-0000-000000000001',aud:'authenticated',role:'authenticated',email:'t@e.st',app_metadata:{},user_metadata:{first_name:'T'},created_at:'2026-01-01T00:00:00Z'};
+const exp=Math.floor(Date.now()/1000)+86400;
+const sess={access_token:'x.'+Buffer.from(JSON.stringify({sub:user.id,exp})).toString('base64url')+'.y',token_type:'bearer',expires_in:86400,expires_at:exp,refresh_token:'r',user};
+const biz={id:'b1',slug:'demo',name:'Demo Cafe',owner_id:user.id,is_active:true,brand_color:'#E8703B',logo_url:null,cover_url:null,loyalty_type:'stamps',stamps_required:8,photos:[]};
+const seeds=['/','/dashboard','/dashboard/shop/demo','/dashboard/shop/nope','/dashboard/rewards','/dashboard/news','/dashboard/favourites','/dashboard/profile','/dashboard/activity','/dashboard/inbox','/dashboard/admin','/access','/brand','/owner','/owner/onboarding','/owner/scan','/owner/tools','/owner/settings','/owner/notifications','/owner/announcements','/owner/reviews','/owner/support','/login','/signup','/terms','/privacy','/zzz'];
+(async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});const ctx=await b.newContext();
+await ctx.addInitScript(s=>localStorage.setItem('sb-127-auth-token',s),JSON.stringify(sess));
+await ctx.route(SB+'/**',r=>{const u=r.request().url();let body='[]';
+ if(u.includes('/auth/v1/user'))body=JSON.stringify(user);
+ else if(u.includes('/user_roles'))body=JSON.stringify([{role}]);
+ else if(u.includes('/businesses'))body=r.request().headers()['accept']?.includes('vnd.pgrst.object')?JSON.stringify(biz):JSON.stringify([biz]);
+ else if(r.request().headers()['accept']?.includes('vnd.pgrst.object'))body='null';
+ else if(u.includes('/functions/v1/'))body='{"checks":[]}';
+ r.fulfill({status:200,contentType:'application/json',body})});
+const seen=new Set(),q=[...seeds],res=[],bad=[];
+while(q.length){const u=q.shift();if(seen.has(u))continue;seen.add(u);const p=await ctx.newPage();
+p.on('pageerror',e=>bad.push(`JSERR ${u}: ${e.message}`));
+p.on('response',r=>{if(r.status()>=400&&r.url().startsWith(B))bad.push(`${r.status()} ${r.url()} (on ${u})`)});
+p.on('requestfailed',r=>{if(!r.url().startsWith(SB))bad.push(`FAILED ${r.url()} (on ${u})`)});
+await p.goto(B+u,{waitUntil:'networkidle'}).catch(()=>{});await p.waitForTimeout(800);
+const nf=await p.locator('text=Page not found').count();
+const links=await p.$$eval('a[href]',a=>a.map(x=>x.getAttribute('href')));
+const imgs=await p.$$eval('img',a=>a.filter(i=>i.complete&&i.naturalWidth===0&&i.src).map(i=>i.src));
+imgs.forEach(i=>bad.push(`BROKEN-IMG ${i} (on ${u})`));
+res.push(`${u}${nf?' [404 page]':''} -> ${new URL(p.url()).pathname} (${links.length} links)`);
+for(const h of links){const t=h.split('#')[0];if(h.startsWith('/')&&!seen.has(t))q.push(t||'/');if(h==='#')bad.push(`EMPTY-HASH on ${u}`)}
+await p.close()}
+console.log(`ROLE=${role}\n`+res.join('\n'));console.log('ISSUES:',new Set(bad).size);console.log([...new Set(bad)].join('\n'));await b.close()})();
