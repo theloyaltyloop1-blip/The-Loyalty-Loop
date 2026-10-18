@@ -47,7 +47,7 @@ const orange = "#E8703B";
 const ink = "#1C2620";
 const muted = "#000000";
 const cream = "#F8EAD8";
-const card = "#FCFCFA";
+const card = "#FFFBF5";
 
 export type NativeOwnerPage =
   | "ai"
