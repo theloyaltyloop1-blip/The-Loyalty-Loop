@@ -43,6 +43,9 @@
 - Fix: a BEFORE UPDATE trigger rejects direct API changes to those 3 columns. Rollback test: name edit succeeded; email change was blocked. The app's profile form only edits first/last name, phone and postcode.
 - Referral farming checked: `referrals.referred_id` is unique, so it's not exploitable.
 
+### Supabase performance advisors (informational)
+`unindexed_foreign_keys` 59 (INFO), `auth_rls_initplan` 41 (WARN: wrap `auth.uid()` as `(select auth.uid())` in policies), `multiple_permissive_policies` 26 (WARN), `unused_index` 8 (INFO). The data is currently tiny (2 shops / 7 users), so these are deferred and can be fixed in a dedicated perf pass before scale.
+
 ### Edge function bugs fixed
 | Function | Issue | Fix |
 |---|---|---|
