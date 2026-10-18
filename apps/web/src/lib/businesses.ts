@@ -537,14 +537,6 @@ export async function fetchPendingVerifications(): Promise<PendingVerification[]
   return data as PendingVerification[]
 }
 
-/** Signed URL to the private document, valid briefly — admin/owner-only per
- * the owner_verification_docs storage RLS policy. */
-export async function getVerificationDocUrl(path: string): Promise<string> {
-  const { data, error } = await supabase.storage.from('owner_verification_docs').createSignedUrl(path, 300)
-  if (error) throw error
-  return data.signedUrl
-}
-
 /** Admin-only — enforced by the admin_review_business_verification RPC. */
 export async function reviewBusinessVerification(businessId: string, approve: boolean, reason?: string) {
   const { data, error } = await supabase.rpc('admin_review_business_verification', {
