@@ -1,0 +1,166 @@
+{
+ "role": "business_owner",
+ "total": 0,
+ "out": {
+  "/dashboard": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/dashboard/shop/b1": {
+   "url": "http://localhost:4173/dashboard/shop/b1",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "",
+   "v": []
+  },
+  "/dashboard/rewards": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/dashboard/news": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/dashboard/favourites": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/dashboard/profile": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/dashboard/activity": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/dashboard/inbox": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/access": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/brand": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/onboarding": {
+   "url": "http://localhost:4173/owner",
+   "errs": [
+    "Object",
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/scan": {
+   "url": "http://localhost:4173/owner/scan",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/tools": {
+   "url": "http://localhost:4173/owner/tools",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/settings": {
+   "url": "http://localhost:4173/owner/settings",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/notifications": {
+   "url": "http://localhost:4173/owner/notifications",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/announcements": {
+   "url": "http://localhost:4173/owner/announcements",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/reviews": {
+   "url": "http://localhost:4173/owner/reviews",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  },
+  "/owner/support": {
+   "url": "http://localhost:4173/owner/support",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop B Bean & Bird Analytics Scan Growth tools Notifications Announc",
+   "v": []
+  }
+ }
+}

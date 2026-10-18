@@ -129,12 +129,12 @@ export function ProfilePage() {
           Show this QR code or manual code to staff at any shop if they can't scan it directly.
         </p>
         <div className="flex flex-col sm:flex-row items-start gap-6">
-          <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
+          <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} title="Your loyalty QR code" />
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Manual code</p>
             <div className="flex items-center gap-2">
               <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a]">{profile?.stamp_code}</p>
-              <button onClick={handleCopyCode} className="text-[#1a1a1a]/70 hover:text-[#1a1a1a]">
+              <button onClick={handleCopyCode} aria-label="Copy code" className="text-[#1a1a1a]/70 hover:text-[#1a1a1a]">
                 {copied ? <Check className="h-4 w-4 text-[#24722B]" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -204,6 +204,9 @@ export function ProfilePage() {
               </div>
               <button
                 onClick={() => handleToggleSetting(key)}
+                role="switch"
+                aria-checked={!!settings[key]}
+                aria-label={label}
                 className={
                   'h-7 w-12 rounded-full transition-colors relative shrink-0 ' +
                   (settings[key] ? 'bg-[#B93D0E]' : 'bg-black/10')
@@ -232,7 +235,7 @@ export function ProfilePage() {
       >
         <LogOut className="h-4 w-4" /> Sign out
       </button>
-      <button onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-600 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
+      <button onClick={handleDelete} disabled={deleting} className="mt-4 flex items-center gap-2 text-sm font-semibold text-red-700 disabled:opacity-50"><Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}</button>
     </DashboardLayout>
   )
 }

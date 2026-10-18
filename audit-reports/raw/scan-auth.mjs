@@ -1,0 +1,33 @@
+import { chromium } from 'playwright-core';
+import { AxeBuilder } from '@axe-core/playwright';
+const role = process.argv[2] || 'consumer';
+const routes = ['/dashboard','/dashboard/shop/b1','/dashboard/rewards','/dashboard/news','/dashboard/favourites','/dashboard/profile','/dashboard/activity','/dashboard/inbox','/access','/brand','/owner','/owner/onboarding','/owner/scan','/owner/tools','/owner/settings','/owner/notifications','/owner/announcements','/owner/reviews','/owner/support'];
+const now=Math.floor(Date.now()/1000);const b64=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
+const jwt=`${b64({alg:'HS256'})}.${b64({sub:'u1',exp:now+86400,role:'authenticated',email:'a@b.co'})}.x`;
+const user={id:'u1',email:'a@b.co',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{first_name:'Ada'},created_at:'2026-01-01T00:00:00Z'};
+const session={access_token:jwt,refresh_token:'r',expires_in:86400,expires_at:now+86400,token_type:'bearer',user};
+const biz={id:'b1',name:'Bean & Bird',slug:'bean-bird',category:'cafe',description:'Coffee',address:'12 High Rd',postcode:'SW12 9AA',brand_color:'#B93D0E',logo_url:null,cover_url:null,owner_id:'u1',loyalty_type:'stamps',loyalty_config:{stamps_required:8,stamp_icon:'coffee',signup_reward_title:'Free coffee'},opening_hours:{mon:{open:'08:00',close:'17:00',closed:false}},is_active:true,verification_status:'verified',created_at:'2026-01-01T00:00:00Z'};
+const row={id:'r1',user_id:'u1',business_id:'b1',business:biz,businesses:biz,title:'Summer menu',body:'New drinks',name:'Free coffee',description:'Any size',stamp_threshold:8,stamps:3,points:3,stamp_count:3,rating:4,reply:null,status:'open',priority:'normal',subject:'Help',is_active:true,read:false,role,first_name:'Ada',last_name:'L',email:'a@b.co',created_at:'2026-01-02T00:00:00Z',updated_at:'2026-01-02T00:00:00Z',type:'stamp',amount:1,code:'ABC123'};
+const tableRow=t=>t==='businesses'?biz:t==='user_roles'?{role}:row;
+const br=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
+const out={};let total=0;
+for(const r of routes){
+  const ctx=await br.newContext();
+  await ctx.addInitScript(([s])=>{localStorage.setItem('sb-127-auth-token',s);localStorage.setItem('loyalty-loop-cookie-choice','essential')},[JSON.stringify(session)]);
+  await ctx.route('http://127.0.0.1:9/**',async route=>{const req=route.request();const u=new URL(req.url());const h=req.headers();
+    const cors={'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'*','content-type':'application/json'};
+    if(req.method()==='OPTIONS')return route.fulfill({status:200,headers:cors});
+    if(u.pathname.startsWith('/auth/v1/user'))return route.fulfill({headers:cors,body:JSON.stringify(user)});
+    if(u.pathname.startsWith('/rest/v1/rpc/'))return route.fulfill({headers:cors,body:'[]'});
+    const t=u.pathname.split('/').pop();const single=(h['accept']||'').includes('vnd.pgrst.object');
+    return route.fulfill({headers:{...cors,'content-range':'0-1/2'},body:JSON.stringify(single?tableRow(t):[tableRow(t),{...tableRow(t),id:'r2'}])});
+  });
+  const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(String(e.stack||e).slice(0,200)));
+  const start=r.startsWith('/owner')?'/owner':r.startsWith('/dashboard')?'/dashboard':r;
+  await p.goto('http://localhost:4173'+start,{waitUntil:'networkidle'}).catch(()=>{});await p.waitForTimeout(800);
+  if(start!==r){await p.evaluate(r=>{history.pushState({},'',r);dispatchEvent(new PopStateEvent('popstate'))},r);await p.waitForLoadState('networkidle').catch(()=>{});}await p.waitForTimeout(1200);
+  const res=await new AxeBuilder({page:p}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
+  out[r]={url:p.url(),errs,text:(await p.locator('main, body').first().innerText()).slice(0,80).replace(/\s+/g,' '),v:res.violations.map(v=>({id:v.id,impact:v.impact,n:v.nodes.length,targets:v.nodes.slice(0,8).map(n=>n.target.join(' ')+' | '+(n.failureSummary||'').split('\n').slice(1,2).join(''))}))};
+  total+=res.violations.reduce((a,v)=>a+v.nodes.length,0);await ctx.close();
+}
+await br.close();console.log(JSON.stringify({role,total,out},null,1));

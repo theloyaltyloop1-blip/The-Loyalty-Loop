@@ -1,0 +1,1 @@
+const d=require(process.argv[2]);console.log(d.role,d.total);for(const[r,o] of Object.entries(d.out)){console.log(r,"->",o.url.slice(21),"|",o.text,"|",o.errs.join(";"));for(const v of o.v)console.log("  ",v.id,v.n,"\n      "+v.targets.join("\n      "))}

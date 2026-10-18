@@ -223,7 +223,7 @@ export function OwnerOnboarding() {
             </>
           )}
 
-          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+          {error && <p className="text-sm text-red-700 mb-4">{error}</p>}
 
           <div className="flex items-center justify-between mt-4">
             <button

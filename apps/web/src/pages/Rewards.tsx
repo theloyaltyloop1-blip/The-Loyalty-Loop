@@ -12,7 +12,7 @@ function RewardCard({ reward }: { reward: CustomerReward }) {
   const unavailable = redeemed || expired
 
   return (
-    <article className={'rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden ' + (unavailable ? 'opacity-65' : '')}>
+    <article className={'rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden ' + (unavailable ? 'grayscale' : '')}>
       <div className="p-6 flex gap-5 items-start">
         <div className="h-14 w-14 rounded-2xl flex shrink-0 items-center justify-center text-white" style={{ backgroundColor: reward.business?.brand_color ?? '#B93D0E' }}>
           {reward.business?.logo_url ? <img src={reward.business.logo_url} alt="" className="h-full w-full rounded-2xl object-cover" /> : <Gift className="h-6 w-6" />}
@@ -20,12 +20,12 @@ function RewardCard({ reward }: { reward: CustomerReward }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/70">{reward.business?.name ?? 'Local shop'}</p>
           <h2 className="font-display text-xl font-extrabold text-[#1a1a1a] mt-1">{reward.title}</h2>
-          {redeemed ? <p className="mt-2 text-sm font-semibold text-[#1a1a1a]/70">Redeemed {new Date(reward.redeemed_at!).toLocaleDateString()}</p> : expired ? <p className="mt-2 text-sm font-semibold text-red-600">This reward has expired</p> : <p className="mt-2 text-sm text-[#1a1a1a]/70">Show this code to the shop when you’re ready to redeem.</p>}
+          {redeemed ? <p className="mt-2 text-sm font-semibold text-[#1a1a1a]/70">Redeemed {new Date(reward.redeemed_at!).toLocaleDateString()}</p> : expired ? <p className="mt-2 text-sm font-semibold text-red-700">This reward has expired</p> : <p className="mt-2 text-sm text-[#1a1a1a]/70">Show this code to the shop when you’re ready to redeem.</p>}
         </div>
       </div>
       {!unavailable && (
         <div className="border-t border-black/8 p-5 flex items-center gap-4 bg-white/30">
-          <div className="rounded-xl bg-white p-2 shrink-0"><QRCodeSVG value={reward.qr_token} size={72} /></div>
+          <div className="rounded-xl bg-white p-2 shrink-0"><QRCodeSVG value={reward.qr_token} size={72} title="Reward QR code" /></div>
           <div>
             <p className="text-xs font-bold text-[#1a1a1a]/70 uppercase tracking-wide">Reward code</p>
             <p className="font-display text-2xl font-extrabold tracking-wider text-[#1a1a1a]">{reward.short_code}</p>

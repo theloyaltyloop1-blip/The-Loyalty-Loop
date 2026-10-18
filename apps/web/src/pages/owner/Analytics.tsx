@@ -39,7 +39,7 @@ function Delta({ current, prev }: { current: number; prev: number }) {
   }
   const up = pct > 0
   return (
-    <span className={'flex items-center gap-1 text-xs font-bold ' + (up ? 'text-[#24722B]' : 'text-red-500')}>
+    <span className={'flex items-center gap-1 text-xs font-bold ' + (up ? 'text-[#24722B]' : 'text-red-700')}>
       {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
       {up ? '+' : ''}
       {pct}%
@@ -162,7 +162,7 @@ function DeepBusinessReportCard({
         to improve.
       </p>
 
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p className="text-sm text-red-700 mb-3">{error}</p>}
 
       {report && (
         <>
@@ -246,7 +246,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
         {sending && <div className="rounded-xl px-4 py-2.5 text-sm bg-white text-[#1a1a1a]/70 self-start">Thinking…</div>}
       </div>
 
-      {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+      {error && <p className="text-xs text-red-700 mb-2">{error}</p>}
 
       <div className="flex items-center gap-2">
         <input aria-label="Ask the coach…"
@@ -259,6 +259,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
         <button
           onClick={handleSend}
           disabled={sending || !input.trim()}
+          aria-label="Send message"
           className="h-11 w-11 rounded-full bg-[#B93D0E] text-white flex items-center justify-center disabled:opacity-40 shrink-0"
         >
           <Send className="h-4 w-4" />

@@ -220,12 +220,14 @@ export function ShopDetail() {
       >
         <button
           onClick={handleToggleFavourite}
+          aria-label={favourite ? 'Remove from favourites' : 'Add to favourites'}
+          aria-pressed={favourite}
           className={
             'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors ' +
             (favourite ? 'bg-[#F6AF23] text-white' : 'bg-white/90 text-[#1a1a1a]')
           }
         >
-          <Heart className="h-5 w-5" fill={favourite ? 'currentColor' : 'none'} />
+          <Heart className="h-5 w-5" aria-hidden="true" fill={favourite ? 'currentColor' : 'none'} />
         </button>
 
         <div
@@ -271,7 +273,7 @@ export function ShopDetail() {
           >
             {joining ? 'Joining…' : 'Join card'}
           </button>
-          {joinError && <p className="mt-4 text-sm font-semibold text-red-600">{joinError}</p>}
+          {joinError && <p className="mt-4 text-sm font-semibold text-red-700">{joinError}</p>}
         </div>
       ) : (
         <div className="rounded-2xl bg-[#FBF6EC] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 mb-6">
@@ -345,7 +347,7 @@ export function ShopDetail() {
           )}
 
           <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6">
-            <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} />
+            <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={110} title="Your loyalty QR code" />
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/70 mb-1">Manual code</p>
               <p className="font-mono font-bold text-lg tracking-widest text-[#1a1a1a] mb-3">

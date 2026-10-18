@@ -1,0 +1,142 @@
+{
+ "role": "consumer",
+ "total": 0,
+ "out": {
+  "/dashboard": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/dashboard/shop/b1": {
+   "url": "http://localhost:4173/dashboard/shop/b1",
+   "errs": [
+    "Object"
+   ],
+   "text": "",
+   "v": []
+  },
+  "/dashboard/rewards": {
+   "url": "http://localhost:4173/dashboard/rewards",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out Y",
+   "v": []
+  },
+  "/dashboard/news": {
+   "url": "http://localhost:4173/dashboard/news",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out F",
+   "v": []
+  },
+  "/dashboard/favourites": {
+   "url": "http://localhost:4173/dashboard/favourites",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out F",
+   "v": []
+  },
+  "/dashboard/profile": {
+   "url": "http://localhost:4173/dashboard/profile",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out P",
+   "v": []
+  },
+  "/dashboard/activity": {
+   "url": "http://localhost:4173/dashboard/activity",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out Y",
+   "v": []
+  },
+  "/dashboard/inbox": {
+   "url": "http://localhost:4173/dashboard/inbox",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out U",
+   "v": []
+  },
+  "/access": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/brand": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/onboarding": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/scan": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/tools": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/settings": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/notifications": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/announcements": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/reviews": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/support": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  }
+ }
+}

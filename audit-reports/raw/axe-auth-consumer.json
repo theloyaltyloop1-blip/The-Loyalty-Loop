@@ -1,0 +1,202 @@
+{
+ "role": "consumer",
+ "total": 14,
+ "out": {
+  "/dashboard": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/dashboard/shop/b1": {
+   "url": "http://localhost:4173/dashboard/shop/b1",
+   "errs": [
+    "Object"
+   ],
+   "text": "",
+   "v": []
+  },
+  "/dashboard/rewards": {
+   "url": "http://localhost:4173/dashboard/rewards",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out Y",
+   "v": [
+    {
+     "id": "svg-img-alt",
+     "impact": "serious",
+     "n": 2,
+     "targets": [
+      "article:nth-child(1) > .border-t.border-black\\/8.gap-4 > .rounded-xl.bg-white.p-2 > svg[height=\"72\"][width=\"72\"][viewBox=\"0 0 21 21\"] |   Element has no child that is a title",
+      "article:nth-child(2) > .border-t.border-black\\/8.gap-4 > .rounded-xl.bg-white.p-2 > svg[height=\"72\"][width=\"72\"][viewBox=\"0 0 21 21\"] |   Element has no child that is a title"
+     ]
+    }
+   ]
+  },
+  "/dashboard/news": {
+   "url": "http://localhost:4173/dashboard/news",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out F",
+   "v": []
+  },
+  "/dashboard/favourites": {
+   "url": "http://localhost:4173/dashboard/favourites",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out F",
+   "v": []
+  },
+  "/dashboard/profile": {
+   "url": "http://localhost:4173/dashboard/profile",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out P",
+   "v": [
+    {
+     "id": "button-name",
+     "impact": "critical",
+     "n": 4,
+     "targets": [
+      ".hover\\:text-\\[\\#1a1a1a\\] |   Element does not have inner text that is visible to screen readers",
+      ".justify-between.border-t.first\\:border-t-0:nth-child(3) > .h-7.w-12.relative |   Element does not have inner text that is visible to screen readers",
+      ".justify-between.border-t.first\\:border-t-0:nth-child(4) > .h-7.w-12.relative |   Element does not have inner text that is visible to screen readers",
+      ".justify-between.border-t.first\\:border-t-0:nth-child(5) > .h-7.w-12.relative |   Element does not have inner text that is visible to screen readers"
+     ]
+    },
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      ".mt-4 |   Element has insufficient color contrast of 4.08 (foreground color: #e7000b, background color: #f7ecdc, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+     ]
+    },
+    {
+     "id": "svg-img-alt",
+     "impact": "serious",
+     "n": 1,
+     "targets": [
+      "svg[height=\"110\"] |   Element has no child that is a title"
+     ]
+    }
+   ]
+  },
+  "/dashboard/activity": {
+   "url": "http://localhost:4173/dashboard/activity",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out Y",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 4,
+     "targets": [
+      ".opacity-65.bg-\\[\\#FBF6EC\\].shadow-\\[0_1px_3px_rgba\\(0\\,0\\,0\\,\\.08\\)\\]:nth-child(2) > .font-display.font-bold |   Element has insufficient color contrast of 4.45 (foreground color: #806d5f, background color: #faf3e6, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".opacity-65.bg-\\[\\#FBF6EC\\].shadow-\\[0_1px_3px_rgba\\(0\\,0\\,0\\,\\.08\\)\\]:nth-child(2) > .text-xs.text-black\\/70 |   Element has insufficient color contrast of 3.49 (foreground color: #878178, background color: #faf3e6, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".opacity-65.bg-\\[\\#FBF6EC\\].shadow-\\[0_1px_3px_rgba\\(0\\,0\\,0\\,\\.08\\)\\]:nth-child(3) > .font-display.font-bold |   Element has insufficient color contrast of 4.45 (foreground color: #806d5f, background color: #faf3e6, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1",
+      ".opacity-65.bg-\\[\\#FBF6EC\\].shadow-\\[0_1px_3px_rgba\\(0\\,0\\,0\\,\\.08\\)\\]:nth-child(3) > .text-xs.text-black\\/70 |   Element has insufficient color contrast of 3.49 (foreground color: #878178, background color: #faf3e6, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/dashboard/inbox": {
+   "url": "http://localhost:4173/dashboard/inbox",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out U",
+   "v": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "n": 2,
+     "targets": [
+      ".w-full.text-left.gap-4:nth-child(1) > div > .text-black\\/35.text-xs.mt-2 |   Element has insufficient color contrast of 2.41 (foreground color: #a6a195, background color: #fff7e5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1",
+      ".w-full.text-left.gap-4:nth-child(2) > div > .text-black\\/35.text-xs.mt-2 |   Element has insufficient color contrast of 2.41 (foreground color: #a6a195, background color: #fff7e5, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+     ]
+    }
+   ]
+  },
+  "/access": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/brand": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/onboarding": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/scan": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/tools": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/settings": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/notifications": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/announcements": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/reviews": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  },
+  "/owner/support": {
+   "url": "http://localhost:4173/dashboard",
+   "errs": [
+    "Object"
+   ],
+   "text": "The Loyalty Loop Home News Rewards Activity Inbox Favourites Profile Sign out H",
+   "v": []
+  }
+ }
+}

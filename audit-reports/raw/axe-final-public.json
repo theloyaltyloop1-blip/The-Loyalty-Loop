@@ -1,0 +1,113 @@
+{
+ "total": 0,
+ "out": {
+  "/": {
+   "url": "http://localhost:4173/",
+   "v": []
+  },
+  "/dashboard": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/dashboard/shop/1": {
+   "url": "http://localhost:4173/dashboard/shop/1",
+   "v": []
+  },
+  "/dashboard/rewards": {
+   "url": "http://localhost:4173/dashboard/rewards",
+   "v": []
+  },
+  "/dashboard/news": {
+   "url": "http://localhost:4173/dashboard/news",
+   "v": []
+  },
+  "/dashboard/favourites": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/dashboard/profile": {
+   "url": "http://localhost:4173/dashboard/profile",
+   "v": []
+  },
+  "/dashboard/activity": {
+   "url": "http://localhost:4173/dashboard/activity",
+   "v": []
+  },
+  "/dashboard/inbox": {
+   "url": "http://localhost:4173/dashboard/inbox",
+   "v": []
+  },
+  "/terms": {
+   "url": "http://localhost:4173/terms",
+   "v": []
+  },
+  "/privacy": {
+   "url": "http://localhost:4173/privacy",
+   "v": []
+  },
+  "/access": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/brand": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/owner": {
+   "url": "http://localhost:4173/owner",
+   "v": []
+  },
+  "/owner/onboarding": {
+   "url": "http://localhost:4173/owner/onboarding",
+   "v": []
+  },
+  "/owner/scan": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/owner/tools": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/owner/settings": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/owner/notifications": {
+   "url": "http://localhost:4173/owner/notifications",
+   "v": []
+  },
+  "/owner/announcements": {
+   "url": "http://localhost:4173/owner/announcements",
+   "v": []
+  },
+  "/owner/reviews": {
+   "url": "http://localhost:4173/owner/reviews",
+   "v": []
+  },
+  "/owner/support": {
+   "url": "http://localhost:4173/owner/support",
+   "v": []
+  },
+  "/login": {
+   "url": "http://localhost:4173/login",
+   "v": []
+  },
+  "/signup": {
+   "url": "http://localhost:4173/signup",
+   "v": []
+  },
+  "/signup/owner": {
+   "url": "http://localhost:4173/signup/owner",
+   "v": []
+  },
+  "/forgot-password": {
+   "url": "http://localhost:4173/forgot-password",
+   "v": []
+  },
+  "/reset-password": {
+   "url": "http://localhost:4173/reset-password",
+   "v": []
+  }
+ }
+}

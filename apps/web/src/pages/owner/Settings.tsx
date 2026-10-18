@@ -132,7 +132,7 @@ function BrandImageUpload({
       >
         <Upload className="h-3.5 w-3.5" /> {uploading ? 'Uploading…' : currentUrl ? 'Replace' : 'Upload'}
       </button>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-xs text-red-700 mt-1">{error}</p>}
     </div>
   )
 }
@@ -236,7 +236,8 @@ function GalleryTab({ businessId }: { businessId: string }) {
               <img src={p.url} alt="" className="h-full w-full object-cover" />
               <button
                 onClick={() => handleDelete(p.id)}
-                className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Delete photo"
+                className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -259,7 +260,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         className="hidden"
         onChange={(e) => handleUpload(e.target.files?.[0])}
       />
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-red-700">{error}</p>}
     </SectionCard>
   )
 }
@@ -666,7 +667,7 @@ function LoyaltyTab() {
                     {r.description} · {r.stamp_threshold} {unit.toLowerCase()}{r.stamp_threshold === 1 ? '' : 's'}
                   </p>
                 </div>
-                <button onClick={() => handleDeleteReward(r.id)} className="text-[#1a1a1a]/70 hover:text-red-600">
+                <button onClick={() => handleDeleteReward(r.id)} className="text-[#1a1a1a]/70 hover:text-red-700">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -788,7 +789,7 @@ function WinbackTab() {
           </button>
         </div>
         {result && <p className="text-sm text-[#24722B] font-semibold mt-3">{result}</p>}
-        {error && <p className="text-sm text-red-600 font-semibold mt-3">{error}</p>}
+        {error && <p className="text-sm text-red-700 font-semibold mt-3">{error}</p>}
       </SectionCard>
 
       <SectionCard title="Send history">
@@ -813,7 +814,7 @@ function WinbackTab() {
                 <span
                   className={
                     'text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ' +
-                    (entry.status === 'sent' ? 'bg-[#DFF3E3] text-[#24722B]' : 'bg-red-50 text-red-600')
+                    (entry.status === 'sent' ? 'bg-[#DFF3E3] text-[#24722B]' : 'bg-red-50 text-red-700')
                   }
                 >
                   {entry.status}
@@ -930,7 +931,7 @@ function VerificationTab() {
           >
             <FileCheck className="h-4 w-4" /> {file ? file.name : 'Choose file'}
           </button>
-          {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+          {error && <p className="text-sm text-red-700 mb-3">{error}</p>}
           <button
             onClick={handleSubmit}
             disabled={submitting || !file || !label.trim()}
@@ -1041,7 +1042,7 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
           onToggle={() => setPerms({ ...perms, can_respond_reviews: !perms.can_respond_reviews })}
         />
       </div>
-      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {error && <p className="text-sm text-red-700 mb-3">{error}</p>}
       <button
         onClick={handleInvite}
         disabled={submitting}
@@ -1077,7 +1078,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
       <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
         <div>
           <p className="font-semibold text-[#1a1a1a]">
-            {staff.name} {revoked && <span className="text-xs font-bold text-red-600 uppercase ml-1">Revoked</span>}
+            {staff.name} {revoked && <span className="text-xs font-bold text-red-700 uppercase ml-1">Revoked</span>}
           </p>
           <p className="text-xs text-[#1a1a1a]/70">{staff.invited_email}</p>
         </div>
@@ -1086,7 +1087,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
           disabled={busy}
           className={
             'rounded-full px-4 h-9 text-sm font-bold disabled:opacity-50 ' +
-            (revoked ? 'bg-[#3FA34D] text-white' : 'border border-red-300 text-red-600')
+            (revoked ? 'bg-[#3FA34D] text-white' : 'border border-red-300 text-red-700')
           }
         >
           {revoked ? 'Reactivate' : 'Revoke access'}

@@ -260,7 +260,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
         </>
       )}
 
-      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {error && <p className="text-sm text-red-700 text-center">{error}</p>}
       {success && <p className="text-sm text-[#24722B] font-semibold text-center">{success}</p>}
     </div>
   )
@@ -379,8 +379,8 @@ function RedeemPanel({ businessId }: { businessId: string }) {
           <Gift className="h-5 w-5 text-[#6B3FA0] shrink-0" />
           <div>
             <p className="font-semibold text-[#1a1a1a]">{reward.title}</p>
-            {alreadyRedeemed && <p className="text-xs text-red-600 font-semibold">Already redeemed</p>}
-            {!alreadyRedeemed && expired && <p className="text-xs text-red-600 font-semibold">Expired</p>}
+            {alreadyRedeemed && <p className="text-xs text-red-700 font-semibold">Already redeemed</p>}
+            {!alreadyRedeemed && expired && <p className="text-xs text-red-700 font-semibold">Expired</p>}
           </div>
         </div>
       )}
@@ -395,7 +395,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         </button>
       )}
 
-      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      {error && <p className="text-sm text-red-700 text-center">{error}</p>}
       {success && <p className="text-sm text-[#24722B] font-semibold text-center">{success}</p>}
     </div>
   )
