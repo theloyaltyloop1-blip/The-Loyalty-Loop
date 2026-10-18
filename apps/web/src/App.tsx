@@ -66,6 +66,7 @@ function App() {
               <Route path="/signup/owner" element={<Signup asOwner />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <CookieConsent />
           </BrowserRouter>

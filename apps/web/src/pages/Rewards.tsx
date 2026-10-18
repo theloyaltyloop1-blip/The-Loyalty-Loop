@@ -46,8 +46,9 @@ export function RewardsPage() {
     fetchMyRewards(session.user.id).then(setRewards).finally(() => setReady(true))
   }, [session?.user])
 
-  if (loading || !ready) return null
+  if (loading) return null
   if (!session) return <Navigate to="/login" replace />
+  if (!ready) return null
 
   const available = rewards.filter((reward) => !reward.redeemed_at && (!reward.expires_at || new Date(reward.expires_at) >= new Date()))
   const past = rewards.filter((reward) => !available.includes(reward))

@@ -10,8 +10,9 @@ export function NewsPage() {
   const [items, setItems] = React.useState<Announcement[]>([])
   const [ready, setReady] = React.useState(false)
   React.useEffect(() => { if (session) fetchAnnouncements().then(setItems).finally(() => setReady(true)) }, [session])
-  if (loading || !ready) return null
+  if (loading) return null
   if (!session) return <Navigate to="/login" replace />
+  if (!ready) return null
   return <DashboardLayout>
     <p className="text-xs font-extrabold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">From local shops</p>
     <h1 className="text-3xl font-display font-extrabold text-[#1a1a1a]">News</h1>

@@ -28,8 +28,14 @@ Scope: `apps/web` (Vite 8 + React 19 + TS 6). Raw logs in `audit-reports/raw/`.
 - Settings form/loyalty reset effects: wrapped in `React.useEffectEvent` so they reset only on business switch (preserves existing behaviour, satisfies lint).
 - `.oxlintrc.json`: `allowExportNames: ["useAuth","useOwner"]` (hooks co-located with providers is intentional).
 
-## Open issue (not fixable in frontend)
-- `Tools.tsx` "Deactivate shop" writes `businesses.is_active`, but no migration in `supabase/migrations` adds that column → the update will fail at runtime. Needs a migration (`alter table public.businesses add column is_active boolean not null default true;`) plus RLS review.
+## Pass 2 – stricter compiler + runtime smoke test
+- Enabled `noUncheckedIndexedAccess` and `noImplicitReturns` in `tsconfig.app.json`; fixed 18 resulting errors (unchecked array/regex-group access in Scan, ShopDetail, Onboarding, owner-layout, AccessPanel; `VERIFICATION_STATUS_META` keyed by the status union). Log: `raw/tsc-strict.txt`.
+- Headless Chromium smoke test of all 28 routes plus an unknown URL (`raw/smoke.txt` → `raw/smoke-after.txt`):
+  - **Bug fixed:** logged-out users saw a blank page on 14 protected routes (Inbox, Activity, News, Profile, Rewards, ShopDetail, owner Analytics/Onboarding/Notifications/Announcements/Reviews/Support). The pages waited on a `ready` flag that only flips after a signed-in fetch, and `OwnerProvider.loading` never cleared without a user. Now they check auth first and redirect to `/login`.
+  - Added a catch-all route (`*` → `/`) to replace React Router's "No routes matched" warning.
+  - Result: 29/29 routes render with no console errors or warnings.
+- **Migration added:** `supabase/migrations/0026_business_is_active.sql` adds `businesses.is_active` (used by Tools → Deactivate shop). Not applied to any live project. Updates are covered by the existing owner update RLS policy.
+- Note: `src/lib/supabase.ts` throws at load time if `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are missing at build time, so a build without env vars produces a blank app. Make sure deploy envs set them.
 
 ## Notes
 - No SSR/SSG (client-only SPA), so no hydration/SSR failures applicable. No dynamic imports present.

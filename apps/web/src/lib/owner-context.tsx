@@ -28,7 +28,12 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   const userId = session?.user?.id
 
   const refetch = React.useCallback(async () => {
-    if (!userId) return
+    if (!userId) {
+      setBusinesses([])
+      setStaffBusinesses([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const [owned, staffOf] = await Promise.all([fetchOwnedBusinesses(userId), fetchMyStaffBusinesses(userId)])

@@ -1,0 +1,63 @@
+src/components/dashboard-layout.tsx(34,14): error TS2375: Type '{ children: (string | Element)[]; key: string; to: string; end: boolean | undefined; className: ({ isActive }: NavLinkRenderProps) => string; }' is not assignable to type 'NavLinkProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'end' are incompatible.
+    Type 'boolean | undefined' is not assignable to type 'boolean'.
+      Type 'undefined' is not assignable to type 'boolean'.
+src/components/owner-layout.tsx(75,43): error TS2532: Object is possibly 'undefined'.
+src/components/owner-layout.tsx(103,14): error TS2375: Type '{ children: (string | Element)[]; key: string; to: string; end: boolean | undefined; className: ({ isActive }: NavLinkRenderProps) => string; }' is not assignable to type 'NavLinkProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'end' are incompatible.
+    Type 'boolean | undefined' is not assignable to type 'boolean'.
+      Type 'undefined' is not assignable to type 'boolean'.
+src/lib/supabase.ts(3,37): error TS4111: Property 'VITE_SUPABASE_URL' comes from an index signature, so it must be accessed with ['VITE_SUPABASE_URL'].
+src/lib/supabase.ts(4,41): error TS4111: Property 'VITE_SUPABASE_ANON_KEY' comes from an index signature, so it must be accessed with ['VITE_SUPABASE_ANON_KEY'].
+src/pages/AccessPanel.tsx(11,337): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/AccessPanel.tsx(11,350): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: string): PostgrestQueryBuilder<any, any, any, string, unknown>', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(relation: string): PostgrestQueryBuilder<any, any, any, string, unknown>', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/pages/Favourites.tsx(47,14): error TS2375: Type '{ key: string; business: Business; membership: Membership | undefined; }' is not assignable to type '{ business: Business; membership?: Membership | null; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'membership' are incompatible.
+    Type 'Membership | undefined' is not assignable to type 'Membership | null'.
+      Type 'undefined' is not assignable to type 'Membership | null'.
+src/pages/Home.tsx(134,16): error TS2375: Type '{ key: string; business: Business; membership: Membership | undefined; }' is not assignable to type '{ business: Business; membership?: Membership | null; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'membership' are incompatible.
+    Type 'Membership | undefined' is not assignable to type 'Membership | null'.
+      Type 'undefined' is not assignable to type 'Membership | null'.
+src/pages/ShopDetail.tsx(46,19): error TS2532: Object is possibly 'undefined'.
+src/pages/ShopDetail.tsx(50,18): error TS18048: 'h' is possibly 'undefined'.
+src/pages/ShopDetail.tsx(51,15): error TS18048: 'h' is possibly 'undefined'.
+src/pages/ShopDetail.tsx(51,35): error TS18048: 'h' is possibly 'undefined'.
+src/pages/owner/Onboarding.tsx(48,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/owner/Onboarding.tsx(52,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/owner/Scan.tsx(68,24): error TS2532: Object is possibly 'undefined'.
+src/pages/owner/Scan.tsx(170,22): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string | null>'.
+src/pages/owner/Scan.tsx(308,58): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/owner/Scan.tsx(412,21): error TS2532: Object is possibly 'undefined'.
+src/pages/owner/Settings.tsx(304,42): error TS2379: Argument of type '{ opening_hours: Partial<Record<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun", DayHours>>; name: string; category: string | undefined; description: string; ... 4 more ...; instagram: string; }' is not assignable to parameter of type 'Partial<Business>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'category' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/pages/owner/Settings.tsx(305,27): error TS2379: Argument of type '{ opening_hours: Partial<Record<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun", DayHours>>; name: string; category: string | undefined; description: string; ... 4 more ...; instagram: string; }' is not assignable to parameter of type 'Partial<Business>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'category' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/pages/owner/Settings.tsx(486,42): error TS2379: Argument of type '{ loyalty_type: "stamp_card" | "points" | "tiered"; brand_color: string | undefined; loyalty_config: { stamps_required: number; stamp_icon: string; signup_reward_title: string; }; }' is not assignable to parameter of type 'Partial<Business>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'brand_color' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/pages/owner/Settings.tsx(491,27): error TS2379: Argument of type '{ loyalty_type: "stamp_card" | "points" | "tiered"; brand_color: string | undefined; }' is not assignable to parameter of type 'Partial<Business>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'brand_color' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/pages/owner/Settings.tsx(855,77): error TS4111: Property 'unverified' comes from an index signature, so it must be accessed with ['unverified'].
+src/pages/owner/Settings.tsx(856,22): error TS18048: 'meta' is possibly 'undefined'.
+src/pages/owner/Settings.tsx(886,39): error TS18048: 'meta' is possibly 'undefined'.
+src/pages/owner/Settings.tsx(888,61): error TS18048: 'meta' is possibly 'undefined'.
+src/pages/owner/Settings.tsx(891,67): error TS18048: 'meta' is possibly 'undefined'.

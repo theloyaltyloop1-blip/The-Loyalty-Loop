@@ -64,7 +64,7 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
           if (cancelled || !videoRef.current) return
           try {
             const codes = await detector!.detect(videoRef.current)
-            if (codes.length > 0) {
+            if (codes[0]) {
               onResult(codes[0].rawValue)
               return
             }
@@ -160,7 +160,7 @@ function AwardPanel({ businessId, unit }: { businessId: string; unit: string }) 
   function handleQrResult(value: string) {
     setCameraOn(false)
     const m = value.match(/^loyaltyloop:customer:(.+)$/)
-    if (!m) {
+    if (!m?.[1]) {
       setError('That QR code is not a Loyalty Loop customer card.')
       return
     }
@@ -297,7 +297,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
   async function handleQrResult(value: string) {
     setCameraOn(false)
     const m = value.match(/^loyaltyloop:reward:(.+)$/)
-    if (!m) {
+    if (!m?.[1]) {
       setError('That QR code is not a Loyalty Loop reward.')
       return
     }
@@ -409,7 +409,7 @@ export function OwnerScan() {
 
   React.useEffect(() => {
     if (!business && staffBusinesses.length > 0 && !staffBizId) {
-      setStaffBizId(staffBusinesses[0].business_id)
+      setStaffBizId(staffBusinesses[0]?.business_id ?? null)
     }
   }, [business, staffBusinesses, staffBizId])
 

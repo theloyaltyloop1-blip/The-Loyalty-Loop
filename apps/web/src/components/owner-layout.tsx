@@ -72,7 +72,7 @@ function BusinessSwitcher() {
       <div className="mb-6 rounded-2xl border border-black/10 bg-[#FBF6EC] px-4 py-3">
         <p className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a]/40 mb-1">Working at</p>
         <p className="font-semibold text-[#1a1a1a] truncate">
-          {staffBusinesses.length === 1 ? staffBusinesses[0].business.name : `${staffBusinesses.length} shops`}
+          {staffBusinesses.length === 1 ? staffBusinesses[0]?.business.name : `${staffBusinesses.length} shops`}
         </p>
       </div>
     )

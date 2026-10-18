@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
 import {
+  type Business,
   updateBusiness,
   uploadBusinessImage,
   addRewardCatalogItem,
@@ -28,9 +29,9 @@ import {
   type DayHours,
 } from '@/lib/businesses'
 
-const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
+const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other'] as const
 
-const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
+const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A'] as const
 
 const STAMP_ICON_PRESETS = ['⭐', '🍩', '✂️', '🍕', '☕', '🧁', '🍰', '🍞', '🍔', '🍟', '🌮', '💅', '🎁', '❤️']
 
@@ -831,7 +832,7 @@ function WinbackTab() {
 }
 
 const VERIFICATION_STATUS_META: Record<
-  string,
+  Business['verification_status'],
   { label: string; color: string; bg: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }
 > = {
   unverified: { label: 'Not submitted', color: '#1a1a1a', bg: '#00000010', icon: Shield },

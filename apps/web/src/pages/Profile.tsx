@@ -75,8 +75,9 @@ export function ProfilePage() {
     })
   }, [session?.user])
 
-  if (loading || !ready) return null
+  if (loading) return null
   if (!session) return <Navigate to="/login" replace />
+  if (!ready) return null
 
   async function handleSaveProfile() {
     if (!session?.user) return

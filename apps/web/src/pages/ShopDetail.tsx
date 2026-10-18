@@ -43,10 +43,10 @@ const DAY_ORDER: { key: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'; l
   { key: 'sat', label: 'Saturday' },
   { key: 'sun', label: 'Sunday' },
 ]
-const TODAY_KEY = DAY_ORDER[(new Date().getDay() + 6) % 7].key
+const TODAY_KEY = DAY_ORDER[(new Date().getDay() + 6) % 7]?.key
 
 function formatTime(t: string) {
-  const [h, m] = t.split(':').map(Number)
+  const [h = 0, m = 0] = t.split(':').map(Number)
   const period = h >= 12 ? 'pm' : 'am'
   const h12 = h % 12 === 0 ? 12 : h % 12
   return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, '0')}${period}`
@@ -153,8 +153,9 @@ export function ShopDetail() {
     }
   }
 
-  if (loading || !ready) return null
+  if (loading) return null
   if (!session) return <Navigate to="/login" replace />
+  if (!ready) return null
   if (!business) return <Navigate to="/dashboard" replace />
 
   const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
