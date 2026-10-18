@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native'
-import {colors} from '@loyalty-loop/design-tokens'
+import {colors} from '../theme'
 import {supabase} from '../supabase'
 import {Sheet} from './Sheet'
 import {SuccessCheck} from './SuccessCheck'

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
-import { colors as c, fonts } from '@loyalty-loop/design-tokens'
+import { colors as c, fonts } from '../theme'
 import { homeProgress, type HomeShop, type HomeMember, type HomeTier } from '../home-progress'
 import { formatMiles, nearestFirst, pickFeatured, type Coords } from '../distance'
 import { categoryRails, heroSlides, newestShops } from '../home-rails'

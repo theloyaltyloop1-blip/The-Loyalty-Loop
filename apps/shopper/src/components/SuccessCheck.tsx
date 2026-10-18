@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { scheduleOnRN } from 'react-native-worklets'
 import Svg, { Path } from 'react-native-svg'
-import { colors } from '@loyalty-loop/design-tokens'
+import { colors } from '../theme'
 
 /** Brief (~0.5s) success confirmation: a green checkmark that pops in with a
  * spring, holds briefly, then fades. Shown when a shopper's stamp count (or
