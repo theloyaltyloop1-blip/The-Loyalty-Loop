@@ -2,9 +2,9 @@
 // and the app shows what to charge on the card machine. Pure so it can be
 // unit-tested without React Native.
 
-/** Parses a typed £ amount ("12", "£12.50", "1,200") to pence, or null. */
+/** Parses a typed amount ("12", "£12.50", "Rs 1,200") to minor units, or null. */
 export function parsePounds(value: string): number | null {
-  const cleaned = value.replace(/[£,\s]/g, "");
+  const cleaned = value.replace(/£|rs|[,\s]/gi, "");
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   return Math.round(Number(cleaned) * 100);
 }

@@ -12,14 +12,18 @@ export type ShopperWidgetState = {
   target: number
   // Whole pounds at spend shops (ARCH_PLAN.md §4.11). The iOS widget prints
   // "current / target unit", so 'pounds' reads correctly without a native change.
-  unit: 'stamps' | 'points' | 'visits' | 'pounds'
+  // 'rupees' is the same for Pakistani shops.
+  unit: 'stamps' | 'points' | 'visits' | 'pounds' | 'rupees'
+  // Printed before money amounts on Android, e.g. '£' or 'Rs '; empty for
+  // stamps, points and visits. Older saved states have none and mean pounds.
+  currencyPrefix: string
   remaining: number
   brandColor: string
   updatedAt: string
 }
 
 type MembershipLike = { business_id: string; stamp_count?: number | null; points_balance?: number | null; visit_count?: number | null; reward_progress_pence?: number | null }
-type BusinessLike = { id: string; name: string; brand_color?: string | null; loyalty_type?: string | null; loyalty_config?: { stamps_required?: number } | null; reward_model?: string | null; reward_threshold_pence?: number | null }
+type BusinessLike = { id: string; name: string; brand_color?: string | null; loyalty_type?: string | null; loyalty_config?: { stamps_required?: number } | null; reward_model?: string | null; reward_threshold_pence?: number | null; country_code?: string | null }
 
 export async function readShopperWidgetState(): Promise<ShopperWidgetState | null> {
   const raw = await Storage.getItem(SHOPPER_WIDGET_STORAGE_KEY)
@@ -45,7 +49,8 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
           shopName: business.name,
           current: Math.floor(progress / 100),
           target: Math.ceil(targetPence / 100),
-          unit: 'pounds',
+          unit: business.country_code === 'PK' ? 'rupees' : 'pounds',
+          currencyPrefix: business.country_code === 'PK' ? 'Rs ' : '£',
           remaining: Math.ceil(Math.max(0, targetPence - progress) / 100),
           brandColor: business.brand_color || '#EF7136',
           updatedAt: new Date().toISOString(),
@@ -59,6 +64,7 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
         current,
         target,
         unit,
+        currencyPrefix: '',
         remaining: Math.max(0, target - current),
         brandColor: business.brand_color || '#EF7136',
         updatedAt: new Date().toISOString(),
@@ -72,6 +78,7 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
     current: 0,
     target: 20,
     unit: 'pounds' as const,
+    currencyPrefix: '£',
     remaining: 20,
     brandColor: '#EF7136',
     updatedAt: new Date().toISOString(),

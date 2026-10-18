@@ -26,6 +26,8 @@ import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features
 import { formatAddress } from './src/format-address'
 import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
+import { shopMoney } from './src/money'
+import { useCountry } from './src/use-country'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -312,6 +314,7 @@ function WalletIcon({ color = '#fff', size = 18 }: IconProps) {
 type Business = {
   id: string
   name: string
+  country_code?: string | null
   category?: string | null
   description?: string | null
   address?: string | null
@@ -342,7 +345,8 @@ type Membership = {
   reward_progress_pence?: number | null
   redemption_blocked_reason?: string | null
 }
-const pounds = (pence: number) => `£${(pence / 100).toFixed(2)}`
+// Amounts show in the shop's own currency (see src/money.ts).
+const pounds = (pence: number, countryCode?: string | null) => shopMoney(countryCode)(pence)
 type Reward = {
   id: string
   title: string
@@ -682,7 +686,7 @@ const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', ca
 /** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
  * grouped rows — security & privacy → notifications → support → legal → account.
  * The card, the name editor and the blocked list open inside the same sheet. */
-function SettingsSheet({ visible, session, userId, stampCode, onClose, initialView = 'root', cardLinking, onLinkCard, onViewRequested }: { visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void; initialView?: SettingsView; cardLinking: CardLinking; onLinkCard: () => void; onViewRequested: (id:string) => void }) {
+function SettingsSheet({ visible, session, userId, stampCode, onClose, initialView = 'root', cardLinking, onLinkCard, onViewRequested, country }: { country: ReturnType<typeof useCountry>; visible: boolean; session: Session; userId: string; stampCode: string | null; onClose: () => void; initialView?: SettingsView; cardLinking: CardLinking; onLinkCard: () => void; onViewRequested: (id:string) => void }) {
   const [view, setView] = useState<SettingsView>('root')
   const [showRequests, setShowRequests] = useState(false)
   const [biometricEnabled, setBiometricEnabled] = useState(false)
@@ -810,6 +814,22 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   />
                 </SettingsGroup>
               )}
+
+              <SettingsGroup title="Country">
+                <SettingsRow
+                  tile="teal"
+                  icon={(c) => <HelpIcon color={c} size={18} />}
+                  title="Your country"
+                  detail={`${country.country.name} · prices in ${country.country.currency_code}`}
+                  onPress={() =>
+                    Alert.alert('Where are you?', 'We show shops in your country.', [
+                      ...country.countries.map((option) => ({ text: option.name, onPress: () => void country.setCountry(option.code) })),
+                      { text: 'Cancel', style: 'cancel' as const },
+                    ])
+                  }
+                  last
+                />
+              </SettingsGroup>
 
               <SettingsGroup title="Security & privacy">
                 <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: primary }} />} />
@@ -1378,14 +1398,14 @@ function ShopDetail({
           <View style={styles.loyaltyCard}>
             <View style={styles.loyaltyCardHeaderRow}>
               <Text style={styles.sectionTitle}>{spendShop ? 'Your spend' : business.loyalty_type === 'points' ? 'Your points' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
-              <Text style={styles.loyaltyCardCount}>{spendShop ? `${pounds(value)} of ${pounds(threshold)}` : `${value} / ${threshold}`}</Text>
+              <Text style={styles.loyaltyCardCount}>{spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}</Text>
             </View>
             <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
             {spendShop ? (
               <Text style={styles.spendHint}>
                 {membership.redemption_blocked_reason
                   ? 'Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.'
-                  : `Spend ${pounds(Math.max(0, threshold - value))} more here to unlock ${nextTier?.title ?? 'your next reward'}.`}
+                  : `Spend ${pounds(Math.max(0, threshold - value), business.country_code)} more here to unlock ${nextTier?.title ?? 'your next reward'}.`}
               </Text>
             ) : null}
             <View style={styles.qrWrap}>
@@ -1419,7 +1439,7 @@ function ShopDetail({
               <View style={styles.rewardTierList}>
                 {catalog.slice(0, 3).map((reward) => (
                   <View key={reward.id} style={styles.rewardTier}>
-                    <Text style={styles.rewardTierThreshold}>{spendShop && reward.spend_threshold_pence ? `Spend ${pounds(reward.spend_threshold_pence).replace('.00', '')}` : `${reward.stamp_threshold} ${label}`}</Text>
+                    <Text style={styles.rewardTierThreshold}>{spendShop && reward.spend_threshold_pence ? `Spend ${pounds(reward.spend_threshold_pence, business.country_code).replace('.00', '')}` : `${reward.stamp_threshold} ${label}`}</Text>
                     <Text style={styles.rewardTierTitle}>{reward.title}</Text>
                   </View>
                 ))}
@@ -2156,7 +2176,10 @@ function AppHome({ session }: { session: Session }) {
   const [stampCode, setStampCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const userId = session.user.id
-  const cardLinking = useCardLinking(userId)
+  const shopperCountry = useCountry(userId)
+  const linking = useCardLinking(userId)
+  // Card-linking only runs where the country supports it (the UK today).
+  const cardLinking = useMemo(() => ({ ...linking, enabled: linking.enabled && shopperCountry.country.card_linking }), [linking, shopperCountry.country.card_linking])
   const [settingsView, setSettingsView] = useState<SettingsView>('root')
   const [cardLinked, setCardLinked] = useState(false)
   const linkedMessage = useRef('')
@@ -2337,6 +2360,12 @@ function AppHome({ session }: { session: Session }) {
   }
 
   const favouriteBusinesses = businesses.filter((b) => favouriteIds.has(b.id))
+  // Home and the map show shops in the shopper's country; shops they already
+  // joined or saved stay reachable wherever they are.
+  const localBusinesses = useMemo(
+    () => businesses.filter((b) => (b.country_code ?? 'GB') === shopperCountry.country.code),
+    [businesses, shopperCountry.country.code],
+  )
 
   if (selected) {
     return (
@@ -2380,8 +2409,8 @@ function AppHome({ session }: { session: Session }) {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
-          {tab === 'home' && <HomeTab businesses={businesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
-          {tab === 'map' && <MapTab businesses={businesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
+          {tab === 'home' && <HomeTab businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
+          {tab === 'map' && <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
           {tab === 'favourites' && (
@@ -2398,6 +2427,7 @@ function AppHome({ session }: { session: Session }) {
         stampCode={stampCode}
         initialView={settingsView}
         cardLinking={cardLinking}
+        country={shopperCountry}
         onLinkCard={() => void linkCardFromSettings()}
         onViewRequested={id=>{const shop=businesses.find(b=>b.id===id);if(shop){setShowProfile(false);setSelected(shop)}}}
         onClose={() => {

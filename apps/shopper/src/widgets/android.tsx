@@ -3,10 +3,11 @@ import { FlexWidget, TextWidget } from 'react-native-android-widget'
 import type { ShopperWidgetState } from './state'
 
 export function renderShopperWidget(state: ShopperWidgetState) {
-  const isPounds = state.unit === 'pounds'
+  const isPounds = state.unit === 'pounds' || state.unit === 'rupees'
+  const money = state.currencyPrefix || '£'
   const progress = state.remaining === 0
     ? 'Reward ready'
-    : isPounds ? `Spend £${state.remaining} more for your reward` : `${state.remaining} ${state.unit} until your reward`
+    : isPounds ? `Spend ${money}${state.remaining} more for your reward` : `${state.remaining} ${state.unit} until your reward`
 
   return (
     <FlexWidget
@@ -20,8 +21,8 @@ export function renderShopperWidget(state: ShopperWidgetState) {
     >
       <TextWidget text={state.shopName} maxLines={1} style={{ color: '#1E1B19', fontSize: 16, fontWeight: 'bold' }} />
       <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-end', flexGap: 6 }}>
-        <TextWidget text={isPounds ? `£${state.current}` : String(state.current)} style={{ color: state.brandColor as `#${string}`, fontSize: 34, fontWeight: 'bold' }} />
-        <TextWidget text={isPounds ? `of £${state.target}` : `/ ${state.target} ${state.unit}`} style={{ color: '#000000', fontSize: 14, marginBottom: 6 }} />
+        <TextWidget text={isPounds ? `${money}${state.current}` : String(state.current)} style={{ color: state.brandColor as `#${string}`, fontSize: 34, fontWeight: 'bold' }} />
+        <TextWidget text={isPounds ? `of ${money}${state.target}` : `/ ${state.target} ${state.unit}`} style={{ color: '#000000', fontSize: 14, marginBottom: 6 }} />
       </FlexWidget>
       <TextWidget text={progress} maxLines={2} style={{ color: '#000000', fontSize: 14 }} />
       <TextWidget text="Show customer card  →" style={{ color: state.brandColor as `#${string}`, fontSize: 14, fontWeight: 'bold', marginTop: 8 }} />

@@ -3,13 +3,15 @@ export type HomeShop = {
   address?: string | null; logo_url?: string | null; cover_url?: string | null; brand_color?: string | null;
   loyalty_type?: string; loyalty_config?: { stamps_required?: number };
   reward_model?: 'stamp_legacy' | 'spend_threshold'; reward_threshold_pence?: number | null;
+  country_code?: string | null;
 }
 export type HomeMember = { business_id: string; stamp_count: number; points_balance: number; reward_progress_pence?: number | null; visit_count?: number | null; last_activity_at?: string | null }
 export type HomeTier = { business_id: string; title: string; stamp_threshold: number; spend_threshold_pence?: number | null }
 const pounds = (value: number) => `£${(value / 100).toFixed(2)}`
 
 // Never invent a reward target when the catalogue is unavailable.
-export function homeProgress(shop: HomeShop, member: HomeMember | undefined, catalog: HomeTier[]) {
+// `money` formats minor units in the shop's currency; it defaults to pounds.
+export function homeProgress(shop: HomeShop, member: HomeMember | undefined, catalog: HomeTier[], money: (value: number) => string = pounds) {
   const spend = shop.reward_model === 'spend_threshold'
   const unit = shop.loyalty_type === 'points' ? 'points' : shop.loyalty_type === 'tiered' ? 'visits' : 'stamps'
   const value = Math.max(0, spend ? member?.reward_progress_pence ?? 0 : shop.loyalty_type === 'points' ? member?.points_balance ?? 0 : member?.stamp_count ?? 0)
@@ -20,8 +22,8 @@ export function homeProgress(shop: HomeShop, member: HomeMember | undefined, cat
   const threshold = tier ? (spend ? tier.spend_threshold_pence! : tier.stamp_threshold) : configured && configured > 0 ? configured : null
   return {
     value, threshold, unit, spend, title: tier?.title ?? null,
-    label: threshold && value <= threshold ? `${spend ? pounds(value) : value} of ${spend ? pounds(threshold) : `${threshold} ${unit}`}` : `${spend ? pounds(value) : `${value} ${unit}`} collected`,
-    offer: tier ? (spend ? `Spend ${pounds(threshold!)} · ${tier.title}` : `${threshold} ${unit} · ${tier.title}`) : 'Explore this shop’s rewards',
+    label: threshold && value <= threshold ? `${spend ? money(value) : value} of ${spend ? money(threshold) : `${threshold} ${unit}`}` : `${spend ? money(value) : `${value} ${unit}`} collected`,
+    offer: tier ? (spend ? `Spend ${money(threshold!)} · ${tier.title}` : `${threshold} ${unit} · ${tier.title}`) : 'Explore this shop’s rewards',
     fraction: threshold ? Math.min(1, value / threshold) : 0,
   }
 }

@@ -1,3 +1,4 @@
+import { currencySymbol, money, scaledLimit } from "./money";
 import {
   useCallback,
   useEffect,
@@ -852,7 +853,7 @@ function BrandingPage({
 }
 
 type ManualSpendEntry = { id: string; value: number; created_at: string };
-const pounds = (pence: number) => `£${(pence / 100).toFixed(2)}`;
+const pounds = money;
 
 // Spend-threshold shops only (ARCH_PLAN.md §4.10, M1 and M2): the per-entry
 // limit for staff, and the owner's 7-day undo list for manual entries.
@@ -887,9 +888,9 @@ function ManualSpendSettings({
   }, [loadEntries]);
 
   async function saveCap() {
-    const value = Number(cap.replace("£", "").trim());
-    if (!Number.isFinite(value) || value < 1 || value > 1000) {
-      return Alert.alert("Choose an amount between £1 and £1,000");
+    const value = Number(cap.replace(/£|rs|[,\s]/gi, ""));
+    if (!Number.isFinite(value) || value < 1 || value * 100 > scaledLimit(100_000)) {
+      return Alert.alert(`Choose an amount between ${pounds(100)} and ${pounds(scaledLimit(100_000))}`);
     }
     setSaving(true);
     const { error } = await supabase
@@ -939,7 +940,7 @@ function ManualSpendSettings({
         <Text style={styles.cardTitle}>Purchase entry limit</Text>
         <Text style={styles.muted}>
           The most a staff member can enter for one purchase. It catches typos
-          like £450 instead of £4.50. Between £1 and £1,000.
+          like {pounds(scaledLimit(45000))} instead of {pounds(scaledLimit(450))}. Between {pounds(100)} and {pounds(scaledLimit(100_000))}.
         </Text>
         <Field value={cap} onChangeText={setCap} placeholder="e.g. 200" keyboardType="number-pad" />
         <PrimaryButton label="Save limit" onPress={() => void saveCap()} busy={saving} />
@@ -1031,17 +1032,17 @@ function RewardsPage({
   async function add() {
     if (!title.trim())
       return Alert.alert("Add a reward name", "For example: Free coffee.");
-    const cleaned = amount.replace(/[£,\s]/g, "");
+    const cleaned = amount.replace(/£|rs|[,\s]/gi, "");
     const pence = /^\d+(\.\d{1,2})?$/.test(cleaned) ? Math.round(Number(cleaned) * 100) : 0;
     if (spendShop) {
-      if (pence < 100 || pence > 1_000_000)
-        return Alert.alert("Check the amount", "Enter how much customers spend to unlock it, between £1 and £10,000.");
+      if (pence < 100 || pence > scaledLimit(1_000_000))
+        return Alert.alert("Check the amount", `Enter how much customers spend to unlock it, between ${pounds(100)} and ${pounds(scaledLimit(1_000_000))}.`);
       if (items.some((item) => item.spend_threshold_pence === pence))
         return Alert.alert("Check the amount", "You already have a reward at that amount.");
     }
     const discountPence = discount.trim() ? parsePounds(discount) : null;
-    if (discount.trim() && (discountPence === null || discountPence < 1 || discountPence > 1_000_000))
-      return Alert.alert("Check the £ off", "Enter an amount between £0.01 and £10,000, or leave it empty.");
+    if (discount.trim() && (discountPence === null || discountPence < 1 || discountPence > scaledLimit(1_000_000)))
+      return Alert.alert("Check the money off", `Enter an amount up to ${pounds(scaledLimit(1_000_000))}, or leave it empty.`);
     setBusy(true);
     const { error } = await supabase.from("reward_catalog").insert({
       discount_pence: discountPence,
@@ -1128,7 +1129,7 @@ function RewardsPage({
           <Field
             value={amount}
             onChangeText={(value) => setAmount(value.replace(/[^0-9.]/g, ""))}
-            placeholder="Spend needed to unlock it in £, e.g. 20"
+            placeholder={`Spend needed to unlock it in ${currencySymbol()}, e.g. ${scaledLimit(2000) / 100}`}
             keyboardType="decimal-pad"
           />
         ) : (
@@ -1142,7 +1143,7 @@ function RewardsPage({
         <Field
           value={discount}
           onChangeText={(value) => setDiscount(value.replace(/[^0-9.]/g, ""))}
-          placeholder="£ off the bill (optional), e.g. 5"
+          placeholder={`${currencySymbol()} off the bill (optional), e.g. ${scaledLimit(500) / 100}`}
           keyboardType="decimal-pad"
         />
         <PrimaryButton label="Add reward" onPress={add} busy={busy} />
@@ -1159,10 +1160,10 @@ function RewardsPage({
               <Text style={styles.muted}>
                 {spendShop
                   ? item.spend_threshold_pence
-                    ? `Unlocks after spending £${(item.spend_threshold_pence / 100).toFixed(2)}`
+                    ? `Unlocks after spending ${pounds(item.spend_threshold_pence)}`
                     : "No amount set yet"
                   : `Unlocks at ${item.stamp_threshold} ${unit}`}
-                {item.discount_pence ? ` · £${(item.discount_pence / 100).toFixed(2)} off` : ""}
+                {item.discount_pence ? ` · ${pounds(item.discount_pence)} off` : ""}
                 {item.description ? ` · ${item.description}` : ""}
               </Text>
             </View>
@@ -1178,7 +1179,7 @@ function RewardsPage({
       ) : (
         <Text style={styles.empty}>
           {spendShop
-            ? `No rewards yet. Until you add one, customers get a generic "Free reward" each time they spend £${((business.reward_threshold_pence ?? 2000) / 100).toFixed(2)}.`
+            ? `No rewards yet. Until you add one, customers get a generic "Free reward" each time they spend ${pounds(business.reward_threshold_pence ?? 2000)}.`
             : `No rewards yet. Until you add one, customers get a generic "Free reward" after ${business.loyalty_config?.stamps_required || 10} ${unit}.`}
         </Text>
       )}
@@ -1788,7 +1789,7 @@ function TutorialPage({ business, onBack, onNavigate }: PageProps) {
       number: "3",
       title: "Create a reward",
       body: business.reward_model === "spend_threshold"
-        ? "Set what customers unlock and how much they spend to get it, such as a free coffee at £20."
+        ? `Set what customers unlock and how much they spend to get it, such as a free coffee at ${pounds(scaledLimit(2000))}.`
         : "Set a reward customers can unlock, such as a free coffee after 10 stamps.",
       action: "Create a reward",
       destination: "rewards",

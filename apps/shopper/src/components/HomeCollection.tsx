@@ -3,6 +3,7 @@ import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindo
 import Svg, { Circle, Path } from 'react-native-svg'
 import { colors as c, fonts } from '../theme'
 import { homeProgress, type HomeShop, type HomeMember, type HomeTier } from '../home-progress'
+import { shopMoney } from '../money'
 import { formatMiles, nearestFirst, pickFeatured, type Coords } from '../distance'
 import { categoryRails, heroSlides, newestShops } from '../home-rails'
 import type { LocationStatus } from '../use-user-location'
@@ -65,7 +66,7 @@ function HeroCarousel<T extends RailShop>({ slides, label, catalog, onSelect }: 
     <ScrollView horizontal snapToInterval={slide + RAIL_GAP} snapToAlignment="start" decelerationRate="fast" showsHorizontalScrollIndicator={false} style={s.rail} contentContainerStyle={s.railContent}
       onMomentumScrollEnd={e => setPage(Math.round(e.nativeEvent.contentOffset.x / (slide + RAIL_GAP)))}>
       {slides.map(shop => {
-        const offer = homeProgress(shop, undefined, catalog).offer
+        const offer = homeProgress(shop, undefined, catalog, shopMoney(shop.country_code)).offer
         return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`Explore ${shop.name}. ${offer}`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.hero, { width: slide }, pressed && s.pressed]}>
           <ShopPhoto shop={shop} large distance={label(shop)} />
           <View style={s.heroCopy}>
@@ -109,7 +110,7 @@ const CARD_TONES = [
 function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
   const { width } = useWindowDimensions()
   const cardWidth = Math.min(280, Math.round((width - 40) * 0.78))
-  const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog) }))
+  const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
     .sort((a, b) => b.progress.fraction - a.progress.fraction)
   return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={cardWidth + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
     {cards.map(({ shop, progress }, index) => {

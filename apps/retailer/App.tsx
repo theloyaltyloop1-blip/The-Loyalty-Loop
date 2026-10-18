@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
+import { FALLBACK_COUNTRIES, guessCountry } from "./src/country";
 import {
   ActivityIndicator,
   AppState,
@@ -150,6 +152,7 @@ type Business = {
   manual_spend_max_pence?: number;
   features?: string[] | null;
   halal_certifier?: string | null;
+  country_code?: string | null;
 };
 type StaffBusiness = {
   business_id: string;
@@ -362,7 +365,8 @@ type SpendSummary = CardLinkStatus & {
 };
 type RecentSpend = { id: string; value: number; created_at: string };
 
-const pounds = (pence: number) => `£${(pence / 100).toFixed(2)}`;
+// Amounts show in the open shop's currency (src/money.ts).
+const pounds = money;
 
 type ActiveReward = { id: string; title: string; discount_pence: number | null };
 
@@ -679,6 +683,7 @@ function StampsScreen({
   onDone: () => void;
   onConfigureRewards: () => void;
 }) {
+  setActiveCountry(business.country_code);
   const [permission, requestPermission] = useCameraPermissions();
   const [hasReward, setHasReward] = useState<boolean | null>(null);
   const [camera, setCamera] = useState(false);
@@ -2079,7 +2084,7 @@ function BusinessSettings({
   const unit = LOYALTY_TYPE_OPTIONS.find((option) => option.type === loyaltyType)?.unit ?? "stamps";
   const modeHelp =
     loyaltyType === "points"
-      ? "Staff choose how many points to add at each scan, for example 1 point per £1 spent."
+      ? `Staff choose how many points to add at each scan, for example 1 point per ${poundsWhole(100)} spent.`
       : loyaltyType === "tiered"
         ? "Each scan counts as one visit."
         : "Each scan adds a stamp (staff can add more than one at once).";
@@ -2671,19 +2676,19 @@ function confirmDeleteAccount(userId: string) {
 }
 
 const SPEND_REWARDS_HELP =
-  "Customers earn by spending. Staff scan the customer's QR and enter what they spent, and linked cards count automatically where available. Each reward unlocks at the £ amount you set; the biggest one starts a new round.";
+  "Customers earn by spending. Staff scan the customer's QR and enter what they spent, and linked cards count automatically where available. Each reward unlocks at the amount you set; the biggest one starts a new round.";
 
-// £ amounts are stored in pence. Whole pounds show without pence.
+// Amounts are stored in minor units (pence, paisa). Whole amounts show without decimals.
 function poundsWhole(pence: number): string {
-  return pence % 100 === 0 ? `£${pence / 100}` : `£${(pence / 100).toFixed(2)}`;
+  return money(pence).replace(/\.00$/, "");
 }
 
-// Parses what an owner typed ("20", "£20", "20.50") into pence, or null.
+// Parses what an owner typed ("20", "£20", "Rs 2,000") into minor units, or null.
 function parsePoundsToPence(value: string): number | null {
-  const cleaned = value.replace(/[£,\s]/g, "");
+  const cleaned = value.replace(/£|rs|[,\s]/gi, "");
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   const pence = Math.round(Number(cleaned) * 100);
-  return pence >= 100 && pence <= 1_000_000 ? pence : null;
+  return pence >= 100 && pence <= scaledLimit(1_000_000) ? pence : null;
 }
 
 /** Shown once, the first time an owner opens the app with no reward set up
@@ -2721,7 +2726,7 @@ function SpendProgramSetup({
       return;
     }
     if (rows.some((row) => row.spend_threshold_pence === null)) {
-      Alert.alert("Check the amounts", "Enter how much customers spend for each reward, between £1 and £10,000.");
+      Alert.alert("Check the amounts", `Enter how much customers spend for each reward, between ${poundsWhole(100)} and ${poundsWhole(scaledLimit(1_000_000))}.`);
       return;
     }
     if (new Set(rows.map((row) => row.spend_threshold_pence)).size !== rows.length) {
@@ -2756,12 +2761,12 @@ function SpendProgramSetup({
           <>
             <Text style={styles.hero}>Customers earn{"\n"}by spending</Text>
             <Text style={styles.copy}>
-              Every £ a customer spends at {business.name} counts towards a reward. Staff scan their QR and
+              Everything a customer spends at {business.name} counts towards a reward. Staff scan their QR and
               enter the amount, and linked cards count automatically where available.
             </Text>
             <Text style={styles.copy}>
               You choose what customers unlock and how much they spend to get it, for example a free
-              coffee at £20 and a free lunch at £50.
+              coffee at {poundsWhole(scaledLimit(2000))} and a free lunch at {poundsWhole(scaledLimit(5000))}.
             </Text>
             <Button title="Continue" onPress={() => setStep(1)} />
           </>
@@ -2792,7 +2797,7 @@ function SpendProgramSetup({
                   placeholderTextColor="#000000"
                   multiline
                 />
-                <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks after spending (£)</Text>
+                <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Unlocks after spending ({currencySymbol()})</Text>
                 <TextInput
                   style={styles.input}
                   value={reward.amount}
@@ -3040,7 +3045,10 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
   const [address, setAddress] = useState("");
   const [postcode, setPostcode] = useState("");
   const [phone, setPhone] = useState("");
+  // Guessed from the phone; the owner can change it. It sets the shop's currency.
+  const [country, setCountry] = useState(() => guessCountry(FALLBACK_COUNTRIES.map((option) => option.code)));
   const [saving, setSaving] = useState(false);
+  const pakistan = country === "PK";
 
   async function create() {
     if (!name.trim()) {
@@ -3057,6 +3065,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
         address: address.trim() || null,
         postcode: postcode.trim() || null,
         phone: phone.trim() || null,
+        country_code: country,
         brand_color: "#8B7355",
       });
       if (error) throw error;
@@ -3088,6 +3097,21 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             placeholder="e.g. Bean & Bird"
             placeholderTextColor="#000000"
           />
+          <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Country</Text>
+          <View style={styles.categoryRow}>
+            {FALLBACK_COUNTRIES.map((option) => {
+              const active = country === option.code;
+              return (
+                <Pressable
+                  key={option.code}
+                  onPress={() => setCountry(option.code)}
+                  style={[styles.categoryChip, active && styles.categoryChipActive]}
+                >
+                  <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{option.name}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Category</Text>
           <View style={styles.categoryRow}>
             {BUSINESS_CATEGORIES.map((option) => {
@@ -3108,7 +3132,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             style={styles.input}
             value={address}
             onChangeText={setAddress}
-            placeholder="12 Balham High Road"
+            placeholder={pakistan ? "Shop 4, Main Boulevard, Gulberg" : "12 Balham High Road"}
             placeholderTextColor="#000000"
           />
           <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Postcode (optional)</Text>
@@ -3116,7 +3140,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             style={styles.input}
             value={postcode}
             onChangeText={setPostcode}
-            placeholder="SW12 9AA"
+            placeholder={pakistan ? "54660" : "SW12 9AA"}
             placeholderTextColor="#000000"
             autoCapitalize="characters"
           />
@@ -3125,7 +3149,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
             style={styles.input}
             value={phone}
             onChangeText={setPhone}
-            placeholder="020 0000 0000"
+            placeholder={pakistan ? "0300 0000000" : "020 0000 0000"}
             placeholderTextColor="#000000"
             keyboardType="phone-pad"
           />
@@ -3151,6 +3175,7 @@ function Dashboard({
     [selected, setSelected] = useState<Business | null>(
       preview ? PREVIEW_BUSINESS : null,
     ),
+    _country = setActiveCountry(selected?.country_code),
     [tab, setTab] = useState<
       "home" | "scan" | "members" | "analytics" | "news" | "settings"
     >("home"),
