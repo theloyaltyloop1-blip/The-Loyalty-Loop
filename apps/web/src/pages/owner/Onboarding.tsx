@@ -1,39 +1,126 @@
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Check, Store, MapPin, Palette, Gift, ArrowRight, ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Coffee, Gem, Plus, QrCode, ScanLine, Star, Trash2 } from 'lucide-react'
+import {
+  PROGRAMMES,
+  SHOP_KINDS,
+  buildShopArgs,
+  onboardingDefaults,
+  programmeIdFor,
+  type CurrencyInfo,
+  type ProgrammeDraft,
+  type ProgrammeId,
+  type ShopKind,
+} from '@loyalty-loop/loyalty'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
-import { createBusiness, addRewardCatalogItem, type Business } from '@/lib/businesses'
-import { geocodeAddress } from '@/lib/geocode'
-import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
+import { addProgrammeContent, createShopWithProgramme } from '@/lib/businesses'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { BarePageSkeleton } from '@/components/page-skeleton'
-
-import { CATEGORIES, categoryCopy } from '@/lib/categories'
-import { SHOP_TYPES, rewardWords, type ShopTypeKey } from '@/lib/shop-types'
 import { OwnerLoadError } from '@/components/owner-load-error'
-const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
 
-const STEPS = [
-  { key: 'basics', label: 'Basics', icon: Store },
-  { key: 'location', label: 'Location', icon: MapPin },
-  { key: 'brand', label: 'Brand & loyalty', icon: Palette },
-  { key: 'rewards', label: 'Rewards', icon: Gift },
-] as const
+const BRAND_COLOR = '#8B7355'
 
-type RewardDraft = { title: string; description: string; stamp_threshold: number }
+// Where the shop is decides its currency. Guessed from the browser's time zone;
+// the owner can switch with the chip.
+const COUNTRIES = [
+  { code: 'GB', name: 'United Kingdom', currency: { symbol: '£', scale: 1 } as CurrencyInfo },
+  { code: 'PK', name: 'Pakistan', currency: { symbol: 'Rs', scale: 300 } as CurrencyInfo },
+]
 
-const EMPTY_REWARD: RewardDraft = { title: '', description: '', stamp_threshold: 10 }
+function guessCountryCode(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Karachi' ? 'PK' : 'GB'
+  } catch {
+    return 'GB'
+  }
+}
+
+const KIND_ICONS = { everyday: Coffee, style: Gem, premium: Star } as const
+const PROGRAMME_ORDER: ProgrammeId[] = ['stamps', 'tiers', 'points', 'spend']
+const STEP_COUNT = 4
 
 const inputClass =
   'h-12 w-full rounded-xl border border-input bg-background px-4 text-foreground placeholder:text-muted-foreground outline-none transition-[border-color,box-shadow] focus:border-primary focus:ring-3 focus:ring-primary/20'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block mb-4">
+    <label className="block mb-3">
       <span className="block text-sm font-semibold text-foreground mb-1.5">{label}</span>
       {children}
     </label>
+  )
+}
+
+function money(currency: CurrencyInfo, major: string) {
+  const n = Number(String(major).replace(/[^0-9.]/g, ''))
+  if (!Number.isFinite(n) || n <= 0) return `${currency.symbol}0`
+  return `${currency.symbol}${currency.symbol.length > 1 ? ' ' : ''}${n.toLocaleString('en-GB')}`
+}
+
+/** "What your customers will see": a small version of their loyalty card. */
+function CardPreview({
+  programme, name, draft, currency,
+}: { programme: ProgrammeId; name: string; draft: ProgrammeDraft; currency: CurrencyInfo }) {
+  const title = name.trim() || 'Your shop'
+  let body: React.ReactNode = null
+  if (programme === 'stamps') {
+    const total = Math.min(12, Math.max(1, Number(draft.rewards[0]?.amount) || 8))
+    body = (
+      <>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {Array.from({ length: total }, (_, i) => (
+            <span
+              key={i}
+              className={'h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ' + (i < 3 ? 'bg-white text-black' : 'bg-white/25 text-white')}
+            >
+              {i < 3 ? <Check className="h-3 w-3" /> : ''}
+            </span>
+          ))}
+        </div>
+        <p className="text-sm font-semibold text-white">{draft.rewards[0]?.title || 'Your reward'} after {draft.rewards[0]?.amount || '8'} stamps</p>
+      </>
+    )
+  } else if (programme === 'tiers') {
+    body = (
+      <>
+        <div className="flex gap-1.5 mb-2">
+          {draft.tiers.map((t, i) => (
+            <span key={i} className="rounded-full px-2.5 py-1 text-[11px] font-bold text-black" style={{ backgroundColor: t.colour || '#fff' }}>
+              {t.name || 'Level'}
+            </span>
+          ))}
+        </div>
+        <p className="text-sm font-semibold text-white">
+          {draft.tiers[1] ? `${money(currency, draft.tiers[1].amount)} to reach ${draft.tiers[1].name || 'the next level'}` : 'Spend to reach the next level'}
+        </p>
+      </>
+    )
+  } else if (programme === 'points') {
+    body = (
+      <>
+        <p className="text-3xl font-display font-bold text-white mb-1">240 <span className="text-sm font-semibold">points</span></p>
+        <p className="text-sm font-semibold text-white">
+          {draft.rewards[0] ? `${draft.rewards[0].title || 'Your reward'} at ${draft.rewards[0].amount} points` : 'Swap points for rewards'}
+        </p>
+      </>
+    )
+  } else {
+    body = (
+      <>
+        <div className="h-2.5 rounded-full bg-white/25 mb-2 overflow-hidden"><div className="h-full w-1/3 rounded-full bg-white" /></div>
+        <p className="text-sm font-semibold text-white">
+          {draft.rewards[0] ? `${draft.rewards[0].title || 'Your reward'} at ${money(currency, draft.rewards[0].amount)} spent` : 'Earn rewards as you spend'}
+        </p>
+      </>
+    )
+  }
+  return (
+    <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: BRAND_COLOR }}>
+      <p className="text-[11px] font-bold tracking-wide text-white/80 mb-1">WHAT YOUR CUSTOMERS WILL SEE</p>
+      <p className="text-lg font-display font-bold text-white mb-3">{title}</p>
+      {body}
+    </div>
   )
 }
 
@@ -42,117 +129,84 @@ export function OwnerOnboarding() {
   const { businesses, business, needsRewardSetup, markRewardsReady, loading: ownerLoading, loadError, refetch, setBusinessId } = useOwner()
   const navigate = useNavigate()
   const [stepState, setStep] = React.useState(0)
+  const [kind, setKind] = React.useState<ShopKind | null>(null)
+  const [programme, setProgramme] = React.useState<ProgrammeId>('stamps')
+  const [pickingProgramme, setPickingProgramme] = React.useState(false)
+  const [name, setName] = React.useState('')
+  const [countryCode, setCountryCode] = React.useState(guessCountryCode)
+  const [draft, setDraft] = React.useState<ProgrammeDraft | null>(null)
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [rewards, setRewards] = React.useState<RewardDraft[]>([EMPTY_REWARD])
-  // Guards against creating a second shop if the reward inserts fail and the
-  // owner retries "Go live".
-  const createdRef = React.useRef<Business | null>(null)
-  const [form, setForm] = React.useState<{
-    name: string
-    category: string
-    description: string
-    address: string
-    postcode: string
-    lat: number | null
-    lng: number | null
-    brand_color: string
-    shop_type: ShopTypeKey | null
-    loyalty_type: Business['loyalty_type']
-    stamps_required: number
-  }>({
-    name: '',
-    category: CATEGORIES[0],
-    description: '',
-    address: '',
-    postcode: '',
-    lat: null,
-    lng: null,
-    brand_color: BRAND_COLORS[0],
-    shop_type: null,
-    loyalty_type: 'stamp_card',
-    stamps_required: 10,
-  })
-  const [geocoding, setGeocoding] = React.useState(false)
-  const [pinTouched, setPinTouched] = React.useState(false)
+  const [liveId, setLiveId] = React.useState<string | null>(null)
 
-  // Auto-places a pin from the address/postcode as the owner types, debounced
-  // to respect Nominatim's ~1 req/sec free-tier usage policy. Once the owner
-  // has manually dragged the pin (pinTouched), typing no longer overrides it.
+  const country = COUNTRIES.find((c) => c.code === countryCode) ?? COUNTRIES[0]
+
+  // A shop created earlier that still has no rewards or levels: skip straight to
+  // the rewards step for that shop. Its programme is already fixed.
+  const resumeBusiness = !liveId && businesses.length > 0 && business && needsRewardSetup ? business : null
+  const resumeProgramme = resumeBusiness ? programmeIdFor(resumeBusiness) : null
+  const step = liveId ? 3 : resumeBusiness ? 2 : stepState
+  const activeProgramme = resumeProgramme ?? programme
+  const activeCountry = resumeBusiness
+    ? COUNTRIES.find((c) => c.code === (resumeBusiness as { country_code?: string }).country_code) ?? COUNTRIES[0]
+    : country
+  const activeName = resumeBusiness ? resumeBusiness.name : name
+
+  // Starter rewards follow the programme, shop kind and currency until the owner edits them.
   React.useEffect(() => {
-    if (pinTouched) return
-    const query = [form.address, form.postcode].filter(Boolean).join(', ')
-    if (query.trim().length < 4) return
-    const handle = setTimeout(async () => {
-      setGeocoding(true)
-      try {
-        const result = await geocodeAddress(query)
-        if (result) setForm((f) => ({ ...f, lat: result.lat, lng: result.lng }))
-      } finally {
-        setGeocoding(false)
-      }
-    }, 900)
-    return () => clearTimeout(handle)
-  }, [form.address, form.postcode, pinTouched])
-
-  // A shop created earlier (e.g. before rewards were mandatory) that still
-  // has no reward: skip straight to the rewards step for that shop.
-  const resumeBusiness = businesses.length > 0 && business && needsRewardSetup ? business : null
-  const step = resumeBusiness ? STEPS.length - 1 : stepState
-
-  React.useEffect(() => {
-    if (!resumeBusiness) return
-    const threshold = resumeBusiness.loyalty_config?.stamps_required ?? 10
-    setRewards((list) => list.map((r, i) => (i === 0 ? { ...r, stamp_threshold: threshold } : r)))
-  }, [resumeBusiness?.id])
+    if (step !== 2) return
+    setDraft((current) => current ?? onboardingDefaults(activeProgramme, kind?.key ?? 'everyday', activeCountry.currency))
+  }, [step, activeProgramme, kind, activeCountry])
 
   if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (!roles.includes('business_owner')) return <Navigate to="/dashboard" replace />
   // Don't offer to create a shop when we simply couldn't load the existing one.
   if (loadError && businesses.length === 0) return <OwnerLoadError />
-  if (businesses.length > 0 && !resumeBusiness) return <Navigate to="/owner" replace />
+  if (businesses.length > 0 && !resumeBusiness && !liveId) return <Navigate to="/owner" replace />
 
-  const rewardValid = (r: RewardDraft) =>
-    r.title.trim().length > 0 && Number.isInteger(r.stamp_threshold) && r.stamp_threshold >= 1 && r.stamp_threshold <= 100
+  const lastEditable = 2
+  const result = draft ? buildShopArgs(activeProgramme, draft) : null
   const canContinue =
-    step === 0
-      ? form.name.trim().length > 0 && Boolean(form.category) && form.shop_type !== null
-      : step === 2
-        ? Number.isInteger(form.stamps_required) && form.stamps_required >= 1 && form.stamps_required <= 100
-        : step === 3
-          ? rewards.length > 0 && rewards.every(rewardValid)
-          : true
+    step === 0 ? kind !== null : step === 1 ? name.trim().length > 0 : step === 2 ? Boolean(result?.ok) : true
 
-  function updateReward(index: number, patch: Partial<RewardDraft>) {
-    setRewards((list) => list.map((r, i) => (i === index ? { ...r, ...patch } : r)))
+  function pickKind(k: ShopKind) {
+    setKind(k)
+    setProgramme(k.programme)
+    setDraft(null)
+    setPickingProgramme(false)
   }
 
-  function goNext() {
-    // The first reward unlocks at the programme threshold unless edited later.
-    if (step === 2) setRewards((list) => list.map((r, i) => (i === 0 ? { ...r, stamp_threshold: form.stamps_required } : r)))
-    setStep((s) => s + 1)
+  function pickProgramme(id: ProgrammeId) {
+    setProgramme(id)
+    setDraft(null)
+    setPickingProgramme(false)
+  }
+
+  function setRewardField(index: number, patch: Partial<ProgrammeDraft['rewards'][number]>) {
+    setDraft((d) => d && { ...d, rewards: d.rewards.map((r, i) => (i === index ? { ...r, ...patch } : r)) })
+  }
+  function setTierField(index: number, patch: Partial<ProgrammeDraft['tiers'][number]>) {
+    setDraft((d) => d && { ...d, tiers: d.tiers.map((t, i) => (i === index ? { ...t, ...patch } : t)) })
   }
 
   async function handleCreate() {
+    if (!draft || !result || !result.ok) return
     setCreating(true)
     setError(null)
     try {
-      const target = resumeBusiness ?? createdRef.current ?? (createdRef.current = await createBusiness(session!.user.id, form))
-      await Promise.all(
-        rewards.map((r, i) =>
-          addRewardCatalogItem(target.id, {
-            title: r.title.trim(),
-            description: r.description.trim() || null,
-            stamp_threshold: r.stamp_threshold,
-            sort_order: i,
-          })
+      let id: string
+      if (resumeBusiness) {
+        await addProgrammeContent(resumeBusiness.id, result.args)
+        id = resumeBusiness.id
+        markRewardsReady(id)
+      } else {
+        id = await createShopWithProgramme(
+          { name: name.trim(), category: kind?.category ?? 'Retail', country_code: country.code, brand_color: BRAND_COLOR },
+          result.args
         )
-      )
-      markRewardsReady(target.id)
-      await refetch()
-      setBusinessId(target.id)
-      void navigate('/owner')
+      }
+      setLiveId(id)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create your shop. Try again.')
     } finally {
@@ -160,269 +214,260 @@ export function OwnerOnboarding() {
     }
   }
 
+  async function finish(destination: string) {
+    if (!liveId) return
+    await refetch()
+    setBusinessId(liveId)
+    void navigate(destination)
+  }
+
+  const cardClass = 'w-full text-left rounded-2xl border-2 p-4 transition-colors '
+
   return (
     <div className="min-h-dvh bg-background flex items-center justify-center px-4 py-10 sm:p-6">
       <div className="w-full max-w-xl">
-        <div className="flex items-center gap-2 justify-center mb-8">
+        <div className="flex items-center gap-2 justify-center mb-6">
           <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />
           <span className="font-display font-semibold text-lg tracking-tight text-foreground">The Loyalty Loop</span>
         </div>
 
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {STEPS.map((s, i) => (
-            <React.Fragment key={s.key}>
-              <div
-                className={
-                  'h-11 w-11 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-300 ' +
-                  (i < step
-                    ? 'bg-olive text-olive-ink'
-                    : i === step
-                      ? 'bg-primary text-primary-foreground ring-4 ring-peach'
-                      : 'bg-card text-muted-foreground ring-1 ring-foreground/10')
-                }
-              >
-                {i < step ? <Check className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
-              </div>
-              {i < STEPS.length - 1 && (
-                <div className={'h-1 w-8 rounded-full transition-colors duration-300 sm:w-12 ' + (i < step ? 'bg-olive' : 'bg-foreground/10')} />
-              )}
-            </React.Fragment>
+        <div className="flex items-center justify-center gap-2 mb-6" aria-label={`Step ${step + 1} of ${STEP_COUNT}`}>
+          {Array.from({ length: STEP_COUNT }, (_, i) => (
+            <span
+              key={i}
+              className={'h-2 rounded-full transition-all duration-300 ' + (i === step ? 'w-8 bg-primary' : i < step ? 'w-2 bg-olive' : 'w-2 bg-foreground/15')}
+            />
           ))}
         </div>
 
         <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 shadow-[0_24px_60px_rgb(28_38_32/0.08)] sm:p-9">
-          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">
-            {step === 0 && "Let's set up your shop"}
-            {step === 1 && 'Where are you?'}
-            {step === 2 && 'Make it yours'}
-            {step === 3 && (resumeBusiness ? `Add rewards for ${resumeBusiness.name}` : 'What can customers unlock?')}
-          </h1>
-          <p className="text-muted-foreground mb-7">
-            {step === 0 && 'The basics. You can change all of this later.'}
-            {step === 1 && "Shown to customers on your shop page. It's fine to skip this and add it later."}
-            {step === 2 && 'Pick a brand colour and how customers will earn rewards.'}
-            {step === 3 && 'Add at least one reward. This is what customers are collecting for. You can add more from Settings later.'}
-          </p>
-
           {step === 0 && (
             <>
-              <Field label="Shop name *">
-                <input
-                  className={inputClass}
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. Bean & Bird"
-                />
-              </Field>
-              <p className="text-sm font-semibold text-foreground mb-2">What kind of shop are you? *</p>
-              <div className="grid gap-2 mb-5">
-                {SHOP_TYPES.map((t) => (
-                  <button data-press-feedback
-                    key={t.key}
-                    type="button"
-                    onClick={() => setForm({ ...form, shop_type: t.key, loyalty_type: t.loyalty_type, category: t.category })}
-                    className={
-                      'rounded-xl border-2 p-3 text-left ' +
-                      (form.shop_type === t.key ? 'border-primary bg-card' : 'border-border bg-white/40')
-                    }
-                  >
-                    <span className="block font-bold text-sm text-foreground">{t.title}</span>
-                    <span className="block text-xs text-muted-foreground">{t.blurb}</span>
-                  </button>
-                ))}
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What kind of shop is it?</h1>
+              <p className="text-foreground/70 mb-6">We'll set up the right kind of rewards for you.</p>
+              <div className="grid gap-3 mb-4">
+                {SHOP_KINDS.map((k) => {
+                  const Icon = KIND_ICONS[k.key]
+                  const active = kind?.key === k.key
+                  return (
+                    <button
+                      data-press-feedback
+                      key={k.key}
+                      type="button"
+                      onClick={() => pickKind(k)}
+                      className={cardClass + (active ? 'border-primary bg-card' : 'border-border bg-white/40')}
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon className="h-6 w-6 text-primary shrink-0" />
+                        <span>
+                          <span className="block font-bold text-foreground">{k.title}</span>
+                          <span className="block text-sm text-foreground/70">{k.examples}</span>
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
-              <Field label="Category *">
-                <select
-                  className={inputClass}
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Description">
-                <textarea
-                  className={inputClass + ' h-24 py-3 resize-none'}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="A sentence or two about your shop"
-                />
-              </Field>
+              {kind && (
+                <div className="rounded-2xl bg-sage p-4 text-sage-ink">
+                  <p className="text-sm font-semibold text-foreground">
+                    We suggest: {PROGRAMMES[programme].name}
+                  </p>
+                  <p className="text-sm text-foreground/80">{PROGRAMMES[programme].pitch}</p>
+                  <button data-press-feedback type="button" onClick={() => setPickingProgramme((v) => !v)} className="mt-2 text-sm font-semibold text-primary underline">
+                    {pickingProgramme ? 'Keep the suggestion' : 'Change'}
+                  </button>
+                  {pickingProgramme && (
+                    <div className="grid gap-2 mt-3">
+                      {PROGRAMME_ORDER.map((id) => (
+                        <button
+                          data-press-feedback
+                          key={id}
+                          type="button"
+                          onClick={() => pickProgramme(id)}
+                          className={'rounded-xl border-2 p-3 text-left ' + (programme === id ? 'border-primary bg-card' : 'border-border bg-white/60')}
+                        >
+                          <span className="block font-bold text-sm text-foreground">{id === 'spend' ? '£ Spend rewards' : PROGRAMMES[id].name}</span>
+                          <span className="block text-xs text-foreground/70">{PROGRAMMES[id].pitch}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 
           {step === 1 && (
             <>
-              <Field label="Address">
-                <input
-                  className={inputClass}
-                  value={form.address}
-                  onChange={(e) => {
-                    setPinTouched(false)
-                    setForm({ ...form, address: e.target.value })
-                  }}
-                  placeholder="12 Balham High Road"
-                />
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What's your shop called?</h1>
+              <p className="text-foreground/70 mb-6">Customers will see this on their loyalty card.</p>
+              <Field label="Shop name">
+                <input className={inputClass} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bean & Bird" autoFocus />
               </Field>
-              <Field label="Postcode">
-                <input
-                  className={inputClass}
-                  value={form.postcode}
-                  onChange={(e) => {
-                    setPinTouched(false)
-                    setForm({ ...form, postcode: e.target.value })
-                  }}
-                  placeholder="SW12 9AA"
-                />
-              </Field>
-
-              <div className="mb-4">
-                <span className="block text-sm font-semibold text-foreground mb-1.5">
-                  Pin location {geocoding && <span className="text-muted-foreground font-normal">(finding address…)</span>}
-                </span>
-                <ShopMap
-                  lat={form.lat ?? DEFAULT_MAP_CENTER.lat}
-                  lng={form.lng ?? DEFAULT_MAP_CENTER.lng}
-                  color={form.brand_color}
-                  zoom={form.lat != null ? 15 : 11}
-                  editable
-                  onChange={(lat, lng) => {
-                    setPinTouched(true)
-                    setForm((f) => ({ ...f, lat, lng }))
-                  }}
-                />
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {form.lat != null
-                    ? 'Drag the pin or click the map to fine-tune. This is what customers will see on your shop page.'
-                    : 'Enter an address above to auto-place the pin, or click the map to set it manually.'}
-                </p>
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                <span className="text-sm text-foreground/70">Based in</span>
+                {COUNTRIES.map((c) => (
+                  <button
+                    data-press-feedback
+                    key={c.code}
+                    type="button"
+                    onClick={() => { setCountryCode(c.code); setDraft(null) }}
+                    className={'rounded-full px-3 py-1.5 text-sm font-semibold border-2 ' + (c.code === countryCode ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground')}
+                  >
+                    {c.name}
+                  </button>
+                ))}
               </div>
+              <CardPreview programme={programme} name={name} draft={onboardingDefaults(programme, kind?.key ?? 'everyday', country.currency)} currency={country.currency} />
             </>
           )}
 
-          {step === 2 && (
+          {step === 2 && draft && (
             <>
-              <p className="text-sm font-semibold text-foreground mb-2">Brand color</p>
-              <div className="flex flex-wrap gap-2 mb-6">
-                {BRAND_COLORS.map((c) => (
-                  <button data-press-feedback
-                    key={c}
-                    onClick={() => setForm({ ...form, brand_color: c })}
-                    className="h-9 w-9 rounded-full border-2"
-                    style={{ backgroundColor: c, borderColor: c === form.brand_color ? 'var(--color-foreground)' : 'transparent' }}
-                  />
-                ))}
-              </div>
-
-              <p className="text-xs text-muted-foreground mb-6">
-                {SHOP_TYPES.find((t) => t.key === form.shop_type)?.blurb} You can change this any time in Settings.
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">
+                {activeProgramme === 'tiers' ? 'Your membership levels' : 'Your rewards'}
+              </h1>
+              <p className="text-foreground/70 mb-5">
+                We've filled these in for you. Change anything, then tap Looks good.
               </p>
 
-              <Field label={rewardWords(form.loyalty_type).thresholdLabel}>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  className={inputClass}
-                  value={form.stamps_required}
-                  onChange={(e) => setForm({ ...form, stamps_required: Number(e.target.value) })}
-                />
-              </Field>
+              {activeProgramme === 'tiers'
+                ? draft.tiers.map((tier, index) => (
+                    <div key={index} className="rounded-2xl bg-sage p-4 mb-3 text-sage-ink">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+                          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tier.colour }} /> Level {index + 1}
+                        </span>
+                        {draft.tiers.length > 1 && (
+                          <button data-press-feedback type="button" onClick={() => setDraft((d) => d && { ...d, tiers: d.tiers.filter((_, i) => i !== index) })} className="flex items-center gap-1 text-xs font-semibold text-foreground/70 hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" /> Remove
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Name"><input className={inputClass} value={tier.name} maxLength={40} onChange={(e) => setTierField(index, { name: e.target.value })} /></Field>
+                        <Field label={`Spend in a year (${country.currency.symbol})`}>
+                          <input className={inputClass} inputMode="decimal" value={tier.amount} onChange={(e) => setTierField(index, { amount: e.target.value.replace(/[^0-9.]/g, '') })} />
+                        </Field>
+                      </div>
+                      <Field label="Perks (one per line)">
+                        <textarea className={inputClass + ' h-24 py-3 resize-none'} value={tier.perks} onChange={(e) => setTierField(index, { perks: e.target.value })} />
+                      </Field>
+                    </div>
+                  ))
+                : draft.rewards.map((reward, index) => (
+                    <div key={index} className="rounded-2xl bg-sage p-4 mb-3 text-sage-ink">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-foreground">Reward {draft.rewards.length > 1 ? index + 1 : ''}</span>
+                        {draft.rewards.length > 1 && (
+                          <button data-press-feedback type="button" onClick={() => setDraft((d) => d && { ...d, rewards: d.rewards.filter((_, i) => i !== index) })} className="flex items-center gap-1 text-xs font-semibold text-foreground/70 hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" /> Remove
+                          </button>
+                        )}
+                      </div>
+                      <Field label="What do they get?">
+                        <input className={inputClass} value={reward.title} maxLength={80} onChange={(e) => setRewardField(index, { title: e.target.value })} placeholder="e.g. Free coffee" />
+                      </Field>
+                      <Field
+                        label={
+                          activeProgramme === 'stamps' ? 'Stamps needed'
+                            : activeProgramme === 'points' ? 'Points needed'
+                            : `Customer spends (${activeCountry.currency.symbol})`
+                        }
+                      >
+                        <input className={inputClass} inputMode="decimal" value={reward.amount} onChange={(e) => setRewardField(index, { amount: e.target.value.replace(/[^0-9.]/g, '') })} />
+                      </Field>
+                    </div>
+                  ))}
+
+              {(activeProgramme === 'tiers' ? draft.tiers.length < 8 : draft.rewards.length < 10) && (
+                <button
+                  data-press-feedback
+                  type="button"
+                  onClick={() =>
+                    setDraft((d) =>
+                      d && (activeProgramme === 'tiers'
+                        ? { ...d, tiers: [...d.tiers, { name: '', amount: '', perks: '', colour: '#8F9BB3' }] }
+                        : { ...d, rewards: [...d.rewards, { title: '', description: '', amount: '' }] })
+                    )
+                  }
+                  className="flex items-center gap-1.5 text-sm font-semibold text-primary mb-4"
+                >
+                  <Plus className="h-4 w-4" /> {activeProgramme === 'tiers' ? 'Add a level' : 'Add another reward'}
+                </button>
+              )}
+
+              {activeProgramme === 'points' && (
+                <Field label={`Points earned for every ${activeCountry.currency.symbol}1 spent`}>
+                  <input className={inputClass} inputMode="numeric" value={draft.pointsPerPound} onChange={(e) => setDraft((d) => d && { ...d, pointsPerPound: e.target.value.replace(/[^0-9]/g, '') })} />
+                </Field>
+              )}
+
+              <CardPreview programme={activeProgramme} name={activeName} draft={draft} currency={activeCountry.currency} />
+              {result && !result.ok && <p className="text-sm text-foreground mt-3">{result.message}</p>}
             </>
           )}
 
           {step === 3 && (
             <>
-              {rewards.map((reward, index) => (
-                <div key={index} className="rounded-2xl bg-sage p-4 mb-3 text-sage-ink">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-foreground">Reward {rewards.length > 1 ? index + 1 : ''}</span>
-                    {rewards.length > 1 && (
-                      <button data-press-feedback
-                        type="button"
-                        onClick={() => setRewards((list) => list.filter((_, i) => i !== index))}
-                        className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Remove
-                      </button>
-                    )}
-                  </div>
-                  <Field label="Reward *">
-                    <input
-                      className={inputClass}
-                      value={reward.title}
-                      onChange={(e) => updateReward(index, { title: e.target.value })}
-                      placeholder={`e.g. ${categoryCopy(form.category).rewardTitle}`}
-                    />
-                  </Field>
-                  <Field label="Details">
-                    <input
-                      className={inputClass}
-                      value={reward.description}
-                      onChange={(e) => updateReward(index, { description: e.target.value })}
-                      placeholder="Anything customers should know"
-                    />
-                  </Field>
-                  <Field label={`Unlocks at (${rewardWords(form.loyalty_type).units}) *`}>
-                    <input
-                      type="number"
-                      min={1}
-                      max={100}
-                      className={inputClass}
-                      value={reward.stamp_threshold}
-                      onChange={(e) => updateReward(index, { stamp_threshold: Number(e.target.value) })}
-                    />
-                  </Field>
-                </div>
-              ))}
-              <button data-press-feedback
-                type="button"
-                onClick={() => setRewards((list) => [...list, { ...EMPTY_REWARD, stamp_threshold: form.stamps_required }])}
-                className="flex items-center gap-1.5 text-sm font-semibold text-primary mb-2"
-              >
-                <Plus className="h-4 w-4" /> Add another reward
-              </button>
+              <div className="flex items-center justify-center h-14 w-14 rounded-full bg-olive text-olive-ink mx-auto mb-4">
+                <Check className="h-7 w-7" />
+              </div>
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground text-center mb-2">You're live!</h1>
+              <p className="text-foreground/70 text-center mb-6">Customers can join {activeName} now. This is their card:</p>
+              {draft && <div className="mb-6"><CardPreview programme={activeProgramme} name={activeName} draft={draft} currency={activeCountry.currency} /></div>}
+              <div className="grid gap-3">
+                <button data-press-feedback type="button" onClick={() => void finish('/owner/tools')} className="flex items-center justify-center gap-2 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground font-semibold h-12">
+                  <QrCode className="h-4 w-4" /> Print your QR poster
+                </button>
+                <button data-press-feedback type="button" onClick={() => void finish('/owner/scan')} className="flex items-center justify-center gap-2 rounded-full border-2 border-primary text-foreground font-semibold h-12">
+                  <ScanLine className="h-4 w-4" /> Scan your first customer
+                </button>
+                <button data-press-feedback type="button" onClick={() => void finish('/owner')} className="text-sm font-semibold text-foreground/70 py-2">
+                  Go to my dashboard
+                </button>
+              </div>
             </>
           )}
 
-          {error && <p className="text-sm text-destructive mb-4">{error}</p>}
+          {error && <p className="text-sm text-destructive mt-4">{error}</p>}
 
-          <div className="flex items-center justify-between mt-4">
-            <button data-press-feedback
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0 || Boolean(resumeBusiness)}
-              className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground disabled:opacity-0"
-            >
-              <ArrowLeft className="h-4 w-4" /> Back
-            </button>
-
-            {step < STEPS.length - 1 ? (
-              <button data-press-feedback
-                onClick={goNext}
-                disabled={!canContinue}
-                className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
+          {step <= lastEditable && (
+            <div className="flex items-center justify-between mt-6">
+              <button
+                data-press-feedback
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+                disabled={step === 0 || Boolean(resumeBusiness)}
+                className="flex items-center gap-1.5 text-sm font-semibold text-foreground/70 disabled:opacity-0"
               >
-                Continue <ArrowRight className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" /> Back
               </button>
-            ) : (
-              <button data-press-feedback
-                onClick={handleCreate}
-                disabled={creating || !canContinue}
-                className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
-              >
-                {creating ? 'Creating…' : 'Go live'} <Check className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+              {step < lastEditable ? (
+                <button
+                  data-press-feedback
+                  onClick={() => setStep((s) => s + 1)}
+                  disabled={!canContinue}
+                  className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
+                >
+                  Continue <ArrowRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  data-press-feedback
+                  onClick={handleCreate}
+                  disabled={creating || !canContinue}
+                  className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
+                >
+                  {creating ? 'Creating…' : 'Looks good'} <Check className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          Your shop goes live the moment you finish, with no waiting for approval. You can add a logo, cover photo
-          and gallery from Settings afterwards.
+        <p className="text-center text-xs text-foreground/70 mt-4">
+          Add your address, phone, logo and photos later from your shop page. Your shop goes live the moment you finish.
         </p>
       </div>
     </div>

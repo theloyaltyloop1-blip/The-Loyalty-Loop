@@ -325,3 +325,176 @@ export function pointsStanding(
     label,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Shop onboarding: what kind of shop -> recommended programme, starter rewards
+// scaled to the shop's currency, and the arguments for the
+// create_shop_with_programme database function. Used by the Business app and
+// the website so both ask the same questions and send the same thing.
+
+export type ShopKindKey = 'everyday' | 'style' | 'premium'
+
+export interface ShopKind {
+  key: ShopKindKey
+  title: string
+  examples: string
+  /** Programme recommended for this kind of shop. */
+  programme: ProgrammeId
+  /** Category stored on the shop. */
+  category: string
+}
+
+export const SHOP_KINDS: ShopKind[] = [
+  { key: 'everyday', title: 'Café, bakery or barber', examples: 'Regulars popping in often', programme: 'stamps', category: 'Café' },
+  { key: 'style', title: 'Boutique, jeweller, salon or homeware', examples: 'Fewer, bigger visits', programme: 'tiers', category: 'Retail' },
+  // Premium maps to Membership tiers until the VIP list exists.
+  { key: 'premium', title: 'Premium or one-off purchases', examples: 'Recognition over freebies', programme: 'tiers', category: 'Retail' },
+]
+
+/** What the owner edits. Amounts are typed text in whole currency units (stamp counts for stamps). */
+export interface DraftReward { title: string; description: string; amount: string }
+export interface DraftTier { name: string; amount: string; perks: string; colour: string }
+export interface ProgrammeDraft {
+  /** Points earned per £1 (points shops). */
+  pointsPerPound: string
+  rewards: DraftReward[]
+  tiers: DraftTier[]
+}
+
+export interface CurrencyInfo {
+  /** "£", "Rs" */
+  symbol: string
+  /** Spend limits are written for pounds and multiplied by this (PKR: 300). */
+  scale: number
+}
+
+const label = (currency: CurrencyInfo, major: number) =>
+  `${currency.symbol}${currency.symbol.length > 1 ? ' ' : ''}${major.toLocaleString('en-GB')}`
+
+/** Starter content for a programme, scaled to the currency. */
+export function onboardingDefaults(programme: ProgrammeId, kind: ShopKindKey, currency: CurrencyInfo): ProgrammeDraft {
+  const s = Math.max(1, currency.scale)
+  if (programme === 'stamps') {
+    return {
+      pointsPerPound: '1',
+      tiers: [],
+      rewards: [{ title: kind === 'everyday' ? 'Free coffee' : 'A free treat', description: '', amount: '8' }],
+    }
+  }
+  if (programme === 'tiers') {
+    return {
+      pointsPerPound: '1',
+      rewards: [],
+      tiers: [
+        { name: 'Silver', amount: String(150 * s), perks: 'Free gift wrapping', colour: '#A8A9AD' },
+        { name: 'Gold', amount: String(500 * s), perks: 'Free gift wrapping\nEarly access to new arrivals', colour: '#D4AF37' },
+        { name: 'Platinum', amount: String(1200 * s), perks: 'Free gift wrapping\nEarly access to new arrivals\nA personal thank-you gift', colour: '#8F9BB3' },
+      ],
+    }
+  }
+  if (programme === 'points') {
+    return {
+      pointsPerPound: '1',
+      tiers: [],
+      rewards: [
+        { title: `${label(currency, 5 * s)} off your next visit`, description: '', amount: String(100 * s) },
+        { title: `${label(currency, 15 * s)} off your next visit`, description: '', amount: String(300 * s) },
+      ],
+    }
+  }
+  return {
+    pointsPerPound: '1',
+    tiers: [],
+    rewards: kind === 'everyday'
+      ? [
+          { title: 'Free coffee', description: '', amount: String(20 * s) },
+          { title: 'Free lunch', description: '', amount: String(50 * s) },
+        ]
+      : [
+          { title: `${label(currency, 10 * s)} off your next visit`, description: '', amount: String(100 * s) },
+          { title: `${label(currency, 30 * s)} off your next visit`, description: '', amount: String(300 * s) },
+        ],
+  }
+}
+
+/** "20", "£20", "Rs 2,000", "12.5" -> number of whole/decimal currency units, or null. */
+export function parseAmount(value: string): number | null {
+  const cleaned = String(value ?? '').replace(/£|rs|[,\s]/gi, '')
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null
+  return Number(cleaned)
+}
+
+export interface ShopRpcArgs {
+  _programme: ProgrammeId
+  _stamps_required: number
+  _points_per_pound: number
+  _rewards: Record<string, unknown>[]
+  _tiers: Record<string, unknown>[]
+}
+
+export type ShopArgsResult = { ok: true; args: ShopRpcArgs } | { ok: false; message: string }
+
+const MAX_MINOR = 100_000_000
+
+/** Checks the owner's draft the same way the database will, with friendly messages. */
+export function buildShopArgs(programme: ProgrammeId, draft: ProgrammeDraft): ShopArgsResult {
+  const fail = (message: string): ShopArgsResult => ({ ok: false, message })
+  const base: ShopRpcArgs = { _programme: programme, _stamps_required: 10, _points_per_pound: 1, _rewards: [], _tiers: [] }
+
+  if (programme === 'tiers') {
+    if (draft.tiers.length < 1 || draft.tiers.length > 8) return fail('Add between 1 and 8 membership levels.')
+    const seen = new Set<number>()
+    for (const tier of draft.tiers) {
+      const name = tier.name.trim()
+      if (!name) return fail('Every level needs a name, for example Silver.')
+      if (name.length > 40) return fail('Level names can be up to 40 characters.')
+      const major = parseAmount(tier.amount)
+      const minor = major === null ? null : Math.round(major * 100)
+      if (minor === null || minor < 1 || minor > MAX_MINOR) return fail(`Enter how much customers spend to reach ${name}.`)
+      if (seen.has(minor)) return fail('Each level needs a different spend amount.')
+      seen.add(minor)
+      const perks = tier.perks.split(/\r?\n|,/).map((perk) => perk.trim()).filter(Boolean)
+      if (perks.length > 6) return fail(`${name} can have up to 6 perks.`)
+      if (perks.some((perk) => perk.length > 80)) return fail('Each perk can be up to 80 characters.')
+      base._tiers.push({
+        name, spend_threshold_pence: minor, perks, colour: /^#[0-9A-Fa-f]{6}$/.test(tier.colour) ? tier.colour : null,
+      })
+    }
+    return { ok: true, args: base }
+  }
+
+  if (draft.rewards.length < 1 || draft.rewards.length > 10) return fail('Add between 1 and 10 rewards.')
+  const seen = new Set<number>()
+  let firstStamps = 0
+  for (const reward of draft.rewards) {
+    const title = reward.title.trim()
+    if (!title) return fail('Every reward needs a name, for example: Free coffee.')
+    if (title.length > 80) return fail('Reward names can be up to 80 characters.')
+    const description = reward.description.trim()
+    if (description.length > 200) return fail('Reward details can be up to 200 characters.')
+    const major = parseAmount(reward.amount)
+    if (programme === 'stamps') {
+      if (major === null || !Number.isInteger(major) || major < 1 || major > 100) return fail(`Enter how many stamps unlock ${title} (1 to 100).`)
+      firstStamps = firstStamps === 0 ? major : Math.min(firstStamps, major)
+      base._rewards.push({ title, description, stamp_threshold: major })
+    } else if (programme === 'spend') {
+      const minor = major === null ? null : Math.round(major * 100)
+      if (minor === null || minor < 1 || minor > MAX_MINOR) return fail(`Enter how much customers spend to unlock ${title}.`)
+      if (seen.has(minor)) return fail('Each reward needs a different amount.')
+      seen.add(minor)
+      base._rewards.push({ title, description, spend_threshold_pence: minor })
+    } else {
+      if (major === null || !Number.isInteger(major) || major < 1 || major > MAX_MINOR) return fail(`Enter how many points ${title} costs.`)
+      if (seen.has(major)) return fail('Each reward needs a different points cost.')
+      seen.add(major)
+      base._rewards.push({ title, description, points_cost: major })
+    }
+  }
+  if (programme === 'stamps') base._stamps_required = firstStamps
+  if (programme === 'points') {
+    const rate = parseAmount(draft.pointsPerPound)
+    if (rate === null || !Number.isInteger(rate) || rate < 1 || rate > 1000) return fail('Points per £ must be a whole number from 1 to 1000.')
+    base._points_per_pound = rate
+  }
+  return { ok: true, args: base }
+}

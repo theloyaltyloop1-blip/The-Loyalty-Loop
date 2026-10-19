@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import type { ShopRpcArgs } from '@loyalty-loop/loyalty'
 
 export interface LoyaltyConfig {
   stamps_required?: number
@@ -155,56 +156,27 @@ export async function adminTransferBusinessOwnership(businessId: string, newOwne
   if (error) throw error
 }
 
-function slugify(name: string) {
-  const base = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return `${base || 'shop'}-${Math.random().toString(36).slice(2, 6)}`
-}
-
-/** Owner onboarding — creates the shop and goes live immediately (no
- * approval wait). RLS requires has_role(auth.uid(), 'business_owner'),
- * granted automatically at signup for accounts created with owner intent. */
-export async function createBusiness(
-  ownerId: string,
-  values: {
-    name: string
-    category: string
-    description: string
-    address: string
-    postcode: string
-    lat?: number | null
-    lng?: number | null
-    brand_color: string
-    loyalty_type?: Business['loyalty_type']
-    stamps_required?: number
-  }
-): Promise<Business> {
-  const { data, error } = await supabase
-    .from('businesses')
-    .insert({
-      owner_id: ownerId,
-      name: values.name,
-      slug: slugify(values.name),
-      category: values.category,
-      description: values.description || null,
-      address: values.address || null,
-      postcode: values.postcode || null,
-      lat: values.lat ?? null,
-      lng: values.lng ?? null,
-      brand_color: values.brand_color,
-      // Stamps for now, while Fidel card linking is still being built; the
-      // £ spend model stays available per shop (reward_model).
-      reward_model: 'stamp_legacy',
-      loyalty_type: values.loyalty_type ?? 'stamp_card',
-      loyalty_config: { stamps_required: values.stamps_required ?? 10 },
-    })
-    .select()
-    .single()
+/** Owner onboarding: creates the shop, its programme and its rewards or tiers in
+ * ONE database transaction (create_shop_with_programme), so a failure can never
+ * leave a half-created shop. The caller becomes the owner and the shop goes live
+ * immediately. Build `args` with buildShopArgs from @loyalty-loop/loyalty. */
+export async function createShopWithProgramme(
+  values: { name: string; category: string; country_code: string; brand_color: string },
+  args: ShopRpcArgs
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_shop_with_programme', {
+    _name: values.name,
+    _category: values.category,
+    _country_code: values.country_code,
+    _programme: args._programme,
+    _brand_color: values.brand_color,
+    _stamps_required: args._stamps_required,
+    _points_per_pound: args._points_per_pound,
+    _rewards: args._rewards,
+    _tiers: args._tiers,
+  })
   if (error) throw error
-  return data as Business
+  return data as string
 }
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -355,6 +327,30 @@ export async function addRewardCatalogItem(
     .single()
   if (error) throw error
   return data as RewardCatalogItem
+}
+
+/** Resume path: a shop that exists but has no rewards or tiers yet. The shop's
+ * programme is already fixed, so only its rewards or levels are added. */
+export async function addProgrammeContent(businessId: string, args: ShopRpcArgs) {
+  if (args._programme === 'tiers') {
+    const { error } = await supabase.from('membership_tiers').insert(
+      args._tiers.map((tier, index) => ({ business_id: businessId, ...tier, sort_order: index }))
+    )
+    if (error) throw error
+    return
+  }
+  const { error } = await supabase.from('reward_catalog').insert(
+    args._rewards.map((reward, index) => ({
+      business_id: businessId,
+      title: reward.title,
+      description: reward.description || null,
+      stamp_threshold: args._programme === 'stamps' ? reward.stamp_threshold : args._programme === 'spend' ? 10 : 1,
+      spend_threshold_pence: reward.spend_threshold_pence ?? null,
+      points_cost: reward.points_cost ?? null,
+      sort_order: index,
+    }))
+  )
+  if (error) throw error
 }
 
 export async function deleteRewardCatalogItem(id: string) {
