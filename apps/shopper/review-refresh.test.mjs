@@ -26,7 +26,7 @@ function screen({ saved = { rating: 5, body: 'Saved review' }, slowLoad = false 
   const context = {
     business: { id: 'shop' }, userId: 'customer', hiddenReviewIds: new Set(),
     replyChecks: { current: [] },
-    containsBlockedLanguage: () => false, Alert: { alert: (title) => { state.alerts.push(title); } },
+    containsBlockedLanguage: () => false, Alert: { alert: (title) => { state.alerts.push(title); } }, showAlert: (title) => { state.alerts.push(title); },
     setSavingReview: () => {}, setReviewsLoading: (x) => { state.loading = x; },
     setReviews: (items) => { state.reviews = items; },
     setReviewBody: (x) => { state.reviewBody = x; context.reviewBody = x; },
