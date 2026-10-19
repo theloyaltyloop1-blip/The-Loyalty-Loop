@@ -7,8 +7,9 @@ import { Sheet } from './Sheet'
 /** Three-card first-run walkthrough, shown once per shop. The full guide stays
  * available from Shop settings. */
 const CARDS = [
+  { title: 'Home', body: 'Your day at a glance: how many customers, stamps and rewards, with one-tap shortcuts to scan.' },
+  { title: 'Analytics', body: 'Insights, your customers (who is loyal, who has gone quiet, and a message button), members and news posts.' },
   { title: 'Scan', body: 'When a customer pays, open Scan, scan their code and tap once. That is the whole job.' },
-  { title: 'Customers', body: 'See who keeps coming back and who has gone quiet, then send them a message in one tap.' },
   { title: 'Shop', body: 'Your profile, rewards, reviews and help live here. Most owners rarely need more than this.' },
 ]
 

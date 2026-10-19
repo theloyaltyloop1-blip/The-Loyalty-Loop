@@ -3308,8 +3308,8 @@ function Dashboard({
     ),
     _country = setActiveCountry(selected?.country_code),
     [tab, setTab] = useState<
-      "home" | "scan" | "members" | "analytics" | "news" | "settings"
-    >("scan"),
+      "home" | "scan" | "members" | "customers" | "analytics" | "news" | "settings"
+    >("home"),
     [ownerPage, setOwnerPage] = useState<NativeOwnerPage | null>(null),
     [stampsMode, setStampsMode] = useState<"stamps" | "reward">("stamps"),
     [widgetRefreshKey, setWidgetRefreshKey] = useState(0),
@@ -3507,19 +3507,20 @@ function Dashboard({
     const subscription = Linking.addEventListener("url", openWidgetDestination);
     return () => subscription.remove();
   }, []);
-  // Three tabs. Customers groups the old Dashboard/Members/Analytics/News pages
-  // as sub-tabs (CUSTOMER_SUBTABS); Shop is the old Settings page.
-  const CUSTOMER_TABS = ["home", "members", "analytics", "news"] as const;
-  const CUSTOMER_SUBTABS = [
-    { id: "home", label: "Customers" },
-    { id: "members", label: "All members" },
+  // Four tabs: Home, Analytics, Scan, Shop. Analytics groups insights, the
+  // customer lists and news posts as sub-tabs.
+  const ANALYTICS_TABS = ["analytics", "customers", "members", "news"] as const;
+  const ANALYTICS_SUBTABS = [
     { id: "analytics", label: "Insights" },
-    { id: "news", label: "News posts" },
+    { id: "customers", label: "Customers" },
+    { id: "members", label: "Members" },
+    { id: "news", label: "News" },
   ] as const;
-  const inCustomers = (CUSTOMER_TABS as readonly string[]).includes(tab);
+  const inAnalytics = (ANALYTICS_TABS as readonly string[]).includes(tab);
   const nav = [
+    { id: "home", icon: LayoutDashboard, label: "Home", active: tab === "home" },
+    { id: "analytics", icon: ChartNoAxesCombined, label: "Analytics", active: inAnalytics },
     { id: "scan", icon: Stamp, label: "Scan", active: tab === "scan" },
-    { id: "home", icon: Users, label: "Customers", active: inCustomers },
     { id: "settings", icon: Store, label: "Shop", active: tab === "settings" },
   ] as const;
   if (!loading && !shops.length && canCreateBusiness) {
@@ -3590,9 +3591,9 @@ function Dashboard({
             />
           ) : (
             <>
-              {inCustomers && (
+              {inAnalytics && (
                 <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
-                  {CUSTOMER_SUBTABS.map((sub) => (
+                  {ANALYTICS_SUBTABS.map((sub) => (
                     <Pressable
                       key={sub.id}
                       onPress={() => setTab(sub.id)}
@@ -3608,7 +3609,25 @@ function Dashboard({
                   ))}
                 </View>
               )}
-              {tab === "home" && <CustomersHome business={selected} />}{" "}
+              {tab === "home" && (
+                <DashboardHome
+                  business={selected}
+                  stats={stats}
+                  onIssueStamp={() => {
+                    void trackUsageEvent(session.user.id, 'scan_started', 'award');
+                    setStampsMode("stamps");
+                    setTab("scan");
+                  }}
+                  onRedeemReward={() => {
+                    void trackUsageEvent(session.user.id, 'scan_started', 'redeem');
+                    setStampsMode("reward");
+                    setTab("scan");
+                  }}
+                  onReport={() => setOwnerPage("ai")}
+                  onOpenGuide={() => setOwnerPage("tutorial")}
+                />
+              )}{" "}
+              {tab === "customers" && <CustomersHome business={selected} />}{" "}
               {tab === "scan" && (
                 <StampsScreen
                   business={selected}
@@ -3649,21 +3668,14 @@ function Dashboard({
         {nav.map(({ id, icon: Icon, label, active }) => (
           <Pressable
             key={id}
-            style={({ pressed }) => [styles.tab, pressed && styles.tabPressed]}
+            style={({ pressed }) => [styles.tab, active && styles.tabActivePill, pressed && styles.tabPressed]}
             onPress={() => {
               setOwnerPage(null);
               setTab(id);
             }}
           >
-            <Icon
-              size={21}
-              strokeWidth={active ? 2.5 : 1.9}
-              color={active ? orange : "#59615A"}
-            />
-            <Text
-              numberOfLines={1}
-              style={[styles.tabText, active && styles.tabActive]}
-            >
+            {active && <Icon size={20} strokeWidth={2.3} color="#fff" />}
+            <Text numberOfLines={1} style={[styles.tabText, active && styles.tabActive]}>
               {label}
             </Text>
           </Pressable>
@@ -4586,23 +4598,32 @@ const styles = StyleSheet.create({
   },
   tabs: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: 16,
+    right: 16,
+    bottom: 16,
     flexDirection: "row",
-    backgroundColor: "#FCFCFA",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(20,20,18,.08)",
-    paddingTop: 8,
-    paddingBottom: 10,
+    alignItems: "center",
+    backgroundColor: "#262523",
+    borderRadius: 999,
+    padding: 6,
+    gap: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
   tab: {
     flex: 1,
-    minHeight: 49,
+    minHeight: 48,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 1,
+    gap: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
   },
-  tabText: { color: "#000000", fontWeight: "700", fontSize: 9, marginTop: 3 },
-  tabActive: { color: orange, fontWeight: "900" },
+  tabActivePill: { flex: 1.5, backgroundColor: orange },
+  tabText: { color: "#B9B6AE", fontWeight: "700", fontSize: 13 },
+  tabActive: { color: "#fff", fontWeight: "800" },
 });
