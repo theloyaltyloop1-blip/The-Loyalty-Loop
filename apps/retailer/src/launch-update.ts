@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AppState } from 'react-native'
 import * as Updates from 'expo-updates'
 
 // Give up and open the current version if the check is slow or offline.
@@ -40,4 +41,27 @@ export function useLaunchUpdate(): boolean {
   }, [])
 
   return checking
+}
+
+// Each time the app comes back from the background, download any newer update
+// quietly. It is not applied mid-session; it takes effect on the next open.
+export function useForegroundUpdateFetch(): void {
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return
+    let wasBackground = false
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') { wasBackground = true; return }
+      if (!wasBackground) return
+      wasBackground = false
+      ;(async () => {
+        try {
+          const check = await Updates.checkForUpdateAsync()
+          if (check.isAvailable) await Updates.fetchUpdateAsync()
+        } catch {
+          // Offline or server error: keep the current version.
+        }
+      })()
+    })
+    return () => sub.remove()
+  }, [])
 }

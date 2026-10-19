@@ -72,7 +72,7 @@ import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
 import { TourOverlay, TourProvider, TourTarget, useTour } from "./src/components/Tour";
 import { programmeIdFor, recordsSpend, standingFromSnapshot, type ProgrammeSnapshot, type SnapshotStanding } from "@loyalty-loop/loyalty";
-import { useLaunchUpdate } from "./src/launch-update";
+import { useForegroundUpdateFetch, useLaunchUpdate } from "./src/launch-update";
 import { BusinessSettings } from "./src/shop-pages";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
@@ -2585,6 +2585,7 @@ function AppRoot() {
     [checkingLock, setCheckingLock] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const checkingUpdate = useLaunchUpdate();
+  useForegroundUpdateFetch();
   useEffect(() => { getOnboardingComplete().then(setOnboardingComplete); }, []);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

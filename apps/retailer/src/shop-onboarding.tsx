@@ -398,7 +398,7 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
         )}
       </KeyboardAwareScrollView>
 
-      <Sheet visible={picking} onClose={() => setPicking(false)} dragArea="full">
+      <Sheet visible={picking} onClose={() => setPicking(false)} dragArea="full" sheetStyle={styles.pickerSheet}>
         <View style={styles.sheetBody}>
           <Text style={styles.sheetTitle}>Choose a programme</Text>
           {PROGRAMME_ORDER.map((id) => {
@@ -469,5 +469,6 @@ const styles = StyleSheet.create({
   backText: { color: "#000000", fontSize: 15, fontWeight: "700" },
   liveBadge: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#3FA34D", alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 14 },
   sheetBody: { padding: 20, paddingBottom: 32, gap: 12 },
+  pickerSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   sheetTitle: { color: "#000000", fontSize: 20, fontWeight: "800", marginBottom: 4 },
 });
