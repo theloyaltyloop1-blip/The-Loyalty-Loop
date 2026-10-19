@@ -1,3 +1,4 @@
+import { handleTask, runTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -50,6 +51,9 @@ export function ProfilePage() {
   const [profile, setProfile] = React.useState<ProfileData | null>(null)
   const [settings, setSettings] = React.useState<SettingsData | null>(null)
   const [form, setForm] = React.useState({ first_name: '', last_name: '', phone: '', postcode: '' })
+  const [error, setError] = React.useState<string | null>(null)
+  const [settingsBusy, setSettingsBusy] = React.useState(false)
+  const [retry, setRetry] = React.useState(0)
   const [ready, setReady] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
@@ -60,10 +64,15 @@ export function ProfilePage() {
 
   React.useEffect(() => {
     if (!session?.user) return
+    setReady(false)
+    setProfile(null)
+    setSettings(null)
+    setError(null)
     Promise.all([
       supabase.from('profiles').select('first_name,last_name,phone,postcode,stamp_code').eq('id', session.user.id).single(),
       supabase.from('user_settings').select('notify_offers,notify_rewards,notify_stamps').eq('user_id', session.user.id).single(),
     ]).then(([p, s]) => {
+      if (p.error || s.error || !p.data || !s.data) throw new Error()
       if (p.data) {
         setProfile(p.data as ProfileData)
         setForm({
@@ -75,38 +84,48 @@ export function ProfilePage() {
       }
       if (s.data) setSettings(s.data as SettingsData)
       getReferralCode(session.user.id).then(setReferralCode).catch(() => undefined)
-      setReady(true)
-    })
-  }, [session?.user])
+    }).catch(() => setError('Could not load your profile. Please try again.')).finally(() => setReady(true))
+  }, [session?.user.id, retry])
 
+  if (!loading && !session) return <Navigate to="/login" replace />
   if (loading || !ready) return <PageSkeleton variant="detail" />
   if (!session) return <Navigate to="/login" replace />
 
+  if (!profile) return <DashboardLayout><p role="alert">{error}</p><button onClick={() => setRetry((n) => n + 1)}>Try again</button></DashboardLayout>
+
   async function handleSaveProfile() {
-    if (!session?.user) return
+    if (!session?.user || !profile || saving) return
+    setError(null)
     setSaving(true)
     try {
       const { error } = await supabase.from('profiles').update(form).eq('id', session.user.id)
+      if (error) throw error
       if (!error) {
         setProfile((prev) => (prev ? { ...prev, ...form } : prev))
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
       }
-    } finally {
+    } catch { setError("Could not save your profile. Please try again.") } finally {
       setSaving(false)
     }
   }
 
   async function handleToggleSetting(key: keyof SettingsData) {
-    if (!session?.user || !settings) return
+    if (!session?.user || !settings || settingsBusy) return
     const next = { ...settings, [key]: !settings[key] }
-    setSettings(next)
-    await supabase.from('user_settings').update({ [key]: next[key] }).eq('user_id', session.user.id)
+    setSettingsBusy(true)
+    setError(null)
+    try {
+      const { error } = await supabase.from('user_settings').update({ [key]: next[key] }).eq('user_id', session.user.id)
+      if (error) throw error
+      setSettings(next)
+    } catch { setError('Could not save notification preferences. Please try again.') }
+    finally { setSettingsBusy(false) }
   }
 
   function handleCopyCode() {
     if (!profile) return
-    navigator.clipboard.writeText(profile.stamp_code)
+    runTask(navigator.clipboard.writeText(profile.stamp_code))
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -126,6 +145,7 @@ export function ProfilePage() {
 
   return (
     <DashboardLayout>
+      {error && <p role="alert" className="mb-4 text-destructive">{error}</p>}
       <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-8 sm:text-4xl">Your account</h1>
 
       <div className="grid items-start gap-5 lg:grid-cols-[340px_1fr]">
@@ -151,7 +171,7 @@ export function ProfilePage() {
             <h2 className="font-display text-xl font-semibold tracking-tight">Invite a friend</h2>
             <p className="mt-2 text-sm text-peach-ink/80">Share your personal link. When someone joins, you’ll see it in your inbox.</p>
             <p className="mt-4 font-mono text-lg font-bold tracking-widest">{referralCode || 'Loading…'}</p>
-            <button data-press-feedback onClick={handleCopyReferral} disabled={!referralCode} className="mt-4 flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50">
+            <button data-press-feedback onClick={handleTask(handleCopyReferral)} disabled={!referralCode} className="mt-4 flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50">
               <Share2 className="h-4 w-4" />{copied ? 'Copied' : 'Copy invite link'}
             </button>
           </section>
@@ -174,7 +194,7 @@ export function ProfilePage() {
               </Field>
             </div>
             <button data-press-feedback
-              onClick={handleSaveProfile}
+              onClick={handleTask(handleSaveProfile)}
               disabled={saving}
               className="mt-1 flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
@@ -201,7 +221,7 @@ export function ProfilePage() {
                     role="switch"
                     aria-checked={settings[key]}
                     aria-label={label}
-                    onClick={() => handleToggleSetting(key)}
+                    onClick={handleTask(() => handleToggleSetting(key))}
                     className={'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ease-out ' + (settings[key] ? 'bg-primary' : 'bg-foreground/15')}
                   >
                     <span className={'absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ' + (settings[key] ? 'translate-x-6' : 'translate-x-1')} />
@@ -215,10 +235,10 @@ export function ProfilePage() {
 
           <SectionCard title="Account">
             <div className="flex flex-wrap items-center gap-3">
-              <button data-press-feedback onClick={signOut} className="flex h-11 items-center gap-2 rounded-full px-5 font-semibold text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary">
+              <button data-press-feedback onClick={handleTask(signOut)} className="flex h-11 items-center gap-2 rounded-full px-5 font-semibold text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary">
                 <LogOut className="h-4 w-4" /> Sign out
               </button>
-              <button data-press-feedback onClick={handleDelete} disabled={deleting} className="flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50">
+              <button data-press-feedback onClick={handleTask(handleDelete)} disabled={deleting} className="flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50">
                 <Trash2 className="h-4 w-4" />{deleting ? 'Deleting account…' : 'Delete my account'}
               </button>
             </div>

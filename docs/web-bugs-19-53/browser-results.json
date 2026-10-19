@@ -1,0 +1,44 @@
+[
+  {
+    "name": "logged-out protected routes",
+    "status": "PASS"
+  },
+  {
+    "name": "direct owner tools waits for roles and shop",
+    "status": "FAIL",
+    "error": "The expression evaluated to a falsy value:\n\n  assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))\n"
+  },
+  {
+    "name": "brand head retains direct route; failed create visible and no duplicate",
+    "status": "PASS"
+  },
+  {
+    "name": "failed profile load exposes retry and no save",
+    "status": "PASS"
+  },
+  {
+    "name": "profile save failure visible; preserves fields",
+    "status": "PASS"
+  },
+  {
+    "name": "shop failed load shows retry",
+    "status": "PASS"
+  },
+  {
+    "name": "shop long name fits phone and white header is darkened",
+    "status": "FAIL",
+    "error": "locator.waitFor: Timeout 7000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('heading', { name: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', exact: true }) to be visible\u001b[22m\n"
+  },
+  {
+    "name": "mark all read failure keeps unread state",
+    "status": "PASS"
+  },
+  {
+    "name": "forgot password request failure never says sent",
+    "status": "PASS"
+  },
+  {
+    "name": "unknown route and text zoom navigation",
+    "status": "PASS"
+  }
+]

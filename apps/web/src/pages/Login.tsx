@@ -1,3 +1,4 @@
+import { handleTask, runTask } from '@/lib/async'
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, setRememberMe, signInWithGoogle, signInWithApple } from '@/lib/supabase'
@@ -29,7 +30,7 @@ export function Login() {
     }
     await supabase.rpc('ensure_current_user_bootstrap')
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id)
-    navigate(
+    runTask(navigate(
       roles?.some((role) => role.role === 'admin')
         ? '/access'
         : roles?.some((role) => role.role === 'staff')
@@ -39,15 +40,15 @@ export function Login() {
           : roles?.some((role) => role.role === 'business_owner')
             ? '/owner'
             : '/dashboard'
-    )
+    ))
   }
 
   return (
     <AuthLayout title="Welcome back">
-      <AppleButton onClick={() => signInWithApple().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.'))} />
-      <GoogleButton onClick={() => signInWithGoogle().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
+      <AppleButton onClick={handleTask(() => signInWithApple().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.')))} />
+      <GoogleButton onClick={handleTask(() => signInWithGoogle().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.')))} />
       <AuthDivider />
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleTask(handleSubmit)} className="flex flex-col gap-4">
         <AuthInput
           type="email"
           placeholder="Email"

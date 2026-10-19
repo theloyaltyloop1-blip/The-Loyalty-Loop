@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { NavLink, Navigate, Link } from 'react-router-dom'
 import { Home, Map, Megaphone, Gift, Heart, User, LogOut, Bell } from 'lucide-react'
@@ -55,7 +56,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </NavLink>
           <button
             data-press-feedback
-            onClick={signOut}
+            onClick={handleTask(signOut)}
             className="flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out

@@ -1,4 +1,5 @@
 import type { Business, Membership, RewardCatalogItem } from './businesses'
+import { rewardWords } from '@/lib/shop-types'
 
 const formatPounds = (pence: number) => `£${(pence / 100).toFixed(2)}`
 
@@ -8,7 +9,7 @@ export function getHomeProgress(
   catalog: RewardCatalogItem[],
 ) {
   const spend = business.reward_model === 'spend_threshold'
-  const unit = business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'
+  const unit = rewardWords(business.loyalty_type).units
   const value = Math.max(0, spend
     ? membership?.reward_progress_pence ?? 0
     : business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0)

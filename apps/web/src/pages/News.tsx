@@ -1,3 +1,4 @@
+import { runTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Megaphone } from 'lucide-react'
@@ -10,7 +11,7 @@ export function NewsPage() {
   const { session, loading } = useAuth()
   const [items, setItems] = React.useState<Announcement[]>([])
   const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { if (session) fetchAnnouncements(session.user.id).then(setItems).finally(() => setReady(true)) }, [session])
+  React.useEffect(() => { if (session) runTask(fetchAnnouncements(session.user.id).then(setItems).finally(() => setReady(true))) }, [session])
   if (loading || !ready) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   return <DashboardLayout>

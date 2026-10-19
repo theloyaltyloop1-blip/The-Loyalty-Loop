@@ -188,3 +188,10 @@ html.dark .lp-biz-copy p { color: var(--lp-muted); }
   .lp-faq { padding-block: 72px 64px; }
   .lp-qa { grid-template-columns: 1fr; gap: 28px; margin: 32px 0; }
 }
+
+/* Let navigation reflow when text is enlarged independently of the viewport. */
+.lp-nav-row { height: auto; min-height: 68px; flex-wrap: wrap; padding-block: 12px; }
+.lp-nav-links { flex-wrap: wrap; }
+.lp-brand { white-space: normal; min-width: 0; }
+.lp-btn { white-space: normal; text-align: center; }
+.lp-hero > *, .lp-biz > * { min-width: 0; }

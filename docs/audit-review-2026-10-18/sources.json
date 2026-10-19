@@ -1,0 +1,68 @@
+[
+  {
+    "branch": "origin/audit/01-visual-css",
+    "commit": "2063bb2464ed18d1bd2ccc5430bed9cd377af736",
+    "source": "audit-reports/01-visual-css.md",
+    "snapshot": "01-visual-css.md"
+  },
+  {
+    "branch": "origin/audit/02-code-quality",
+    "commit": "7f037d903b73de9ae1437020557f1b4fd50316b1",
+    "source": "audit-reports/02-code-quality.md",
+    "snapshot": "02-code-quality.md"
+  },
+  {
+    "branch": "origin/audit/03-typescript-build",
+    "commit": "dce3b678b6e21af3c6c78f8abd2b5e1eddbb7bdc",
+    "source": "audit-reports/03-typescript-build.md",
+    "snapshot": "03-typescript-build.md"
+  },
+  {
+    "branch": "origin/audit/04-dead-code",
+    "commit": "3c227e8922370d39784a0c21da4847cdcb906458",
+    "source": "audit-reports/04-dead-code.md",
+    "snapshot": "04-dead-code.md"
+  },
+  {
+    "branch": "origin/claude/audit-accessibility-compliance-qjpuog",
+    "commit": "271f0afccf064cef1f028cc4a0736ae1109c3e35",
+    "source": "audit-reports/05-accessibility.md",
+    "snapshot": "05-accessibility.md"
+  },
+  {
+    "branch": "origin/claude/audit-links-routing-lpm12x",
+    "commit": "97d60611f8ae8de5c69a820abf6fba5fc3165f9c",
+    "source": "audit-reports/06-links-routing.md",
+    "snapshot": "06-links-routing.md"
+  },
+  {
+    "branch": "origin/audit/07-performance",
+    "commit": "04d6e75cae62654433a59e4d5abd27e0c9ee9f23",
+    "source": "audit-reports/07-performance.md",
+    "snapshot": "07-performance.md"
+  },
+  {
+    "branch": "origin/audit/08-security-seo",
+    "commit": "16ad1d56e366b8a2ed13be010c51e65efa6b74d3",
+    "source": "audit-reports/08-security-seo.md",
+    "snapshot": "08-security-seo.md"
+  },
+  {
+    "branch": "origin/audit/09-business-logic",
+    "commit": "663a8ed0128f36652488699494f4a37bf7c5a5f7",
+    "source": "audit-reports/09-business-logic.md",
+    "snapshot": "09-business-logic.md"
+  },
+  {
+    "branch": "origin/audit/10-usability-states",
+    "commit": "a6a8f8339b1749d6b7f90741526f68c3f7316cd3",
+    "source": "audit-reports/10-usability-states.md",
+    "snapshot": "10-usability-states.md"
+  },
+  {
+    "branch": "origin/audit/08-security-seo-stale-base",
+    "commit": "fa174b8ae2eade8c8295c0f3ec38a5dd6bd85d23",
+    "source": "audit-reports/08-security-seo.md",
+    "snapshot": "08-security-seo-stale-base.md"
+  }
+]

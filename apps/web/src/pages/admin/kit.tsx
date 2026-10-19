@@ -1,3 +1,4 @@
+import { runTask } from '@/lib/async'
 import * as React from 'react'
 import { PAGE_SIZE, toCsv } from '@/lib/admin'
 
@@ -76,7 +77,7 @@ export function useLoad<T>(fetcher: () => Promise<T>, deps: React.DependencyList
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
-  React.useEffect(() => { run() }, [run])
+  React.useEffect(() => { runTask(run()) }, [run])
   return { data, error, loading, reload: run }
 }
 
@@ -84,10 +85,10 @@ export function useLoad<T>(fetcher: () => Promise<T>, deps: React.DependencyList
 export function useAction() {
   const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null)
   const [pending, setPending] = React.useState(false)
-  const act = async (work: () => Promise<unknown>, success: string, after?: () => void) => {
+  const act = async (work: () => Promise<unknown>, success: string, after?: () => void | Promise<void>) => {
     if (pending) return
     setPending(true)
-    try { await work(); setMessage({ ok: true, text: success }); after?.() } catch (e) {
+    try { await work(); setMessage({ ok: true, text: success }); await after?.() } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : (e as { message?: string })?.message ?? 'Action failed' })
     } finally { setPending(false) }
   }

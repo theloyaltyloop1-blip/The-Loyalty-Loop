@@ -1,3 +1,4 @@
+import { handleTask, runTask } from '@/lib/async'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, LockKeyhole, MessageCircle } from 'lucide-react'
@@ -43,7 +44,7 @@ export function WhatsAppOnboarding() {
     const { data, error: completionError } = await supabase.rpc('complete_whatsapp_signup', { _token: token })
     if (completionError) throw completionError
     const slug = (data as { business_slug?: string | null } | null)?.business_slug
-    navigate(slug ? `/dashboard/shop/${slug}` : '/dashboard', { replace: true })
+    runTask(navigate(slug ? `/dashboard/shop/${slug}` : '/dashboard', { replace: true }))
   }
 
   async function submit(event: React.FormEvent) {
@@ -89,7 +90,7 @@ export function WhatsAppOnboarding() {
         <div className="flex items-center gap-2 font-bold text-foreground"><MessageCircle className="h-4 w-4 text-primary" />From WhatsApp{handoff.business ? ` · ${handoff.business.name}` : ''}</div>
         <p className="mt-2 text-muted-foreground">Your password is entered only here, never in WhatsApp.</p>
       </div>
-      <form onSubmit={submit} className="flex flex-col gap-4">
+      <form onSubmit={handleTask(submit)} className="flex flex-col gap-4">
         <label className="text-sm font-bold text-foreground">Email address</label>
         <AuthInput value={handoff.email} readOnly aria-label="Email address" className="-mt-2 bg-black/[.03] text-foreground/70" />
         <AuthInput type="password" placeholder={mode === 'create' ? 'Choose a password' : 'Your password'} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete={mode === 'create' ? 'new-password' : 'current-password'} />

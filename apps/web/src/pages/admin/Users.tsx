@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { useAuth, type AppRole } from '@/lib/auth-context'
 import { listUsers, setUserRole, setUserSuspended, type AdminUser } from '@/lib/admin'
@@ -17,10 +18,10 @@ export function Users() {
   const { act, banner, pending } = useAction()
   const [grantRole, setGrantRole] = React.useState<AppRole>('business_owner')
 
-  const changeRole = (u: AdminUser, grant: boolean) => {
+  const changeRole = handleTask((u: AdminUser, grant: boolean) => {
     if (!confirm(`${grant ? 'Grant' : 'Revoke'} "${grantRole}" ${grant ? 'to' : 'from'} ${u.email}?`)) return
     void act(() => setUserRole(u.email, grantRole, grant), `${grant ? 'Granted' : 'Revoked'} ${grantRole}`, reload)
-  }
+  })
 
   return (
     <div>
@@ -48,8 +49,8 @@ export function Users() {
               <button className={btnGhost} disabled={pending} onClick={() => changeRole(u, true)}>Grant</button>
               <button className={btnDanger} disabled={pending || (self && grantRole === 'admin')} title={self && grantRole === 'admin' ? 'You cannot revoke your own admin role here' : undefined} onClick={() => changeRole(u, false)}>Revoke</button>
               {u.suspended
-                ? <button className={btnGhost} disabled={pending} onClick={() => act(() => setUserSuspended(u.id, false), 'User reinstated', reload)}>Reinstate</button>
-                : <button className={btnDanger} disabled={pending || self} onClick={() => { const reason = prompt('Suspension reason (the user will be signed out and blocked)'); if (reason) void act(() => setUserSuspended(u.id, true, reason), 'User suspended', reload) }}>Suspend</button>}
+                ? <button className={btnGhost} disabled={pending} onClick={handleTask(() => act(() => setUserSuspended(u.id, false), 'User reinstated', reload))}>Reinstate</button>
+                : <button className={btnDanger} disabled={pending || self} onClick={handleTask(() => { const reason = prompt('Suspension reason (the user will be signed out and blocked)'); if (reason) void act(() => setUserSuspended(u.id, true, reason), 'User suspended', reload) })}>Suspend</button>}
             </div>)
         } },
       ]} />

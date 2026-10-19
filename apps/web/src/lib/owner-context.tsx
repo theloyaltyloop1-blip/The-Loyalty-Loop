@@ -9,6 +9,7 @@ interface OwnerContextValue {
   staffBusinesses: MyStaffMembership[]
   setBusinessId: (id: string) => void
   loading: boolean
+  error: string | null
   refetch: () => Promise<void>
   updateLocalBusiness: (patch: Partial<Business>) => void
   /** True when the active shop has no reward_catalog row yet — setup is incomplete. */
@@ -34,17 +35,25 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   const [businessId, setBusinessIdState] = React.useState<string | null>(
     () => window.localStorage.getItem(STORAGE_KEY)
   )
-  const [loading, setLoading] = React.useState(true)
+  const [fetching, setLoading] = React.useState(true)
+  const [loadedUserId, setLoadedUserId] = React.useState<string | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+  const request = React.useRef(0)
   const [rewardsReadyIds, setRewardsReadyIds] = React.useState<Set<string>>(() => new Set())
 
   const userId = session?.user?.id
 
+  const loading = fetching || (!!userId && loadedUserId !== userId)
+
   const refetch = React.useCallback(async () => {
-    if (!userId) return
+    const id = ++request.current
+    if (!userId) { setBusinesses([]); setStaffBusinesses([]); setLoading(false); setLoadedUserId(null); setError(null); return }
     setLoading(true)
+    setError(null)
     try {
       const [owned, staffOf] = await Promise.all([fetchOwnedBusinesses(userId), fetchMyStaffBusinesses(userId)])
       const withRewards = await fetchBusinessIdsWithRewards(owned.map((b) => b.id))
+      if (id !== request.current) return
       setBusinesses(owned)
       setStaffBusinesses(staffOf)
       setRewardsReadyIds(withRewards)
@@ -52,14 +61,17 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
         if (current && owned.some((b) => b.id === current)) return current
         return owned[0]?.id ?? null
       })
+    } catch {
+      if (id === request.current) setError('Could not load your shops. Please try again.')
     } finally {
-      setLoading(false)
+      if (id === request.current) { setLoading(false); setLoadedUserId(userId) }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
   React.useEffect(() => {
-    refetch()
+    void refetch()
+    return () => { request.current++ }
   }, [refetch])
 
   const setBusinessId = React.useCallback((id: string) => {
@@ -80,7 +92,7 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <OwnerContext.Provider
-      value={{ businesses, business, staffBusinesses, setBusinessId, loading, refetch, updateLocalBusiness, needsRewardSetup, markRewardsReady }}
+      value={{ businesses, business, staffBusinesses, setBusinessId, loading, error, refetch, updateLocalBusiness, needsRewardSetup, markRewardsReady }}
     >
       {children}
     </OwnerContext.Provider>

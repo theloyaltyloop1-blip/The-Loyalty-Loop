@@ -1,3 +1,4 @@
+import { handleTask, runTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Users, ShoppingBag, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink } from 'lucide-react'
@@ -158,7 +159,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [businessId, period, stats, totals])
 
   React.useEffect(() => {
-    generate()
+    runTask(generate())
   }, [generate])
 
   return (
@@ -174,7 +175,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
       ) : (
         <p className="max-w-[70ch] text-peach-ink/90 leading-relaxed">{summary}</p>
       )}
-      <button data-press-feedback onClick={generate} disabled={loading} className="mt-4 rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-card/80 disabled:opacity-40">
+      <button data-press-feedback onClick={handleTask(generate)} disabled={loading} className="mt-4 rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-card/80 disabled:opacity-40">
         Regenerate
       </button>
     </div>
@@ -214,7 +215,7 @@ function DeepBusinessReportCard({
           <p className="font-display text-lg font-semibold tracking-tight text-foreground">Deep business report</p>
         </div>
         <button data-press-feedback
-          onClick={handleResearch}
+          onClick={handleTask(handleResearch)}
           disabled={loading}
           className="flex items-center gap-2 rounded-full bg-foreground text-background text-sm font-semibold px-4 h-10 transition-opacity hover:opacity-90 disabled:opacity-50"
         >
@@ -319,10 +320,10 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
           placeholder="Ask the coach…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          onKeyDown={handleTask((e) => e.key === 'Enter' && handleSend())}
         />
         <button data-press-feedback
-          onClick={handleSend}
+          onClick={handleTask(handleSend)}
           disabled={sending || !input.trim()}
           aria-label="Send"
           className="h-11 w-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground flex items-center justify-center disabled:opacity-40 shrink-0"
@@ -341,24 +342,28 @@ export function OwnerAnalytics() {
   const [period, setPeriod] = React.useState<Period>(30)
   const [stats, setStats] = React.useState<PeriodStats | null>(null)
   const [totals, setTotals] = React.useState<TotalsStats | null>(null)
+  const [statsError, setStatsError] = React.useState(false)
+  const [retry, setRetry] = React.useState(0)
   const [statsLoading, setStatsLoading] = React.useState(true)
   const [webResearch, setWebResearch] = React.useState<DeepBusinessReport | null>(null)
 
   React.useEffect(() => {
     if (!business) return
     setStatsLoading(true)
+    setStatsError(false)
     Promise.all([fetchPeriodStats(business.id, period), fetchTotalsStats(business.id)])
       .then(([p, t]) => {
         setStats(p)
         setTotals(t)
       })
+      .catch(() => setStatsError(true))
       .finally(() => setStatsLoading(false))
-  }, [business?.id, period])
+  }, [business?.id, period, retry])
 
   React.useEffect(() => {
     if (!business) return
     setWebResearch(null)
-    fetchLatestWebResearch(business.id).then(setWebResearch)
+    fetchLatestWebResearch(business.id).then(setWebResearch).catch(() => setWebResearch(null))
   }, [business?.id])
 
   if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
@@ -393,6 +398,8 @@ export function OwnerAnalytics() {
         <div className="rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink">
           <p>Set up a shop to see analytics.</p>
         </div>
+      ) : statsError ? (
+        <div role="alert">Could not load your stats. <button onClick={() => setRetry((n) => n + 1)}>Try again</button></div>
       ) : statsLoading || !stats || !totals ? (
         <div role="status" aria-label="Loading stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" />

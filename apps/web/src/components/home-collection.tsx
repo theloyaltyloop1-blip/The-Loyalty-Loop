@@ -36,7 +36,7 @@ function Photo({ business, hero = false, distance, heroLabel }: { business: Busi
 function Mark({ business }: { business: Business }) {
   const [failed, setFailed] = useState(false)
   return (
-    <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl font-display text-lg font-bold text-olive-ink" style={{ backgroundColor: business.brand_color || 'var(--color-olive)' }} aria-hidden="true">
+    <span className="grid min-w-0 h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl font-display text-lg font-bold text-olive-ink" style={{ backgroundColor: business.brand_color || 'var(--color-olive)' }} aria-hidden="true">
       {business.logo_url && !failed
         ? <img src={business.logo_url} alt="" onError={() => setFailed(true)} className="h-full w-full bg-background object-contain p-1" />
         : business.name.trim().charAt(0).toUpperCase() || <Store className="h-5 w-5" />}
@@ -100,7 +100,7 @@ export function HomeCollection({ businesses, featured, featuredReason, membershi
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <h2 id="home-membership-heading" className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Your regulars. Your rewards.</h2>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {(showAll ? joined : joined.slice(0, 3)).map((business, index) => {
           const progress = getHomeProgress(business, membershipByBusiness.get(business.id), catalog)
           const background = index % 3 === 0 ? 'var(--color-olive)' : index % 3 === 1 ? 'var(--color-peach)' : 'var(--color-sage)'
@@ -109,7 +109,7 @@ export function HomeCollection({ businesses, featured, featuredReason, membershi
             <p className="font-display text-xl font-bold tracking-tight">{business.name}</p>
             <p className="mt-1 text-sm">{progress.reward}</p>
             {progress.target && !progress.spend && progress.target <= 12
-              ? <div className="mt-5 flex flex-wrap gap-2" role="img" aria-label={progress.label}>{Array.from({ length: progress.target }, (_, stamp) => <span key={stamp} aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full border text-xs font-bold" style={{ borderColor: ink, backgroundColor: stamp < progress.value ? ink : 'transparent', color: background }}>{stamp < progress.value && <Check className="h-3.5 w-3.5" aria-hidden="true" />}</span>)}</div>
+              ? <div className="mt-5 flex flex-wrap gap-2" role="img" aria-label={progress.label}>{Array.from({ length: progress.target }, (_, stamp) => <span key={stamp} aria-hidden="true" className="grid min-w-0 h-7 w-7 place-items-center rounded-full border text-xs font-bold" style={{ borderColor: ink, backgroundColor: stamp < progress.value ? ink : 'transparent', color: background }}>{stamp < progress.value && <Check className="h-3.5 w-3.5" aria-hidden="true" />}</span>)}</div>
               : progress.target ? <div className="mt-6" role="progressbar" aria-label={`${business.name} loyalty progress`} aria-valuemin={0} aria-valuemax={progress.target} aria-valuenow={Math.min(progress.value, progress.target)} aria-valuetext={progress.label}><div className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: index % 3 === 0 ? 'color-mix(in srgb, var(--color-olive-ink) 25%, var(--color-olive))' : `color-mix(in srgb, ${ink} 20%, transparent)` }}><div className="h-full rounded-full transition-[width] duration-300 ease-out" style={{ width: `${progress.fraction * 100}%`, backgroundColor: ink }} /></div></div> : <p className="mt-6 text-sm">Keep collecting to discover your next reward.</p>}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-semibold">{progress.label}</span><span className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold" style={{ backgroundColor: index % 3 === 0 ? 'var(--color-olive-ink)' : 'var(--color-primary)', color: index % 3 === 0 ? 'var(--color-olive)' : 'var(--color-primary-foreground)' }}>View card <ArrowRight className="h-4 w-4" aria-hidden="true" /></span></div>
           </Link>

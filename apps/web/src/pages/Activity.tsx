@@ -1,3 +1,4 @@
+import { runTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { History, Award } from 'lucide-react'
@@ -15,7 +16,7 @@ export function ActivityPage() {
 export function ActivityFeed({ userId }: { userId: string }) {
   const [items, setItems] = React.useState<ActivityItem[]>([])
   const [ready, setReady] = React.useState(false)
-  React.useEffect(() => { fetchActivity(userId).then(setItems).finally(() => setReady(true)) }, [userId])
+  React.useEffect(() => { runTask(fetchActivity(userId).then(setItems).finally(() => setReady(true))) }, [userId])
 
   const badges = [
     { name: 'First visit', done: items.some((x) => x.type === 'stamp' || x.type === 'spend') },

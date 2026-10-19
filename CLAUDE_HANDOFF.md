@@ -19,6 +19,12 @@ need Claude's sign-off before the next one starts.
 - Update 2026-10-19: added and deployed a call-me link (`?step=callme&key=VOICE_TRIGGER_KEY`, where Twilio rings the owner), because the trial account only has a US number. The owner check now accepts the owner as either From or To. A request without the key returns 503 until the secrets exist. Not yet tested with a real call.
 - Next (owner): claim the Twilio trial number, then set VOICE_TRIGGER_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, VOICE_OWNER_PHONE and VOICE_PIN on the project. Next (Claude): apply the migration, deploy `voice-call`, point the Twilio number at it, test a call, then create the scheduled pick-up task.
 
+## Business: check for updates on launch (2026-10-19) - Claude
+
+- Owner on the store Business app still saw grey boxes: the pop-ups OTA was live, but the Business app only applied updates on the next launch. Copied `apps/shopper/src/launch-update.ts` to `apps/retailer/src/launch-update.ts` and wired `useLaunchUpdate()` into `AppRoot` in `apps/retailer/App.tsx` (it holds the loading screen for up to 6s on a cold start, then reloads into any new update).
+- Checked: retailer tsc clean. **Not committed, not published.** The OTA command was blocked by the permission classifier; the owner approved sending it live.
+- Next (Claude, with owner OK): production OTA per platform for runtime 1.0.1, then 1.0.0 (temporarily set `version` to 1.0.0 in `apps/retailer/app.json`, then restore it). The first launch after that still needs the old close-and-reopen-twice routine.
+
 ## Shopper: branded pop-ups (2026-10-18) - Claude
 
 - Owner disliked the grey system Alert box (seen on the country question). New `apps/shopper/src/components/AppAlert.tsx`: `showAlert()` has the same arguments as `Alert.alert` and shows a bottom sheet (uses `Sheet`) with a tinted icon badge, display font and pill buttons (main action filled orange, red when destructive, Cancel last). `<AppAlertHost />` is mounted in `App`. Calls fall back to the system Alert if the host isn't mounted. All 41 shopper `Alert.alert` calls were switched.
@@ -2656,6 +2662,14 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Not touched: voice-call function, its migration, config.toml change and docs/VOICE_LINE_SETUP.md (someone else's uncommitted work).
 - Next (Codex): browser-check owner flows that call functions (analytics, coach chat, staff creation, wallet pass, delete shop) on www for CORS errors. Check the anon helper-grant note above.
 
+## Website bugs 19–53 repair — 19 October 2026 — Codex, in progress
+- Checked current-main source against pinned historical audit branches. Already present: search/Other filtering, fonts, 404, mobile owner layout, loyalty-unit labels and removal of owner simulation; admin result.error check also already present. Detailed matrix and verification still pending.
+- Implemented protected-route auth gate, account-keyed role and owner readiness, owner fetch errors, Tools readiness, category defaults/custom options, profile write protection and notification feedback, shop load retry/promotion feedback, reset-password failure state, analytics load error/retry. Verification NOT YET RUN; work remains in progress. Preserved pre-existing voice-call/config/docs edits. No deployment/commit/push.
+
+## Website failure feedback/responsive batch — 19 October 2026 — Codex
+- Added brand write guards/result feedback/rollup error handling; inbox read persistence feedback; Settings gallery/rewards/win-back/staff load errors and catalogue write guard; friendly owner list errors without false empty states; scan inputs min-width, cookie choice in auth-page flow, long headings and landing navigation wrapping, dark shop-header scrim. TypeScript identified unused imports/catch variables; correcting before checks. No browser pass or deployment yet.
+- Promise audit tool requires missing oxlint-tsgolint; installing development checker to verify current counts rather than relying on historical 36/67 findings. Validation ongoing.
+
 ## Design only: SumUp till link for spend tiers (2026-10-19) - Claude, product owner decided
 - Why: owners find the app too complicated, and high-end shops don't want stamp cards. The product owner picked spend-based tiers fed automatically from the till (no typing the amount twice), starting with SumUp. Later pieces (not in this task): 3-tab owner layout, tier/VIP reward types chosen at onboarding.
 - Assumptions about SumUp, to be CHECKED against current SumUp developer docs before building: OAuth 2.0 authorization-code flow with a `transactions.history` scope; `GET /v0.1/me/transactions/history` for card-present sales; webhooks only cover online checkouts, so in-store sales have to be POLLED; transactions carry id, amount, currency, timestamp, status (successful/refunded/cancelled) and card last 4 digits, but NO customer identity or stable card fingerprint.
@@ -2683,6 +2697,43 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Files: `apps/web/src/lib/shop-types.ts` (new: SHOP_TYPES + `rewardWords()` wording helper), `apps/web/src/pages/owner/Onboarding.tsx`, `apps/retailer/App.tsx` (`SHOP_TYPE_OPTIONS`, setup step 0).
 - Checks: `tsc --noEmit` clean for web and retailer. Not run in a browser/device.
 - Remaining: wording helper only used in web onboarding; roll `rewardWords()` through Scan/ShopDetail/mobile (step 3). VIP type deferred. Tab consolidation (Scan / Customers / Shop) is next. Owner: Claude, after user go-ahead.
+
+## Owner redesign step 2: three tabs (2026-10-19) - Claude, local only, NOT deployed
+
+- Web: `owner-layout.tsx` sidebar is now Scan / Customers / Shop. Old pages and routes unchanged; they show as sub-tabs (Customers: Overview, Message customers, Alerts; Shop: Profile & rewards, Reviews, Help, More -> tools/tutorial).
+- Mobile: `apps/retailer/App.tsx` tab bar is Scan / Customers / Shop; Customers has pill sub-tabs Overview/People/Insights/Message; app opens on Scan. Shop = old Settings.
+- Checks: `tsc --noEmit` clean on web and retailer. Not run in browser/device.
+- Remaining: Tutorial as first-run walkthrough (still a page), merge Analytics/Announcements/Notifications into one Customers view with "who hasn't been back" + message button, wording helper rollout, VIP type. Mobile needs OTA (`eas update`) only after user approval. Owner: Claude.
+
+## Owner redesign step 3: real Customers view (2026-10-19) - Claude, local only, NOT deployed
+
+- Web: new `apps/web/src/pages/owner/Customers.tsx` at `/owner` (stats, most loyal, haven't been back 30+ days, send-message form writing `business_promotions` with audience all/inactive_30/regulars). Analytics moved to `/owner/analytics` (Insights sub-tab). Routes in `App.tsx`, sub-tabs in `owner-layout.tsx`.
+- Mobile: `CustomersHome` in `apps/retailer/App.tsx` replaces the Dashboard in the Customers tab (same data via `get_business_members`, same promotions insert). `DashboardHome` is now unused.
+- Checks: `tsc --noEmit` clean on both. Not run in browser/device. Not verified that `business_promotions` rows actually reach customers (existing Tools page used the same insert).
+- Remaining: delete unused DashboardHome; tutorial -> first-run walkthrough; wording helper rollout; VIP type. Owner: Claude.
+
+## SumUp till link: backend, website and schedule LIVE; needs real-payment testing (2026-10-19) - Claude, owner-approved
+- LIVE on production (project tgukdabfvvoywawmzbdo): migration `sumup_pos` applied (4 tables + 10 pos_* functions; verified: RLS on, no client grants on the tables, anon cannot execute any pos_* function, credit/refund are service-role only). Edge functions `sumup-connect` (verify_jwt true), `sumup-callback` and `sumup-sync` (verify_jwt false) deployed; checked by curl: sync returns 403 with no/wrong key, connect 401 with no token, callback redirects to settings?sumup=error with no params. Owner added SUMUP_CLIENT_ID / SUMUP_CLIENT_SECRET to Supabase secrets; SumUp OAuth app created with redirect `https://tgukdabfvvoywawmzbdo.supabase.co/functions/v1/sumup-callback`, scopes transactions.history + user.profile_readonly.
+- Test Shop (3222ca29-1c78-472a-9f4d-0f3c7a76fef0, owner login zahih365+test@gmail.com) switched to £ spend with a "Free coffee (test)" tier at £5 (reward_threshold_pence now 500). It had 1 member; two test customers needed. Its old stamp reward "Yjjs" is still in the catalogue with no £ amount.
+- NOT done: (1) [DONE 2026-10-19] schedule: migration `sumup_sync_schedule` applied (Vault secret `sumup_sync_secret` generated in the DB, `pos_sync_secret_ok()` service-role only, pg_cron job `sumup-sync` every 2 min via pg_net sending x-sync-secret); `sumup-sync` v2 deployed and accepts that secret or the service-role key. Verified: manual identical call returned 200 {synced:0,failed:0}; wrong secret and no auth return 403. Repo: commit on local main (migration 20261019210000 + function change); NOT on origin/main yet - reconcile with the diverged local main; (2) [DONE 2026-10-19] website deployed: the SumUp commit was cherry-picked onto the current origin/main as 109ed63 (clean worktree: tsc, vite build, 79 tests passed), pushed as a fast-forward f6866e8..109ed63; Vercel reported success and the live Settings/Scan chunks contain the new Connect card and review list. Local main still holds the same change as 3055673 and has DIVERGED from origin/main (local-only commits 2f745a7/b7b5fdf; origin has PR #7) - reconcile before the next push; (3) nothing has been tested against SumUp or with a real payment; the merchant-code lookup (/v0.1/me) is unconfirmed.
+- The repo migration file is `20261019200000_sumup_pos.sql`; live history records it as `sumup_pos` with the tool's own timestamp.
+- FIRST REAL TEST PASSED (2026-10-19): owner connected SumUp on the live website (merchant code returned by /v0.1/me, scopes granted, cron sync ran clean). A scan then a real £1 card payment on the Solo was matched and credited automatically: sale £1.00 GBP SUCCESSFUL at 13:43:17, scan 13:42:51, credited 13:44:01 (~44s after payment), membership reward_progress_pence = 100. STILL UNTESTED with real payments: refund, two scanners/one sale + review list, cash switch (pos_cancel_scan), undo, and a second merchant account connecting.
+- REFUND TEST PASSED (2026-10-19 13:46): refunding the £1 in SumUp was picked up by the next sync: pos_sales.refunded_pence=100, credit transaction voided, both members back to 0 progress, sync last_error null. Note: provider_status in pos_sales is not updated for refunds of matched sales (harmless). Remaining untested: two scanners/one sale + review list, cash switch, undo, second merchant.
+- ONE-AT-A-TIME CHANGE (2026-10-19, LIVE): the two-scanners test showed ambiguity is avoidable. Migration `sumup_one_waiting_scan` (applied) adds a unique index (one pending scan per shop), `record_pos_scan` now returns busy/refreshed/recorded (scans older than 10 min are expired first), and `pos_scan_status`. New edge function `sumup-check` (verify_jwt true, deployed) runs the sync for one shop on demand (max once per 3s) so the scan screen polls every ~4s and confirms "£X added for Name". Scan screen has waiting / busy / paid states with Cancel and cash-switch. Tested live inside a rolled-back transaction (busy, refreshed, cancel then next scan all as designed); website pushed to origin/main as f50bf96 (Vercel success, live chunk contains the new text). Repo: all of this is on origin/main; the local main folder does NOT have it (diverged) - reconcile. Remaining gap by design: a walk-in's card payment while a scanned customer is waiting would be credited to the waiting customer (owner can Undo); two sales for one scan go to the review list. NOT yet tested with real payments: the live check latency (how fast SumUp history shows a payment), cash switch, undo, busy panel.
+- Next: owner makes sure 2 test customers joined Test Shop; then connect SumUp from Settings > Loyalty and run the £1 payment tests together.
+
+## Owner redesign step 4: wording + live test data (2026-10-19) - Claude
+
+- Web: ShopDetail, owner Scan, Settings and home-progress now use `rewardWords()` (`apps/web/src/lib/shop-types.ts`) instead of four duplicate UNIT_LABEL maps. `tsc --noEmit` clean.
+- Fixed a bug I introduced in `owner-layout.tsx` (bare `return` + newline made nav links unstyled); verified in the browser pane.
+- LIVE DB (owner-approved): gave `spammessages13+test` account the `business_owner` role and created "Owner Redesign Test Shop" (id 8990673f-5ca6-4344-8012-f814ec1f95e5) with one reward. Delete both when done testing. Sample customers were NOT added (inserting fake auth.users was denied).
+- Remaining: mobile still uses its own unit strings; Tutorial -> first-run walkthrough; VIP type; mobile not device-tested. Owner: Claude.
+
+## Owner redesign step 5: first-run walkthrough (2026-10-19) - Claude, local only, NOT deployed
+
+- Web: `apps/web/src/components/owner-walkthrough.tsx` (3 cards: Scan / Customers / Shop, once per shop via localStorage), rendered from `owner-layout.tsx`; "Full guide" links to the existing Tutorial page. Verified in the browser pane (card 1 renders).
+- Mobile: `apps/retailer/src/components/Walkthrough.tsx` (Sheet + SecureStore flag per shop), rendered in `App.tsx` for owners once loyalty setup is done. `tsc` clean; NOT device-tested. JS-only, so OTA-able via `eas update` once the user approves.
+- Remaining: mobile unit wording; VIP type; remove unused DashboardHome; clean up the live test shop/role. Owner: Claude.
 
 ## Copy-ready prompt for Claude Code
 

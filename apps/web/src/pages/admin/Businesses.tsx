@@ -1,3 +1,4 @@
+import { handleTask, runTask } from '@/lib/async'
 import * as React from 'react'
 import { deleteOwnedBusiness } from '@/lib/businesses'
 import { listBusinesses, setBusinessStatus, type AdminBusiness, type ApprovalStatus } from '@/lib/admin'
@@ -26,7 +27,7 @@ export function Businesses() {
         <p className="my-2 text-sm">This removes the shop, loyalty progress, rewards, reviews and files. Type the exact shop name to confirm.</p>
         <input className={inputCls} aria-label="Confirm shop name" value={confirmation} onChange={e => setConfirmation(e.target.value)} />
         <div className="mt-3 flex gap-2">
-          <button className={btnDanger} disabled={pending || confirmation.trim() !== deleting.name} onClick={() => void act(() => deleteOwnedBusiness(deleting.id, confirmation), 'Shop permanently deleted', () => { setDeleting(null); setConfirmation(''); list.reload() })}>Delete shop permanently</button>
+          <button className={btnDanger} disabled={pending || confirmation.trim() !== deleting.name} onClick={() => void act(() => deleteOwnedBusiness(deleting.id, confirmation), 'Shop permanently deleted', () => { setDeleting(null); setConfirmation(''); runTask(list.reload()) })}>Delete shop permanently</button>
           <button disabled={pending} onClick={() => { setDeleting(null); setConfirmation('') }}>Cancel</button>
         </div>
       </section>}
@@ -46,8 +47,8 @@ export function Businesses() {
         { header: 'Actions', cell: (b) => (
           <div className="flex gap-2">
             <button className={btnDanger} disabled={pending} onClick={() => { setDeleting(b); setConfirmation('') }}>Delete shop</button>
-            {b.approval_status !== 'approved' && <button className={btnPrimary} disabled={pending} onClick={() => act(() => setBusinessStatus(b.id, 'approved'), 'Approved', list.reload)}>Approve</button>}
-            {b.approval_status !== 'rejected' && <button className={btnDanger} disabled={pending} onClick={() => { const r = prompt('Rejection reason'); if (r) void act(() => setBusinessStatus(b.id, 'rejected', r), 'Rejected', list.reload) }}>Reject</button>}
+            {b.approval_status !== 'approved' && <button className={btnPrimary} disabled={pending} onClick={handleTask(() => act(() => setBusinessStatus(b.id, 'approved'), 'Approved', list.reload))}>Approve</button>}
+            {b.approval_status !== 'rejected' && <button className={btnDanger} disabled={pending} onClick={handleTask(() => { const r = prompt('Rejection reason'); if (r) void act(() => setBusinessStatus(b.id, 'rejected', r), 'Rejected', list.reload) })}>Reject</button>}
           </div>) },
       ]} />
       <Pager page={page} total={list.data?.total ?? 0} onPage={setPage} />

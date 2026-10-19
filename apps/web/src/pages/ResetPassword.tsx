@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -37,7 +38,7 @@ export function ResetPassword() {
       {done ? (
         <p className="rounded-xl bg-sage px-4 py-3 text-sage-ink">Password updated. Redirecting to sign in…</p>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleTask(handleSubmit)} className="flex flex-col gap-4">
           <AuthInput
             type="password"
             label="New password"

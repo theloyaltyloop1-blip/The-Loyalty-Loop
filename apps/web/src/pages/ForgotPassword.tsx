@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { AUTH_REDIRECT_URL, supabase } from '@/lib/supabase'
@@ -15,13 +16,13 @@ export function ForgotPassword() {
     setError(null)
 
     setLoading(true)
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${AUTH_REDIRECT_URL}/reset-password`,
-    })
-    setLoading(false)
-    // Always show the same message, whether or not the address exists:
-    // prevents account enumeration.
-    setSent(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${AUTH_REDIRECT_URL}/reset-password` })
+      if (error) throw error
+      setSent(true)
+    } catch {
+      setError('Could not send a reset link. Please try again.')
+    } finally { setLoading(false) }
   }
 
   return (
@@ -31,7 +32,7 @@ export function ForgotPassword() {
           If an account exists for {email}, we've sent a password reset link to it.
         </p>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleTask(handleSubmit)} className="flex flex-col gap-4">
           <AuthInput
             type="email"
             label="Email"

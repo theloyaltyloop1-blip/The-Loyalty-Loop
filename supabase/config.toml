@@ -27,6 +27,10 @@ verify_jwt = false
 [functions.delete-business]
 verify_jwt = true
 
+# Twilio voice webhook; handler verifies X-Twilio-Signature, caller ID and PIN.
+[functions.voice-call]
+verify_jwt = false
+
 # SumUp till link. Starting/ending the link validates the JWT user itself;
 # the callback is a browser redirect so the one-time OAuth state authenticates
 # it; the sync is called by a scheduled job and checks the service-role key.
@@ -38,3 +42,8 @@ verify_jwt = false
 
 [functions.sumup-sync]
 verify_jwt = false
+
+# Live check while the scan screen waits for a payment. Validates the JWT user and
+# that they may record spend at the shop.
+[functions.sumup-check]
+verify_jwt = true

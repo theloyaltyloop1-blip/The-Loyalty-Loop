@@ -1,12 +1,15 @@
+import { handleTask, runTask } from '@/lib/async'
+import { rewardWords } from '@/lib/shop-types'
 import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageSkeleton } from '@/components/page-skeleton'
+import { categoryCopy } from '@/lib/categories'
 import { ReviewsSection } from '@/components/reviews-section'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShopMap } from '@/components/shop-map'
@@ -27,17 +30,6 @@ import {
 } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
 
-const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Café: Coffee,
-  Restaurant: Coffee,
-  Barber: Scissors,
-}
-
-const UNIT_LABEL: Record<string, string> = {
-  stamp_card: 'stamp',
-  points: 'point',
-  tiered: 'visit',
-}
 
 const poundsLabel = (pence: number) => `£${pence % 100 === 0 ? pence / 100 : (pence / 100).toFixed(2)}`
 
@@ -79,6 +71,9 @@ export function ShopDetail() {
   const [stampCode, setStampCode] = React.useState<string | null>(null)
   const [favourite, setFavourite] = React.useState(false)
   const [optedIn, setOptedIn] = React.useState(true)
+  const [loadError, setLoadError] = React.useState(false)
+  const [optInBusy, setOptInBusy] = React.useState(false)
+  const [actionError, setActionError] = React.useState<string | null>(null)
   const [ready, setReady] = React.useState(false)
   const [joining, setJoining] = React.useState(false)
   const [shared, setShared] = React.useState(false)
@@ -101,7 +96,7 @@ export function ShopDetail() {
   const joiningCardRef = React.useRef(false)
   const loyaltyCardRef = React.useRef<HTMLDivElement>(null)
 
-  const refetch = React.useCallback(async () => {
+  const load = React.useCallback(async () => {
     if (!slug || !userId) return
     const thisRequestId = ++requestIdRef.current
     const biz = await fetchBusinessBySlug(slug)
@@ -131,9 +126,13 @@ export function ShopDetail() {
     setOptedIn(m ? !m.promos_opted_out : true)
     setReady(true)
   }, [slug, userId])
+  const refetch = React.useCallback(async () => {
+    setLoadError(false)
+    try { await load() } catch { setLoadError(true); setReady(true) }
+  }, [load])
 
   React.useEffect(() => {
-    refetch()
+    runTask(refetch())
   }, [refetch])
 
   const shopStructuredData = business
@@ -191,7 +190,7 @@ export function ShopDetail() {
 
   React.useEffect(() => {
     if (!userId || !business) return
-    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
+    runTask(fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id))))
   }, [userId, business?.id])
 
   async function handleToggleFavourite() {
@@ -206,6 +205,8 @@ export function ShopDetail() {
     }
   }
 
+  if (!loading && !session) return <Navigate to="/login" replace />
+  if (loadError) return <DashboardLayout><p role="alert">Could not load this shop.</p><button onClick={() => { setReady(false); void refetch() }}>Try again</button></DashboardLayout>
   if (loading || !ready) return <PageSkeleton variant="detail" />
   if (!session) return <Navigate to="/login" replace />
   if (!business) return <Navigate to="/dashboard" replace />
@@ -225,9 +226,9 @@ export function ShopDetail() {
 
   // Stamp / points / visits shops (reward_model 'stamp_legacy').
   const spendShop = business.reward_model === 'spend_threshold'
-  const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
+  const StampIcon = categoryCopy(business.category).icon
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
-  const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
+  const unit = rewardWords(business.loyalty_type).unit
   const stampProgress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
 
   async function handleJoin() {
@@ -247,14 +248,16 @@ export function ShopDetail() {
   }
 
   async function handleToggleOptIn() {
-    if (!session?.user || !business || !membership) return
+    if (!session?.user || !business || !membership || optInBusy) return
     const next = !optedIn
-    setOptedIn(next)
-    await supabase
-      .from('memberships')
-      .update({ promos_opted_out: !next })
-      .eq('user_id', session.user.id)
-      .eq('business_id', business.id)
+    setOptInBusy(true)
+    setActionError(null)
+    try {
+      const { error } = await supabase.from('memberships').update({ promos_opted_out: !next }).eq('user_id', session.user.id).eq('business_id', business.id)
+      if (error) throw error
+      setOptedIn(next)
+    } catch { setActionError('Could not save your promotion preference. Please try again.') }
+    finally { setOptInBusy(false) }
   }
 
   async function handleShare() {
@@ -273,15 +276,16 @@ export function ShopDetail() {
 
   return (
     <DashboardLayout>
+      {actionError && <p role="alert" className="text-destructive">{actionError}</p>}
       <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link to="/dashboard" className="hover:text-primary">Home</Link>
         <span aria-hidden="true">/</span>
         <Link to="/dashboard/discover" className="hover:text-primary">Discover</Link>
         <span aria-hidden="true">/</span>
-        <span aria-current="page" className="font-semibold text-foreground">{business.name}</span>
+        <span aria-current="page" className="min-w-0 break-words font-semibold text-foreground">{business.name}</span>
       </nav>
       <button data-press-feedback
-        onClick={() => navigate(-1)}
+        onClick={handleTask(() => navigate(-1))}
         className="mb-4 -ml-3 flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> Back
@@ -291,14 +295,14 @@ export function ShopDetail() {
         className="relative mb-6 flex min-h-[280px] flex-col justify-end rounded-3xl bg-cover bg-center p-6 text-white sm:p-10"
         style={{
           background: business.cover_url
-            ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
-            : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
+            ? `linear-gradient(135deg, rgba(0,0,0,0.65), rgba(0,0,0,0.7)), url(${business.cover_url}) center/cover`
+            : `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
         <Tooltip>
           <TooltipTrigger asChild>
             <button data-press-feedback
-              onClick={handleToggleFavourite}
+              onClick={handleTask(handleToggleFavourite)}
               aria-label={favourite ? `Remove ${business.name} from favourites` : `Add ${business.name} to favourites`}
               className={
                 'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
@@ -322,7 +326,7 @@ export function ShopDetail() {
           )}
         </div>
 
-        <h1 className="text-4xl font-display font-bold tracking-tight mb-1 flex items-center gap-2 sm:text-5xl">
+        <h1 className="text-4xl font-display font-bold tracking-tight mb-1 flex flex-wrap items-center gap-2 sm:text-5xl [overflow-wrap:anywhere]">
           {business.name}
           {business.verification_status === 'verified' && (
             <Tooltip>
@@ -360,7 +364,7 @@ export function ShopDetail() {
               : `Collect ${stampsRequired} ${unit}${stampsRequired === 1 ? '' : 's'} to unlock it.`}
           </p>
           <button data-press-feedback
-            onClick={handleJoin}
+            onClick={handleTask(handleJoin)}
             disabled={joining}
             className="rounded-full px-8 h-12 font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-50"
             style={{ backgroundColor: business.brand_color }}
@@ -490,7 +494,7 @@ export function ShopDetail() {
               </p>
             </div>
             <button data-press-feedback
-              onClick={handleToggleOptIn}
+              onClick={handleTask(handleToggleOptIn)}
               className="rounded-full px-5 h-10 font-semibold text-foreground shrink-0 ring-1 ring-foreground/15 transition-colors hover:bg-secondary"
             >
               {optedIn ? 'Opt out' : 'Opt in'}
@@ -589,7 +593,7 @@ export function ShopDetail() {
             <Navigation className="mt-1 ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </a>
         ) : null}
-        <button data-press-feedback onClick={handleShare} className="rounded-full px-5 h-11 font-semibold text-foreground flex items-center justify-center gap-2 ring-1 ring-foreground/15 transition-colors hover:bg-secondary">
+        <button data-press-feedback onClick={handleTask(handleShare)} className="rounded-full px-5 h-11 font-semibold text-foreground flex items-center justify-center gap-2 ring-1 ring-foreground/15 transition-colors hover:bg-secondary">
           <Share2 className="h-4 w-4" /> {shared ? 'Link copied' : 'Share'}
         </button>
       </div>

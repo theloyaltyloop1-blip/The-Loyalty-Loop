@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AUTH_REDIRECT_URL, supabase, signInWithGoogle, signInWithApple } from '@/lib/supabase'
@@ -76,10 +77,10 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
 
   return (
     <AuthLayout title="Welcome to The Loyalty Loop">
-      <AppleButton onClick={() => signInWithApple(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.'))} />
-      <GoogleButton onClick={() => signInWithGoogle(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
+      <AppleButton onClick={handleTask(() => signInWithApple(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.')))} />
+      <GoogleButton onClick={handleTask(() => signInWithGoogle(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.')))} />
       <AuthDivider />
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleTask(handleSubmit)} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <AuthInput
             placeholder="First Name"

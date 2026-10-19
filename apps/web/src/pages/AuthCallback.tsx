@@ -1,3 +1,4 @@
+import { runTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
@@ -25,10 +26,10 @@ export function AuthCallback() {
     if (!intent) return
     localStorage.removeItem(OAUTH_INTENT_KEY)
     setApplyingIntent(true)
-    supabase.auth
+    runTask(supabase.auth
       .updateUser({ data: { intent } })
       .then(() => refreshRoles())
-      .finally(() => setApplyingIntent(false))
+      .finally(() => setApplyingIntent(false)))
   }, [session?.user, refreshRoles])
 
   React.useEffect(() => {

@@ -2,7 +2,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { WHATSAPP_VISIBLE } from '@/lib/features'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider } from '@/lib/auth-context'
+import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { OwnerProvider } from '@/lib/owner-context'
 import { Landing } from '@/pages/Landing'
 import { CookieConsent } from '@/components/cookie-consent'
@@ -16,6 +16,7 @@ import { Toaster } from '@/components/ui/sonner'
 
 // Owner/admin-only screens are rarely hit by a typical customer visit, so
 // they're code-split out of the main bundle rather than shipped upfront.
+const OwnerCustomers = lazy(() => import('@/pages/owner/Customers').then((m) => ({ default: m.OwnerCustomers })))
 const OwnerAnalytics = lazy(() => import('@/pages/owner/Analytics').then((m) => ({ default: m.OwnerAnalytics })))
 const OwnerOnboarding = lazy(() => import('@/pages/owner/Onboarding').then((m) => ({ default: m.OwnerOnboarding })))
 const OwnerScan = lazy(() => import('@/pages/owner/Scan').then((m) => ({ default: m.OwnerScan })))
@@ -58,6 +59,16 @@ function WhatsAppPaused() {
 
 const queryClient = new QueryClient()
 
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { session, loading, rolesLoading } = useAuth()
+  const { pathname } = useLocation()
+  const protectedPage = /^\/(dashboard|owner|access|admin|brand)(\/|$)/.test(pathname)
+  if (protectedPage && loading) return <BarePageSkeleton />
+  if (protectedPage && !session) return <Navigate to="/login" replace />
+  if (protectedPage && rolesLoading) return <BarePageSkeleton />
+  return children
+}
+
 function RouteMeta() {
   const { pathname } = useLocation()
   const privatePage = pathname.startsWith('/admin') || pathname.startsWith('/dashboard') || pathname.startsWith('/owner') || pathname.startsWith('/access') || pathname.startsWith('/brand') || pathname.startsWith('/whatsapp') || pathname.startsWith('/auth') || pathname.startsWith('/reset-password')
@@ -99,7 +110,7 @@ function App() {
               <Suspense fallback={<BarePageSkeleton />}>
                 <UsageTracker />
                 <RouteMeta />
-                <Routes>
+                <AuthGate><Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/dashboard" element={<Home />} />
@@ -117,7 +128,8 @@ function App() {
                 <Route path="/admin/trending" element={<Navigate to="/access?view=trending" replace />} />
                 <Route path="/join" element={<Signup asOwner />} />
                 <Route path="/brand" element={<BrandWorkspace />} />
-                <Route path="/owner" element={<OwnerAnalytics />} />
+                <Route path="/owner" element={<OwnerCustomers />} />
+                <Route path="/owner/analytics" element={<OwnerAnalytics />} />
                 <Route path="/owner/onboarding" element={<OwnerOnboarding />} />
                 <Route path="/owner/scan" element={<OwnerScan />} />
                 <Route path="/owner/tools" element={<OwnerTools />} />
@@ -137,7 +149,7 @@ function App() {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="*" element={<NotFound />} />
-                </Routes>
+                </Routes></AuthGate>
               </Suspense>
               <CookieConsent />
             </BrowserRouter>

@@ -1,3 +1,7 @@
+import { handleTask, runTask } from '@/lib/async'
+import { rewardWords } from '@/lib/shop-types'
+import { CATEGORIES, categoryCopy, categoryOptions } from '@/lib/categories'
+import { toast } from 'sonner'
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
@@ -39,7 +43,7 @@ import { canDeleteCurrentAccount, requestAccountDeletion } from '@/lib/engagemen
 import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
-const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
+
 
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
 
@@ -132,7 +136,7 @@ function BrandImageUpload({
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
         className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        onChange={handleTask((e) => handleFile(e.target.files?.[0]))}
       />
       <button data-press-feedback
         onClick={() => inputRef.current?.click()}
@@ -207,7 +211,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    fetchBusinessPhotos(businessId).then(setPhotos).finally(() => setLoadingPhotos(false))
+    fetchBusinessPhotos(businessId).then(setPhotos).catch(() => setError('Could not load photos. Please try again.')).finally(() => setLoadingPhotos(false))
   }, [businessId])
 
   async function handleUpload(file: File | undefined) {
@@ -226,8 +230,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string) {
-    setPhotos(photos.filter((p) => p.id !== id))
-    await deleteBusinessPhoto(id)
+    try { await deleteBusinessPhoto(id); setPhotos(photos.filter((p) => p.id !== id)) } catch { setError('Could not delete this photo. Please try again.') }
   }
 
   return (
@@ -246,7 +249,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button data-press-feedback
-                    onClick={() => handleDelete(p.id)}
+                    onClick={handleTask(() => handleDelete(p.id))}
                     aria-label="Delete this photo"
                     className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs"
                   >
@@ -272,7 +275,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
         className="hidden"
-        onChange={(e) => handleUpload(e.target.files?.[0])}
+        onChange={handleTask((e) => handleUpload(e.target.files?.[0]))}
       />
       {error && <p className="text-xs text-destructive">{error}</p>}
     </SectionCard>
@@ -353,7 +356,7 @@ function ProfileTab() {
       updateLocalBusiness({ ...form, opening_hours: hours })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    } finally {
+    } catch { toast.error("Could not save your changes. Please try again.") } finally {
       setSaving(false)
     }
   }
@@ -417,7 +420,7 @@ function ProfileTab() {
             value={form.category ?? ''}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           >
-            {CATEGORIES.map((c) => (
+            {categoryOptions(form.category).map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -540,7 +543,7 @@ function ProfileTab() {
       </SectionCard>
 
       <button data-press-feedback
-        onClick={handleSave}
+        onClick={handleTask(handleSave)}
         disabled={saving}
         className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50 mb-5"
       >
@@ -556,21 +559,16 @@ const poundsLabel = (pence: number) => `£${pence % 100 === 0 ? pence / 100 : (p
 
 const STAMP_ICON_PRESETS = ['⭐', '🍩', '✂️', '🍕', '☕', '🧁', '🍰', '🍞', '🍔', '🍟', '🌮', '💅', '🎁', '❤️']
 
-const UNIT_LABEL: Record<'stamp_card' | 'points' | 'tiered', string> = {
-  stamp_card: 'Stamp',
-  points: 'Point',
-  tiered: 'Visit',
-}
-
 
 function StampLoyaltyTab() {
   const { business, updateLocalBusiness } = useOwner()
   const [loyaltyType, setLoyaltyType] = React.useState(business?.loyalty_type ?? 'stamp_card')
-  const unit = UNIT_LABEL[loyaltyType]
+  const unit = rewardWords(loyaltyType).unit.replace(/^./, (c) => c.toUpperCase())
   const [brandColor, setBrandColor] = React.useState(business?.brand_color ?? BRAND_COLORS[0])
   const [stampsRequired, setStampsRequired] = React.useState(business?.loyalty_config.stamps_required ?? 10)
   const [stampIcon, setStampIcon] = React.useState(business?.loyalty_config.stamp_icon ?? '⭐')
   const [signupReward, setSignupReward] = React.useState(business?.loyalty_config.signup_reward_title ?? '')
+  const [catalogError, setCatalogError] = React.useState(false)
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
   const [newReward, setNewReward] = React.useState({ title: '', description: '', stamp_threshold: 10 })
   const [saving, setSaving] = React.useState(false)
@@ -583,10 +581,11 @@ function StampLoyaltyTab() {
     setStampsRequired(business.loyalty_config.stamps_required ?? 10)
     setStampIcon(business.loyalty_config.stamp_icon ?? '⭐')
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
-    fetchRewardCatalog(business.id).then(setCatalog)
+    fetchRewardCatalog(business.id).then(setCatalog).catch(() => { setCatalogError(true); toast.error('Could not load rewards. Please reload this page before making changes.') })
   }, [business?.id])
 
   if (!business) return null
+  if (catalogError) return <p role="alert">Could not load rewards. <button onClick={() => window.location.reload()}>Reload and try again</button></p>
 
   async function handleSave() {
     setSaving(true)
@@ -599,7 +598,7 @@ function StampLoyaltyTab() {
       updateLocalBusiness({ loyalty_type: loyaltyType, brand_color: brandColor })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    } finally {
+    } catch { toast.error("Could not save your changes. Please try again.") } finally {
       setSaving(false)
     }
   }
@@ -630,7 +629,7 @@ function StampLoyaltyTab() {
         </p>
         <input
           className={inputClass}
-          placeholder="e.g. Free coffee just for joining"
+          placeholder={categoryCopy(business.category).signupReward}
           value={signupReward}
           onChange={(e) => setSignupReward(e.target.value)}
         />
@@ -788,7 +787,7 @@ function StampLoyaltyTab() {
                 </div>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button data-press-feedback onClick={() => handleDeleteReward(r.id)} aria-label={`Delete ${r.title}`} className="text-muted-foreground hover:text-destructive">
+                    <button data-press-feedback onClick={handleTask(() => handleDeleteReward(r.id))} aria-label={`Delete ${r.title}`} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
@@ -803,7 +802,7 @@ function StampLoyaltyTab() {
           <Field label="Title">
             <input
               className={inputClass}
-              placeholder="Free coffee"
+              placeholder={categoryCopy(business.category).rewardTitle}
               value={newReward.title}
               onChange={(e) => setNewReward({ ...newReward, title: e.target.value })}
             />
@@ -811,7 +810,7 @@ function StampLoyaltyTab() {
           <Field label="Description">
             <input
               className={inputClass}
-              placeholder="Any size, any time"
+              placeholder={categoryCopy(business.category).rewardDescription}
               value={newReward.description}
               onChange={(e) => setNewReward({ ...newReward, description: e.target.value })}
             />
@@ -826,7 +825,7 @@ function StampLoyaltyTab() {
             />
           </Field>
           <button data-press-feedback
-            onClick={handleAddReward}
+            onClick={handleTask(handleAddReward)}
             className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-5 flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Add
@@ -835,7 +834,7 @@ function StampLoyaltyTab() {
       </SectionCard>
 
       <button data-press-feedback
-        onClick={handleSave}
+        onClick={handleTask(handleSave)}
         disabled={saving}
         className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
@@ -855,6 +854,7 @@ function SpendLoyaltyTab() {
   const { business, updateLocalBusiness } = useOwner()
   const [brandColor, setBrandColor] = React.useState(business?.brand_color ?? BRAND_COLORS[0])
   const [signupReward, setSignupReward] = React.useState(business?.loyalty_config.signup_reward_title ?? '')
+  const [catalogError, setCatalogError] = React.useState(false)
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
   // Customers earn by spending; each reward unlocks at a £ amount (ARCH_PLAN.md §4.11).
   const [newReward, setNewReward] = React.useState({ title: '', description: '', amount: '20' })
@@ -866,10 +866,11 @@ function SpendLoyaltyTab() {
     if (!business) return
     setBrandColor(business.brand_color)
     setSignupReward(business.loyalty_config.signup_reward_title ?? '')
-    fetchRewardCatalog(business.id).then(setCatalog)
+    fetchRewardCatalog(business.id).then(setCatalog).catch(() => { setCatalogError(true); toast.error('Could not load rewards. Please reload this page before making changes.') })
   }, [business?.id])
 
   if (!business) return null
+  if (catalogError) return <p role="alert">Could not load rewards. <button onClick={() => window.location.reload()}>Reload and try again</button></p>
 
   async function handleSave() {
     setSaving(true)
@@ -881,7 +882,7 @@ function SpendLoyaltyTab() {
       updateLocalBusiness({ brand_color: brandColor })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    } finally {
+    } catch { toast.error("Could not save your changes. Please try again.") } finally {
       setSaving(false)
     }
   }
@@ -906,6 +907,7 @@ function SpendLoyaltyTab() {
       )
       setNewReward({ title: '', description: '', amount: '' })
     } catch {
+      toast.error('Could not save your changes. Please try again.')
       setRewardError('Could not add that reward. Please try again.')
     }
   }
@@ -924,7 +926,7 @@ function SpendLoyaltyTab() {
         </p>
         <input
           className={inputClass}
-          placeholder="e.g. Free coffee just for joining"
+          placeholder={categoryCopy(business.category).signupReward}
           value={signupReward}
           onChange={(e) => setSignupReward(e.target.value)}
         />
@@ -1022,7 +1024,7 @@ function SpendLoyaltyTab() {
                 </div>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button data-press-feedback onClick={() => handleDeleteReward(r.id)} aria-label={`Delete ${r.title}`} className="text-muted-foreground hover:text-destructive">
+                    <button data-press-feedback onClick={handleTask(() => handleDeleteReward(r.id))} aria-label={`Delete ${r.title}`} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
@@ -1037,7 +1039,7 @@ function SpendLoyaltyTab() {
           <Field label="Title">
             <input
               className={inputClass}
-              placeholder="Free coffee"
+              placeholder={categoryCopy(business.category).rewardTitle}
               value={newReward.title}
               onChange={(e) => setNewReward({ ...newReward, title: e.target.value })}
             />
@@ -1045,7 +1047,7 @@ function SpendLoyaltyTab() {
           <Field label="Description">
             <input
               className={inputClass}
-              placeholder="Any size, any time"
+              placeholder={categoryCopy(business.category).rewardDescription}
               value={newReward.description}
               onChange={(e) => setNewReward({ ...newReward, description: e.target.value })}
             />
@@ -1060,7 +1062,7 @@ function SpendLoyaltyTab() {
             />
           </Field>
           <button data-press-feedback
-            onClick={handleAddReward}
+            onClick={handleTask(handleAddReward)}
             className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-5 flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Add
@@ -1070,7 +1072,7 @@ function SpendLoyaltyTab() {
       </SectionCard>
 
       <button data-press-feedback
-        onClick={handleSave}
+        onClick={handleTask(handleSave)}
         disabled={saving}
         className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
@@ -1094,6 +1096,7 @@ function WinbackTab() {
     setLoadingLog(true)
     fetchWinbackLog(business.id)
       .then(setLog)
+      .catch(() => setError('Could not load win-back email history. Please try again.'))
       .finally(() => setLoadingLog(false))
   }, [business?.id])
 
@@ -1140,7 +1143,7 @@ function WinbackTab() {
             />
           </Field>
           <button data-press-feedback
-            onClick={handleSend}
+            onClick={handleTask(handleSend)}
             disabled={sending}
             className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 flex items-center gap-2 disabled:opacity-50"
           >
@@ -1292,7 +1295,7 @@ function VerificationTab() {
           </button>
           {error && <p className="text-sm text-destructive mb-3">{error}</p>}
           <button data-press-feedback
-            onClick={handleSubmit}
+            onClick={handleTask(handleSubmit)}
             disabled={submitting || !file || !label.trim()}
             className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
           >
@@ -1403,7 +1406,7 @@ function InviteStaffForm({ businessId, onInvited }: { businessId: string; onInvi
       </div>
       {error && <p className="text-sm text-destructive mb-3">{error}</p>}
       <button data-press-feedback
-        onClick={handleInvite}
+        onClick={handleTask(handleInvite)}
         disabled={submitting}
         className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
@@ -1442,7 +1445,7 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
           <p className="text-xs text-muted-foreground">{staff.invited_email}</p>
         </div>
         <button data-press-feedback
-          onClick={toggleStatus}
+          onClick={handleTask(toggleStatus)}
           disabled={busy}
           className={
             'rounded-full px-4 h-9 text-sm font-bold disabled:opacity-50 ' +
@@ -1458,19 +1461,19 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
             icon={ScanLine}
             label="Record purchases"
             active={staff.can_scan_stamps}
-            onToggle={() => togglePermission('can_scan_stamps')}
+            onToggle={handleTask(() => togglePermission('can_scan_stamps'))}
           />
           <PermissionToggle
             icon={Gift}
             label="Redeem rewards"
             active={staff.can_redeem_rewards}
-            onToggle={() => togglePermission('can_redeem_rewards')}
+            onToggle={handleTask(() => togglePermission('can_redeem_rewards'))}
           />
           <PermissionToggle
             icon={MessageSquare}
             label="Respond to reviews"
             active={staff.can_respond_reviews}
-            onToggle={() => togglePermission('can_respond_reviews')}
+            onToggle={handleTask(() => togglePermission('can_respond_reviews'))}
           />
         </div>
       )}
@@ -1481,11 +1484,12 @@ function StaffRow({ staff, onChange }: { staff: StaffMember; onChange: (s: Staff
 function StaffTab() {
   const { business } = useOwner()
   const [staff, setStaff] = React.useState<StaffMember[]>([])
+  const [staffError, setStaffError] = React.useState(false)
   const [loadingStaff, setLoadingStaff] = React.useState(true)
 
   React.useEffect(() => {
     if (!business) return
-    fetchStaffMembers(business.id).then(setStaff).finally(() => setLoadingStaff(false))
+    fetchStaffMembers(business.id).then(setStaff).catch(() => setStaffError(true)).finally(() => setLoadingStaff(false))
   }, [business?.id])
 
   if (!business) return null
@@ -1495,7 +1499,7 @@ function StaffTab() {
       <InviteStaffForm businessId={business.id} onInvited={(s) => setStaff([s, ...staff.filter((x) => x.id !== s.id)])} />
 
       <SectionCard title="Staff">
-        {loadingStaff ? (
+        {staffError ? <p role="alert">Could not load staff. <button onClick={() => window.location.reload()}>Reload and try again</button></p> : loadingStaff ? (
           <div role="status" aria-label="Loading staff" className="space-y-3"><span className="sr-only">Loading staff</span><SkeletonBlock className="h-20" /><SkeletonBlock className="h-20" /></div>
         ) : staff.length === 0 ? (
           <p className="text-sm text-muted-foreground">No staff added yet.</p>
@@ -1575,7 +1579,7 @@ function DangerTab() {
     try {
       await deleteOwnedBusiness(shop.id, deleteName)
       await refetch()
-      navigate('/owner')
+      runTask(navigate('/owner'))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete your shop.')
     } finally { setBusy(false) }
@@ -1587,7 +1591,7 @@ function DangerTab() {
     try {
       await transferOwnedBusinessOwnership(shop.id, newOwnerEmail)
       await refetch()
-      navigate('/owner/settings?tab=danger', { replace: true })
+      runTask(navigate('/owner/settings?tab=danger', { replace: true }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not transfer this shop.')
     } finally { setTransferring(false) }
@@ -1601,7 +1605,7 @@ function DangerTab() {
       if (!window.confirm('Delete your account and personal data? This cannot be undone.')) return
       await requestAccountDeletion()
       await signOut()
-      navigate('/', { replace: true })
+      runTask(navigate('/', { replace: true }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete your account.')
     } finally { setDeletingAccount(false) }
@@ -1612,7 +1616,7 @@ function DangerTab() {
       <section className="rounded-3xl bg-amber/30 p-6 sm:p-7">
         <h3 className="font-display text-lg font-semibold tracking-tight text-foreground">{business.is_active ? 'Deactivate shop' : 'Reactivate shop'}</h3>
         <p className="mt-2 text-sm text-foreground/75">{business.is_active ? 'Deactivation hides your shop and stops new customer joins. Your data stays safely in place, and you can reactivate it at any time.' : 'Reactivating makes your shop available to customers again.'}</p>
-        <button data-press-feedback onClick={() => setActive(!business.is_active)} disabled={busy} className="mt-4 rounded-full bg-card px-5 py-2.5 text-sm font-semibold text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary disabled:opacity-50">
+        <button data-press-feedback onClick={handleTask(() => setActive(!business.is_active))} disabled={busy} className="mt-4 rounded-full bg-card px-5 py-2.5 text-sm font-semibold text-foreground ring-1 ring-foreground/15 transition-colors hover:bg-secondary disabled:opacity-50">
           {busy ? 'Saving…' : business.is_active ? 'Deactivate shop' : 'Reactivate shop'}
         </button>
         {error && <p role="alert" className="mt-3 text-sm font-medium text-destructive">{error}</p>}
@@ -1628,7 +1632,7 @@ function DangerTab() {
           <div className="mt-4 max-w-md">
             <label className="block text-sm font-semibold text-foreground">Type <span className="font-bold">{business.name}</span> to confirm</label>
             <input value={deleteName} onChange={(e) => setDeleteName(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-destructive/30 bg-card px-3.5 outline-none focus:border-destructive focus:ring-3 focus:ring-destructive/20" />
-            <div className="mt-3 flex gap-2"><button data-press-feedback onClick={deleteShop} disabled={busy || deleteName.trim() !== business.name} className="rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-full px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">Cancel</button></div>
+            <div className="mt-3 flex gap-2"><button data-press-feedback onClick={handleTask(deleteShop)} disabled={busy || deleteName.trim() !== business.name} className="rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">{busy ? 'Deleting…' : 'Delete permanently'}</button><button data-press-feedback onClick={() => { setConfirmingDelete(false); setDeleteName('') }} disabled={busy} className="rounded-full px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">Cancel</button></div>
           </div>
         )}
         {error && <p className="mt-3 text-sm font-medium text-destructive">{error}</p>}
@@ -1640,14 +1644,14 @@ function DangerTab() {
         <label className="mt-4 block text-sm font-semibold text-foreground" htmlFor="new-owner-email">New owner’s account email</label>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <input id="new-owner-email" type="email" value={newOwnerEmail} onChange={(event) => setNewOwnerEmail(event.target.value)} placeholder="owner@example.com" className="h-11 flex-1 rounded-xl border border-destructive/30 bg-card px-3.5 outline-none focus:border-destructive focus:ring-3 focus:ring-destructive/20" />
-          <button data-press-feedback onClick={transferShop} disabled={transferring || !newOwnerEmail.trim()} className="rounded-full border border-destructive/30 px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40">{transferring ? 'Transferring…' : 'Transfer shop'}</button>
+          <button data-press-feedback onClick={handleTask(transferShop)} disabled={transferring || !newOwnerEmail.trim()} className="rounded-full border border-destructive/30 px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40">{transferring ? 'Transferring…' : 'Transfer shop'}</button>
         </div>
       </section>
 
       {businesses.length === 0 && <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
         <h3 className="font-display text-lg font-semibold tracking-tight text-destructive">Delete account permanently</h3>
         <p className="mt-2 text-sm text-foreground/75">All shops have been resolved. This permanently deletes your login and personal account data.</p>
-        <button data-press-feedback onClick={deleteAccount} disabled={deletingAccount} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
+        <button data-press-feedback onClick={handleTask(deleteAccount)} disabled={deletingAccount} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">{deletingAccount ? 'Deleting account…' : 'Delete account permanently'}</button>
       </section>}
     </div>
   )
@@ -1716,12 +1720,12 @@ export function OwnerSettings() {
         <section className="rounded-3xl bg-destructive/8 p-6 ring-1 ring-destructive/20 sm:p-7">
           <h2 className="font-display text-xl font-semibold tracking-tight text-destructive">Delete account</h2>
           <p className="mt-2 text-sm text-foreground/75">You have no shops assigned to this account. Deleting it permanently removes your login and personal data.</p>
-          <button data-press-feedback onClick={async () => {
+          <button data-press-feedback onClick={handleTask(async () => {
             const status = await canDeleteCurrentAccount()
             if (!status.can_delete) return window.alert(status.reason ?? 'Resolve ownership first.')
             if (!window.confirm('Delete your account and personal data? This cannot be undone.')) return
             await requestAccountDeletion(); await signOut()
-          }} disabled={businesses.length > 0} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">Delete account permanently</button>
+          })} disabled={businesses.length > 0} className="mt-4 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-40">Delete account permanently</button>
         </section>
       ) : (
         <>

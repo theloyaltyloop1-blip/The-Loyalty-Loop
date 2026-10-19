@@ -1,3 +1,4 @@
+import { handleTask, runTask } from '@/lib/async'
 import * as React from 'react'
 import { MapPin, Search, Store } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -18,7 +19,7 @@ export function DiscoverPage() {
 
   usePageMeta({ title: 'Shop map | The Loyalty Loop', description: 'Find local Loyalty Loop shops on the map.', path: '/dashboard/discover', robots: 'noindex,nofollow,noarchive' })
 
-  React.useEffect(() => { fetchBusinesses().then(setBusinesses).finally(() => setLoading(false)) }, [])
+  React.useEffect(() => { runTask(fetchBusinesses().then(setBusinesses).finally(() => setLoading(false))) }, [])
 
   const filtered = businesses.filter((business) => `${business.name} ${business.category ?? ''} ${business.address ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()))
   const located = filtered.filter((business) => business.lat != null && business.lng != null)
@@ -35,7 +36,7 @@ export function DiscoverPage() {
         {!located.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No mapped shops match this search yet.</p>}
       </aside>
     </div>}
-    {selected && <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-olive p-6 text-olive-ink"><div><p className="font-display text-xl font-semibold tracking-tight">{selected.name}</p><p className="mt-1 text-sm text-olive-ink/80">{selected.description || selected.address || 'A local Loyalty Loop shop.'}</p></div><button data-press-feedback onClick={() => navigate(`/dashboard/shop/${selected.slug}`)} className="h-11 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">View shop</button></section>}
+    {selected && <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-olive p-6 text-olive-ink"><div><p className="font-display text-xl font-semibold tracking-tight">{selected.name}</p><p className="mt-1 text-sm text-olive-ink/80">{selected.description || selected.address || 'A local Loyalty Loop shop.'}</p></div><button data-press-feedback onClick={handleTask(() => navigate(`/dashboard/shop/${selected.slug}`))} className="h-11 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">View shop</button></section>}
     <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-peach px-5 py-5 text-peach-ink sm:px-7"><p className="font-semibold">Can’t find your favourite shop?</p><button data-press-feedback onClick={()=>setAskOpen(true)} className="rounded-full bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">Ask a shop to join</button></div>
     <AskShopDialog open={askOpen} onOpenChange={setAskOpen} initialQuery={query}/>
   </DashboardLayout>

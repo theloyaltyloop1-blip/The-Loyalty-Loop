@@ -1,3 +1,5 @@
+import { handleTask, runTask } from '@/lib/async'
+import { rewardWords } from '@/lib/shop-types'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { BrowserQRCodeReader } from '@zxing/browser'
@@ -30,13 +32,6 @@ import {
 } from '@/lib/businesses'
 import { isPosConnected, recordPosScan, cancelPosScan } from '@/lib/pos'
 import { PosReview } from '@/components/pos-review'
-import { handleTask } from '@/lib/async'
-
-const UNIT_LABEL: Record<string, string> = {
-  stamp_card: 'stamp',
-  points: 'point',
-  tiered: 'visit',
-}
 
 type ScanMode = 'award' | 'redeem'
 
@@ -80,7 +75,7 @@ function CameraScanner({ onResult, active, scanCycle = 0 }: { onResult: (value: 
         if (!cancelled) setError('Camera access was blocked or unavailable. Check your browser permission, then use the manual code below if needed.')
       }
     }
-    start()
+    runTask(start())
 
     return () => {
       cancelled = true
@@ -218,7 +213,7 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
         </button>
       </div>
 
-      <CameraScanner active={cameraOn} onResult={handleQrResult} scanCycle={scanCycle} />
+      <CameraScanner active={cameraOn} onResult={handleTask(handleQrResult)} scanCycle={scanCycle} />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-border" />
@@ -228,14 +223,14 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
-          onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+          onKeyDown={handleTask((e) => e.key === 'Enter' && handleLookup())}
         />
         <button data-press-feedback
-          onClick={handleLookup}
+          onClick={handleTask(handleLookup)}
           disabled={busy || !code.trim()}
           className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
@@ -273,7 +268,7 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
             </div>
           </div>
           <button data-press-feedback
-            onClick={handleAward}
+            onClick={handleTask(handleAward)}
             disabled={busy}
             className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
           >
@@ -508,7 +503,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
         </button>
       </div>
 
-      <CameraScanner active={cameraOn} onResult={handleQrResult} scanCycle={scanCycle} />
+      <CameraScanner active={cameraOn} onResult={handleTask(handleQrResult)} scanCycle={scanCycle} />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-border" />
@@ -518,14 +513,14 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
-          onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+          onKeyDown={handleTask((e) => e.key === 'Enter' && handleLookup())}
         />
         <button data-press-feedback
-          onClick={handleLookup}
+          onClick={handleTask(handleLookup)}
           disabled={busy || !code.trim()}
           className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
@@ -580,7 +575,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                onKeyDown={handleTask((e) => e.key === 'Enter' && handleAdd())}
               />
               <span className="text-sm text-muted-foreground">up to {formatPounds(cap)} per entry</span>
             </div>
@@ -589,8 +584,8 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
             <div className="rounded-2xl bg-peach p-4 text-peach-ink flex flex-col gap-2">
               <p className="font-semibold text-foreground">This customer has a linked card</p>
               <p className="text-sm text-muted-foreground">If they paid with it, their reward updates automatically, so there's nothing to do. How did they pay?</p>
-              <button data-press-feedback onClick={() => handleAdd('cash')} disabled={busy} className="h-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold disabled:opacity-50">Cash</button>
-              <button data-press-feedback onClick={() => handleAdd('unlinked_card')} disabled={busy} className="h-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold disabled:opacity-50">A different card</button>
+              <button data-press-feedback onClick={handleTask(() => handleAdd('cash'))} disabled={busy} className="h-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold disabled:opacity-50">Cash</button>
+              <button data-press-feedback onClick={handleTask(() => handleAdd('unlinked_card'))} disabled={busy} className="h-11 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold disabled:opacity-50">A different card</button>
               <button data-press-feedback onClick={() => setAskPayment(false)} className="h-11 rounded-full bg-card font-semibold text-foreground transition-colors hover:bg-card/80">They used their linked card</button>
               {summary && summary.manualToday > 0 && (
                 <p className="text-xs text-muted-foreground text-center">{summary.manualToday} of 3 manual entries used today for this customer.</p>
@@ -598,7 +593,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
             </div>
           ) : (
             <button data-press-feedback
-              onClick={() => handleAdd()}
+              onClick={handleTask(() => handleAdd())}
               disabled={busy || amountPence < 1}
               className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
             >
@@ -626,7 +621,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
                   {new Date(entry.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 {minutesLeft > 0 && (
-                  <button data-press-feedback onClick={() => handleUndo(entry)} className="text-sm font-bold text-primary">
+                  <button data-press-feedback onClick={handleTask(() => handleUndo(entry))} className="text-sm font-bold text-primary">
                     Undo · {minutesLeft} min
                   </button>
                 )}
@@ -726,7 +721,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         </button>
       </div>
 
-      <CameraScanner active={cameraOn} onResult={handleQrResult} />
+      <CameraScanner active={cameraOn} onResult={handleTask(handleQrResult)} />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-border" />
@@ -736,14 +731,14 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Reward's short code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+          onKeyDown={handleTask((e) => e.key === 'Enter' && handleLookup())}
         />
         <button data-press-feedback
-          onClick={handleLookup}
+          onClick={handleTask(handleLookup)}
           disabled={busy || !code.trim()}
           className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
@@ -764,7 +759,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       {reward && !alreadyRedeemed && !expired && (
         <button data-press-feedback
-          onClick={handleRedeem}
+          onClick={handleTask(handleRedeem)}
           disabled={busy}
           className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
         >
@@ -794,7 +789,7 @@ export function OwnerScan() {
   const activeStaff = !isOwner ? staffBusinesses.find((s) => s.business_id === staffBizId) ?? staffBusinesses[0] : null
   const activeBusinessId = isOwner ? business!.id : activeStaff?.business_id
   const loyaltyType = isOwner ? business!.loyalty_type : activeStaff?.business.loyalty_type
-  const unit = UNIT_LABEL[loyaltyType ?? 'stamp_card'] ?? 'stamp'
+  const unit = rewardWords(loyaltyType).unit
   const spendShop = (isOwner ? business!.reward_model : activeStaff?.business.reward_model) === 'spend_threshold'
   const canScan = isOwner || Boolean(activeStaff?.can_scan_stamps)
   const canRedeem = isOwner || Boolean(activeStaff?.can_redeem_rewards)

@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { deleteReview, listRewards, listReviews, listTransactions, type AdminReview, type AdminReward, type AdminTransaction } from '@/lib/admin'
 import { Badge, DataTable, Pager, Status, btnDanger, fmtDate, inputCls, useAction, useClampPage, useLoad } from './kit'
@@ -59,7 +60,7 @@ function Reviews() {
       { header: 'Business', cell: (r) => r.business_name },
       { header: 'Author', cell: (r) => r.user_email ?? r.user_id },
       { header: 'Posted', cell: (r) => fmtDate(r.created_at) },
-      { header: '', cell: (r) => <button className={btnDanger} disabled={pending} onClick={() => { const reason = prompt('Reason for removal'); if (reason) void act(() => deleteReview(r.id, reason), 'Review removed', reload) }}>Remove</button> },
+      { header: '', cell: (r) => <button className={btnDanger} disabled={pending} onClick={handleTask(() => { const reason = prompt('Reason for removal'); if (reason) void act(() => deleteReview(r.id, reason), 'Review removed', reload) })}>Remove</button> },
     ]} />
     <Pager page={page} total={data?.total ?? 0} onPage={setPage} />
   </>

@@ -1,3 +1,4 @@
+import { runTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Heart } from 'lucide-react'
@@ -15,12 +16,12 @@ export function FavouritesPage() {
 
   React.useEffect(() => {
     if (!session?.user) return
-    Promise.all([fetchFavouriteBusinesses(session.user.id), fetchMyMemberships(session.user.id)])
+    runTask(Promise.all([fetchFavouriteBusinesses(session.user.id), fetchMyMemberships(session.user.id)])
       .then(([b, m]) => {
         setBusinesses(b)
         setMemberships(m)
       })
-      .finally(() => setFetching(false))
+      .finally(() => setFetching(false)))
   }, [session?.user])
 
   if (loading) return <PageSkeleton />

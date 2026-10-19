@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
@@ -34,7 +35,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
           </Link>
           <div className="flex items-center gap-5">
             <Link to="/help" className="text-muted-foreground transition-colors hover:text-foreground">Help</Link>
-            <button data-press-feedback onClick={() => navigate('/')} className="text-muted-foreground transition-colors hover:text-foreground">Back</button>
+            <button data-press-feedback onClick={handleTask(() => navigate('/'))} className="text-muted-foreground transition-colors hover:text-foreground">Back</button>
           </div>
         </div>
         <div className="mx-auto my-auto w-full max-w-md py-10">

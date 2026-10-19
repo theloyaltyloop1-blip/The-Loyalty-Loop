@@ -1,3 +1,4 @@
+import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate, Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -222,12 +223,12 @@ function RejectListingDialog({ name, onReject }: { name: string; onReject: (reas
 }
 
 function VerificationQueue({ items, refresh }: { items: PendingVerification[]; refresh: () => Promise<void> }) {
-  return <div className="grid gap-4">{items.length ? items.map((item) => <article key={item.id} className="rounded-2xl bg-card p-4 sm:p-5"><p className="font-bold">{item.name}</p><p className="break-all text-sm text-muted-foreground">{item.owner_email}</p><div className="mt-3 flex flex-wrap gap-2"><button data-press-feedback onClick={async () => { await reviewBusinessVerification(item.id, true); void refresh() }} className="rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Approve</button><RejectListingDialog name={item.name} onReject={async (reason) => { await reviewBusinessVerification(item.id, false, reason); void refresh() }} /></div></article>) : <p className="text-muted-foreground">No listings waiting.</p>}</div>
+  return <div className="grid gap-4">{items.length ? items.map((item) => <article key={item.id} className="rounded-2xl bg-card p-4 sm:p-5"><p className="font-bold">{item.name}</p><p className="break-all text-sm text-muted-foreground">{item.owner_email}</p><div className="mt-3 flex flex-wrap gap-2"><button data-press-feedback onClick={handleTask(async () => { await reviewBusinessVerification(item.id, true); void refresh() })} className="rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Approve</button><RejectListingDialog name={item.name} onReject={async (reason) => { await reviewBusinessVerification(item.id, false, reason); void refresh() }} /></div></article>) : <p className="text-muted-foreground">No listings waiting.</p>}</div>
 }
 
 function SupportQueue({ items, refresh }: { items: SupportRequest[]; refresh: () => Promise<void> }) {
   const open = items.filter((item) => item.status === 'open')
-  return <div className="grid gap-4">{open.length ? open.map((item) => <article key={item.id} className="rounded-2xl bg-card p-4 sm:p-5"><p className="font-bold">{item.subject}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">{item.body}</p><button data-press-feedback onClick={async () => { await resolveSupportRequest(item.id); void refresh() }} className="mt-3 rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Resolve</button></article>) : <p className="text-muted-foreground">No open support requests.</p>}</div>
+  return <div className="grid gap-4">{open.length ? open.map((item) => <article key={item.id} className="rounded-2xl bg-card p-4 sm:p-5"><p className="font-bold">{item.subject}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">{item.body}</p><button data-press-feedback onClick={handleTask(async () => { await resolveSupportRequest(item.id); void refresh() })} className="mt-3 rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Resolve</button></article>) : <p className="text-muted-foreground">No open support requests.</p>}</div>
 }
 
 function ReviewReportsQueue({ items, refresh }: { items: ReviewReport[]; refresh: () => Promise<void> }) {
@@ -249,8 +250,8 @@ function ReviewReportsQueue({ items, refresh }: { items: ReviewReport[]; refresh
       </> : <p className="mt-3 text-sm italic text-muted-foreground">The review has already been deleted.</p>}
       {report.detail && <p className="mt-2 text-sm text-muted-foreground">Reporter added: “{report.detail}”</p>}
       <div className="mt-4 flex flex-wrap gap-2">
-        {report.review && <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => removeReportedReview(report.review_id), report.id)} className="rounded-xl bg-destructive text-destructive-foreground px-4 py-2 text-sm font-bold disabled:opacity-50">Remove review</button>}
-        <button data-press-feedback disabled={busyId === report.id} onClick={() => act(() => dismissReviewReport(report.id), report.id)} className="rounded-xl border border-border px-4 py-2 text-sm font-bold disabled:opacity-50">Dismiss report</button>
+        {report.review && <button data-press-feedback disabled={busyId === report.id} onClick={handleTask(() => act(() => removeReportedReview(report.review_id), report.id))} className="rounded-xl bg-destructive text-destructive-foreground px-4 py-2 text-sm font-bold disabled:opacity-50">Remove review</button>}
+        <button data-press-feedback disabled={busyId === report.id} onClick={handleTask(() => act(() => dismissReviewReport(report.id), report.id))} className="rounded-xl border border-border px-4 py-2 text-sm font-bold disabled:opacity-50">Dismiss report</button>
       </div>
     </article>) : <p className="text-muted-foreground">No reported reviews. 🎉</p>}
   </div>
