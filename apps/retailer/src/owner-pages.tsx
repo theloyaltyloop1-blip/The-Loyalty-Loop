@@ -80,7 +80,7 @@ export interface NativeBusiness {
     signup_reward_title?: string;
     stamp_icon?: string;
   };
-  reward_model?: "stamp_legacy" | "spend_threshold";
+  reward_model?: "stamp_legacy" | "spend_threshold" | "tiers" | "points";
   reward_threshold_pence?: number | null;
   manual_spend_max_pence?: number;
 }

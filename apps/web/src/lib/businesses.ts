@@ -36,7 +36,7 @@ export interface Business {
   opening_hours: OpeningHours | null
   loyalty_type: 'stamp_card' | 'points' | 'tiered'
   loyalty_config: LoyaltyConfig
-  reward_model: 'stamp_legacy' | 'spend_threshold'
+  reward_model: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'
   reward_threshold_pence: number | null
   manual_spend_max_pence: number
   features: string[] | null

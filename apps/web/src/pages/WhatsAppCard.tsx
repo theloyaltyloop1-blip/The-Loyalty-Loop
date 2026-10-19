@@ -10,7 +10,7 @@ type CardData = {
   manualCode: string | null
   firstName: string
   appUrl: string
-  memberships: Array<{ stamp_count: number; points_balance: number; visit_count: number; reward_progress_pence?: number | null; business: { name: string; loyalty_type: 'stamp_card' | 'points' | 'tiered'; reward_model?: 'stamp_legacy' | 'spend_threshold' } | null }>
+  memberships: Array<{ stamp_count: number; points_balance: number; visit_count: number; reward_progress_pence?: number | null; business: { name: string; loyalty_type: 'stamp_card' | 'points' | 'tiered'; reward_model?: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points' } | null }>
 }
 
 export function WhatsAppCard() {

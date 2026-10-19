@@ -2,10 +2,19 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const ts = require('typescript')
-const code = ts.transpileModule(fs.readFileSync(`${__dirname}/home-progress.ts`, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
-const helper = { exports: {} }
-new Function('module', 'exports', code)(helper, helper.exports)
-const { homeProgress } = helper.exports
+// Loads a TypeScript file on its own. `requireFn` stands in for require(), so the
+// shared loyalty package can be supplied without a bundler.
+const load = (file, requireFn) => {
+  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
+  const mod = { exports: {} }
+  new Function('module', 'exports', 'require', code)(mod, mod.exports, requireFn)
+  return mod.exports
+}
+const loyalty = load(`${__dirname}/../../../packages/loyalty/src/index.ts`, (name) => { throw new Error(`unexpected import ${name}`) })
+const { homeProgress } = load(`${__dirname}/home-progress.ts`, (name) => {
+  if (name === '@loyalty-loop/loyalty') return loyalty
+  throw new Error(`unexpected import ${name}`)
+})
 const shop = { id: 'coffee', name: 'Coffee', reward_model: 'stamp_legacy' }
 const member = { business_id: 'coffee', stamp_count: 6, points_balance: 0 }
 const tier = (threshold, title = 'Coffee reward') => ({ business_id: 'coffee', title, stamp_threshold: threshold })

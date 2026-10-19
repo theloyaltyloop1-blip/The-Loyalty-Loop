@@ -51,7 +51,10 @@ Deno.serve(async (req: Request) => {
       return reply({ status: "disconnected" });
     }
 
-    if (business.reward_model !== "spend_threshold") return reply({ error: "shop_not_spend_based" }, 409);
+    // Any programme that records a purchase amount can take sales from the till.
+    if (!["spend_threshold", "tiers", "points"].includes(String(business.reward_model))) {
+      return reply({ error: "shop_not_spend_based" }, 409);
+    }
     if (!CLIENT_ID || !Deno.env.get("SUMUP_CLIENT_SECRET")) return reply({ error: "sumup_not_configured" }, 503);
 
     // Old unused states for this owner are dropped so the table cannot grow.

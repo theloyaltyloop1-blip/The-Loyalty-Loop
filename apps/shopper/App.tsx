@@ -334,7 +334,7 @@ type Business = {
   cover_url?: string | null
   loyalty_type?: string
   loyalty_config?: { stamps_required?: number }
-  reward_model?: 'stamp_legacy' | 'spend_threshold'
+  reward_model?: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'
   reward_threshold_pence?: number | null
   features?: string[] | null
   halal_certifier?: string | null
