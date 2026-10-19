@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Navigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Link, Navigate } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -20,6 +21,7 @@ export function FavouritesPage() {
         setBusinesses(b)
         setMemberships(m)
       })
+      .catch(() => toast.error('Could not load your favourites. Please refresh.'))
       .finally(() => setFetching(false))
   }, [session?.user])
 
@@ -40,6 +42,7 @@ export function FavouritesPage() {
           <p className="mx-auto max-w-sm">
             No favourites yet. Tap the heart on a shop's page to save it here.
           </p>
+          <Link to="/dashboard/discover" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover">Find shops</Link>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-5">

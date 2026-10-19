@@ -45,7 +45,7 @@ test('WhatsApp stage 2 disposable PostgreSQL and fake Graph acceptance',async t=
   await t.test('inbound reservation is atomic and bounded; STOP bypasses cap',async()=>{const c2=await f.newClient();const p='+447000000001';const race=await Promise.all([db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['same',p,'question']),c2.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['same',p,'question'])]);assert.equal(race.filter(r=>r.rows[0].ok).length,1);for(let i=0;i<19;i++)assert.equal((await db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',[String(i),p,'question'])).rows[0].ok,true);assert.equal((await db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['over',p,'question'])).rows[0].ok,false);assert.equal((await db.query('select reserve_whatsapp_inbound($1,$2,$3) ok',['stop',p,'stop'])).rows[0].ok,true);});
   await t.test('progress in flight coalesces latest and enforces thirty-minute send spacing',async()=>{
    assert.ok((await db.query('select opted_out_at from whatsapp_contacts')).rows[0].opted_out_at);
-   try{throw Error('handler crashed after STOP reservation')}catch{}
+   try{throw Error('handler crashed after STOP reservation')}catch{ /* simulated crash: opt-out must survive it */ }
    assert.ok((await db.query('select opted_out_at from whatsapp_contacts')).rows[0].opted_out_at);
    await db.query('update whatsapp_contacts set opted_out_at=null');
    await db.query("update whatsapp_outbox set sent_at=now()-interval '31 minutes' where event_type='spend_progress' and status='sent'");

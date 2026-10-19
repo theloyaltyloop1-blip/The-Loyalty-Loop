@@ -77,7 +77,7 @@ function CameraScanner({ onResult, active, scanCycle = 0 }: { onResult: (value: 
         if (!cancelled) setError('Camera access was blocked or unavailable. Check your browser permission, then use the manual code below if needed.')
       }
     }
-    start()
+    void start()
 
     return () => {
       cancelled = true
@@ -225,8 +225,9 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
+          aria-label="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
           onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
@@ -234,7 +235,7 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
         <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="h-12 shrink-0 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Find
         </button>
@@ -474,8 +475,9 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
+          aria-label="Customer's manual code"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\s+/g, '').toUpperCase())}
           onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
@@ -483,7 +485,7 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
         <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="h-12 shrink-0 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Find
         </button>
@@ -676,7 +678,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Reward's short code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -685,7 +687,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
         <button data-press-feedback
           onClick={handleLookup}
           disabled={busy || !code.trim()}
-          className="h-12 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="h-12 shrink-0 rounded-full bg-foreground text-background font-semibold px-5 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Find
         </button>

@@ -25,9 +25,10 @@ export function AuthCallback() {
     if (!intent) return
     localStorage.removeItem(OAUTH_INTENT_KEY)
     setApplyingIntent(true)
-    supabase.auth
+    void supabase.auth
       .updateUser({ data: { intent } })
       .then(() => refreshRoles())
+      .catch(() => undefined)
       .finally(() => setApplyingIntent(false))
   }, [session?.user, refreshRoles])
 

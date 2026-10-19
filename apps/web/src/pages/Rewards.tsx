@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Navigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Link, Navigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { Gift, Ticket } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
@@ -45,10 +46,10 @@ export function RewardsPage() {
 
   React.useEffect(() => {
     if (!session?.user) return
-    fetchMyRewards(session.user.id).then(setRewards).finally(() => setReady(true))
+    fetchMyRewards(session.user.id).then(setRewards).catch(() => toast.error('Could not load your rewards. Please refresh.')).finally(() => setReady(true))
   }, [session?.user])
 
-  if (loading || !ready) return <PageSkeleton />
+  if (loading || (session && !ready)) return <PageSkeleton />
   if (!session) return <Navigate to="/login" replace />
 
   const available = rewards.filter((reward) => !reward.redeemed_at && (!reward.expires_at || new Date(reward.expires_at) >= new Date()))
@@ -63,6 +64,7 @@ export function RewardsPage() {
           <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-card"><Ticket className="h-7 w-7 text-primary" /></span>
           <h2 className="font-display text-2xl font-semibold tracking-tight">No rewards yet</h2>
           <p className="mx-auto mt-2 max-w-sm text-sage-ink/80">Keep shopping at your favourite shops. Your reward will appear here automatically.</p>
+          <Link to="/dashboard" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover">See your cards</Link>
         </div>
       ) : <div className="grid gap-5 md:grid-cols-2">{available.map((reward, index) => <div key={reward.id} className="stagger-card" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><RewardCard reward={reward} /></div>)}</div>}
       {past.length > 0 && <><h2 className="font-display text-xl font-semibold tracking-tight text-foreground mt-12 mb-4">Past rewards</h2><div className="grid gap-4 md:grid-cols-2">{past.map((reward, index) => <div key={reward.id} className="stagger-card" style={{ animationDelay: `${Math.min(index, 5) * 45}ms` }}><RewardCard reward={reward} /></div>)}</div></>}

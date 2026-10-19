@@ -194,7 +194,7 @@ button[data-press-feedback]:not(:disabled):active { transform: scale(.97); }
 .shop-poster-platform img { height: 25px; width: 25px; border-radius: 999px; object-fit: contain; }
 .shop-poster-shop { margin-top: 8%; }
 .shop-poster-logo, .shop-poster-monogram { display: inline-flex; height: clamp(44px, 7vw, 72px); width: clamp(44px, 7vw, 72px); align-items: center; justify-content: center; border-radius: 999px; object-fit: cover; color: white; font-size: clamp(21px, 3.4vw, 34px); font-weight: 800; }
-.shop-poster-kicker { margin: 16px 0 0; color: #bd682c; font-size: clamp(8px, 1vw, 11px); font-weight: 800; letter-spacing: .16em; }
+.shop-poster-kicker { margin: 16px 0 0; color: #9a4f1c; font-size: clamp(11px, 1vw, 12px); font-weight: 800; letter-spacing: .16em; }
 .shop-poster-shop h2 { margin: 8px 0 0; color: #1C2620; font-family: var(--font-display); font-weight: 650; font-size: clamp(27px, 4vw, 44px); line-height: 1.12; }
 .shop-poster-subtitle { margin: 8px 0 0; color: rgb(26 26 26 / .6); font-size: clamp(10px, 1.35vw, 15px); }
 .shop-poster-qr-wrap { margin-top: auto; border: 8px solid #fff; background: white; box-shadow: 0 8px 24px rgb(48 68 45 / .12); }
@@ -230,3 +230,18 @@ button[data-press-feedback]:not(:disabled):active { transform: scale(.97); }
 /* Owner request 2026-10-17: all text black in light mode, including faded text-foreground/NN. Dark mode keeps light text so it stays readable. */
 html:not(.dark) [class*="text-foreground/"],
 html:not(.dark) [class*="text-muted-foreground/"] { color: #000000; }
+
+/* Sonner's rich error/success text sits just under 4.5:1 on its pale fills. */
+:root [data-sonner-toaster][data-sonner-theme='light'] { --error-text: hsl(360, 100%, 34%); --success-text: hsl(140, 100%, 22%); --warning-text: hsl(31, 92%, 30%); --info-text: hsl(216, 87%, 40%); }
+
+/* Many fields only change border colour on focus; give every form control a clear keyboard focus ring. */
+:where(input, select, textarea):focus-visible { outline: 2px solid var(--color-ring, currentColor); outline-offset: 2px; }
+
+/* Touch screens: keep buttons, tabs and pickers at least 44px tall so they're easy to tap. */
+@media (pointer: coarse) {
+  :where(button, [role='button'], [role='tab'], [role='switch'], select):not([data-compact-target]) { min-height: 44px; }
+}
+
+/* Long single words (shop names, "Announcements" at 200% text) wrap instead of pushing the page sideways. */
+:where(h1, h2, h3, p, li, dd) { overflow-wrap: break-word; }
+:where(input, select, textarea) { min-width: 0; max-width: 100%; }

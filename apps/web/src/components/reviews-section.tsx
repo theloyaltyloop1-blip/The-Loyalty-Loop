@@ -17,7 +17,7 @@ export function ReviewsSection({ businessId, userId, canReview }: { businessId: 
   const [error, setError] = React.useState<string | null>(null)
 
   const reload = React.useCallback(() => fetchShopReviews(businessId).then((items) => { setReviews(items); const mine = items.find((review) => review.user_id === userId); if (mine) { setRating(mine.rating); setBody(mine.body ?? '') } }).catch((err) => setError(typeof err?.message === 'string' ? err.message : 'Could not load reviews.')), [businessId, userId])
-  React.useEffect(() => { reload() }, [reload])
+  React.useEffect(() => { void reload() }, [reload])
   const mine = reviews.find((review) => review.user_id === userId)
 
   async function save(e: React.FormEvent) { e.preventDefault(); setSaving(true); setError(null); try { await upsertReview(businessId, userId, rating, body); await reload() } catch (err) { setError(typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string' ? err.message : 'Could not save your review.') } finally { setSaving(false) } }

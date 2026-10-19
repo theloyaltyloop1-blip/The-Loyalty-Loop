@@ -9,7 +9,8 @@ import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 
-const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other']
+import { CATEGORIES, categoryCopy } from '@/lib/categories'
+import { OwnerLoadError } from '@/components/owner-load-error'
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
 
 const STEPS = [
@@ -37,7 +38,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function OwnerOnboarding() {
   const { session, loading, rolesLoading, roles } = useAuth()
-  const { businesses, business, needsRewardSetup, markRewardsReady, loading: ownerLoading, refetch, setBusinessId } = useOwner()
+  const { businesses, business, needsRewardSetup, markRewardsReady, loading: ownerLoading, loadError, refetch, setBusinessId } = useOwner()
   const navigate = useNavigate()
   const [stepState, setStep] = React.useState(0)
   const [creating, setCreating] = React.useState(false)
@@ -105,6 +106,8 @@ export function OwnerOnboarding() {
   if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
   if (!roles.includes('business_owner')) return <Navigate to="/dashboard" replace />
+  // Don't offer to create a shop when we simply couldn't load the existing one.
+  if (loadError && businesses.length === 0) return <OwnerLoadError />
   if (businesses.length > 0 && !resumeBusiness) return <Navigate to="/owner" replace />
 
   const rewardValid = (r: RewardDraft) =>
@@ -146,7 +149,7 @@ export function OwnerOnboarding() {
       markRewardsReady(target.id)
       await refetch()
       setBusinessId(target.id)
-      navigate('/owner')
+      void navigate('/owner')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create your shop. Try again.')
     } finally {
@@ -352,7 +355,7 @@ export function OwnerOnboarding() {
                       className={inputClass}
                       value={reward.title}
                       onChange={(e) => updateReward(index, { title: e.target.value })}
-                      placeholder="e.g. Free coffee"
+                      placeholder={`e.g. ${categoryCopy(form.category).rewardTitle}`}
                     />
                   </Field>
                   <Field label="Details">

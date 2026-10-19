@@ -2,7 +2,8 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, Star, Scissors, Coffee, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -26,12 +27,8 @@ import {
   type BusinessPhoto,
 } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
-
-const STAMP_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  Café: Coffee,
-  Restaurant: Coffee,
-  Barber: Scissors,
-}
+import { categoryCopy } from '@/lib/categories'
+import { onBrandColor } from '@/lib/utils'
 
 const UNIT_LABEL: Record<string, string> = {
   stamp_card: 'stamp',
@@ -84,6 +81,7 @@ export function ShopDetail() {
   const [shared, setShared] = React.useState(false)
   const [joinError, setJoinError] = React.useState<string | null>(null)
   const [justJoined, setJustJoined] = React.useState(false)
+  const [loadError, setLoadError] = React.useState(false)
 
   // Supabase fires onAuthStateChange multiple times in quick succession after
   // login/navigation (INITIAL_SESSION, token refresh, etc.), each producing a
@@ -104,17 +102,25 @@ export function ShopDetail() {
   const refetch = React.useCallback(async () => {
     if (!slug || !userId) return
     const thisRequestId = ++requestIdRef.current
-    const biz = await fetchBusinessBySlug(slug)
-    if (!biz) {
-      if (thisRequestId === requestIdRef.current) setReady(true)
+    let biz: Business | null
+    let m: Membership | null, cat: RewardCatalogItem[], pics: BusinessPhoto[]
+    try {
+      biz = await fetchBusinessBySlug(slug)
+      if (!biz) {
+        if (thisRequestId === requestIdRef.current) setReady(true)
+        return
+      }
+      ;[m, cat, pics] = await Promise.all([
+        fetchMembership(userId, biz.id),
+        fetchRewardCatalog(biz.id),
+        fetchBusinessPhotos(biz.id),
+      ])
+    } catch {
+      if (thisRequestId === requestIdRef.current) { setLoadError(true); setReady(true) }
       return
     }
-    const [m, cat, pics] = await Promise.all([
-      fetchMembership(userId, biz.id),
-      fetchRewardCatalog(biz.id),
-      fetchBusinessPhotos(biz.id),
-    ])
-    if (thisRequestId !== requestIdRef.current) return // a newer refetch already landed — drop this stale result
+    if (thisRequestId !== requestIdRef.current) return
+    setLoadError(false) // a newer refetch already landed — drop this stale result
     setBusiness(biz)
     const applyMembership = () => setMembership(m)
     const documentWithViewTransition = document as Document & { startViewTransition?: (update: () => void) => unknown }
@@ -133,7 +139,7 @@ export function ShopDetail() {
   }, [slug, userId])
 
   React.useEffect(() => {
-    refetch()
+    void refetch()
   }, [refetch])
 
   const shopStructuredData = business
@@ -191,7 +197,7 @@ export function ShopDetail() {
 
   React.useEffect(() => {
     if (!userId || !business) return
-    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id)))
+    fetchFavouriteIds(userId).then((ids) => setFavourite(ids.has(business.id))).catch(() => undefined)
   }, [userId, business?.id])
 
   async function handleToggleFavourite() {
@@ -206,8 +212,19 @@ export function ShopDetail() {
     }
   }
 
-  if (loading || !ready) return <PageSkeleton variant="detail" />
+  if (loading || (session && !ready)) return <PageSkeleton variant="detail" />
   if (!session) return <Navigate to="/login" replace />
+  if (loadError && !business) {
+    return (
+      <DashboardLayout>
+        <div role="alert" className="mx-auto max-w-md rounded-3xl bg-card p-8 text-center ring-1 ring-foreground/8">
+          <h1 className="font-display text-2xl font-semibold">We couldn’t load this shop</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Check your connection and try again.</p>
+          <button data-press-feedback onClick={() => { setReady(false); void refetch() }} className="mt-5 min-h-11 rounded-full bg-primary px-5 font-semibold text-primary-foreground">Try again</button>
+        </div>
+      </DashboardLayout>
+    )
+  }
   if (!business) return <Navigate to="/dashboard" replace />
 
   // Customers earn by spending; each reward unlocks at a £ amount (ARCH_PLAN.md §4.11).
@@ -225,7 +242,9 @@ export function ShopDetail() {
 
   // Stamp / points / visits shops (reward_model 'stamp_legacy').
   const spendShop = business.reward_model === 'spend_threshold'
-  const StampIcon = STAMP_ICON[business.category ?? ''] ?? Star
+  const StampIcon = categoryCopy(business.category).icon
+  // Light brand colours need a heavier shade for the white hero text to stay readable.
+  const heroShade = onBrandColor(business.brand_color) === '#ffffff' ? 0.2 : 0.55
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
   const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
   const stampProgress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
@@ -250,11 +269,15 @@ export function ShopDetail() {
     if (!session?.user || !business || !membership) return
     const next = !optedIn
     setOptedIn(next)
-    await supabase
+    const { error } = await supabase
       .from('memberships')
       .update({ promos_opted_out: !next })
       .eq('user_id', session.user.id)
       .eq('business_id', business.id)
+    if (error) {
+      setOptedIn(!next)
+      toast.error('We could not update your promotion setting. Please try again.')
+    }
   }
 
   async function handleShare() {
@@ -292,7 +315,7 @@ export function ShopDetail() {
         style={{
           background: business.cover_url
             ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
-            : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
+            : `linear-gradient(rgb(0 0 0 / ${heroShade}), rgb(0 0 0 / ${heroShade})), linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
         <Tooltip>
@@ -322,8 +345,8 @@ export function ShopDetail() {
           )}
         </div>
 
-        <h1 className="text-4xl font-display font-bold tracking-tight mb-1 flex items-center gap-2 sm:text-5xl">
-          {business.name}
+        <h1 className="mb-1 flex min-w-0 items-center gap-2 pr-14 font-display text-3xl font-bold tracking-tight [overflow-wrap:anywhere] [text-shadow:0_1px_3px_rgb(0_0_0/0.35)] sm:text-5xl">
+          <span className="min-w-0">{business.name}</span>
           {business.verification_status === 'verified' && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -362,8 +385,8 @@ export function ShopDetail() {
           <button data-press-feedback
             onClick={handleJoin}
             disabled={joining}
-            className="rounded-full px-8 h-12 font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-50"
-            style={{ backgroundColor: business.brand_color }}
+            className="rounded-full px-8 h-12 font-semibold transition-transform active:scale-[0.98] disabled:opacity-50"
+            style={{ backgroundColor: business.brand_color, color: onBrandColor(business.brand_color) }}
           >
             {joining ? 'Joining…' : 'Join card'}
           </button>
@@ -440,7 +463,7 @@ export function ShopDetail() {
                       : { borderColor: 'rgba(0,0,0,0.12)' }
                   }
                 >
-                  <StampIcon className={'h-5 w-5 transition-[color,transform] duration-200 ease-in-out ' + (filled ? 'text-white scale-100' : 'text-foreground/20 scale-90')} />
+                  <StampIcon className={'h-5 w-5 transition-[color,transform] duration-200 ease-in-out ' + (filled ? 'scale-100' : 'text-foreground/20 scale-90')} style={filled ? { color: onBrandColor(business.brand_color) } : undefined} />
                 </div>
               )
             })}
@@ -515,7 +538,7 @@ export function ShopDetail() {
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {spendShop
                     ? `Unlocks after spending ${poundsLabel(tier?.spend_threshold_pence ?? targetPence)}`
-                    : `${stampsRequired} ${unit}s`}
+                    : `${stampsRequired} ${unit}${stampsRequired === 1 ? '' : 's'}`}
                 </p>
               </div>
             </div>

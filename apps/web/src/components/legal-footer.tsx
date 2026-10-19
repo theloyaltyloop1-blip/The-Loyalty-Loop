@@ -13,14 +13,14 @@ const LEGAL_LINKS = [
  * needs to be kept in one place. */
 export function LegalFooterLinks({ className = '' }: { className?: string }) {
   return (
-    <nav aria-label="Legal" className={'flex flex-wrap items-center gap-x-4 gap-y-1.5 ' + className}>
+    <nav aria-label="Legal" className={'flex flex-wrap items-center gap-x-4 gap-y-2 ' + className}>
       {LEGAL_LINKS.map((link) => (
         <a
           key={link.href}
           href={link.href}
           target="_blank"
           rel="noreferrer"
-          className="underline decoration-current/30 underline-offset-2 hover:decoration-current"
+          className="inline-flex min-h-6 items-center underline decoration-current/30 underline-offset-2 hover:decoration-current"
         >
           {link.label}
         </a>

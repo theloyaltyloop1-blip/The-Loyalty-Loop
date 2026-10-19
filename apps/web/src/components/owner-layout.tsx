@@ -3,8 +3,11 @@ import { NavLink, Link, Navigate } from 'react-router-dom'
 import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench, BookOpen } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
+import { onBrandColor } from '@/lib/utils'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { LegalFooterLinks } from '@/components/legal-footer'
+import { BarePageSkeleton } from '@/components/page-skeleton'
+import { OwnerLoadError } from '@/components/owner-load-error'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const OWNER_NAV_ITEMS = [
@@ -36,8 +39,8 @@ function BusinessSwitcher() {
       >
         <span className="flex items-center gap-2 truncate">
           <span
-            className="h-6 w-6 rounded-md shrink-0 flex items-center justify-center text-white text-xs font-bold"
-            style={{ backgroundColor: business.brand_color }}
+            className="h-6 w-6 rounded-md shrink-0 flex items-center justify-center text-xs font-bold"
+            style={{ backgroundColor: business.brand_color, color: onBrandColor(business.brand_color) }}
           >
             {business.name.charAt(0).toUpperCase()}
           </span>
@@ -76,11 +79,13 @@ function BusinessSwitcher() {
 }
 
 export function OwnerLayout({ children }: { children: React.ReactNode }) {
-  const { signOut, primaryRole, roles } = useAuth()
-  const { businesses, staffBusinesses, business, loading, needsRewardSetup } = useOwner()
+  const { signOut, primaryRole, rolesLoading, roles } = useAuth()
+  const { businesses, staffBusinesses, business, loading, loadError, needsRewardSetup } = useOwner()
   const isOwner = businesses.length > 0
   const navItems = isOwner ? OWNER_NAV_ITEMS : STAFF_NAV_ITEMS
+  if (rolesLoading) return <BarePageSkeleton />
   if (!['admin', 'brand_head', 'business_owner', 'staff'].includes(primaryRole ?? '')) return <Navigate to="/dashboard" replace />
+  if (!loading && loadError && businesses.length === 0 && staffBusinesses.length === 0) return <OwnerLoadError />
   // Setup is mandatory: an owner with no shop, or a shop with no reward yet,
   // can't reach any owner page until onboarding is finished.
   if (!loading && roles.includes('business_owner') && businesses.length === 0 && staffBusinesses.length === 0) {
@@ -106,7 +111,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               to={to}
               end={end}
               className={({ isActive }) =>
-                'flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-200 ease-out active:scale-[0.97] md:gap-3 md:rounded-xl md:px-3.5 md:py-2.5 md:text-[15px] ' +
+                'flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-200 ease-out active:scale-[0.97] md:gap-3 md:rounded-xl md:px-3.5 md:py-2.5 md:text-[15px] ' +
                 (isActive ? 'bg-peach text-peach-ink' : 'text-olive-ink/75 hover:bg-olive-ink/10 hover:text-olive-ink')
               }
             >
@@ -114,7 +119,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               {label}
             </NavLink>
           ))}
-          <button data-press-feedback onClick={signOut} className="flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-olive-ink/70 hover:bg-olive-ink/10 md:hidden">
+          <button data-press-feedback onClick={signOut} className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-olive-ink/70 hover:bg-olive-ink/10 md:hidden">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </nav>

@@ -29,7 +29,7 @@ export function Login() {
     }
     await supabase.rpc('ensure_current_user_bootstrap')
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id)
-    navigate(
+    void navigate(
       roles?.some((role) => role.role === 'admin')
         ? '/access'
         : roles?.some((role) => role.role === 'staff')

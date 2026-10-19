@@ -43,7 +43,7 @@ export function WhatsAppOnboarding() {
     const { data, error: completionError } = await supabase.rpc('complete_whatsapp_signup', { _token: token })
     if (completionError) throw completionError
     const slug = (data as { business_slug?: string | null } | null)?.business_slug
-    navigate(slug ? `/dashboard/shop/${slug}` : '/dashboard', { replace: true })
+    void navigate(slug ? `/dashboard/shop/${slug}` : '/dashboard', { replace: true })
   }
 
   async function submit(event: React.FormEvent) {

@@ -15,13 +15,19 @@ export function ForgotPassword() {
     setError(null)
 
     setLoading(true)
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${AUTH_REDIRECT_URL}/reset-password`,
-    })
-    setLoading(false)
-    // Always show the same message, whether or not the address exists:
-    // prevents account enumeration.
-    setSent(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${AUTH_REDIRECT_URL}/reset-password`,
+      })
+      if (error) throw error
+      // Supabase doesn't reveal whether the address exists, so success always
+      // shows the same message: prevents account enumeration.
+      setSent(true)
+    } catch {
+      setError('We couldn’t send the reset link. Please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -40,7 +46,7 @@ export function ForgotPassword() {
             required
             autoComplete="email"
           />
-          {error && <p className="text-destructive text-sm font-medium">{error}</p>}
+          {error && <p role="alert" className="text-destructive text-sm font-medium">{error}</p>}
           <Button type="submit" size="lg" disabled={loading}>
             {loading ? 'Sending…' : 'Send reset link'}
           </Button>

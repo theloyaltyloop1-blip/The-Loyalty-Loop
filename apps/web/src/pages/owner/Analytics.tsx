@@ -158,7 +158,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [businessId, period, stats, totals])
 
   React.useEffect(() => {
-    generate()
+    void generate()
   }, [generate])
 
   return (
@@ -315,7 +315,7 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
       <div className="flex items-center gap-2">
         <input
           aria-label="Ask the coach"
-          className="h-11 flex-1 rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Ask the coach…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -336,34 +336,41 @@ function BusinessCoach({ businessId, stats }: { businessId: string; stats: unkno
 
 export function OwnerAnalytics() {
   const { session, loading, rolesLoading, roles } = useAuth()
-  const { business, businesses, staffBusinesses, loading: ownerLoading } = useOwner()
+  const { business, businesses, staffBusinesses, loading: ownerLoading, loadError } = useOwner()
   const [view, setView] = React.useState<'simplified' | 'detailed'>('simplified')
   const [period, setPeriod] = React.useState<Period>(30)
   const [stats, setStats] = React.useState<PeriodStats | null>(null)
   const [totals, setTotals] = React.useState<TotalsStats | null>(null)
   const [statsLoading, setStatsLoading] = React.useState(true)
+  const [statsError, setStatsError] = React.useState(false)
+  const [statsKey, setStatsKey] = React.useState(0)
   const [webResearch, setWebResearch] = React.useState<DeepBusinessReport | null>(null)
 
   React.useEffect(() => {
     if (!business) return
+    let cancelled = false
     setStatsLoading(true)
+    setStatsError(false)
     Promise.all([fetchPeriodStats(business.id, period), fetchTotalsStats(business.id)])
       .then(([p, t]) => {
+        if (cancelled) return
         setStats(p)
         setTotals(t)
       })
-      .finally(() => setStatsLoading(false))
-  }, [business?.id, period])
+      .catch(() => { if (!cancelled) setStatsError(true) })
+      .finally(() => { if (!cancelled) setStatsLoading(false) })
+    return () => { cancelled = true }
+  }, [business?.id, period, statsKey])
 
   React.useEffect(() => {
     if (!business) return
     setWebResearch(null)
-    fetchLatestWebResearch(business.id).then(setWebResearch)
+    fetchLatestWebResearch(business.id).then(setWebResearch).catch(() => setWebResearch(null))
   }, [business?.id])
 
   if (loading || rolesLoading || ownerLoading) return <BarePageSkeleton />
   if (!session) return <Navigate to="/login" replace />
-  if (roles.includes('business_owner') && businesses.length === 0 && staffBusinesses.length === 0) {
+  if (!loadError && roles.includes('business_owner') && businesses.length === 0 && staffBusinesses.length === 0) {
     return <Navigate to="/owner/onboarding" replace />
   }
 
@@ -372,13 +379,14 @@ export function OwnerAnalytics() {
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <h1 className="text-3xl font-display font-bold tracking-tight text-foreground sm:text-4xl">Know your customers</h1>
         {business && (
-          <div className="flex items-center gap-1 bg-card rounded-full p-1 ring-1 ring-foreground/8">
+          <div className="flex flex-wrap items-center gap-1 bg-card rounded-3xl p-1 ring-1 ring-foreground/8">
             {PERIODS.map((p) => (
               <button data-press-feedback
                 key={p}
                 onClick={() => setPeriod(p)}
+                aria-pressed={period === p}
                 className={
-                  'px-4 h-9 rounded-full text-sm font-semibold tabular-nums transition-colors duration-200 ease-out ' +
+                  'px-4 h-11 rounded-full text-sm font-semibold tabular-nums transition-colors duration-200 ease-out ' +
                   (period === p ? 'bg-peach text-peach-ink' : 'text-muted-foreground hover:text-foreground')
                 }
               >
@@ -393,13 +401,18 @@ export function OwnerAnalytics() {
         <div className="rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink">
           <p>Set up a shop to see analytics.</p>
         </div>
+      ) : statsError && !statsLoading ? (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-destructive/10 p-5 text-sm text-destructive">
+          <span>We couldn’t load your stats.</span>
+          <button data-press-feedback onClick={() => setStatsKey((k) => k + 1)} className="min-h-11 rounded-full bg-destructive px-4 font-semibold text-white">Try again</button>
+        </div>
       ) : statsLoading || !stats || !totals ? (
         <div role="status" aria-label="Loading stats" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" /><SkeletonBlock className="h-36 rounded-2xl" />
         </div>
       ) : (
         <Tabs value={view} onValueChange={(v) => setView(v as 'simplified' | 'detailed')}>
-          <TabsList variant="line" className="mb-6 border-b border-border">
+          <TabsList variant="line" className="mb-6 h-auto max-w-full flex-wrap border-b border-border">
             <TabsTrigger value="simplified">Simplified</TabsTrigger>
             <TabsTrigger value="detailed">Detailed</TabsTrigger>
           </TabsList>
