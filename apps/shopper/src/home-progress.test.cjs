@@ -59,3 +59,54 @@ test('discovery starts at zero and ignores invalid thresholds', () => {
   assert.equal(result.label, '0 of 8 stamps')
   assert.equal(result.threshold, 8)
 })
+
+const tierShop = { id: 'coffee', name: 'Coffee', reward_model: 'tiers' }
+const levels = [
+  { kind: 'tier', business_id: 'coffee', title: 'Silver', stamp_threshold: 0, spend_threshold_pence: 25000 },
+  { kind: 'tier', business_id: 'coffee', title: 'Gold', stamp_threshold: 0, spend_threshold_pence: 50000 },
+]
+test('tiers card shows the level, distance to the next level and the bar', () => {
+  const result = homeProgress(tierShop, { business_id: 'coffee', current_tier: 'Silver', rolling_spend_pence: 30000, stamp_count: 0, points_balance: 0 }, levels)
+  assert.equal(result.label, 'Silver · £200.00 to Gold')
+  assert.equal(result.title, 'Gold')
+  assert.equal(result.threshold, 50000)
+  assert.equal(result.offer, 'Spend £500.00 a year · Gold')
+  assert.equal(result.fraction, 0.2)
+})
+test('tiers card never guesses a distance when spend is not loaded', () => {
+  const result = homeProgress(tierShop, { business_id: 'coffee', current_tier: 'Silver', stamp_count: 0, points_balance: 0 }, levels)
+  assert.equal(result.label, 'Silver level')
+  assert.equal(result.threshold, null)
+  assert.equal(result.fraction, 0)
+})
+test('tiers card at the top level has no next target', () => {
+  const result = homeProgress(tierShop, { business_id: 'coffee', current_tier: 'Gold', rolling_spend_pence: 90000, stamp_count: 0, points_balance: 0 }, levels)
+  assert.equal(result.threshold, null)
+  assert.equal(result.offer, 'Top level')
+  assert.equal(result.fraction, 1)
+})
+test('tier rows never leak into a stamp card', () => {
+  const result = homeProgress(shop, member, [...levels.map((row) => ({ ...row, business_id: 'coffee' })), tier(8, 'Free coffee')])
+  assert.equal(result.threshold, 8)
+  assert.equal(result.title, 'Free coffee')
+})
+const pointsShop = { id: 'coffee', name: 'Coffee', reward_model: 'points', loyalty_config: { points_per_pound: 1 } }
+const pointRewards = [
+  { business_id: 'coffee', title: 'Free coffee', stamp_threshold: 0, points_cost: 100 },
+  { business_id: 'coffee', title: 'Free cake', stamp_threshold: 0, points_cost: 300 },
+]
+test('points card shows the balance and the next reward to save for', () => {
+  const result = homeProgress(pointsShop, { business_id: 'coffee', points_balance: 240, stamp_count: 0 }, pointRewards)
+  assert.equal(result.value, 240)
+  assert.equal(result.threshold, 300)
+  assert.equal(result.title, 'Free cake')
+  assert.equal(result.label, '240 points · 60 to Free cake')
+  assert.equal(result.offer, '300 points · Free cake')
+  assert.equal(result.fraction, 0.8)
+})
+test('points card with every reward affordable says so', () => {
+  const result = homeProgress(pointsShop, { business_id: 'coffee', points_balance: 500, stamp_count: 0 }, pointRewards)
+  assert.equal(result.threshold, null)
+  assert.equal(result.offer, 'Rewards ready to swap')
+  assert.equal(result.title, 'Free coffee')
+})

@@ -1,0 +1,107 @@
+[
+  {
+    "name": "tiers: mid-ladder, £479.50 short of the top level",
+    "programme": "tiers",
+    "input": {
+      "tierName": "Gold",
+      "rollingSpendPence": 52050,
+      "tiers": [
+        { "title": "Silver", "spend_threshold_pence": 25000 },
+        { "title": "Gold", "spend_threshold_pence": 50000 },
+        { "title": "Platinum", "spend_threshold_pence": 100000 }
+      ]
+    },
+    "expected": {
+      "label": "Level",
+      "value": "Gold",
+      "goal": "Spend £479.50 more for Platinum (spent in the last 12 months)",
+      "programName": "Membership Card"
+    }
+  },
+  {
+    "name": "tiers: below the first level",
+    "programme": "tiers",
+    "input": {
+      "tierName": null,
+      "rollingSpendPence": 0,
+      "tiers": [{ "title": "Silver", "spend_threshold_pence": 25000 }]
+    },
+    "expected": {
+      "label": "Level",
+      "value": "No level yet",
+      "goal": "Spend £250 more for Silver (spent in the last 12 months)",
+      "programName": "Membership Card"
+    }
+  },
+  {
+    "name": "tiers: top level",
+    "programme": "tiers",
+    "input": {
+      "tierName": "Platinum",
+      "rollingSpendPence": 150000,
+      "tiers": [{ "title": "Platinum", "spend_threshold_pence": 100000 }]
+    },
+    "expected": {
+      "label": "Level",
+      "value": "Platinum",
+      "goal": "You are at the top level",
+      "programName": "Membership Card"
+    }
+  },
+  {
+    "name": "tiers: no levels set up",
+    "programme": "tiers",
+    "input": { "tierName": null, "rollingSpendPence": 900, "tiers": [] },
+    "expected": {
+      "label": "Level",
+      "value": "No level yet",
+      "goal": "Levels are being set up",
+      "programName": "Membership Card"
+    }
+  },
+  {
+    "name": "points: cheapest unaffordable reward",
+    "programme": "points",
+    "input": {
+      "pointsBalance": 240,
+      "rewards": [
+        { "title": "Free coffee", "points_cost": 100 },
+        { "title": "Free cake", "points_cost": 300 }
+      ]
+    },
+    "expected": {
+      "label": "Points",
+      "value": "240",
+      "goal": "60 more points for Free cake",
+      "programName": "Points Card"
+    }
+  },
+  {
+    "name": "points: everything affordable",
+    "programme": "points",
+    "input": {
+      "pointsBalance": 500,
+      "rewards": [
+        { "title": "Free cake", "points_cost": 300 },
+        { "title": "Free coffee", "points_cost": 100 }
+      ]
+    },
+    "expected": {
+      "label": "Points",
+      "value": "500",
+      "goal": "Ready to swap for Free coffee",
+      "programName": "Points Card"
+    }
+  },
+  {
+    "name": "points: no rewards and negative balance after a refund",
+    "programme": "points",
+    "input": { "pointsBalance": -20, "rewards": [] },
+    "expected": {
+      "label": "Points",
+      "value": "0",
+      "goal": "Swap points for rewards in the app",
+      "programName": "Points Card"
+    }
+  }
+]

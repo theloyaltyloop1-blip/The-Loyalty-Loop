@@ -498,3 +498,143 @@ export function buildShopArgs(programme: ProgrammeId, draft: ProgrammeDraft): Sh
   }
   return { ok: true, args: base }
 }
+
+// ---------------------------------------------------------------------------
+// Standing from the database snapshot (record_manual_spend and
+// scanned_member_spend_summary merge `programme_snapshot` into their result).
+// Used on the scan screens. Stamps and £ spend return null: those screens keep
+// their own display.
+
+export interface ProgrammeSnapshot {
+  programme?: string | null
+  tierName?: string | null
+  tierPerks?: readonly string[] | null
+  rollingSpendPence?: number | null
+  nextTierName?: string | null
+  toNextTierPence?: number | null
+  pointsBalance?: number | null
+  pointsPerPound?: number | null
+}
+
+export type SnapshotStanding =
+  | {
+      kind: 'tiers'
+      /** "Gold", or null when the customer is below the first level. */
+      tierName: string | null
+      perks: string[]
+      rollingSpendPence: number
+      /** Null at the top level or when there are no levels. */
+      nextTierName: string | null
+      toNextPence: number | null
+      /** "£150.00 to Platinum" / "Top level" / "" */
+      label: string
+    }
+  | {
+      kind: 'points'
+      balance: number
+      perPound: number
+      /** "240 points · earns 1 point per £1" */
+      label: string
+    }
+
+/** Null for stamps and £ spend, which keep their existing display. */
+export function standingFromSnapshot(
+  snapshot: ProgrammeSnapshot | null | undefined,
+  money: (pence: number) => string = pounds,
+): SnapshotStanding | null {
+  if (!snapshot) return null
+  if (snapshot.programme === 'tiers') {
+    const toNext = snapshot.toNextTierPence ?? null
+    const nextName = snapshot.nextTierName ?? null
+    const label = nextName && toNext !== null
+      ? `${money(Math.max(0, toNext))} to ${nextName}`
+      : snapshot.tierName ? 'Top level' : ''
+    return {
+      kind: 'tiers',
+      tierName: snapshot.tierName ?? null,
+      perks: (snapshot.tierPerks ?? []).filter((perk) => perk.trim() !== ''),
+      rollingSpendPence: Math.max(0, snapshot.rollingSpendPence ?? 0),
+      nextTierName: nextName,
+      toNextPence: toNext,
+      label,
+    }
+  }
+  if (snapshot.programme === 'points') {
+    const balance = Math.max(0, snapshot.pointsBalance ?? 0)
+    const perPound = Number.isFinite(snapshot.pointsPerPound ?? NaN) ? (snapshot.pointsPerPound as number) : 1
+    return {
+      kind: 'points',
+      balance,
+      perPound,
+      label: `${balance} point${balance === 1 ? '' : 's'} · earns ${perPound} point${perPound === 1 ? '' : 's'} per £1`,
+    }
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Wallet pass lines (Google and Apple Wallet). The Deno mirror in
+// supabase/functions/_shared/wallet-progress.ts must produce the same output;
+// packages/loyalty/test/wallet-fixtures.json is read by both test suites.
+
+export interface WalletLine {
+  label: string
+  value: string
+  goal: string
+  programName: string
+}
+
+export interface WalletTierInput {
+  title: string
+  spend_threshold_pence: number | null
+}
+
+export interface WalletRewardInput {
+  title: string
+  points_cost: number | null
+}
+
+const walletPounds = (pence: number) =>
+  `£${pence % 100 === 0 ? pence / 100 : (pence / 100).toFixed(2)}`
+
+/**
+ * Pass lines for membership tiers and points shops. Returns null for stamps
+ * and £ spend shops (the caller keeps its existing lines).
+ *
+ * Points: the goal names the cheapest reward the customer cannot afford yet,
+ * or, once all are affordable, the cheapest reward ("Ready to swap ...").
+ */
+export function walletStanding(
+  programme: 'tiers' | 'points',
+  input: {
+    tierName?: string | null
+    rollingSpendPence?: number | null
+    tiers?: WalletTierInput[]
+    pointsBalance?: number | null
+    rewards?: WalletRewardInput[]
+  },
+): WalletLine | null {
+  if (programme === 'tiers') {
+    const spend = Math.max(0, input.rollingSpendPence ?? 0)
+    const ladder = (input.tiers ?? [])
+      .filter((t): t is { title: string; spend_threshold_pence: number } => (t.spend_threshold_pence ?? 0) > 0)
+      .sort((a, b) => a.spend_threshold_pence - b.spend_threshold_pence)
+    const next = ladder.find((t) => t.spend_threshold_pence > spend) ?? null
+    const value = input.tierName ?? 'No level yet'
+    const goal = next
+      ? `Spend ${walletPounds(next.spend_threshold_pence - spend)} more for ${next.title} (spent in the last 12 months)`
+      : ladder.length ? 'You are at the top level' : 'Levels are being set up'
+    return { label: 'Level', value, goal, programName: 'Membership Card' }
+  }
+  const balance = Math.max(0, input.pointsBalance ?? 0)
+  const costed = (input.rewards ?? [])
+    .filter((r): r is { title: string; points_cost: number } => (r.points_cost ?? 0) > 0)
+    .sort((a, b) => a.points_cost - b.points_cost)
+  const next = costed.find((r) => r.points_cost > balance) ?? costed[0] ?? null
+  const goal = !next
+    ? 'Swap points for rewards in the app'
+    : next.points_cost > balance
+      ? `${next.points_cost - balance} more points for ${next.title}`
+      : `Ready to swap for ${next.title}`
+  return { label: 'Points', value: String(balance), goal, programName: 'Points Card' }
+}

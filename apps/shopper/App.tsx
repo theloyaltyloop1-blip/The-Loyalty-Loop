@@ -2298,7 +2298,8 @@ function AppHome({ session }: { session: Session }) {
     setLoading(true)
     try {
       const platformTargetColumn = Platform.OS === 'ios' ? 'target_shopper_ios' : 'target_shopper_android'
-      const [shops, memberRows, earned, news, favs, profile, notices, catalogRows] = await Promise.all([
+      const twelveMonthsAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
+      const [shops, memberRows, earned, news, favs, profile, notices, catalogRows, levelRows, pointsRows, spendRows] = await Promise.all([
         supabase.from('businesses').select('*').eq('is_active', true).order('created_at'),
         supabase.from('memberships').select('*').eq('user_id', userId),
         supabase
@@ -2320,6 +2321,11 @@ function AppHome({ session }: { session: Session }) {
           .eq(platformTargetColumn, true)
           .order('created_at', { ascending: false }),
         supabase.from('reward_catalog').select('business_id,title,stamp_threshold,spend_threshold_pence'),
+        // Membership levels and points costs exist only once the programme
+        // migration is applied; a failed read just leaves those cards without a target.
+        supabase.from('membership_tiers').select('business_id,name,spend_threshold_pence'),
+        supabase.from('reward_catalog').select('business_id,title,points_cost').gt('points_cost', 0),
+        supabase.from('transactions').select('business_id,value').eq('user_id', userId).eq('type', 'spend').is('voided_at', null).gte('created_at', twelveMonthsAgo),
       ])
       if (shops.error) throw shops.error
       if (memberRows.error) throw memberRows.error
@@ -2327,12 +2333,25 @@ function AppHome({ session }: { session: Session }) {
       if (news.error) throw news.error
       if (favs.error) throw favs.error
       setPlatformNotices(notices.error ? [] : ((notices.data || []) as PlatformNotice[]))
-      setHomeCatalog(catalogRows.error ? [] : (catalogRows.data || []))
+      const levelCatalog: HomeTier[] = levelRows.error ? [] : (levelRows.data || []).map((row: any) => ({
+        business_id: row.business_id, title: row.name, stamp_threshold: 0, spend_threshold_pence: row.spend_threshold_pence, kind: 'tier',
+      }))
+      const pointsCatalog: HomeTier[] = pointsRows.error ? [] : (pointsRows.data || []).map((row: any) => ({
+        business_id: row.business_id, title: row.title, stamp_threshold: 0, points_cost: row.points_cost,
+      }))
+      setHomeCatalog([...(catalogRows.error ? [] : (catalogRows.data || [])), ...levelCatalog, ...pointsCatalog])
+      // Spend in the last 12 months per shop (own rows only), for the tier distance.
+      const rollingByShop = new Map<string, number>()
+      if (!spendRows.error) {
+        for (const row of (spendRows.data || []) as { business_id: string; value: number }[]) {
+          rollingByShop.set(row.business_id, (rollingByShop.get(row.business_id) ?? 0) + (row.value || 0))
+        }
+      }
       // Star summaries for every shop, so people can see them before joining.
       const ratings = await supabase.from('reviews').select('business_id,rating')
       const stats = ratingStats(ratings.error ? [] : ratings.data || [])
       setBusinesses((shops.data || []).map((shop: Business) => ({ ...shop, ...stats.get(shop.id) })))
-      setMemberships(memberRows.data || [])
+      setMemberships((memberRows.data || []).map((m: any) => ({ ...m, rolling_spend_pence: spendRows.error ? null : rollingByShop.get(m.business_id) ?? 0 })))
       setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business })))
       // Only shops this customer has actually joined (and hasn't opted out of
       // promos from) — otherwise every shop on the platform shows up here.
