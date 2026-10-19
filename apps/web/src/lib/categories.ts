@@ -4,7 +4,7 @@ import type * as React from 'react'
 export const CATEGORIES = ['Café', 'Restaurant', 'Barber', 'Salon', 'Bakery', 'Retail', 'Other'] as const
 
 type CategoryCopy = {
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   signupReward: string
   rewardTitle: string
   rewardDescription: string

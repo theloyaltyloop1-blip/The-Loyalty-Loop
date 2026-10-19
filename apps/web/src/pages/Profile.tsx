@@ -145,7 +145,7 @@ export function ProfilePage() {
         </div>
       )}
 
-      <div className="grid items-start gap-5 lg:grid-cols-[340px_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)] [&>*]:min-w-0 [&_.grid]:min-w-0">
         <div className="grid gap-5 lg:sticky lg:top-24">
           <section className="rounded-3xl bg-olive p-6 text-olive-ink sm:p-7">
             <h2 className="font-display text-xl font-semibold tracking-tight">Your loyalty card code</h2>
@@ -153,12 +153,12 @@ export function ProfilePage() {
               Show this QR code or manual code to staff at any shop if they can't scan it directly.
             </p>
             <div className="mt-5 inline-block rounded-2xl bg-white p-3">
-              <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={132} />
+              <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={132} title="Your loyalty card QR code" />
             </div>
             <p className="mt-5 text-sm text-olive-ink/75">Manual code</p>
             <div className="mt-1 flex items-center gap-2">
               <p className="font-mono text-xl font-bold tracking-widest">{profile?.stamp_code}</p>
-              <button data-press-feedback onClick={handleCopyCode} aria-label="Copy manual code" className="grid h-9 w-9 place-items-center rounded-full bg-olive-ink/10 transition-colors hover:bg-olive-ink/20">
+              <button data-press-feedback onClick={handleCopyCode} aria-label="Copy manual code" className="grid h-11 w-11 place-items-center rounded-full bg-olive-ink/10 transition-colors hover:bg-olive-ink/20">
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -193,7 +193,7 @@ export function ProfilePage() {
             <button data-press-feedback
               onClick={handleSaveProfile}
               disabled={saving || loadError || !profile}
-              className="mt-1 flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="mt-1 flex min-h-12 max-w-full items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <User className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
             </button>

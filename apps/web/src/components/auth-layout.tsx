@@ -7,7 +7,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
   return (
     <div className="min-h-dvh bg-background p-3 sm:p-4 md:grid md:grid-cols-[minmax(320px,0.9fr)_1.1fr] md:gap-4">
       <aside className="relative hidden overflow-hidden rounded-[28px] bg-olive p-10 text-olive-ink md:flex md:flex-col md:justify-between">
-        <Link to="/" className="flex items-center gap-3" aria-label="The Loyalty Loop home">
+        <Link to="/" className="flex min-h-11 items-center gap-3" aria-label="The Loyalty Loop home">
           <span className="grid h-11 w-11 place-items-center rounded-full bg-olive-ink"><img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" /></span>
           <span className="font-display text-lg font-semibold tracking-tight">The Loyalty Loop</span>
         </Link>
@@ -27,14 +27,14 @@ export function AuthLayout({ title, children }: { title: string; children: React
       </aside>
 
       <main className="flex min-h-[calc(100dvh-1.5rem)] flex-col rounded-[28px] bg-card px-6 py-8 sm:px-10 md:min-h-0 md:px-14 md:py-12">
-        <div className="flex items-center justify-between gap-4 text-sm font-semibold">
-          <Link to="/" className="flex items-center gap-2 md:invisible" aria-label="The Loyalty Loop home">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm font-semibold">
+          <Link to="/" className="flex min-h-11 items-center gap-2 md:invisible" aria-label="The Loyalty Loop home">
             <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />
             <span className="font-display">The Loyalty Loop</span>
           </Link>
           <div className="flex items-center gap-5">
-            <Link to="/help" className="text-muted-foreground transition-colors hover:text-foreground">Help</Link>
-            <button data-press-feedback onClick={() => navigate('/')} className="text-muted-foreground transition-colors hover:text-foreground">Back</button>
+            <Link to="/help" className="inline-flex min-h-11 min-w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground">Help</Link>
+            <button data-press-feedback onClick={() => void navigate('/')} className="min-h-11 min-w-11 text-muted-foreground transition-colors hover:text-foreground">Back</button>
           </div>
         </div>
         <div className="mx-auto my-auto w-full max-w-md py-10">

@@ -28,6 +28,7 @@ import {
 } from '@/lib/businesses'
 import { usePageMeta } from '@/lib/use-page-meta'
 import { categoryCopy } from '@/lib/categories'
+import { onBrandColor } from '@/lib/utils'
 
 const UNIT_LABEL: Record<string, string> = {
   stamp_card: 'stamp',
@@ -242,6 +243,8 @@ export function ShopDetail() {
   // Stamp / points / visits shops (reward_model 'stamp_legacy').
   const spendShop = business.reward_model === 'spend_threshold'
   const StampIcon = categoryCopy(business.category).icon
+  // Light brand colours need a heavier shade for the white hero text to stay readable.
+  const heroShade = onBrandColor(business.brand_color) === '#ffffff' ? 0.2 : 0.55
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
   const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
   const stampProgress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
@@ -312,7 +315,7 @@ export function ShopDetail() {
         style={{
           background: business.cover_url
             ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
-            : `linear-gradient(rgb(0 0 0 / 0.28), rgb(0 0 0 / 0.28)), linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
+            : `linear-gradient(rgb(0 0 0 / ${heroShade}), rgb(0 0 0 / ${heroShade})), linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
         }}
       >
         <Tooltip>
@@ -382,8 +385,8 @@ export function ShopDetail() {
           <button data-press-feedback
             onClick={handleJoin}
             disabled={joining}
-            className="rounded-full px-8 h-12 font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-50"
-            style={{ backgroundColor: business.brand_color }}
+            className="rounded-full px-8 h-12 font-semibold transition-transform active:scale-[0.98] disabled:opacity-50"
+            style={{ backgroundColor: business.brand_color, color: onBrandColor(business.brand_color) }}
           >
             {joining ? 'Joining…' : 'Join card'}
           </button>
@@ -460,7 +463,7 @@ export function ShopDetail() {
                       : { borderColor: 'rgba(0,0,0,0.12)' }
                   }
                 >
-                  <StampIcon className={'h-5 w-5 transition-[color,transform] duration-200 ease-in-out ' + (filled ? 'text-white scale-100' : 'text-foreground/20 scale-90')} />
+                  <StampIcon className={'h-5 w-5 transition-[color,transform] duration-200 ease-in-out ' + (filled ? 'scale-100' : 'text-foreground/20 scale-90')} style={filled ? { color: onBrandColor(business.brand_color) } : undefined} />
                 </div>
               )
             })}

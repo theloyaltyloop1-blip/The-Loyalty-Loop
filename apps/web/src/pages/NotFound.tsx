@@ -12,7 +12,7 @@ export function NotFound() {
   })
   return (
     <div className="grid min-h-dvh place-items-center bg-background px-4 py-10">
-      <div className="w-full max-w-lg rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink sm:px-12">
+      <div className="w-full min-w-0 max-w-lg rounded-3xl [overflow-wrap:anywhere] bg-sage px-6 py-12 text-center text-sage-ink sm:px-12">
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-card">
           <LoopMark className="h-11 w-11" />
         </span>

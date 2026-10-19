@@ -20,14 +20,14 @@ export function OwnerTutorial() {
       <h1 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Get your loyalty programme running</h1>
       <p className="mt-2 max-w-2xl text-muted-foreground">A quick guide for {business?.name ?? 'your shop'}. Complete these in order, then use Scan whenever a customer visits.</p>
 
-      <ol className="mt-8 grid gap-4">
+      <ol className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-4">
         {steps.map(({ icon: Icon, title, body, to, action }, index) => (
-          <li key={title} className="flex gap-4 rounded-2xl bg-card p-5 ring-1 ring-foreground/8 sm:items-center sm:p-6">
+          <li key={title} className="flex min-w-0 gap-4 rounded-2xl [overflow-wrap:anywhere] bg-card p-5 ring-1 ring-foreground/8 sm:items-center sm:p-6">
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${TONES[index % TONES.length]}`}><Icon className="h-5 w-5" aria-hidden="true" /></div>
             <div className="min-w-0 flex-1">
               <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
-              <Link to={to} className="group mt-3 inline-flex items-center gap-1 text-sm font-semibold text-foreground underline decoration-primary/60 decoration-[1.5px] underline-offset-4 transition-colors hover:decoration-primary">
+              <Link to={to} className="group mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-foreground underline decoration-primary/60 decoration-[1.5px] underline-offset-4 transition-colors hover:decoration-primary">
                 {action}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
