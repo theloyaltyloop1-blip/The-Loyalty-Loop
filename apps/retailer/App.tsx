@@ -70,7 +70,8 @@ import { registerPushToken } from "./src/push";
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
-import { Walkthrough } from "./src/components/Walkthrough";
+import { TourOverlay, TourProvider, TourTarget, useTour } from "./src/components/Tour";
+import { programmeIdFor } from "@loyalty-loop/loyalty";
 import { useLaunchUpdate } from "./src/launch-update";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
@@ -1187,6 +1188,7 @@ function StampsScreen({
               </Pressable>
             </View>
           )}
+          <TourTarget id="scan-input">
           <Pressable
             onPress={async () => {
               if (!permission?.granted) {
@@ -1242,8 +1244,10 @@ function StampsScreen({
               disabled={busy}
             />
           </View>
+          </TourTarget>
           {matched && (
             <ScanMatchCard key={matched.id}>
+            <TourTarget id="scan-result">
             <View style={styles.card}>
               {mode === "stamps" && spendShop ? (
                 <View>
@@ -1356,6 +1360,7 @@ function StampsScreen({
                 </Text>
               </View>
             </View>
+            </TourTarget>
             </ScanMatchCard>
           )}
         </>
@@ -2158,6 +2163,7 @@ function BusinessSettings({
   onChanged: () => Promise<void>;
   onOpenPage: (page: NativeOwnerPage) => void;
 }) {
+  const { restart: restartTour } = useTour();
   const [name, setName] = useState(business.name),
     [category, setCategory] = useState(business.category || ""),
     [description, setDescription] = useState(business.description || ""),
@@ -2618,10 +2624,17 @@ function BusinessSettings({
       <Text style={styles.groupLabel}>HELP & LEARNING</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
+          icon={Sparkles}
+          tile="green"
+          title="Take the tour"
+          detail="A quick walk through the screens you use"
+          onPress={restartTour}
+        />
+        <SettingsRow
           icon={BookOpen}
           tile="green"
-          title="How to use your loyalty programme"
-          detail="A short step-by-step business guide"
+          title="How it works"
+          detail="Short animations of joining, scanning and rewards"
           onPress={() => onOpenPage("tutorial")}
         />
         <SettingsRow
@@ -3547,6 +3560,13 @@ function Dashboard({
     );
   }
   return (
+    <TourProvider
+      businessId={selected?.id ?? null}
+      enabled={!!selected && !preview && ownedIds.has(selected.id) && needsLoyaltySetup === false}
+      screen={ownerPage ? null : tab === "home" || tab === "scan" || tab === "settings" ? (tab === "settings" ? "settings" : tab) : null}
+      programme={programmeIdFor(selected ?? {})}
+      onRestart={() => { setOwnerPage(null); setTab("home"); }}
+    >
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       {platformNotices.filter((notice) => !dismissedNoticeIds.has(notice.id)).map((notice) => (
@@ -3661,13 +3681,10 @@ function Dashboard({
           ))
         )}
       </KeyboardAwareScrollView>
-      {selected && !preview && ownedIds.has(selected.id) && needsLoyaltySetup === false && (
-        <Walkthrough businessId={selected.id} enabled />
-      )}
       <View style={styles.tabs}>
         {nav.map(({ id, icon: Icon, label, active }) => (
+          <TourTarget key={id} id={`tab-${id === "settings" ? "shop" : id}`} style={{ flex: active ? 1.7 : 1 }}>
           <Pressable
-            key={id}
             style={({ pressed }) => [styles.tab, active && styles.tabActivePill, pressed && styles.tabPressed]}
             onPress={() => {
               setOwnerPage(null);
@@ -3679,9 +3696,12 @@ function Dashboard({
               {label}
             </Text>
           </Pressable>
+          </TourTarget>
         ))}
       </View>
+      <TourOverlay />
     </SafeAreaView>
+    </TourProvider>
   );
 }
 

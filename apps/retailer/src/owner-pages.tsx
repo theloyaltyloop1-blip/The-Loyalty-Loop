@@ -1,4 +1,6 @@
 import { showAlert } from "./components/AppAlert";
+import { Explainer, type ExplainerKind } from "./components/Explainers";
+import { PROGRAMMES, programmeIdFor } from "@loyalty-loop/loyalty";
 import { currencySymbol, money, scaledLimit } from "./money";
 import {
   useCallback,
@@ -1764,91 +1766,32 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
 }
 
 function TutorialPage({ business, onBack, onNavigate }: PageProps) {
-  const steps: Array<{
-    number: string;
-    title: string;
-    body: string;
-    action: string;
-    destination: NativeOnboardingDestination;
-  }> = [
-    {
-      number: "1",
-      title: "Finish your shop profile",
-      body: "Add your category, description, address and phone number so customers can find and recognise you.",
-      action: "Open shop settings",
-      destination: "settings",
-    },
-    {
-      number: "2",
-      title: "Make your shop look like yours",
-      body: "Add a logo and cover image for your customer card and Discover listing.",
-      action: "Add branding",
-      destination: "branding",
-    },
-    {
-      number: "3",
-      title: "Create a reward",
-      body: business.reward_model === "spend_threshold"
-        ? `Set what customers unlock and how much they spend to get it, such as a free coffee at ${pounds(scaledLimit(2000))}.`
-        : "Set a reward customers can unlock, such as a free coffee after 10 stamps.",
-      action: "Create a reward",
-      destination: "rewards",
-    },
-    {
-      number: "4",
-      title: "Invite customers",
-      body: "Print your dedicated QR poster and place it beside the till so customers can join in seconds.",
-      action: "Open QR poster",
-      destination: "tools",
-    },
-    {
-      number: "5",
-      title: business.reward_model === "spend_threshold" ? "Record the first purchase" : "Award the first stamp",
-      body: business.reward_model === "spend_threshold"
-        ? "Open Scan, scan the customer QR code or enter their manual code, then enter what they spent."
-        : "Open Stamps, scan the customer QR code or enter their manual code, then award their progress.",
-      action: business.reward_model === "spend_threshold" ? "Open Scan" : "Open Stamps",
-      destination: "scan",
-    },
-    {
-      number: "6",
-      title: "Bring customers back",
-      body: "Use News for updates and Analytics to see which loyalty activity is working.",
-      action: "Open Analytics",
-      destination: "analytics",
-    },
+  const programme = programmeIdFor(business);
+  const items: Array<{ kind: ExplainerKind; title: string }> = [
+    { kind: "join", title: "1. A customer joins" },
+    { kind: "scan", title: "2. You scan at the till" },
+    { kind: programme, title: `3. ${PROGRAMMES[programme].name}` },
   ];
-
   return (
     <View>
-      <PageHeader title="Getting started" eyebrow="BUSINESS GUIDE" onBack={onBack} />
-      <Section>
-        <View style={styles.iconHeading}>
-          <Sparkles size={20} color={orange} />
-          <Text style={styles.cardTitle}>Welcome to {business.name}</Text>
-        </View>
-        <Text style={styles.body}>Everything here opens the right tool, so you can set up your loyalty programme without hunting through the app.</Text>
-      </Section>
-      {steps.map(({ number, title, body, action, destination }) => (
-        <Section key={number}>
-          <View style={styles.tutorialRow}>
-            <View style={styles.tutorialNumber}><Text style={styles.tutorialNumberText}>{number}</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>{title}</Text>
-              <Text style={styles.body}>{body}</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={action}
-                onPress={() => onNavigate(destination)}
-                style={({ pressed }) => [styles.tutorialAction, pressed && styles.pressed]}
-              >
-                <Text style={styles.tutorialActionText}>{action}</Text>
-                <ChevronRight size={17} color={ink} />
-              </Pressable>
-            </View>
+      <PageHeader title="How it works" eyebrow="IN 3 STEPS" onBack={onBack} />
+      {items.map(({ kind, title }) => (
+        <Section key={kind}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          <View style={{ marginTop: 12 }}>
+            <Explainer kind={kind} />
           </View>
         </Section>
       ))}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open your QR poster"
+        onPress={() => onNavigate("tools")}
+        style={({ pressed }) => [styles.tutorialAction, pressed && styles.pressed]}
+      >
+        <Text style={styles.tutorialActionText}>Open your QR poster</Text>
+        <ChevronRight size={17} color={ink} />
+      </Pressable>
     </View>
   );
 }
