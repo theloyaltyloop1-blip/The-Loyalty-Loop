@@ -2793,6 +2793,14 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 
 **Next actions**: Owner/Claude: run the rollback test (above) on a branch or with approval; then create one test shop per programme through the new flow on "Business (Test)" and the website; Chat D: profile-completeness prompt (address, postcode, phone, logo, description).
 
+## Integration branch: D + E + C merged (2026-10-20) - Claude
+- Branch `loyalty-integration` (local, worktree AppData/Local/Temp/integ), cut from `loyalty-programmes` 3966923. Merged in order: Part D (claude/loyalty-d-shop-profile-6e4f47), Part E (claude/loyalty-e-tutorial-11e572), Part C (claude/loyalty-c-onboarding-eb869f). Nothing pushed, applied, deployed or published.
+- Conflicts: App.tsx (E vs D): D had already moved the settings block out, so the merge keeps D's side (the moved constants live in shop-pages.tsx). CLAUDE_HANDOFF.md: both sections kept. Part C's App.tsx edits merged without conflict.
+- Checks run on the merged tree: `tsc --noEmit` clean (retailer, shopper); `tsc -b` and `vite build` clean (web); node tests: packages/loyalty 21/21, retailer 21/21 (the 3 deletion-clients tests now pass), shopper 30/30, web tour-script 3/3, edge shared 79/79.
+- NOT yet run: the rolled-back SQL test for create_shop_with_programme. The migration text parses as SQL (3 statements). My plpgsql-only checker rejects its body, which I could not confirm as a real error; the database test is the real check. The test payload is at scratchpad/create_test_payload.sql (migration + assertions, ends with a deliberate exception so nothing is kept).
+- Not verified on a device or in a browser (no sign-in available). Device layout, spotlight alignment and the points/tier screens still need a test-channel OTA to "Business (Test)" that only the owner can approve.
+- Open: Part B's own UI (programme setup page, tier/points on the scan screens, shopper display, points redeem button is in D, wallet pass, WhatsApp copy) is still unbuilt. Migrations 20261020100000 and 20261020110000 are NOT applied to production.
+
 ## Copy-ready prompt for Claude Code
 
 Next task (Claude): finish verifying the SumUp till link described in "SumUp till link BUILT locally (2026-10-19)". Once the product owner has a SumUp developer app and test reader, apply supabase/migrations/20261019200000_sumup_pos.sql to a Supabase branch (not production), test every pos_* RPC including permissions for owner / staff / customer, deploy sumup-connect, sumup-callback and sumup-sync to the branch, confirm the merchant-code lookup and history fields against the SumUp sandbox, and run the scan-to-credit flow in a browser. Record what was actually checked. Do not apply to production or set up the cron schedule without the owner's go-ahead.
