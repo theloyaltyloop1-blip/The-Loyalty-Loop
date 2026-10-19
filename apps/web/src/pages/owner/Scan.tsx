@@ -28,6 +28,9 @@ import {
   type SpendSummary,
   type RecentSpend,
 } from '@/lib/businesses'
+import { isPosConnected, recordPosScan, cancelPosScan } from '@/lib/pos'
+import { PosReview } from '@/components/pos-review'
+import { handleTask } from '@/lib/async'
 
 const UNIT_LABEL: Record<string, string> = {
   stamp_card: 'stamp',
@@ -293,7 +296,7 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
 /** Records a purchase in £ for the scanned customer (ARCH_PLAN.md §4.10–4.11).
  * The server enforces the shop's cap, the linked-card payment question and
  * the daily limits; clientRef makes a retry after a dropped connection safe. */
-function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUserId: string }) {
+function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; staffUserId: string; isOwner: boolean }) {
   const [cameraOn, setCameraOn] = React.useState(true)
   const [scanCycle, setScanCycle] = React.useState(0)
   const [code, setCode] = React.useState('')
@@ -308,6 +311,15 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
   const [recent, setRecent] = React.useState<RecentSpend[]>([])
   const [now, setNow] = React.useState(Date.now())
   const clientRef = React.useRef<string | null>(null)
+  // When the shop's till is linked, the amount arrives from the till and staff
+  // only scan. Manual entry stays available (cash sales, till outages).
+  const [tillLinked, setTillLinked] = React.useState(false)
+  const [manualOverride, setManualOverride] = React.useState(false)
+  const [tillNote, setTillNote] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    isPosConnected(businessId).then(setTillLinked).catch(() => setTillLinked(false))
+  }, [businessId])
 
   const loadRecent = React.useCallback(async () => {
     try {
@@ -334,7 +346,29 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
     setAmount('')
     setAskPayment(false)
     setError(null)
+    setManualOverride(false)
     clientRef.current = null
+  }
+
+  async function finishTillScan() {
+    reset()
+    setCameraOn(true)
+    setScanCycle((cycle) => cycle + 1)
+  }
+
+  async function switchToManual() {
+    // The scan was only meant for a till sale; withdraw it so it cannot attach
+    // itself to someone else's card payment.
+    if (matchedUserId) {
+      try {
+        await cancelPosScan(businessId, matchedUserId)
+      } catch {
+        setError('Could not switch to typing the amount. Please try again.')
+        return
+      }
+    }
+    setTillNote(null)
+    setManualOverride(true)
   }
 
   async function identify(userId: string) {
@@ -348,6 +382,16 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
     setMatch(details)
     setMatchedUserId(userId)
     setSummary(await fetchSpendSummary(businessId, userId))
+    if (tillLinked) {
+      try {
+        await recordPosScan(businessId, userId)
+        setTillNote(`${details.first_name || 'The customer'} is scanned. Take payment on the SumUp reader and the amount is added automatically.`)
+      } catch {
+        // Never block the sale: fall back to typing the amount.
+        setManualOverride(true)
+        setError('Could not link this scan to your till. You can type the amount instead.')
+      }
+    }
     return true
   }
 
@@ -510,7 +554,23 @@ function SpendPanel({ businessId, staffUserId }: { businessId: string; staffUser
         </aside>
       )}
 
-      {matchedUserId && (
+      {tillLinked && <PosReview businessId={businessId} isOwner={isOwner} />}
+
+      {matchedUserId && tillLinked && !manualOverride && (
+        <div className="flex flex-col gap-3 rounded-2xl bg-sage p-4 text-sage-ink">
+          <p className="font-semibold text-foreground">{tillNote ?? 'Scanned. Take payment on the SumUp reader.'}</p>
+          <button data-press-feedback onClick={handleTask(finishTillScan)}
+            className="h-12 rounded-full bg-primary font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">
+            Done, scan next customer
+          </button>
+          <button data-press-feedback onClick={handleTask(switchToManual)}
+            className="text-sm font-semibold text-muted-foreground self-center">
+            Paid another way (cash)? Type the amount instead
+          </button>
+        </div>
+      )}
+
+      {matchedUserId && (!tillLinked || manualOverride) && (
         <>
           <div>
             <p className="text-sm font-semibold text-foreground mb-1.5">Amount spent</p>
@@ -806,7 +866,7 @@ export function OwnerScan() {
 
               <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 sm:p-7">
                 {mode === 'award' && canScan && session && (spendShop
-                  ? <SpendPanel businessId={activeBusinessId} staffUserId={session.user.id} />
+                  ? <SpendPanel businessId={activeBusinessId} staffUserId={session.user.id} isOwner={isOwner} />
                   : <StampPanel businessId={activeBusinessId} unit={unit} />)}
                 {mode === 'redeem' && canRedeem && <RedeemPanel businessId={activeBusinessId} />}
               </div>

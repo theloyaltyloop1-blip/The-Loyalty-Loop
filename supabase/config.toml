@@ -26,3 +26,15 @@ verify_jwt = false
 # Authenticated owner/admin deletion; handler also validates the JWT user.
 [functions.delete-business]
 verify_jwt = true
+
+# SumUp till link. Starting/ending the link validates the JWT user itself;
+# the callback is a browser redirect so the one-time OAuth state authenticates
+# it; the sync is called by a scheduled job and checks the service-role key.
+[functions.sumup-connect]
+verify_jwt = true
+
+[functions.sumup-callback]
+verify_jwt = false
+
+[functions.sumup-sync]
+verify_jwt = false

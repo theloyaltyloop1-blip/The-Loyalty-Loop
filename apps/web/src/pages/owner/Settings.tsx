@@ -4,6 +4,7 @@ import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Tras
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
+import { SumUpCard } from '@/components/sumup-card'
 import { useOwner } from '@/lib/owner-context'
 import { CATEGORIES, categoryCopy, categoryOptions } from '@/lib/categories'
 import { geocodeAddress } from '@/lib/geocode'
@@ -1000,6 +1001,8 @@ function SpendLoyaltyTab() {
           </div>
         </div>
       </SectionCard>
+
+      <SumUpCard businessId={business.id} />
 
       <SectionCard>
         <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-1">Rewards *</h3>
