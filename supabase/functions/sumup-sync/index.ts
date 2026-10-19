@@ -19,7 +19,18 @@ function sameSecret(expected: string, received: string): boolean {
 Deno.serve(async (request) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const token = (request.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (request.method !== "POST" || !serviceKey || !sameSecret(serviceKey, token)) {
+  const syncSecret = request.headers.get("x-sync-secret") ?? "";
+  if (request.method !== "POST" || !serviceKey) {
+    return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
+  }
+  // Either the service-role key, or the scheduler's secret held in Vault.
+  let authorised = sameSecret(serviceKey, token);
+  if (!authorised && syncSecret) {
+    const checker = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, { auth: { persistSession: false } });
+    const { data } = await checker.rpc("pos_sync_secret_ok", { _secret: syncSecret });
+    authorised = data === true;
+  }
+  if (!authorised) {
     return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
   }
   const clientId = Deno.env.get("SUMUP_CLIENT_ID");
