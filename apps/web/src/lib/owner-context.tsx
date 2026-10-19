@@ -20,9 +20,15 @@ interface OwnerContextValue {
 
 async function fetchBusinessIdsWithRewards(businessIds: string[]): Promise<Set<string>> {
   if (!businessIds.length) return new Set()
-  const { data, error } = await supabase.from('reward_catalog').select('business_id').in('business_id', businessIds)
-  if (error) throw error
-  return new Set((data as { business_id: string }[]).map((row) => row.business_id))
+  // Setup is done once a shop has rewards (stamps, £ spend, points) or membership levels (tiers).
+  const [rewards, tiers] = await Promise.all([
+    supabase.from('reward_catalog').select('business_id').in('business_id', businessIds),
+    supabase.from('membership_tiers').select('business_id').in('business_id', businessIds),
+  ])
+  if (rewards.error) throw rewards.error
+  // Before the tiers migration is applied the table does not exist: treat that as "no tiers".
+  const tierRows = tiers.error ? [] : (tiers.data as { business_id: string }[])
+  return new Set([...(rewards.data as { business_id: string }[]), ...tierRows].map((row) => row.business_id))
 }
 
 const OwnerContext = React.createContext<OwnerContextValue | undefined>(undefined)
