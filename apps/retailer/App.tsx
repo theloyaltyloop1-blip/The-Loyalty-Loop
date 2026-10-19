@@ -71,7 +71,7 @@ import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, se
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
 import { TourOverlay, TourProvider, TourTarget, useTour } from "./src/components/Tour";
-import { programmeIdFor } from "@loyalty-loop/loyalty";
+import { programmeIdFor, recordsSpend, standingFromSnapshot, type ProgrammeSnapshot, type SnapshotStanding } from "@loyalty-loop/loyalty";
 import { useLaunchUpdate } from "./src/launch-update";
 import { BusinessSettings } from "./src/shop-pages";
 
@@ -364,9 +364,30 @@ function Button({
 
 const WEB_ORIGIN = "https://www.the-loyalty-loop.com";
 
+// Scan result lines for membership tiers and points shops (see standingFromSnapshot).
+function standingSentence(name: string, standing: SnapshotStanding): string {
+  if (standing.kind === "points") return `${name} now has ${standing.balance} point${standing.balance === 1 ? "" : "s"}.`;
+  return `${name} is ${standing.tierName ? `at ${standing.tierName}` : "not yet at a level"}${standing.label ? `, ${standing.label}` : ""}.`;
+}
+
+function StandingLines({ name, standing }: { name: string; standing: SnapshotStanding }) {
+  if (standing.kind === "points") {
+    return <Text style={styles.spendProgress}>{name}: {standing.label}</Text>;
+  }
+  return (
+    <View>
+      <Text style={styles.spendProgress}>
+        {name}: {standing.tierName ?? "No level yet"}
+        {standing.label ? ` · ${standing.label}` : ""}
+      </Text>
+      {standing.perks.length ? <Text style={styles.spendCap}>{standing.perks.join(" · ")}</Text> : null}
+    </View>
+  );
+}
+
 type CardLinkStatus = { linked: boolean; manualToday: number; nextAllowedAt: string | null };
 
-type SpendSummary = CardLinkStatus & {
+type SpendSummary = CardLinkStatus & ProgrammeSnapshot & {
   rewardModel: string;
   member: boolean;
   progressPence: number | null;
@@ -719,10 +740,13 @@ function StampsScreen({
   // this shop. If so, staff are asked how they paid before a manual entry.
   const [linkStatus, setLinkStatus] = useState<CardLinkStatus | null>(null);
   const [askPayment, setAskPayment] = useState(false);
-  // Spend-threshold shops record a £ amount instead of stamps (ARCH_PLAN.md §4.10).
-  const spendShop = business.reward_model === "spend_threshold";
+  // Spend-recording shops (£ spend, membership tiers, points) take a £ amount
+  // instead of stamps (ARCH_PLAN.md §4.10). Tiers and points read their standing
+  // from the RPC snapshot (programme, tierName, pointsBalance, ...).
+  const spendShop = recordsSpend(business);
   const [amountPence, setAmountPence] = useState(0);
   const [spendSummary, setSpendSummary] = useState<SpendSummary | null>(null);
+  const standing = standingFromSnapshot(spendSummary, pounds);
   const [recentSpend, setRecentSpend] = useState<RecentSpend[]>([]);
   const [lastSpendMessage, setLastSpendMessage] = useState<string | null>(null);
   const spendRef = useRef<string | null>(null);
@@ -871,12 +895,15 @@ function StampsScreen({
       }
       if (error) throw error;
       spendRef.current = null;
-      const result = data as { progressPence: number; thresholdPence: number; rewardsEarned: number | null };
+      const result = data as { progressPence: number; thresholdPence: number; rewardsEarned: number | null } & ProgrammeSnapshot;
       const left = Math.max(0, result.thresholdPence - result.progressPence);
+      const resultStanding = standingFromSnapshot(result, pounds);
       setLastSpendMessage(
         result.rewardsEarned
           ? `${pounds(amountPence)} added. ${name} earned ${result.rewardsEarned === 1 ? "a reward" : `${result.rewardsEarned} rewards`}!`
-          : `${pounds(amountPence)} added. ${name} is ${pounds(left)} from a reward.`,
+          : resultStanding
+            ? `${pounds(amountPence)} added. ${standingSentence(name, resultStanding)}`
+            : `${pounds(amountPence)} added. ${name} is ${pounds(left)} from a reward.`,
       );
       void supabase.functions.invoke("send-user-push", { body: { business_id: business.id, user_id: matched.id } });
       void supabase.functions.invoke("update-wallet-pass", { body: { business_id: business.id, user_id: matched.id } });
@@ -1258,7 +1285,8 @@ function StampsScreen({
             <View style={styles.card}>
               {mode === "stamps" && spendShop ? (
                 <View>
-                  {spendSummary && spendSummary.thresholdPence ? (
+                  {standing ? <StandingLines name={matched.first_name || "Customer"} standing={standing} /> : null}
+                  {!standing && spendSummary && spendSummary.thresholdPence ? (
                     <Text style={styles.spendProgress}>
                       {(matched.first_name || "Customer")}: {pounds(Math.max(0, spendSummary.progressPence ?? 0))} of {pounds(spendSummary.thresholdPence)}
                       {spendSummary.redemptionBlocked ? " · reward paused" : ""}

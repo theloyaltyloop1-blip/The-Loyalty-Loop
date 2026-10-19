@@ -8,6 +8,7 @@ import { OwnerLayout } from '@/components/owner-layout'
 import { SumUpCard } from '@/components/sumup-card'
 import { useOwner } from '@/lib/owner-context'
 import { CATEGORIES, categoryCopy, categoryOptions } from '@/lib/categories'
+import { buildShopArgs, PROGRAMMES, type DraftTier, type ProgrammeId } from '@loyalty-loop/loyalty'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from '@/lib/shop-features'
@@ -30,6 +31,9 @@ import {
   deleteBusinessPhoto,
   transferOwnedBusinessOwnership,
   parsePoundsToPence,
+  fetchMembershipTiers,
+  saveMembershipTiers,
+  updateRewardCatalogItem,
   type RewardCatalogItem,
   type WinbackLogEntry,
   type StaffMember,
@@ -848,7 +852,270 @@ function StampLoyaltyTab() {
 
 function LoyaltyTab() {
   const { business } = useOwner()
-  return business?.reward_model === 'spend_threshold' ? <SpendLoyaltyTab /> : <StampLoyaltyTab />
+  if (business?.reward_model === 'spend_threshold') return <SpendLoyaltyTab />
+  if (business?.reward_model === 'tiers') return <TiersLoyaltyTab />
+  if (business?.reward_model === 'points') return <PointsLoyaltyTab />
+  return <StampLoyaltyTab />
+}
+
+// The programme type is fixed when the shop is created and locked once customers
+// have progress (the database enforces the lock). Shown read-only here.
+function ProgrammeLockNote({ programme }: { programme: ProgrammeId }) {
+  const info = PROGRAMMES[programme]
+  return (
+    <SectionCard title={`Programme: ${info.name}`}>
+      <p className="text-sm text-muted-foreground">
+        {info.pitch} The programme type can’t be changed once customers have progress on this shop.
+      </p>
+    </SectionCard>
+  )
+}
+
+type TierDraft = DraftTier & { id?: string }
+
+function TiersLoyaltyTab() {
+  const { business } = useOwner()
+  const [levels, setLevels] = React.useState<TierDraft[]>([])
+  const [removedIds, setRemovedIds] = React.useState<string[]>([])
+  const [loadError, setLoadError] = React.useState(false)
+  const [formError, setFormError] = React.useState<string | null>(null)
+  const [saving, setSaving] = React.useState(false)
+  const [saved, setSaved] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!business) return
+    setLoadError(false)
+    setRemovedIds([])
+    fetchMembershipTiers(business.id)
+      .then((rows) => setLevels(rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        amount: String(row.spend_threshold_pence / 100),
+        perks: (row.perks ?? []).join('\n'),
+        colour: row.colour ?? '#8F9BB3',
+      }))))
+      .catch(() => setLoadError(true))
+  }, [business?.id])
+
+  if (!business) return null
+
+  const update = (index: number, patch: Partial<TierDraft>) =>
+    setLevels(levels.map((level, i) => (i === index ? { ...level, ...patch } : level)))
+
+  async function handleSave() {
+    setFormError(null)
+    const result = buildShopArgs('tiers', { pointsPerPound: '1', rewards: [], tiers: levels })
+    if (!result.ok) return setFormError(result.message)
+    setSaving(true)
+    try {
+      const keptIds = new Set(levels.map((level) => level.id).filter(Boolean))
+      const removed = removedIds.filter((id) => !keptIds.has(id))
+      await saveMembershipTiers(
+        business!.id,
+        levels.map((level, i) => ({ id: level.id, row: result.args._tiers[i] })),
+        removed,
+      )
+      setRemovedIds([])
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      setFormError('Could not save the levels. Check the connection and try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <ProgrammeLockNote programme="tiers" />
+      {loadError && <p role="alert" className="mb-4 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">We couldn’t load your levels. Refresh the page before editing them so nothing is overwritten.</p>}
+      <SectionCard title="Membership levels">
+        <p className="text-sm text-muted-foreground mb-4">
+          Customers move up a level when they have spent this much with you in the last 12 months. Up to 8 levels.
+          Each level can list up to 6 perks, one per line.
+        </p>
+        <div className="flex flex-col gap-4">
+          {levels.map((level, index) => (
+            <div key={level.id ?? `new-${index}`} className="rounded-xl border border-border bg-white/40 p-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-foreground">Level name
+                <input className={inputClass} maxLength={40} value={level.name} onChange={(e) => update(index, { name: e.target.value })} placeholder="e.g. Gold" />
+              </label>
+              <label className="text-sm font-semibold text-foreground">Spend in a year (£)
+                <input className={inputClass} inputMode="decimal" value={level.amount} onChange={(e) => update(index, { amount: e.target.value })} placeholder="500" />
+              </label>
+              <label className="text-sm font-semibold text-foreground sm:col-span-2">Perks (one per line)
+                <textarea className={inputClass} rows={3} value={level.perks} onChange={(e) => update(index, { perks: e.target.value })} placeholder={'Free gift wrapping\nEarly access to new arrivals'} />
+              </label>
+              <div className="flex items-center justify-between gap-3 sm:col-span-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground">Colour
+                  <input type="color" value={level.colour} onChange={(e) => update(index, { colour: e.target.value })} className="h-9 w-9 rounded-lg border border-border" />
+                </label>
+                <button
+                  type="button"
+                  aria-label={`Remove ${level.name || 'this level'}`}
+                  onClick={() => {
+                    if (level.id) setRemovedIds([...removedIds, level.id])
+                    setLevels(levels.filter((_, i) => i !== index))
+                  }}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" /> Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {levels.length < 8 && (
+          <button
+            type="button"
+            onClick={() => setLevels([...levels, { name: '', amount: '', perks: '', colour: '#8F9BB3' }])}
+            className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary"
+          >
+            <Plus className="h-4 w-4" /> Add a level
+          </button>
+        )}
+        {formError && <p role="alert" className="mt-4 text-sm font-medium text-destructive">{formError}</p>}
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving || loadError}
+            className="h-11 rounded-full bg-foreground px-5 font-semibold text-background disabled:opacity-40"
+          >
+            {saving ? 'Saving…' : 'Save levels'}
+          </button>
+          {saved && <span className="text-sm font-semibold text-foreground">Saved</span>}
+        </div>
+      </SectionCard>
+    </>
+  )
+}
+
+type PointsRewardDraft = { id?: string; title: string; description: string; points: string }
+
+function PointsLoyaltyTab() {
+  const { business, updateLocalBusiness } = useOwner()
+  const [pointsPerPound, setPointsPerPound] = React.useState(String(business?.loyalty_config.points_per_pound ?? 1))
+  const [rewards, setRewards] = React.useState<PointsRewardDraft[]>([])
+  const [loadError, setLoadError] = React.useState(false)
+  const [formError, setFormError] = React.useState<string | null>(null)
+  const [saving, setSaving] = React.useState(false)
+  const [saved, setSaved] = React.useState(false)
+  const [removedIds, setRemovedIds] = React.useState<string[]>([])
+  const [newReward, setNewReward] = React.useState({ title: '', description: '', points: '' })
+
+  React.useEffect(() => {
+    if (!business) return
+    setLoadError(false)
+    setRemovedIds([])
+    setPointsPerPound(String(business.loyalty_config.points_per_pound ?? 1))
+    fetchRewardCatalog(business.id)
+      .then((rows) => setRewards(rows.filter((row) => (row.points_cost ?? 0) > 0).map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description ?? '',
+        points: String(row.points_cost ?? ''),
+      }))))
+      .catch(() => setLoadError(true))
+  }, [business?.id])
+
+  if (!business) return null
+
+  function addReward() {
+    setFormError(null)
+    if (!newReward.title.trim()) return setFormError('Give the reward a name, for example Free coffee.')
+    setRewards([...rewards, { ...newReward }])
+    setNewReward({ title: '', description: '', points: '' })
+  }
+
+  async function handleSave() {
+    setFormError(null)
+    const draft = {
+      pointsPerPound,
+      tiers: [],
+      rewards: rewards.map((r) => ({ title: r.title, description: r.description, amount: r.points })),
+    }
+    const result = buildShopArgs('points', draft)
+    if (!result.ok) return setFormError(result.message)
+    setSaving(true)
+    try {
+      const keptIds = new Set(rewards.map((r) => r.id).filter(Boolean))
+      const config = { ...business!.loyalty_config, points_per_pound: result.args._points_per_pound }
+      await updateBusiness(business!.id, { loyalty_config: config })
+      updateLocalBusiness({ loyalty_config: config })
+      for (const [index, reward] of rewards.entries()) {
+        const cost = result.args._rewards[index].points_cost as number
+        const body = { title: reward.title.trim(), description: reward.description.trim() || null, points_cost: cost }
+        if (reward.id) await updateRewardCatalogItem(reward.id, { ...body, sort_order: index })
+        else await addRewardCatalogItem(business!.id, { ...body, stamp_threshold: 1, sort_order: index })
+      }
+      for (const id of removedIds) if (!keptIds.has(id)) await deleteRewardCatalogItem(id)
+      setRemovedIds([])
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      setFormError('Could not save. Check the connection and try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <ProgrammeLockNote programme="points" />
+      {loadError && <p role="alert" className="mb-4 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">We couldn’t load your rewards. Refresh the page before editing them so nothing is overwritten.</p>}
+      <SectionCard title="Points rate">
+        <label className="text-sm font-semibold text-foreground">Points earned per £1 spent
+          <input className={`${inputClass} max-w-[12rem]`} inputMode="numeric" value={pointsPerPound} onChange={(e) => setPointsPerPound(e.target.value)} />
+        </label>
+        <p className="mt-2 text-sm text-muted-foreground">Whole numbers from 1 to 1000. A refund takes back the points that purchase earned.</p>
+      </SectionCard>
+      <SectionCard title="Rewards">
+        <p className="text-sm text-muted-foreground mb-4">Customers swap their points for these rewards in the app. Each reward needs its own points cost.</p>
+        <div className="flex flex-col gap-3">
+          {rewards.map((reward, index) => (
+            <div key={reward.id ?? `new-${index}`} className="rounded-xl border border-border bg-white/40 p-4 grid gap-3 sm:grid-cols-3">
+              <label className="text-sm font-semibold text-foreground sm:col-span-2">Reward
+                <input className={inputClass} maxLength={80} value={reward.title} onChange={(e) => setRewards(rewards.map((r, i) => (i === index ? { ...r, title: e.target.value } : r)))} />
+              </label>
+              <label className="text-sm font-semibold text-foreground">Points
+                <input className={inputClass} inputMode="numeric" value={reward.points} onChange={(e) => setRewards(rewards.map((r, i) => (i === index ? { ...r, points: e.target.value } : r)))} />
+              </label>
+              <div className="flex items-center justify-end sm:col-span-3">
+                <button
+                  type="button"
+                  aria-label={`Remove ${reward.title || 'this reward'}`}
+                  onClick={() => {
+                    if (reward.id) setRemovedIds([...removedIds, reward.id])
+                    setRewards(rewards.filter((_, i) => i !== index))
+                  }}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" /> Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 rounded-xl border border-dashed border-border p-4 grid gap-3 sm:grid-cols-3">
+          <input className={`${inputClass} sm:col-span-2`} placeholder="New reward, e.g. Free coffee" maxLength={80} value={newReward.title} onChange={(e) => setNewReward({ ...newReward, title: e.target.value })} />
+          <input className={inputClass} inputMode="numeric" placeholder="Points" value={newReward.points} onChange={(e) => setNewReward({ ...newReward, points: e.target.value })} />
+          <div className="sm:col-span-3 flex justify-end">
+            <button type="button" onClick={addReward} className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+              <Plus className="h-4 w-4" /> Add reward
+            </button>
+          </div>
+        </div>
+        {formError && <p role="alert" className="mt-4 text-sm font-medium text-destructive">{formError}</p>}
+        <div className="mt-6 flex items-center gap-3">
+          <button type="button" onClick={() => void handleSave()} disabled={saving || loadError} className="h-11 rounded-full bg-foreground px-5 font-semibold text-background disabled:opacity-40">
+            {saving ? 'Saving…' : 'Save points and rewards'}
+          </button>
+          {saved && <span className="text-sm font-semibold text-foreground">Saved</span>}
+        </div>
+      </SectionCard>
+    </>
+  )
 }
 
 function SpendLoyaltyTab() {

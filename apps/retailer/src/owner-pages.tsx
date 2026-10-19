@@ -1,6 +1,6 @@
 import { showAlert } from "./components/AppAlert";
 import { Explainer, type ExplainerKind } from "./components/Explainers";
-import { PROGRAMMES, programmeIdFor } from "@loyalty-loop/loyalty";
+import { buildShopArgs, parseAmount, PROGRAMMES, programmeIdFor, type ProgrammeId } from "@loyalty-loop/loyalty";
 import { currencySymbol, money, scaledLimit } from "./money";
 import {
   useCallback,
@@ -81,6 +81,7 @@ export interface NativeBusiness {
     stamps_required?: number;
     signup_reward_title?: string;
     stamp_icon?: string;
+    points_per_pound?: number;
   };
   reward_model?: "stamp_legacy" | "spend_threshold" | "tiers" | "points";
   reward_threshold_pence?: number | null;
@@ -129,6 +130,7 @@ interface RewardItem {
   description: string | null;
   stamp_threshold: number;
   spend_threshold_pence: number | null;
+  points_cost?: number | null;
   discount_pence?: number | null;
   sort_order: number;
 }
@@ -991,6 +993,9 @@ function RewardsPage({
   // Rewards unlock at £ amounts (ARCH_PLAN.md §4.11); the biggest one starts a
   // new round. The database keeps the shop's cycle length in step.
   const spendShop = business.reward_model === "spend_threshold";
+  // Membership tiers and points have their own sections (levels, points rate).
+  const tierShop = business.reward_model === "tiers";
+  const pointsShop = business.reward_model === "points";
   const [amount, setAmount] = useState("20");
   const [threshold, setThreshold] = useState("10");
   // Optional "£ off" value; staff then see what to charge when redeeming.
@@ -1024,10 +1029,10 @@ function RewardsPage({
       .from("reward_catalog")
       .select("*")
       .eq("business_id", business.id)
-      .order(spendShop ? "spend_threshold_pence" : "stamp_threshold", { nullsFirst: false });
+      .order(spendShop ? "spend_threshold_pence" : pointsShop ? "points_cost" : "stamp_threshold", { nullsFirst: false });
     if (error) return showAlert("Could not load rewards", error.message);
     setItems((data || []) as RewardItem[]);
-  }, [business.id, preview, spendShop]);
+  }, [business.id, preview, spendShop, pointsShop]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -1042,6 +1047,14 @@ function RewardsPage({
       if (items.some((item) => item.spend_threshold_pence === pence))
         return showAlert("Check the amount", "You already have a reward at that amount.");
     }
+    let cost = 0;
+    if (pointsShop) {
+      cost = Number(threshold);
+      if (!Number.isInteger(cost) || cost < 1 || cost > 1_000_000)
+        return showAlert("Check the points", "Enter how many points the reward costs, from 1 to 1,000,000.");
+      if (items.some((item) => item.points_cost === cost))
+        return showAlert("Check the points", "You already have a reward at that points cost.");
+    }
     const discountPence = discount.trim() ? parsePounds(discount) : null;
     if (discount.trim() && (discountPence === null || discountPence < 1 || discountPence > scaledLimit(1_000_000)))
       return showAlert("Check the money off", `Enter an amount up to ${pounds(scaledLimit(1_000_000))}, or leave it empty.`);
@@ -1052,7 +1065,8 @@ function RewardsPage({
       title: title.trim(),
       description: description.trim() || null,
       ...(spendShop ? { spend_threshold_pence: pence } : {}),
-      stamp_threshold: spendShop ? 10 : Math.max(1, Number(threshold) || 1),
+      ...(pointsShop ? { points_cost: cost } : {}),
+      stamp_threshold: spendShop ? 10 : pointsShop ? 1 : Math.max(1, Number(threshold) || 1),
       sort_order: items.length,
     });
     setBusy(false);
@@ -1111,6 +1125,10 @@ function RewardsPage({
         eyebrow="LOYALTY PROGRAMME"
         onBack={onBack}
       />
+      {tierShop || pointsShop ? <ProgrammeNote programme={pointsShop ? "points" : "tiers"} /> : null}
+      {tierShop ? <MembershipLevelsSection business={business} /> : null}
+      {pointsShop ? <PointsRateSection business={business} onBusinessChanged={onBusinessChanged} /> : null}
+      {!tierShop && (<>
       <Section>
         <View style={styles.iconHeading}>
           <Gift size={20} color={orange} />
@@ -1138,7 +1156,7 @@ function RewardsPage({
           <Field
             value={threshold}
             onChangeText={setThreshold}
-            placeholder={`${unit.charAt(0).toUpperCase()}${unit.slice(1)} needed to unlock it, e.g. 10`}
+            placeholder={pointsShop ? "Points it costs, e.g. 100" : `${unit.charAt(0).toUpperCase()}${unit.slice(1)} needed to unlock it, e.g. 10`}
             keyboardType="number-pad"
           />
         )}
@@ -1164,7 +1182,9 @@ function RewardsPage({
                   ? item.spend_threshold_pence
                     ? `Unlocks after spending ${pounds(item.spend_threshold_pence)}`
                     : "No amount set yet"
-                  : `Unlocks at ${item.stamp_threshold} ${unit}`}
+                  : pointsShop
+                    ? `Costs ${item.points_cost ?? 0} points`
+                    : `Unlocks at ${item.stamp_threshold} ${unit}`}
                 {item.discount_pence ? ` · ${pounds(item.discount_pence)} off` : ""}
                 {item.description ? ` · ${item.description}` : ""}
               </Text>
@@ -1185,6 +1205,7 @@ function RewardsPage({
             : `No rewards yet. Until you add one, customers get a generic "Free reward" after ${business.loyalty_config?.stamps_required || 10} ${unit}.`}
         </Text>
       )}
+      </>)}
       <Section>
         <View style={styles.iconHeading}>
           <Sparkles size={20} color={orange} />
@@ -1210,6 +1231,196 @@ function RewardsPage({
         <ManualSpendSettings business={business} onBusinessChanged={onBusinessChanged} />
       ) : null}
     </View>
+  );
+}
+
+// Membership tiers and points: the programme type is fixed at creation and
+// locked once customers have progress (the database enforces the lock).
+const LEVEL_COLOURS = ["#A8A9AD", "#D4AF37", "#8F9BB3", "#B08D57", "#2F6F6A", "#7A5C99"];
+
+interface TierLevel {
+  id: string;
+  name: string;
+  spend_threshold_pence: number;
+  perks: string[] | null;
+  colour: string | null;
+  sort_order: number;
+}
+
+function ProgrammeNote({ programme }: { programme: ProgrammeId }) {
+  const info = PROGRAMMES[programme];
+  return (
+    <Section>
+      <Text style={styles.cardTitle}>Programme: {info.name}</Text>
+      <Text style={styles.muted}>
+        {info.pitch} The type can’t be changed once customers have progress on this shop.
+      </Text>
+    </Section>
+  );
+}
+
+function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
+  const [levels, setLevels] = useState<TierLevel[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [perks, setPerks] = useState("");
+  const [colour, setColour] = useState(LEVEL_COLOURS[0]);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("membership_tiers")
+      .select("id,name,spend_threshold_pence,perks,colour,sort_order")
+      .eq("business_id", business.id)
+      .order("spend_threshold_pence");
+    if (error) return showAlert("Could not load levels", error.message);
+    setLevels((data || []) as TierLevel[]);
+  }, [business.id]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  function resetForm() {
+    setEditingId(null);
+    setName("");
+    setAmount("");
+    setPerks("");
+    setColour(LEVEL_COLOURS[0]);
+  }
+  function startEdit(level: TierLevel) {
+    setEditingId(level.id);
+    setName(level.name);
+    setAmount(String(level.spend_threshold_pence / 100));
+    setPerks((level.perks ?? []).join("\n"));
+    setColour(level.colour ?? LEVEL_COLOURS[0]);
+  }
+  async function save() {
+    const draftOf = (level: { name: string; spend_threshold_pence?: number; perks?: string[] | null; colour?: string | null }) => ({
+      name: level.name,
+      amount: String((level.spend_threshold_pence ?? 0) / 100),
+      perks: (level.perks ?? []).join("\n"),
+      colour: level.colour ?? "",
+    });
+    // Check the whole ladder the way the database will, with this edit in place.
+    const ladder = levels.map((level) =>
+      level.id === editingId ? { name, amount, perks, colour } : draftOf(level),
+    );
+    if (!editingId) ladder.push({ name, amount, perks, colour });
+    const result = buildShopArgs("tiers", { pointsPerPound: "1", rewards: [], tiers: ladder });
+    if (!result.ok) return showAlert("Check the level", result.message);
+    const index = editingId ? levels.findIndex((level) => level.id === editingId) : ladder.length - 1;
+    const row = result.args._tiers[index];
+    setBusy(true);
+    const { error } = editingId
+      ? await supabase.from("membership_tiers").update(row).eq("id", editingId)
+      : await supabase.from("membership_tiers").insert({ business_id: business.id, ...row, sort_order: levels.length });
+    setBusy(false);
+    if (error) return showAlert("Could not save the level", error.message);
+    resetForm();
+    void load();
+  }
+  function remove(level: TierLevel) {
+    showAlert("Delete this level?", `${level.name} will be removed. Customers’ levels are worked out again from their spending.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase.from("membership_tiers").delete().eq("id", level.id);
+          if (error) showAlert("Could not delete the level", error.message);
+          else void load();
+        },
+      },
+    ]);
+  }
+
+  return (
+    <>
+      <Section>
+        <View style={styles.iconHeading}>
+          <Gift size={20} color={orange} />
+          <Text style={styles.cardTitle}>Membership levels</Text>
+        </View>
+        <Text style={styles.muted}>
+          Customers move up when they have spent this much with you in the last 12 months. Up to 8 levels; one perk per line, up to 6.
+        </Text>
+      </Section>
+      {levels.map((level) => (
+        <Pressable key={level.id} onPress={() => startEdit(level)} accessibilityLabel={`Edit ${level.name}`} style={styles.listCard}>
+          <View style={[styles.listIcon, { backgroundColor: level.colour ?? LEVEL_COLOURS[0] }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.listTitle}>{level.name}</Text>
+            <Text style={styles.muted}>
+              {`Spend ${pounds(level.spend_threshold_pence)} in a year`}
+              {level.perks?.length ? ` · ${level.perks.join(", ")}` : ""}
+            </Text>
+          </View>
+          <Pressable accessibilityLabel={`Delete ${level.name}`} onPress={() => remove(level)} style={styles.iconButton}>
+            <Trash2 size={18} color="#B4433A" />
+          </Pressable>
+        </Pressable>
+      ))}
+      <Section>
+        <Text style={styles.cardTitle}>{editingId ? "Edit level" : levels.length >= 8 ? "Eight levels is the most" : "Add a level"}</Text>
+        {levels.length < 8 || editingId ? (
+          <>
+            <Field value={name} onChangeText={setName} placeholder="Level name, e.g. Gold" />
+            <Field
+              value={amount}
+              onChangeText={(value) => setAmount(value.replace(/[^0-9.]/g, ""))}
+              placeholder={`Spend in a year to reach it, in ${currencySymbol()}, e.g. ${scaledLimit(500) / 100}`}
+              keyboardType="decimal-pad"
+            />
+            <Field value={perks} onChangeText={setPerks} placeholder={"Perks, one per line\nFree gift wrapping"} multiline />
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+              {LEVEL_COLOURS.map((c) => (
+                <Pressable
+                  key={c}
+                  onPress={() => setColour(c)}
+                  accessibilityLabel={`Colour ${c}`}
+                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: 3, borderColor: c === colour ? "#000000" : "transparent" }}
+                />
+              ))}
+            </View>
+            <PrimaryButton label={editingId ? "Save level" : "Add level"} onPress={() => void save()} busy={busy} />
+            {editingId ? <PrimaryButton label="Cancel" onPress={resetForm} secondary /> : null}
+          </>
+        ) : null}
+      </Section>
+    </>
+  );
+}
+
+function PointsRateSection({
+  business,
+  onBusinessChanged,
+}: {
+  business: NativeBusiness;
+  onBusinessChanged: () => Promise<void>;
+}) {
+  const [rate, setRate] = useState(String(business.loyalty_config?.points_per_pound ?? 1));
+  const [busy, setBusy] = useState(false);
+  async function save() {
+    const value = parseAmount(rate);
+    if (value === null || !Number.isInteger(value) || value < 1 || value > 1000) {
+      return showAlert("Check the rate", "Points per £1 must be a whole number from 1 to 1000.");
+    }
+    setBusy(true);
+    const { error } = await supabase
+      .from("businesses")
+      .update({ loyalty_config: { ...(business.loyalty_config || {}), points_per_pound: value } })
+      .eq("id", business.id);
+    setBusy(false);
+    if (error) return showAlert("Could not save the rate", error.message);
+    await onBusinessChanged();
+    showAlert("Points rate saved", `Customers now earn ${value} point${value === 1 ? "" : "s"} per £1. A refund takes back the points that purchase earned.`);
+  }
+  return (
+    <Section>
+      <Text style={styles.cardTitle}>Points rate</Text>
+      <Field value={rate} onChangeText={(value) => setRate(value.replace(/[^0-9]/g, ""))} placeholder="Points earned per £1, e.g. 1" keyboardType="number-pad" />
+      <PrimaryButton label="Save points rate" onPress={() => void save()} busy={busy} />
+    </Section>
   );
 }
 

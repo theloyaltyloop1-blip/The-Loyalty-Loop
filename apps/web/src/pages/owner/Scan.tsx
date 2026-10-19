@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { rewardWords } from '@/lib/shop-types'
+import { recordsSpend, standingFromSnapshot, type SnapshotStanding } from '@loyalty-loop/loyalty'
 import { Navigate } from 'react-router-dom'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import { Camera, CameraOff, Check, Gift, ScanLine } from 'lucide-react'
@@ -298,6 +299,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
   const [match, setMatch] = React.useState<ScannedMemberDetails | null>(null)
   const [matchedUserId, setMatchedUserId] = React.useState<string | null>(null)
   const [summary, setSummary] = React.useState<SpendSummary | null>(null)
+  const summaryStanding = standingFromSnapshot(summary, formatPounds)
   const [amount, setAmount] = React.useState('')
   const [askPayment, setAskPayment] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
@@ -530,9 +532,12 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
       const result = await recordManualSpend(businessId, matchedUserId, amountPence, paymentMethod ?? null, clientRef.current)
       clientRef.current = null
       const left = Math.max(0, (result.thresholdPence ?? 0) - result.progressPence)
+      const resultStanding = standingFromSnapshot(result, formatPounds)
       setSuccess(result.rewardsEarned
         ? `${formatPounds(amountPence)} added. ${name} earned ${result.rewardsEarned === 1 ? 'a reward' : `${result.rewardsEarned} rewards`}!`
-        : `${formatPounds(amountPence)} added. ${name} is ${formatPounds(left)} from ${result.nextRewardTitle ?? 'their next reward'}.`)
+        : resultStanding
+          ? `${formatPounds(amountPence)} added. ${standingSentence(name, resultStanding)}`
+          : `${formatPounds(amountPence)} added. ${name} is ${formatPounds(left)} from ${result.nextRewardTitle ?? 'their next reward'}.`)
       void sendUserPush(businessId, matchedUserId)
       void updateWalletPass(businessId, matchedUserId)
       void loadRecent()
@@ -613,12 +618,21 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
           <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-sm text-foreground/70">
             <span>Email: {match.email ?? 'Not available'}</span><span>Joined: {new Date(match.joined_at).toLocaleDateString()}</span>
             <span>Last visit: {match.last_activity_at ? new Date(match.last_activity_at).toLocaleDateString() : 'Not yet'}</span>
-            <span>
-              {summary?.thresholdPence
-                ? `${formatPounds(Math.max(0, summary.progressPence ?? 0))} of ${formatPounds(summary.thresholdPence)} towards ${summary.nextRewardTitle ?? 'the next reward'}`
-                : 'Loading progress…'}
-              {summary?.redemptionBlocked ? ' · reward paused' : ''}
-            </span>
+            {summaryStanding ? (
+              <span className="col-span-2">
+                {summaryStanding.kind === 'points'
+                  ? summaryStanding.label
+                  : `${summaryStanding.tierName ?? 'No level yet'}${summaryStanding.label ? ` · ${summaryStanding.label}` : ''}`}
+                {summaryStanding.kind === 'tiers' && summaryStanding.perks.length ? <span className="block text-foreground/60">{summaryStanding.perks.join(' · ')}</span> : null}
+              </span>
+            ) : (
+              <span>
+                {summary?.thresholdPence
+                  ? `${formatPounds(Math.max(0, summary.progressPence ?? 0))} of ${formatPounds(summary.thresholdPence)} towards ${summary.nextRewardTitle ?? 'the next reward'}`
+                  : 'Loading progress…'}
+                {summary?.redemptionBlocked ? ' · reward paused' : ''}
+              </span>
+            )}
           </div>
         </aside>
       )}
@@ -889,7 +903,8 @@ export function OwnerScan() {
   const activeBusinessId = isOwner ? business!.id : activeStaff?.business_id
   const loyaltyType = isOwner ? business!.loyalty_type : activeStaff?.business.loyalty_type
   const unit = rewardWords(loyaltyType).unit
-  const spendShop = (isOwner ? business!.reward_model : activeStaff?.business.reward_model) === 'spend_threshold'
+  // £ spend, membership tiers and points shops all take a purchase amount.
+  const spendShop = recordsSpend(isOwner ? business! : activeStaff?.business ?? {})
   const canScan = isOwner || Boolean(activeStaff?.can_scan_stamps)
   const canRedeem = isOwner || Boolean(activeStaff?.can_redeem_rewards)
 
@@ -968,4 +983,10 @@ export function OwnerScan() {
       )}
     </OwnerLayout>
   )
+}
+
+// Scan result sentence for membership tiers and points shops (see standingFromSnapshot).
+function standingSentence(name: string, standing: SnapshotStanding): string {
+  if (standing.kind === 'points') return `${name} now has ${standing.balance} point${standing.balance === 1 ? '' : 's'}.`
+  return `${name} is ${standing.tierName ? `at ${standing.tierName}` : 'not yet at a level'}${standing.label ? `, ${standing.label}` : ''}.`
 }
