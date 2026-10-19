@@ -64,9 +64,35 @@ export async function isPosConnected(businessId: string): Promise<boolean> {
   return data === true
 }
 
-export async function recordPosScan(businessId: string, customerId: string): Promise<void> {
-  const { error } = await supabase.rpc('record_pos_scan', { _business_id: businessId, _customer_id: customerId })
+export interface PosScanResult {
+  status: 'recorded' | 'refreshed' | 'busy' | 'not_connected' | 'duplicate'
+  scanId?: string
+  /** Set when status is 'busy': the customer who is still waiting to pay. */
+  customerId?: string
+  name?: string
+}
+
+/** Only one customer can wait to pay at a time; a second scan comes back 'busy'. */
+export async function recordPosScan(businessId: string, customerId: string): Promise<PosScanResult> {
+  const { data, error } = await supabase.rpc('record_pos_scan', { _business_id: businessId, _customer_id: customerId })
   if (error) throw error
+  return data as PosScanResult
+}
+
+/** Asks the server to look for the shop's newest till sales right now. */
+export async function checkTillNow(businessId: string): Promise<void> {
+  await supabase.functions.invoke('sumup-check', { body: { business_id: businessId } })
+}
+
+export interface PosScanStatus {
+  status: 'pending' | 'matched' | 'expired'
+  amountPence: number | null
+}
+
+export async function fetchPosScanStatus(scanId: string): Promise<PosScanStatus> {
+  const { data, error } = await supabase.rpc('pos_scan_status', { _scan_id: scanId })
+  if (error) throw error
+  return data as PosScanStatus
 }
 
 export async function cancelPosScan(businessId: string, customerId: string): Promise<void> {

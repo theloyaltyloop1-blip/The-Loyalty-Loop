@@ -28,7 +28,7 @@ import {
   type SpendSummary,
   type RecentSpend,
 } from '@/lib/businesses'
-import { isPosConnected, recordPosScan, cancelPosScan } from '@/lib/pos'
+import { isPosConnected, recordPosScan, cancelPosScan, checkTillNow, fetchPosScanStatus } from '@/lib/pos'
 import { PosReview } from '@/components/pos-review'
 import { handleTask } from '@/lib/async'
 
@@ -315,11 +315,55 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
   // only scan. Manual entry stays available (cash sales, till outages).
   const [tillLinked, setTillLinked] = React.useState(false)
   const [manualOverride, setManualOverride] = React.useState(false)
-  const [tillNote, setTillNote] = React.useState<string | null>(null)
+  // Only one customer waits to pay at a time. `waiting` is that customer (or, when
+  // `busy`, the one ahead of whoever was just scanned); `paid` is the confirmation.
+  const [waiting, setWaiting] = React.useState<{ scanId: string; customerId: string; name: string; busy: boolean } | null>(null)
+  const [paid, setPaid] = React.useState<{ name: string; amountPence: number } | null>(null)
+  const [waitedLong, setWaitedLong] = React.useState(false)
 
   React.useEffect(() => {
     isPosConnected(businessId).then(setTillLinked).catch(() => setTillLinked(false))
   }, [businessId])
+
+  // While a customer waits, ask the till for the sale every few seconds and
+  // confirm on screen the moment it is credited.
+  React.useEffect(() => {
+    if (!waiting) return
+    const current = waiting
+    let stopped = false
+    let timer: number | undefined
+    const started = Date.now()
+    const tick = async () => {
+      await checkTillNow(businessId).catch(() => undefined)
+      try {
+        const status = await fetchPosScanStatus(current.scanId)
+        if (stopped) return
+        if (status.status === 'matched') {
+          setPaid({ name: current.name, amountPence: status.amountPence ?? 0 })
+          setWaiting(null)
+          void sendUserPush(businessId, current.customerId)
+          void updateWalletPass(businessId, current.customerId)
+          return
+        }
+        if (status.status !== 'pending') {
+          setWaiting(null)
+          setError('That scan timed out. Please scan the customer again.')
+          setCameraOn(true)
+          setScanCycle((cycle) => cycle + 1)
+          return
+        }
+        if (Date.now() - started > 120000) setWaitedLong(true)
+      } catch {
+        // Keep trying; a dropped connection must not lose the wait.
+      }
+      if (!stopped) timer = window.setTimeout(() => void tick(), Date.now() - started < 120000 ? 4000 : 15000)
+    }
+    timer = window.setTimeout(() => void tick(), 2500)
+    return () => {
+      stopped = true
+      if (timer) window.clearTimeout(timer)
+    }
+  }, [waiting?.scanId, businessId])
 
   const loadRecent = React.useCallback(async () => {
     try {
@@ -347,6 +391,9 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
     setAskPayment(false)
     setError(null)
     setManualOverride(false)
+    setWaiting(null)
+    setPaid(null)
+    setWaitedLong(false)
     clientRef.current = null
   }
 
@@ -359,16 +406,31 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
   async function switchToManual() {
     // The scan was only meant for a till sale; withdraw it so it cannot attach
     // itself to someone else's card payment.
-    if (matchedUserId) {
+    const target = waiting && !waiting.busy ? waiting.customerId : matchedUserId
+    if (target) {
       try {
-        await cancelPosScan(businessId, matchedUserId)
+        await cancelPosScan(businessId, target)
       } catch {
         setError('Could not switch to typing the amount. Please try again.')
         return
       }
     }
-    setTillNote(null)
+    setWaiting(null)
     setManualOverride(true)
+  }
+
+  async function cancelWaiting() {
+    if (waiting) {
+      try {
+        await cancelPosScan(businessId, waiting.customerId)
+      } catch {
+        setError('Could not cancel that scan. Please try again.')
+        return
+      }
+    }
+    reset()
+    setCameraOn(true)
+    setScanCycle((cycle) => cycle + 1)
   }
 
   async function identify(userId: string) {
@@ -384,8 +446,20 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
     setSummary(await fetchSpendSummary(businessId, userId))
     if (tillLinked) {
       try {
-        await recordPosScan(businessId, userId)
-        setTillNote(`${details.first_name || 'The customer'} is scanned. Take payment on the SumUp reader and the amount is added automatically.`)
+        const scan = await recordPosScan(businessId, userId)
+        if (scan.status === 'busy') {
+          if (!scan.scanId) {
+            setError('Another customer is waiting to pay. Try again in a moment.')
+            return false
+          }
+          // Someone else is still paying: show them, and do not take a second customer.
+          setWaiting({ scanId: scan.scanId, customerId: scan.customerId ?? '', name: scan.name ?? 'Another customer', busy: true })
+          setMatch(null)
+          setMatchedUserId(null)
+          setSummary(null)
+        } else if (scan.scanId) {
+          setWaiting({ scanId: scan.scanId, customerId: userId, name: details.first_name || 'The customer', busy: false })
+        }
       } catch {
         // Never block the sale: fall back to typing the amount.
         setManualOverride(true)
@@ -556,17 +630,40 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
 
       {tillLinked && <PosReview businessId={businessId} isOwner={isOwner} />}
 
-      {matchedUserId && tillLinked && !manualOverride && (
+      {tillLinked && !manualOverride && (waiting || paid) && (
         <div className="flex flex-col gap-3 rounded-2xl bg-sage p-4 text-sage-ink">
-          <p className="font-semibold text-foreground">{tillNote ?? 'Scanned. Take payment on the SumUp reader.'}</p>
-          <button data-press-feedback onClick={handleTask(finishTillScan)}
-            className="h-12 rounded-full bg-primary font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">
-            Done, scan next customer
-          </button>
-          <button data-press-feedback onClick={handleTask(switchToManual)}
-            className="text-sm font-semibold text-muted-foreground self-center">
-            Paid another way (cash)? Type the amount instead
-          </button>
+          {paid ? (
+            <>
+              <p className="font-semibold text-foreground">{formatPounds(paid.amountPence)} added for {paid.name}. ✓</p>
+              <button data-press-feedback onClick={handleTask(finishTillScan)}
+                className="h-12 rounded-full bg-primary font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">
+                Scan next customer
+              </button>
+            </>
+          ) : waiting && (
+            <>
+              <p className="font-semibold text-foreground">
+                {waiting.busy
+                  ? `${waiting.name} is still waiting to pay. Finish their payment before scanning someone else.`
+                  : `Waiting for ${waiting.name}'s payment…`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {waitedLong
+                  ? 'Nothing has come through from the till yet. Check the payment went through on the reader.'
+                  : 'Take the payment on the SumUp reader. It shows up here in a few seconds.'}
+              </p>
+              <button data-press-feedback onClick={handleTask(cancelWaiting)}
+                className="h-11 rounded-full bg-card font-semibold text-foreground transition-colors hover:bg-card/80">
+                {waiting.busy ? `Cancel ${waiting.name}'s scan` : 'Cancel this scan'}
+              </button>
+              {!waiting.busy && (
+                <button data-press-feedback onClick={handleTask(switchToManual)}
+                  className="text-sm font-semibold text-muted-foreground self-center">
+                  Paid another way (cash)? Type the amount instead
+                </button>
+              )}
+            </>
+          )}
         </div>
       )}
 

@@ -38,3 +38,8 @@ verify_jwt = false
 
 [functions.sumup-sync]
 verify_jwt = false
+
+# Live check while the scan screen waits for a payment. Validates the JWT user and
+# that they may record spend at the shop.
+[functions.sumup-check]
+verify_jwt = true
