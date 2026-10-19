@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import forge from "npm:node-forge@1";
 import { ICON_1X, ICON_2X, ICON_3X, LOGO_1X, LOGO_2X, LOGO_3X } from "./pass-images.ts";
-import { loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
+import { loadWalletExtras, loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
 
 // Generates a signed Apple Wallet (.pkpass) file for a customer's loyalty
 // card at a given business. Unlike Google Wallet (a signed JWT Google's own
@@ -189,7 +189,7 @@ async function buildPass(businessId: string, userId: string): Promise<Response> 
 
   const { data: membership, error: memErr } = await admin
     .from("memberships")
-    .select("stamp_count,points_balance,reward_progress_pence")
+    .select("stamp_count,points_balance,reward_progress_pence,current_tier")
     .eq("user_id", user.id)
     .eq("business_id", business_id)
     .maybeSingle();
@@ -198,7 +198,8 @@ async function buildPass(businessId: string, userId: string): Promise<Response> 
     return new Response(JSON.stringify({ error: "join this shop's loyalty card first" }), { status: 400, headers: jsonHeaders });
   }
 
-  const progress = walletProgress(business, membership, await loadWalletTiers(admin, business.id), business.name);
+  const membershipExtras = await loadWalletExtras(admin, business.reward_model, user.id, business.id);
+  const progress = walletProgress(business, { ...membership, ...membershipExtras }, await loadWalletTiers(admin, business.id, business.reward_model), business.name);
 
   const passJson = {
     formatVersion: 1,

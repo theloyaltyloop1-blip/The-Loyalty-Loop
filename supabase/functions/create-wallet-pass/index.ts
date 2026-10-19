@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { SignJWT, importPKCS8 } from "npm:jose@5";
-import { loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
+import { loadWalletExtras, loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
 
 // Generates a "Save to Google Wallet" link for a customer's loyalty card at
 // a given business. The loyalty class is created/updated via a real,
@@ -175,7 +175,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: membership, error: memErr } = await admin
       .from("memberships")
-      .select("stamp_count,points_balance,reward_progress_pence")
+      .select("stamp_count,points_balance,reward_progress_pence,current_tier")
       .eq("user_id", user.id)
       .eq("business_id", business_id)
       .maybeSingle();
@@ -184,7 +184,8 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "join this shop's loyalty card first" }), { status: 400, headers: jsonHeaders });
     }
 
-    const progress = walletProgress(business, membership, await loadWalletTiers(admin, business.id), business.name);
+    const membershipExtras = await loadWalletExtras(admin, business.reward_model, user.id, business.id);
+  const progress = walletProgress(business, { ...membership, ...membershipExtras }, await loadWalletTiers(admin, business.id, business.reward_model), business.name);
 
     const classId = `${ISSUER_ID}.biz_${business.id.replace(/-/g, "")}`;
     const objectId = `${ISSUER_ID}.mem_${business.id.replace(/-/g, "")}_${user.id.replace(/-/g, "")}`;

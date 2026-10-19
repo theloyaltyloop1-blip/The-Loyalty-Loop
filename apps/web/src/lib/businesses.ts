@@ -1,10 +1,12 @@
 import { supabase } from './supabase'
-import type { ShopRpcArgs } from '@loyalty-loop/loyalty'
+import type { ProgrammeSnapshot, ShopRpcArgs } from '@loyalty-loop/loyalty'
 
 export interface LoyaltyConfig {
   stamps_required?: number
   stamp_icon?: string
   signup_reward_title?: string
+  /** Points shops: points earned per £1 (1..1000). */
+  points_per_pound?: number
 }
 
 export interface DayHours {
@@ -318,7 +320,7 @@ export async function fetchRewardCatalog(businessId: string): Promise<RewardCata
 
 export async function addRewardCatalogItem(
   businessId: string,
-  item: { title: string; description: string | null; stamp_threshold?: number; spend_threshold_pence?: number; sort_order: number }
+  item: { title: string; description: string | null; stamp_threshold?: number; spend_threshold_pence?: number; points_cost?: number; sort_order: number }
 ): Promise<RewardCatalogItem> {
   const { data, error } = await supabase
     .from('reward_catalog')
@@ -351,6 +353,40 @@ export async function addProgrammeContent(businessId: string, args: ShopRpcArgs)
     }))
   )
   if (error) throw error
+}
+
+/** Points shops: change a reward's title, details, points cost or order. */
+export async function updateRewardCatalogItem(
+  id: string,
+  patch: { title: string; description: string | null; points_cost: number; sort_order: number },
+) {
+  const { error } = await supabase.from('reward_catalog').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+/**
+ * Tiers shops: write the level ladder. Existing levels are updated in place
+ * (so memberships keep pointing at them), new ones inserted, removed ones
+ * deleted. The database recomputes every customer's level after the change.
+ */
+export async function saveMembershipTiers(
+  businessId: string,
+  levels: { id?: string; row: Record<string, unknown> }[],
+  removedIds: string[],
+) {
+  for (const [index, level] of levels.entries()) {
+    if (level.id) {
+      const { error } = await supabase.from('membership_tiers').update({ ...level.row, sort_order: index }).eq('id', level.id)
+      if (error) throw error
+    } else {
+      const { error } = await supabase.from('membership_tiers').insert({ business_id: businessId, ...level.row, sort_order: index })
+      if (error) throw error
+    }
+  }
+  if (removedIds.length) {
+    const { error } = await supabase.from('membership_tiers').delete().in('id', removedIds)
+    if (error) throw error
+  }
 }
 
 export async function deleteRewardCatalogItem(id: string) {
@@ -426,7 +462,7 @@ export async function awardProgress(businessId: string, userId: string, value = 
 // Spend (£) entry by staff (ARCH_PLAN.md §4.10–4.11)
 // ---------------------------------------------------------------------
 
-export interface SpendSummary {
+export interface SpendSummary extends ProgrammeSnapshot {
   rewardModel: string
   member: boolean
   progressPence: number | null
@@ -439,7 +475,7 @@ export interface SpendSummary {
   nextAllowedAt: string | null
 }
 
-export interface SpendResult {
+export interface SpendResult extends ProgrammeSnapshot {
   status: 'recorded' | 'duplicate'
   transactionId: string
   amountPence: number

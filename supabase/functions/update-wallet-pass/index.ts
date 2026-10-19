@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { SignJWT, importPKCS8 } from "npm:jose@5";
-import { loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
+import { loadWalletExtras, loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
 
 // Pushes a customer's current stamp/points balance to their already-saved
 // Google Wallet pass. create-wallet-pass only writes the loyalty object once,
@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: membership } = await admin
       .from("memberships")
-      .select("stamp_count,points_balance,reward_progress_pence")
+      .select("stamp_count,points_balance,reward_progress_pence,current_tier")
       .eq("user_id", userId)
       .eq("business_id", businessId)
       .maybeSingle();
@@ -101,7 +101,8 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ updated: false, reason: "no membership" }), { headers: jsonHeaders });
     }
 
-    const progress = walletProgress(business, membership, await loadWalletTiers(admin, businessId), business.name);
+    const membershipExtras = await loadWalletExtras(admin, business.reward_model, userId, businessId);
+    const progress = walletProgress(business, { ...membership, ...membershipExtras }, await loadWalletTiers(admin, businessId, business.reward_model), business.name);
 
     const objectId = `${ISSUER_ID}.mem_${businessId.replace(/-/g, "")}_${userId.replace(/-/g, "")}`;
 

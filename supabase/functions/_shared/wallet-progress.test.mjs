@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { walletProgress } from "./wallet-progress.ts";
@@ -27,3 +28,23 @@ test("stamp shops keep the old count", () => {
   const p = walletProgress({ loyalty_type: "stamp_card", loyalty_config: { stamps_required: 8 } }, { stamp_count: 3 }, [], "Cafe");
   assert.deepEqual([p.label, p.value, p.goal], ["Stamps", "3", "8 stamps to unlock your reward"]);
 });
+
+// Parity with packages/loyalty (walletStanding). Both suites read the same fixtures.
+const fixtures = JSON.parse(readFileSync(new URL("../../../packages/loyalty/test/wallet-fixtures.json", import.meta.url), "utf8"));
+for (const fixture of fixtures) {
+  test(`parity with packages/loyalty: ${fixture.name}`, () => {
+    const { input, programme, expected } = fixture;
+    const tiers = programme === "tiers"
+      ? (input.tiers ?? [])
+      : (input.rewards ?? []).map((r) => ({ title: r.title, spend_threshold_pence: null, points_cost: r.points_cost }));
+    const business = { reward_model: programme };
+    const membership = programme === "tiers"
+      ? { current_tier: input.tierName ?? null, rolling_spend_pence: input.rollingSpendPence ?? 0 }
+      : { points_balance: input.pointsBalance ?? 0 };
+    const got = walletProgress(business, membership, tiers, "Cafe");
+    assert.deepEqual(
+      { label: got.label, value: got.value, goal: got.goal, programName: got.programName },
+      expected,
+    );
+  });
+}
