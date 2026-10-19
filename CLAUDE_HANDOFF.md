@@ -2702,6 +2702,14 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - The repo migration file is `20261019200000_sumup_pos.sql`; live history records it as `sumup_pos` with the tool's own timestamp.
 - Next: owner schedules sync; decide how to get the website live (deploy, or test via local dev server against live Supabase); then run the £1 payment tests.
 
+## Owner redesign (2026-10-19) - Claude, branch `owner-redesign-on-origin-main`
+
+- Shop-type onboarding (web + mobile), `rewardWords()` helper (`apps/web/src/lib/shop-types.ts`), three owner tabs Scan / Customers / Shop (old pages become sub-tabs; Analytics now at `/owner/analytics`), new Customers view (`pages/owner/Customers.tsx`, mobile `CustomersHome`), first-run walkthrough (web `owner-walkthrough.tsx`, mobile `Walkthrough.tsx`).
+- Re-applied on top of origin/main (f50bf96) after a full-tree merge produced 36 conflicts. Only these 12 files; `tsc --noEmit` clean on web and retailer. Web checked in the browser pane earlier; mobile not device-tested.
+- OTA: mobile bundle published to `test` (android, group 6edc109b) and `production` (android de10bfac, ios 02836770), runtime 1.0.1. That bundle was built from the pre-rebase tree and also contained Codex's unreleased `launch-update.ts`; this branch does not include that file.
+- Live DB test data: owner role + "Owner Redesign Test Shop" (8990673f-5ca6-4344-8012-f814ec1f95e5) on the `spammessages13+test` account; delete when done. VIP reward type deferred; mobile `DashboardHome` now unused.
+- Rollback OTA: `eas update:roll-back-to-embedded --branch production --runtime-version 1.0.1 --platform all` from apps/retailer.
+
 ## Copy-ready prompt for Claude Code
 
 Next task (Claude): finish verifying the SumUp till link described in "SumUp till link BUILT locally (2026-10-19)". Once the product owner has a SumUp developer app and test reader, apply supabase/migrations/20261019200000_sumup_pos.sql to a Supabase branch (not production), test every pos_* RPC including permissions for owner / staff / customer, deploy sumup-connect, sumup-callback and sumup-sync to the branch, confirm the merchant-code lookup and history fields against the SumUp sandbox, and run the scan-to-credit flow in a browser. Record what was actually checked. Do not apply to production or set up the cron schedule without the owner's go-ahead.

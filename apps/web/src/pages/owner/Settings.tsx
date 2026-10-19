@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { rewardWords } from '@/lib/shop-types'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -558,17 +559,11 @@ const poundsLabel = (pence: number) => `£${pence % 100 === 0 ? pence / 100 : (p
 
 const STAMP_ICON_PRESETS = ['⭐', '🍩', '✂️', '🍕', '☕', '🧁', '🍰', '🍞', '🍔', '🍟', '🌮', '💅', '🎁', '❤️']
 
-const UNIT_LABEL: Record<'stamp_card' | 'points' | 'tiered', string> = {
-  stamp_card: 'Stamp',
-  points: 'Point',
-  tiered: 'Visit',
-}
-
 
 function StampLoyaltyTab() {
   const { business, updateLocalBusiness } = useOwner()
   const [loyaltyType, setLoyaltyType] = React.useState(business?.loyalty_type ?? 'stamp_card')
-  const unit = UNIT_LABEL[loyaltyType]
+  const unit = rewardWords(loyaltyType).unit.replace(/^./, (c) => c.toUpperCase())
   const [brandColor, setBrandColor] = React.useState(business?.brand_color ?? BRAND_COLORS[0])
   const [stampsRequired, setStampsRequired] = React.useState(business?.loyalty_config.stamps_required ?? 10)
   const [stampIcon, setStampIcon] = React.useState(business?.loyalty_config.stamp_icon ?? '⭐')

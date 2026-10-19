@@ -50,6 +50,7 @@ import {
   Users,
   X,
   type LucideIcon,
+  Store,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
@@ -69,6 +70,7 @@ import { registerPushToken } from "./src/push";
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
+import { Walkthrough } from "./src/components/Walkthrough";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 
@@ -1551,6 +1553,112 @@ function DashboardHome({
   );
 }
 
+function CustomersHome({ business }: { business: Business }) {
+  const [members, setMembers] = useState<MemberRow[] | null>(null),
+    [audience, setAudience] = useState<"all" | "inactive_30" | "regulars">("all"),
+    [title, setTitle] = useState(""),
+    [body, setBody] = useState(""),
+    [sending, setSending] = useState(false);
+  useEffect(() => {
+    supabase.rpc("get_business_members", { _business_id: business.id }).then(({ data, error }) => {
+      if (error) showAlert("Could not load customers", error.message);
+      setMembers((data || []) as MemberRow[]);
+    });
+  }, [business.id]);
+  const cutoff = Date.now() - 30 * 86400000;
+  const seen = (m: MemberRow) => (m.last_activity_at ? new Date(m.last_activity_at).getTime() : 0);
+  const list = members || [];
+  const loyal = list.filter((m) => seen(m) >= cutoff).sort((a, b) => b.visit_count - a.visit_count).slice(0, 5);
+  const quiet = list.filter((m) => seen(m) < cutoff).sort((a, b) => seen(b) - seen(a));
+  const nameOf = (m: MemberRow) => [m.first_name, m.last_name].filter(Boolean).join(" ") || "Customer";
+  const ago = (m: MemberRow) => {
+    if (!m.last_activity_at) return "never";
+    const d = Math.floor((Date.now() - seen(m)) / 86400000);
+    return d <= 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
+  };
+  async function send() {
+    if (!title.trim() || !body.trim()) {
+      showAlert("Add a message", "Write a short title and message first.");
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase
+      .from("business_promotions")
+      .insert({ business_id: business.id, title: title.trim(), body: body.trim(), audience });
+    setSending(false);
+    if (error) {
+      showAlert("Could not send", error.message);
+      return;
+    }
+    setTitle("");
+    setBody("");
+    showAlert("Message sent", "Your customers will see it shortly.");
+  }
+  return (
+    <View>
+      <Text style={styles.pageKicker}>CUSTOMERS</Text>
+      <Text style={styles.pageTitle}>Your customers</Text>
+      <Text style={styles.pageIntro}>Who comes back, who has gone quiet, and a quick way to say hello.</Text>
+      {members === null ? (
+        <ActivityIndicator color={green} style={{ marginTop: 30 }} />
+      ) : (
+        <>
+          <Text style={styles.fieldLabel}>
+            {list.length} customers · {list.length - quiet.length} back this month · {quiet.length} gone quiet
+          </Text>
+          <Text style={[styles.fieldLabel, { marginTop: 18 }]}>Your most loyal</Text>
+          {loyal.length ? (
+            loyal.map((m) => (
+              <View key={m.user_id} style={styles.memberCard}>
+                <Text style={[styles.memberName, { flex: 1 }]}>{nameOf(m)}</Text>
+                <Text style={styles.memberMeta}>{m.visit_count} visits</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.pageIntro}>Nobody yet. Scan a customer to get started.</Text>
+          )}
+          <Text style={[styles.fieldLabel, { marginTop: 18 }]}>Haven't been back in a while</Text>
+          {quiet.length ? (
+            quiet.slice(0, 6).map((m) => (
+              <View key={m.user_id} style={styles.memberCard}>
+                <Text style={[styles.memberName, { flex: 1 }]}>{nameOf(m)}</Text>
+                <Text style={styles.memberMeta}>last seen {ago(m)}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.pageIntro}>Everyone has visited in the last 30 days.</Text>
+          )}
+        </>
+      )}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Send a message</Text>
+        <View style={{ flexDirection: "row", gap: 8, marginVertical: 10 }}>
+          {([["all", "Everyone"], ["inactive_30", "Gone quiet"], ["regulars", "Regulars"]] as const).map(([value, label]) => (
+            <Pressable
+              key={value}
+              onPress={() => setAudience(value)}
+              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : "#EFE9DF" }}
+            >
+              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#59615A" }}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor="#000000" />
+        <TextInput
+          style={[styles.input, { height: 96, textAlignVertical: "top", marginTop: 10 }]}
+          value={body}
+          onChangeText={setBody}
+          maxLength={1000}
+          multiline
+          placeholder="Come in this week and we'll have something waiting."
+          placeholderTextColor="#000000"
+        />
+        <Button title={sending ? "Sending…" : "Send message"} onPress={() => void send()} />
+      </View>
+    </View>
+  );
+}
+
 function MembersPage({ business }: { business: Business }) {
   const [members, setMembers] = useState<MemberRow[]>([]),
     [loading, setLoading] = useState(true),
@@ -2691,6 +2799,21 @@ function parsePoundsToPence(value: string): number | null {
   return pence >= 100 && pence <= scaledLimit(1_000_000) ? pence : null;
 }
 
+// Owners pick what kind of shop they run; the reward type follows. Premium maps
+// to "tiered" until the VIP-list reward type exists.
+const SHOP_TYPE_OPTIONS: {
+  key: string;
+  type: NonNullable<Business["loyalty_type"]>;
+  icon: typeof Stamp;
+  title: string;
+  blurb: string;
+}[] = [
+  { key: "everyday", type: "stamp_card", icon: Stamp, title: "Café, bakery or barber", blurb: "Customers collect stamps towards a free treat." },
+  { key: "style", type: "tiered", icon: BadgeCheck, title: "Boutique, jeweller, salon or homeware", blurb: "Customers earn member levels the more they visit." },
+  { key: "premium", type: "tiered", icon: Star, title: "Premium or one-off purchases", blurb: "A members list with levels and special perks." },
+];
+
+
 /** Shown once, the first time an owner opens the app with no reward set up
  * yet (checked via reward_catalog being empty for their shop — see the
  * `needsLoyaltySetup` effect in Dashboard). Customers earn by spending, so the
@@ -2862,6 +2985,7 @@ function StampProgramSetup({
 }) {
   const [step, setStep] = useState(0);
   const [loyaltyType, setLoyaltyType] = useState<NonNullable<Business["loyalty_type"]>>(business.loyalty_type || "stamp_card");
+  const [shopType, setShopType] = useState<string | null>(null);
   const [threshold, setThreshold] = useState(String(business.loyalty_config?.stamps_required || 10));
   const [rewards, setRewards] = useState<{ title: string; description: string; threshold: string }[]>([
     { title: "", description: "", threshold: "" },
@@ -2914,15 +3038,18 @@ function StampProgramSetup({
         <Text style={styles.eyebrow}>SET UP YOUR LOYALTY PROGRAMME</Text>
         {step === 0 && (
           <>
-            <Text style={styles.hero}>How do customers{"\n"}earn a reward?</Text>
-            <Text style={styles.copy}>Pick how {business.name} tracks loyalty. You can change this later in Settings.</Text>
+            <Text style={styles.hero}>What kind of{"\n"}shop are you?</Text>
+            <Text style={styles.copy}>We'll set up the right kind of reward for {business.name}. You can change this later in Settings.</Text>
             <View style={{ marginTop: 22, gap: 12 }}>
-              {LOYALTY_TYPE_OPTIONS.map((option) => {
-                const active = loyaltyType === option.type;
+              {SHOP_TYPE_OPTIONS.map((option) => {
+                const active = shopType === option.key;
                 return (
                   <Pressable
-                    key={option.type}
-                    onPress={() => setLoyaltyType(option.type)}
+                    key={option.key}
+                    onPress={() => {
+                      setShopType(option.key);
+                      setLoyaltyType(option.type);
+                    }}
                     style={[styles.setupOptionCard, active && styles.setupOptionCardActive]}
                   >
                     <option.icon size={22} color={active ? "#fff" : orange} />
@@ -2934,7 +3061,10 @@ function StampProgramSetup({
                 );
               })}
             </View>
-            <Button title="Continue" onPress={() => setStep(1)} />
+            <Button
+              title="Continue"
+              onPress={() => (shopType ? setStep(1) : showAlert("Pick your shop", "Choose the option that fits your shop best."))}
+            />
           </>
         )}
         {step === 1 && (
@@ -3178,7 +3308,7 @@ function Dashboard({
     _country = setActiveCountry(selected?.country_code),
     [tab, setTab] = useState<
       "home" | "scan" | "members" | "analytics" | "news" | "settings"
-    >("home"),
+    >("scan"),
     [ownerPage, setOwnerPage] = useState<NativeOwnerPage | null>(null),
     [stampsMode, setStampsMode] = useState<"stamps" | "reward">("stamps"),
     [widgetRefreshKey, setWidgetRefreshKey] = useState(0),
@@ -3376,13 +3506,20 @@ function Dashboard({
     const subscription = Linking.addEventListener("url", openWidgetDestination);
     return () => subscription.remove();
   }, []);
+  // Three tabs. Customers groups the old Dashboard/Members/Analytics/News pages
+  // as sub-tabs (CUSTOMER_SUBTABS); Shop is the old Settings page.
+  const CUSTOMER_TABS = ["home", "members", "analytics", "news"] as const;
+  const CUSTOMER_SUBTABS = [
+    { id: "home", label: "Customers" },
+    { id: "members", label: "All members" },
+    { id: "analytics", label: "Insights" },
+    { id: "news", label: "News posts" },
+  ] as const;
+  const inCustomers = (CUSTOMER_TABS as readonly string[]).includes(tab);
   const nav = [
-    { id: "home", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "scan", icon: Stamp, label: selected?.reward_model === "spend_threshold" ? "Scan" : "Stamps" },
-    { id: "members", icon: Users, label: "Members" },
-    { id: "analytics", icon: ChartNoAxesCombined, label: "Analytics" },
-    { id: "news", icon: Newspaper, label: "News" },
-    { id: "settings", icon: Settings, label: "Settings" },
+    { id: "scan", icon: Stamp, label: "Scan", active: tab === "scan" },
+    { id: "home", icon: Users, label: "Customers", active: inCustomers },
+    { id: "settings", icon: Store, label: "Shop", active: tab === "settings" },
   ] as const;
   if (!loading && !shops.length && canCreateBusiness) {
     return <BusinessSetup ownerId={session.user.id} onCreated={() => void load(true)} />;
@@ -3452,24 +3589,25 @@ function Dashboard({
             />
           ) : (
             <>
-              {tab === "home" && (
-                <DashboardHome
-                  business={selected}
-                  stats={stats}
-                  onIssueStamp={() => {
-                    void trackUsageEvent(session.user.id, 'scan_started', 'award');
-                    setStampsMode("stamps");
-                    setTab("scan");
-                  }}
-                  onRedeemReward={() => {
-                    void trackUsageEvent(session.user.id, 'scan_started', 'redeem');
-                    setStampsMode("reward");
-                    setTab("scan");
-                  }}
-                  onReport={() => setOwnerPage("ai")}
-                  onOpenGuide={() => setOwnerPage("tutorial")}
-                />
-              )}{" "}
+              {inCustomers && (
+                <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+                  {CUSTOMER_SUBTABS.map((sub) => (
+                    <Pressable
+                      key={sub.id}
+                      onPress={() => setTab(sub.id)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        backgroundColor: tab === sub.id ? orange : "#EFE9DF",
+                      }}
+                    >
+                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#59615A" }}>{sub.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              {tab === "home" && <CustomersHome business={selected} />}{" "}
               {tab === "scan" && (
                 <StampsScreen
                   business={selected}
@@ -3503,8 +3641,11 @@ function Dashboard({
           ))
         )}
       </KeyboardAwareScrollView>
+      {selected && !preview && ownedIds.has(selected.id) && needsLoyaltySetup === false && (
+        <Walkthrough businessId={selected.id} enabled />
+      )}
       <View style={styles.tabs}>
-        {nav.map(({ id, icon: Icon, label }) => (
+        {nav.map(({ id, icon: Icon, label, active }) => (
           <Pressable
             key={id}
             style={({ pressed }) => [styles.tab, pressed && styles.tabPressed]}
@@ -3515,12 +3656,12 @@ function Dashboard({
           >
             <Icon
               size={21}
-              strokeWidth={tab === id ? 2.5 : 1.9}
-              color={tab === id ? orange : "#59615A"}
+              strokeWidth={active ? 2.5 : 1.9}
+              color={active ? orange : "#59615A"}
             />
             <Text
               numberOfLines={1}
-              style={[styles.tabText, tab === id && styles.tabActive]}
+              style={[styles.tabText, active && styles.tabActive]}
             >
               {label}
             </Text>

@@ -10,6 +10,7 @@ import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 
 import { CATEGORIES, categoryCopy } from '@/lib/categories'
+import { SHOP_TYPES, rewardWords, type ShopTypeKey } from '@/lib/shop-types'
 import { OwnerLoadError } from '@/components/owner-load-error'
 const BRAND_COLORS = ['#8B7355', '#D9534F', '#3FA34D', '#3B82C4', '#8E5FC2', '#D6296B', '#1B3A4B', '#D98B4A']
 
@@ -56,6 +57,7 @@ export function OwnerOnboarding() {
     lat: number | null
     lng: number | null
     brand_color: string
+    shop_type: ShopTypeKey | null
     loyalty_type: Business['loyalty_type']
     stamps_required: number
   }>({
@@ -67,6 +69,7 @@ export function OwnerOnboarding() {
     lat: null,
     lng: null,
     brand_color: BRAND_COLORS[0],
+    shop_type: null,
     loyalty_type: 'stamp_card',
     stamps_required: 10,
   })
@@ -114,7 +117,7 @@ export function OwnerOnboarding() {
     r.title.trim().length > 0 && Number.isInteger(r.stamp_threshold) && r.stamp_threshold >= 1 && r.stamp_threshold <= 100
   const canContinue =
     step === 0
-      ? form.name.trim().length > 0 && Boolean(form.category)
+      ? form.name.trim().length > 0 && Boolean(form.category) && form.shop_type !== null
       : step === 2
         ? Number.isInteger(form.stamps_required) && form.stamps_required >= 1 && form.stamps_required <= 100
         : step === 3
@@ -211,6 +214,23 @@ export function OwnerOnboarding() {
                   placeholder="e.g. Bean & Bird"
                 />
               </Field>
+              <p className="text-sm font-semibold text-foreground mb-2">What kind of shop are you? *</p>
+              <div className="grid gap-2 mb-5">
+                {SHOP_TYPES.map((t) => (
+                  <button data-press-feedback
+                    key={t.key}
+                    type="button"
+                    onClick={() => setForm({ ...form, shop_type: t.key, loyalty_type: t.loyalty_type, category: t.category })}
+                    className={
+                      'rounded-xl border-2 p-3 text-left ' +
+                      (form.shop_type === t.key ? 'border-primary bg-card' : 'border-border bg-white/40')
+                    }
+                  >
+                    <span className="block font-bold text-sm text-foreground">{t.title}</span>
+                    <span className="block text-xs text-muted-foreground">{t.blurb}</span>
+                  </button>
+                ))}
+              </div>
               <Field label="Category *">
                 <select
                   className={inputClass}
@@ -298,30 +318,11 @@ export function OwnerOnboarding() {
                 ))}
               </div>
 
-              <p className="text-sm font-semibold text-foreground mb-1">Loyalty program type</p>
-              <p className="text-xs text-muted-foreground mb-3">You can change this any time.</p>
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                {[
-                  { value: 'stamp_card' as const, title: 'Stamps' },
-                  { value: 'points' as const, title: 'Points' },
-                  { value: 'tiered' as const, title: 'Visits' },
-                ].map((opt) => (
-                  <button data-press-feedback
-                    key={opt.value}
-                    onClick={() => setForm({ ...form, loyalty_type: opt.value })}
-                    className={
-                      'rounded-xl border-2 py-3 font-bold text-sm ' +
-                      (form.loyalty_type === opt.value
-                        ? 'border-primary bg-card text-foreground'
-                        : 'border-border bg-white/40 text-muted-foreground')
-                    }
-                  >
-                    {opt.title}
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs text-muted-foreground mb-6">
+                {SHOP_TYPES.find((t) => t.key === form.shop_type)?.blurb} You can change this any time in Settings.
+              </p>
 
-              <Field label="How many to unlock a reward?">
+              <Field label={rewardWords(form.loyalty_type).thresholdLabel}>
                 <input
                   type="number"
                   min={1}
@@ -366,7 +367,7 @@ export function OwnerOnboarding() {
                       placeholder="Anything customers should know"
                     />
                   </Field>
-                  <Field label={`Unlocks at (${form.loyalty_type === 'points' ? 'points' : form.loyalty_type === 'tiered' ? 'visits' : 'stamps'}) *`}>
+                  <Field label={`Unlocks at (${rewardWords(form.loyalty_type).units}) *`}>
                     <input
                       type="number"
                       min={1}

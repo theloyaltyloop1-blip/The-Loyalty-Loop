@@ -1,31 +1,71 @@
 import * as React from 'react'
-import { NavLink, Link, Navigate } from 'react-router-dom'
-import { LineChart, Bell, Megaphone, Star, Settings, LogOut, ChevronDown, ArrowLeftRight, ScanLine, LifeBuoy, Wrench, BookOpen } from 'lucide-react'
+import { NavLink, Link, Navigate, useLocation } from 'react-router-dom'
+import { Users, Store, LogOut, ChevronDown, ArrowLeftRight, ScanLine } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { onBrandColor } from '@/lib/utils'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import { OwnerWalkthrough } from '@/components/owner-walkthrough'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { OwnerLoadError } from '@/components/owner-load-error'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
-const OWNER_NAV_ITEMS = [
-  { label: 'Analytics', to: '/owner', icon: LineChart, end: true },
+type NavItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }>; end?: boolean; group?: string[] }
+
+// Three tabs only. Customers and Shop are groups: the old pages still exist
+// and appear as sub-tabs under their group (see SUB_TABS).
+const CUSTOMERS_PATHS = ['/owner', '/owner/analytics', '/owner/announcements', '/owner/notifications']
+const SHOP_PATHS = ['/owner/settings', '/owner/reviews', '/owner/support', '/owner/tools', '/owner/tutorial']
+
+const OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Scan', to: '/owner/scan', icon: ScanLine },
-  { label: 'Growth tools', to: '/owner/tools', icon: Wrench },
-  { label: 'Getting started', to: '/owner/tutorial', icon: BookOpen },
-  { label: 'Notifications', to: '/owner/notifications', icon: Bell },
-  { label: 'Announcements', to: '/owner/announcements', icon: Megaphone },
-  { label: 'Reviews', to: '/owner/reviews', icon: Star },
-  { label: 'Help & support', to: '/owner/support', icon: LifeBuoy },
-  { label: 'Shop settings', to: '/owner/settings', icon: Settings },
+  { label: 'Customers', to: '/owner', icon: Users, group: CUSTOMERS_PATHS },
+  { label: 'Shop', to: '/owner/settings', icon: Store, group: SHOP_PATHS },
 ]
+
+const SUB_TABS: Record<string, { label: string; to: string }[]> = {
+  customers: [
+    { label: 'Customers', to: '/owner' },
+    { label: 'Insights', to: '/owner/analytics' },
+    { label: 'News posts', to: '/owner/announcements' },
+    { label: 'Alerts', to: '/owner/notifications' },
+  ],
+  shop: [
+    { label: 'Profile & rewards', to: '/owner/settings' },
+    { label: 'Reviews', to: '/owner/reviews' },
+    { label: 'Help', to: '/owner/support' },
+    { label: 'More', to: '/owner/tools' },
+  ],
+}
+
+function SubTabs({ pathname }: { pathname: string }) {
+  const key = CUSTOMERS_PATHS.includes(pathname) ? 'customers' : SHOP_PATHS.includes(pathname) ? 'shop' : null
+  if (!key) return null
+  // The tutorial and growth tools are the "More" link; keep More highlighted there.
+  const active = (to: string) => pathname === to || (to === '/owner/tools' && pathname === '/owner/tutorial')
+  return (
+    <nav aria-label="Section" className="mb-6 flex gap-1 overflow-x-auto">
+      {SUB_TABS[key].map((t) => (
+        <Link
+          key={t.to}
+          to={t.to}
+          className={
+            'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors ' +
+            (active(t.to) ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-foreground/8')
+          }
+        >
+          {t.label}
+        </Link>
+      ))}
+    </nav>
+  )
+}
 
 // A staff-only account (no shop of their own) only ever needs the scan
 // screen. Settings/Analytics/Announcements etc. are all owner-only pages
 // server-side anyway, so there's nothing else for them to do here.
-const STAFF_NAV_ITEMS = [{ label: 'Scan', to: '/owner/scan', icon: ScanLine, end: true }]
+const STAFF_NAV_ITEMS: NavItem[] = [{ label: 'Scan', to: '/owner/scan', icon: ScanLine, end: true }]
 
 function BusinessSwitcher() {
   const { businesses, business, staffBusinesses, setBusinessId } = useOwner()
@@ -81,6 +121,7 @@ function BusinessSwitcher() {
 export function OwnerLayout({ children }: { children: React.ReactNode }) {
   const { signOut, primaryRole, rolesLoading, roles } = useAuth()
   const { businesses, staffBusinesses, business, loading, loadError, needsRewardSetup } = useOwner()
+  const { pathname } = useLocation()
   const isOwner = businesses.length > 0
   const navItems = isOwner ? OWNER_NAV_ITEMS : STAFF_NAV_ITEMS
   if (rolesLoading) return <BarePageSkeleton />
@@ -105,15 +146,18 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
         <div className="mt-3 md:mt-0"><BusinessSwitcher /></div>
 
         <nav aria-label="Business navigation" className="flex gap-1 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
-          {navItems.map(({ label, to, icon: Icon, end }) => (
+          {navItems.map(({ label, to, icon: Icon, end, group }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
-              className={({ isActive }) =>
+              className={({ isActive: routeActive }) => {
+                const isActive = group ? group.includes(pathname) : routeActive
+                return (
                 'flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition-[transform,background-color,color] duration-200 ease-out active:scale-[0.97] md:gap-3 md:rounded-xl md:px-3.5 md:py-2.5 md:text-[15px] ' +
                 (isActive ? 'bg-peach text-peach-ink' : 'text-olive-ink/75 hover:bg-olive-ink/10 hover:text-olive-ink')
-              }
+                )
+              }}
             >
               <Icon className="h-5 w-5" />
               {label}
@@ -145,6 +189,8 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main id="main-content" tabIndex={-1} className="w-full min-w-0 flex-1 px-4 py-6 sm:px-6 md:max-w-6xl md:px-10 md:py-10">
+        {isOwner && business && <OwnerWalkthrough businessId={business.id} />}
+        {isOwner && <SubTabs pathname={pathname} />}
         {children}
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           <div className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</div>

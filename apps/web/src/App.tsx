@@ -16,6 +16,7 @@ import { Toaster } from '@/components/ui/sonner'
 
 // Owner/admin-only screens are rarely hit by a typical customer visit, so
 // they're code-split out of the main bundle rather than shipped upfront.
+const OwnerCustomers = lazy(() => import('@/pages/owner/Customers').then((m) => ({ default: m.OwnerCustomers })))
 const OwnerAnalytics = lazy(() => import('@/pages/owner/Analytics').then((m) => ({ default: m.OwnerAnalytics })))
 const OwnerOnboarding = lazy(() => import('@/pages/owner/Onboarding').then((m) => ({ default: m.OwnerOnboarding })))
 const OwnerScan = lazy(() => import('@/pages/owner/Scan').then((m) => ({ default: m.OwnerScan })))
@@ -117,7 +118,8 @@ function App() {
                 <Route path="/admin/trending" element={<Navigate to="/access?view=trending" replace />} />
                 <Route path="/join" element={<Signup asOwner />} />
                 <Route path="/brand" element={<BrandWorkspace />} />
-                <Route path="/owner" element={<OwnerAnalytics />} />
+                <Route path="/owner" element={<OwnerCustomers />} />
+                <Route path="/owner/analytics" element={<OwnerAnalytics />} />
                 <Route path="/owner/onboarding" element={<OwnerOnboarding />} />
                 <Route path="/owner/scan" element={<OwnerScan />} />
                 <Route path="/owner/tools" element={<OwnerTools />} />

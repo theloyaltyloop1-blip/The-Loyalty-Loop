@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { rewardWords } from '@/lib/shop-types'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -29,12 +30,6 @@ import {
 import { usePageMeta } from '@/lib/use-page-meta'
 import { categoryCopy } from '@/lib/categories'
 import { onBrandColor } from '@/lib/utils'
-
-const UNIT_LABEL: Record<string, string> = {
-  stamp_card: 'stamp',
-  points: 'point',
-  tiered: 'visit',
-}
 
 const poundsLabel = (pence: number) => `£${pence % 100 === 0 ? pence / 100 : (pence / 100).toFixed(2)}`
 
@@ -246,7 +241,7 @@ export function ShopDetail() {
   // Light brand colours need a heavier shade for the white hero text to stay readable.
   const heroShade = onBrandColor(business.brand_color) === '#ffffff' ? 0.2 : 0.55
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
-  const unit = UNIT_LABEL[business.loyalty_type] ?? 'stamp'
+  const unit = rewardWords(business.loyalty_type).unit
   const stampProgress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
 
   async function handleJoin() {

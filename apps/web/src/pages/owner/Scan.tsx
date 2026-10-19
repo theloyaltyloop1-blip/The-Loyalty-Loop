@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { rewardWords } from '@/lib/shop-types'
 import { Navigate } from 'react-router-dom'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import { Camera, CameraOff, Check, Gift, ScanLine } from 'lucide-react'
@@ -31,12 +32,6 @@ import {
 import { isPosConnected, recordPosScan, cancelPosScan, checkTillNow, fetchPosScanStatus } from '@/lib/pos'
 import { PosReview } from '@/components/pos-review'
 import { handleTask } from '@/lib/async'
-
-const UNIT_LABEL: Record<string, string> = {
-  stamp_card: 'stamp',
-  points: 'point',
-  tiered: 'visit',
-}
 
 type ScanMode = 'award' | 'redeem'
 
@@ -893,7 +888,7 @@ export function OwnerScan() {
   const activeStaff = !isOwner ? staffBusinesses.find((s) => s.business_id === staffBizId) ?? staffBusinesses[0] : null
   const activeBusinessId = isOwner ? business!.id : activeStaff?.business_id
   const loyaltyType = isOwner ? business!.loyalty_type : activeStaff?.business.loyalty_type
-  const unit = UNIT_LABEL[loyaltyType ?? 'stamp_card'] ?? 'stamp'
+  const unit = rewardWords(loyaltyType).unit
   const spendShop = (isOwner ? business!.reward_model : activeStaff?.business.reward_model) === 'spend_threshold'
   const canScan = isOwner || Boolean(activeStaff?.can_scan_stamps)
   const canRedeem = isOwner || Boolean(activeStaff?.can_redeem_rewards)
