@@ -2897,6 +2897,11 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 - The migration file itself is correct. An earlier failure came from my retyped copy in the test call, which had dropped parentheses around a CASE expression. Lesson: send migration text exactly as in the file.
 - Still NOT applied to production.
 
+## PRODUCTION APPLY (2026-10-20) - owner-approved, Claude
+- Applied to production project tgukdabfvvoywawmzbdo: `programme_tiers_points` (Membership tiers + Points, nightly tier recompute job) and `create_shop_with_programme` (onboarding). Both applied from the exact file text; both verified afterwards: tables and columns present, reward_model check allows stamp_legacy/spend_threshold/tiers/points, 4 functions present, anon cannot run redeem_points_reward or create_shop_with_programme, RLS on for membership_tiers and points_redemptions, nightly cron job present. Shop count unchanged (4).
+- Security advisor: new WARN lines for the new SECURITY DEFINER functions being callable by signed-in users. This is the same accepted pattern as the rest of the app (about 70 existing functions); each checks the caller inside. INFO lines for pos_* and tier tables with RLS and no policies are intentional (service-role-only tables).
+- NOT done: device and browser checks (cannot sign in); Part B screens (chat loyalty-b-screens, still running); test-channel OTA (owner only).
+
 ## Copy-ready prompt for Claude Code
 
 Continue in C:/Users/zahih/AppData/Local/Temp/integ on loyalty-integration. Read CLAUDE_HANDOFF.md. WhatsApp is out of the remaining loyalty programme scope; keep existing WhatsApp code. Native bundling exports pass for shopper and retailer. Next: on-device check of shopper home and wallet programme cards (needs a device or test-channel OTA the owner approves), then fix anything found. Product-owner approval is still required for hosted migrations, commits and releases.
