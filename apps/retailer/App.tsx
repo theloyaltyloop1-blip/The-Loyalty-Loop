@@ -71,6 +71,7 @@ import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, se
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
 import { Walkthrough } from "./src/components/Walkthrough";
+import { useLaunchUpdate } from "./src/launch-update";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 
@@ -3711,6 +3712,7 @@ function AppRoot() {
     [locked, setLocked] = useState(false),
     [checkingLock, setCheckingLock] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  const checkingUpdate = useLaunchUpdate();
   useEffect(() => { getOnboardingComplete().then(setOnboardingComplete); }, []);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -3788,7 +3790,7 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     );
-  if (onboardingComplete === null || checking || (session && (!allowed || checkingLock)))
+  if (checkingUpdate || onboardingComplete === null || checking || (session && (!allowed || checkingLock)))
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
