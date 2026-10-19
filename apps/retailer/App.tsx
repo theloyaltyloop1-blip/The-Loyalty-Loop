@@ -3675,7 +3675,7 @@ function Dashboard({
             }}
           >
             {active && <Icon size={20} strokeWidth={2.3} color="#fff" />}
-            <Text numberOfLines={1} style={[styles.tabText, active && styles.tabActive]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.tabText, active && styles.tabActive]}>
               {label}
             </Text>
           </Pressable>
@@ -4603,12 +4603,14 @@ const styles = StyleSheet.create({
     bottom: 16,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#262523",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(20,20,18,.08)",
     borderRadius: 999,
     padding: 6,
     gap: 2,
     shadowColor: "#000",
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.16,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 10,
@@ -4620,10 +4622,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
     borderRadius: 999,
   },
-  tabActivePill: { flex: 1.5, backgroundColor: orange },
-  tabText: { color: "#B9B6AE", fontWeight: "700", fontSize: 13 },
+  tabActivePill: { flex: 1.7, paddingHorizontal: 12, backgroundColor: orange },
+  tabText: { color: "#59615A", fontWeight: "700", fontSize: 12.5 },
   tabActive: { color: "#fff", fontWeight: "800" },
 });
