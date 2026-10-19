@@ -56,6 +56,8 @@ import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { AppAlertHost, showAlert } from './src/components/AppAlert'
 import { SuccessCheck } from './src/components/SuccessCheck'
+import { HowItWorks, OpeningHoursList, ShopHero, type OpeningHours, type TierRow } from './src/shop-profile'
+import { pointsStanding, programmeIdFor, tierStanding } from '@loyalty-loop/loyalty'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
 import { trendingShops } from './src/trending'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
@@ -332,8 +334,9 @@ type Business = {
   brand_color?: string
   logo_url?: string | null
   cover_url?: string | null
+  opening_hours?: OpeningHours | null
   loyalty_type?: string
-  loyalty_config?: { stamps_required?: number }
+  loyalty_config?: { stamps_required?: number; points_per_pound?: number }
   reward_model?: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'
   reward_threshold_pence?: number | null
   features?: string[] | null
@@ -348,6 +351,8 @@ type Membership = {
   promos_opted_out?: boolean | null
   reward_progress_pence?: number | null
   redemption_blocked_reason?: string | null
+  current_tier?: string | null
+  current_tier_id?: string | null
 }
 // Amounts show in the shop's own currency (see src/money.ts).
 const pounds = (pence: number, countryCode?: string | null) => shopMoney(countryCode)(pence)
@@ -366,6 +371,7 @@ type RewardCatalogItem = {
   description?: string | null
   stamp_threshold: number
   spend_threshold_pence?: number | null
+  points_cost?: number | null
 }
 type ReviewReply = { body: string; created_at: string }
 type ShopReview = {
@@ -1042,9 +1048,14 @@ function ShopDetail({
   // Spend shops (ARCH_PLAN.md §4.11) count pence towards £ reward tiers.
   // Negative progress (after a refund or a corrected entry) displays as £0.00.
   const spendShop = business.reward_model === 'spend_threshold'
+  const programmeId = programmeIdFor(business)
   const value = spendShop
     ? Math.max(0, membership?.reward_progress_pence ?? 0)
-    : business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
+    : programmeId === 'points' || business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
+  const [tiers, setTiers] = useState<TierRow[]>([])
+  const [rollingSpend, setRollingSpend] = useState<number | null>(null)
+  const scrollRef = useRef<ScrollView>(null)
+  const cardY = useRef(0)
   const [showStampSuccess, setShowStampSuccess] = useState(false)
 
   // Celebrate a stamp/points increase picked up on mount or refresh — the
@@ -1094,7 +1105,7 @@ function ShopDetail({
     setCatalogLoading(true)
     supabase
       .from('reward_catalog')
-      .select('id,title,description,stamp_threshold,spend_threshold_pence')
+      .select('id,title,description,stamp_threshold,spend_threshold_pence,points_cost')
       .eq('business_id', business.id)
       .order(spendShop ? 'spend_threshold_pence' : 'stamp_threshold')
       .order(spendShop ? 'stamp_threshold' : 'spend_threshold_pence')
@@ -1111,6 +1122,42 @@ function ShopDetail({
       active = false
     }
   }, [business.id, spendShop])
+
+  // Membership tiers: the ladder is public. The shopper's own spend over the last
+  // 12 months is read from their own transactions (they can see those); if that
+  // fails the page shows the next level's threshold instead of a distance.
+  useEffect(() => {
+    if (programmeId !== 'tiers') { setTiers([]); return }
+    let active = true
+    supabase
+      .from('membership_tiers')
+      .select('id,name,spend_threshold_pence,perks,colour,sort_order')
+      .eq('business_id', business.id)
+      .order('spend_threshold_pence')
+      .then(({ data, error }) => {
+        if (active) setTiers(error ? [] : ((data || []) as TierRow[]))
+      })
+    return () => { active = false }
+  }, [business.id, programmeId])
+
+  useEffect(() => {
+    if (programmeId !== 'tiers' || !membership) { setRollingSpend(null); return }
+    let active = true
+    const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
+    supabase
+      .from('transactions')
+      .select('value')
+      .eq('user_id', userId)
+      .eq('business_id', business.id)
+      .eq('type', 'spend')
+      .is('voided_at', null)
+      .gt('created_at', since)
+      .then(({ data, error }) => {
+        if (!active) return
+        setRollingSpend(error || !data ? null : data.reduce((sum, row) => sum + Number(row.value || 0), 0))
+      })
+    return () => { active = false }
+  }, [business.id, userId, programmeId, membership?.current_tier_id, !!membership])
 
   useEffect(() => {
     let active = true
@@ -1289,6 +1336,12 @@ function ShopDetail({
     ])
   }
 
+  const pointsView = pointsStanding(
+    business,
+    value,
+    catalog.filter((r) => (r.points_cost ?? 0) > 0).map((r) => ({ id: r.id, title: r.title, points_cost: r.points_cost as number })),
+  )
+
   async function join() {
     setBusy(true)
     try {
@@ -1351,37 +1404,28 @@ function ShopDetail({
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAwareScrollView contentContainerStyle={styles.screen}>
+      <KeyboardAwareScrollView ref={scrollRef} contentContainerStyle={styles.screen}>
         <Pressable onPress={onBack} style={styles.backRow}>
           <ChevronLeftIcon size={18} />
           <Text style={styles.back}>Back</Text>
         </Pressable>
 
-        <View style={[styles.detailCover, { backgroundColor: business.brand_color || primary }]}>
-          {business.cover_url && <Image source={{ uri: business.cover_url }} style={StyleSheet.absoluteFill} />}
-          <Pressable onPress={onToggleFavourite} style={({ pressed }) => [styles.favouriteButton, pressed && styles.pressed]}>
-            <HeartIcon color={favourite ? primary : foreground} filled={favourite} size={18} />
-          </Pressable>
-        </View>
-
-        <Text style={styles.title}>{business.name}</Text>
-        <Text style={styles.muted}>
-          {business.category || 'Local business'}
-          {business.address ? ` · ${formatAddress(business.address)}` : ''}
-        </Text>
-        {pageRating ? (
-          <Text style={[styles.muted, { color: foreground, fontWeight: '700', marginTop: 4 }]}>
-            {pageRating}{' '}
-            <Text style={{ fontWeight: '400' }}>{reviews.length === 1 ? 'review' : 'reviews'}</Text>
-          </Text>
-        ) : null}
-        {business.features?.length ? (
-          <View style={featureStyles.row}>
-            {business.features.map(id => (
-              <View key={id} style={featureStyles.badge}><Text style={featureStyles.badgeText}>{featureBadge(id, business.halal_certifier)}</Text></View>
-            ))}
-          </View>
-        ) : null}
+        <ShopHero
+          business={business}
+          favouriteButton={
+            <Pressable onPress={onToggleFavourite} style={({ pressed }) => [styles.favouriteButton, pressed && styles.pressed]}>
+              <HeartIcon color={favourite ? primary : foreground} filled={favourite} size={18} />
+            </Pressable>
+          }
+          ratingText={pageRating || null}
+          reviewCount={reviews.length}
+          featureLabels={(business.features ?? []).map(id => featureBadge(id, business.halal_certifier))}
+          isMember={Boolean(membership)}
+          joining={busy}
+          onJoin={join}
+          onYourCard={() => scrollRef.current?.scrollTo({ y: Math.max(0, cardY.current - 12), animated: true })}
+        />
+        {business.description ? <Text style={styles.description}>{business.description}</Text> : null}
 
         {cardLinking.enabled && cardLinking.linkedShopIds.has(business.id) ? (
           cardLinking.cards.length === 0 ? (
@@ -1407,12 +1451,19 @@ function ShopDetail({
         ) : null}
 
         {membership ? (
-          <View style={styles.loyaltyCard}>
+          <View style={styles.loyaltyCard} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
             <View style={styles.loyaltyCardHeaderRow}>
-              <Text style={styles.sectionTitle}>{spendShop ? 'Your spend' : business.loyalty_type === 'points' ? 'Your points' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
-              <Text style={styles.loyaltyCardCount}>{spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}</Text>
+              <Text style={styles.sectionTitle}>{programmeId === 'tiers' ? 'Your level' : programmeId === 'points' ? 'Your points' : spendShop ? 'Your spend' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
+              <Text style={styles.loyaltyCardCount}>{programmeId === 'tiers' ? membership.current_tier || 'Getting started' : programmeId === 'points' ? `${value} ${value === 1 ? 'point' : 'points'}` : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}</Text>
             </View>
-            <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
+            {programmeId === 'tiers' ? (
+              rollingSpend != null && tiers.length ? <LoyaltyProgressBar pct={tierStanding(tiers, rollingSpend).fraction * 100} color={business.brand_color || primary} /> : null
+            ) : programmeId === 'points' ? (
+              pointsView.next ? <LoyaltyProgressBar pct={pointsView.fraction * 100} color={business.brand_color || primary} /> : null
+            ) : (
+              <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
+            )}
+            {programmeId === 'points' && pointsView.next ? <Text style={styles.spendHint}>{pointsView.label}</Text> : null}
             {spendShop ? (
               <Text style={styles.spendHint}>
                 {membership.redemption_blocked_reason
@@ -1439,35 +1490,19 @@ function ShopDetail({
               <Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: primary }} />
             </View>
           </View>
-        ) : (
-          <View style={styles.joinCard}>
-            <Text style={styles.joinTitle}>Join {business.name}'s loyalty card</Text>
-            <View style={styles.rewardPill}>
-              <Text style={styles.rewardPillText}>REWARDS YOU CAN UNLOCK</Text>
-            </View>
-            {catalogLoading ? (
-              <ActivityIndicator color={business.brand_color || primary} style={{ marginVertical: 12 }} />
-            ) : catalog.length ? (
-              <View style={styles.rewardTierList}>
-                {catalog.slice(0, 3).map((reward) => (
-                  <View key={reward.id} style={styles.rewardTier}>
-                    <Text style={styles.rewardTierThreshold}>{spendShop && reward.spend_threshold_pence ? `Spend ${pounds(reward.spend_threshold_pence, business.country_code).replace('.00', '')}` : `${reward.stamp_threshold} ${label}`}</Text>
-                    <Text style={styles.rewardTierTitle}>{reward.title}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.rewardTitleLarge}>Rewards are being set up</Text>
-            )}
-            {!catalogLoading && catalog.length > 3 && <Text style={styles.muted}>Plus more rewards as you collect.</Text>}
-            {!catalogLoading && !catalog.length && <Text style={styles.muted}>Collect {threshold} {label} to unlock a reward.</Text>}
-            <View style={{ marginTop: 20 }}>
-              <Button title={busy ? 'Joining…' : 'Join card'} onPress={join} disabled={busy} />
-            </View>
-          </View>
-        )}
+        ) : null}
 
-        {membership && mapDestination && <View style={styles.visitSection}>
+        <HowItWorks
+          business={business}
+          membership={membership}
+          catalog={catalog}
+          tiers={tiers}
+          rollingSpendPence={rollingSpend}
+          money={(pence) => pounds(pence, business.country_code)}
+          refresh={refresh}
+        />
+
+        {mapDestination ? <View style={styles.visitSection}>
           <Text style={styles.sectionTitle}>Find your way there</Text>
           {hasMapCoordinates ? (
             <View style={styles.mapEmbed}>
@@ -1493,15 +1528,20 @@ function ShopDetail({
           <Pressable onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`)} style={({ pressed }) => [styles.directionsButton, pressed && styles.pressed]}>
             <Text style={styles.directionsButtonText}>Get directions in Google Maps →</Text>
           </Pressable>
-        </View>}
+        </View> : null}
 
-        {membership && (business.phone || socialLinks.length > 0) && <View style={styles.visitSection}>
+        {(business.phone || socialLinks.length > 0) ? <View style={styles.visitSection}>
           <Text style={styles.sectionTitle}>Stay connected</Text>
           <View style={styles.contactList}>
             {business.phone && <Pressable onPress={() => void Linking.openURL(`tel:${business.phone}`)} style={styles.contactRow}><Text style={styles.contactLabel}>Call the shop</Text><Text style={styles.contactValue}>{business.phone}</Text></Pressable>}
             {socialLinks.map((link) => <Pressable key={link.label} onPress={() => void Linking.openURL(link.url)} style={styles.contactRow}><Text style={styles.contactLabel}>{link.label}</Text><Text numberOfLines={1} style={styles.contactValue}>{link.value}</Text></Pressable>)}
           </View>
-        </View>}
+        </View> : null}
+
+        {business.opening_hours && Object.keys(business.opening_hours).length > 0 ? <View style={styles.visitSection}>
+          <Text style={styles.sectionTitle}>Opening hours</Text>
+          <OpeningHoursList hours={business.opening_hours} />
+        </View> : null}
 
         {membership && gallery.length > 0 && <View style={styles.gallerySection}>
           <View style={styles.galleryHeading}><View><Text style={styles.sectionTitle}>From the shop</Text><Text style={styles.gallerySubheading}>Scroll through their latest moments</Text></View><Text style={styles.galleryCount}>{gallery.length} photos</Text></View>
@@ -1512,11 +1552,6 @@ function ShopDetail({
             </View>)}
           </View>
         </View>}
-
-        <Text style={styles.sectionTitle}>How it works</Text>
-        <Text style={styles.description}>
-          Earn a {label.slice(0, -1)} every time you visit. When you reach the target, your reward will appear in the Rewards tab.
-        </Text>
 
         <View style={styles.reviewsSection}>
           <Text style={styles.sectionTitle}>Reviews</Text>
