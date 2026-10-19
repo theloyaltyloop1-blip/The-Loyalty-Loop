@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
   AppState,
-  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -29,6 +28,7 @@ import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
 import { shopMoney } from './src/money'
 import { useCountry } from './src/use-country'
+import { ratingLabel, ratingStats } from './src/ratings'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -54,6 +54,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
+import { AppAlertHost, showAlert } from './src/components/AppAlert'
 import { SuccessCheck } from './src/components/SuccessCheck'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
 import { trendingShops } from './src/trending'
@@ -316,6 +317,8 @@ type Business = {
   id: string
   name: string
   country_code?: string | null
+  rating_avg?: number | null
+  rating_count?: number | null
   category?: string | null
   description?: string | null
   address?: string | null
@@ -489,7 +492,7 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
 
   async function submit() {
     if (!email.trim() || password.length < 6 || (mode === 'signUp' && !name.trim())) {
-      return Alert.alert('Check your details', 'Enter your name, email and a password of at least 6 characters.')
+      return showAlert('Check your details', 'Enter your name, email and a password of at least 6 characters.')
     }
     setBusy(true)
     try {
@@ -501,14 +504,14 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
         })
         if (error) throw error
         if (data.session) onSession(data.session)
-        else Alert.alert('Check your email', 'Confirm your email address, then sign in to start collecting rewards.')
+        else showAlert('Check your email', 'Confirm your email address, then sign in to start collecting rewards.')
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw error
         onSession(data.session)
       }
     } catch (e) {
-      Alert.alert('Could not continue', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not continue', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setBusy(false)
     }
@@ -520,7 +523,7 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
       const session = await signInWithGoogle()
       if (session) onSession(session)
     } catch (e) {
-      Alert.alert('Could not sign in with Google', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not sign in with Google', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setBusy(false)
     }
@@ -534,7 +537,7 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
     } catch (e) {
       // The user cancelling the Apple sheet isn't an error worth alerting on.
       if (e instanceof Error && e.message.includes('ERR_REQUEST_CANCELED')) return
-      Alert.alert('Could not sign in with Apple', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not sign in with Apple', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setBusy(false)
     }
@@ -546,7 +549,7 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
       const session = await signInWithAppleWeb()
       if (session) onSession(session)
     } catch (e) {
-      Alert.alert('Could not sign in with Apple', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not sign in with Apple', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setBusy(false)
     }
@@ -618,12 +621,12 @@ function confirmDeleteAccount() {
       if (error) throw error
       if (data && typeof data === 'object' && 'error' in data && data.error) throw new Error(String(data.error))
       await supabase.auth.signOut().catch(() => undefined)
-      Alert.alert('Account deleted', 'Your account and its data have been permanently deleted.')
+      showAlert('Account deleted', 'Your account and its data have been permanently deleted.')
     } catch (e) {
-      Alert.alert('Could not delete account', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not delete account', e instanceof Error ? e.message : 'Please try again.')
     }
   }
-  Alert.alert(
+  showAlert(
     'Delete your account?',
     'This permanently deletes your login, loyalty cards, linked payment cards, stamps, rewards and reviews. This cannot be undone.',
     [
@@ -632,7 +635,7 @@ function confirmDeleteAccount() {
         text: 'Continue',
         style: 'destructive',
         onPress: () =>
-          Alert.alert('Are you absolutely sure?', 'There is no way to recover your account or rewards afterwards.', [
+          showAlert('Are you absolutely sure?', 'There is no way to recover your account or rewards afterwards.', [
             { text: 'Keep my account', style: 'cancel' },
             { text: 'Delete everything', style: 'destructive', onPress: () => void run() },
           ]),
@@ -720,13 +723,13 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   }, [visible, view])
 
   function confirmRemoveCard(linkedCard: LinkedCard) {
-    Alert.alert(`Remove ${cardLabel(linkedCard)}?`, 'You’ll stop earning automatically when you pay with this card. Progress you’ve already earned stays.', [
+    showAlert(`Remove ${cardLabel(linkedCard)}?`, 'You’ll stop earning automatically when you pay with this card. Progress you’ve already earned stays.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
         style: 'destructive',
         onPress: () => void cardLinking.remove(linkedCard.linkedCardId).then((ok) => {
-          if (!ok) Alert.alert('Couldn’t remove this card', 'Please try again.')
+          if (!ok) showAlert('Couldn’t remove this card', 'Please try again.')
         }),
       },
     ])
@@ -734,26 +737,26 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
 
   async function unblock(blockedId: string) {
     const { error } = await supabase.from('user_blocks').delete().eq('blocker_id', userId).eq('blocked_id', blockedId)
-    if (error) return Alert.alert('Could not unblock', error.message)
+    if (error) return showAlert('Could not unblock', error.message)
     void loadBlocks()
   }
   async function toggleBiometricLock(next: boolean) {
     const result = await setBiometricLock(next)
-    if (!result.success) return Alert.alert('Could not update app lock', result.error)
+    if (!result.success) return showAlert('Could not update app lock', result.error)
     setBiometricEnabled(next)
   }
   async function toggleUsageAnalytics(next: boolean) { await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next) }
   async function saveName() {
     const trimmed = name.trim()
-    if (!trimmed) return Alert.alert('Add your name', 'Enter the name you would like shops to see.')
+    if (!trimmed) return showAlert('Add your name', 'Enter the name you would like shops to see.')
     setSavingName(true)
     const { error } = await supabase.auth.updateUser({ data: { first_name: trimmed } })
     setSavingName(false)
-    if (error) return Alert.alert('Could not save your name', error.message)
+    if (error) return showAlert('Could not save your name', error.message)
     setView('root')
   }
   function confirmSignOut() {
-    Alert.alert('Sign out?', 'You can sign back in at any time.', [
+    showAlert('Sign out?', 'You can sign back in at any time.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: () => void supabase.auth.signOut() },
     ])
@@ -823,7 +826,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   title="Your country"
                   detail={`${country.country.name} · prices in ${country.country.currency_code}`}
                   onPress={() =>
-                    Alert.alert('Where are you?', 'We show shops in your country.', [
+                    showAlert('Where are you?', 'We show shops in your country.', [
                       ...country.countries.map((option) => ({ text: option.name, onPress: () => void country.setCountry(option.code) })),
                       { text: 'Cancel', style: 'cancel' as const },
                     ])
@@ -1082,7 +1085,7 @@ function ShopDetail({
   // pushed nor added to this customer's inbox (deliver_shop_announcement trigger).
   async function setShopNotifications(enabled: boolean) {
     const { error } = await supabase.from('memberships').update({ promos_opted_out: !enabled }).eq('user_id', userId).eq('business_id', business.id)
-    if (error) return Alert.alert('Could not update notifications', error.message)
+    if (error) return showAlert('Could not update notifications', error.message)
     await refresh()
   }
 
@@ -1173,11 +1176,13 @@ function ShopDetail({
   }, [business.id, userId])
 
   const myReview = reviews.find((review) => review.user_id === userId)
+  // Worked out from the reviews loaded on this page, so it updates as soon as someone posts.
+  const pageRating = ratingLabel(ratingStats(reviews.map((review) => ({ business_id: business.id, rating: review.rating }))).get(business.id) ?? {})
 
   async function saveReview() {
     const cleaned = reviewBody.trim()
     if (cleaned && containsBlockedLanguage(cleaned)) {
-      Alert.alert('Please rewrite your review', 'It looks like your review contains language that breaks our community rules. Reviews with hate speech, slurs or harassment are not allowed.')
+      showAlert('Please rewrite your review', 'It looks like your review contains language that breaks our community rules. Reviews with hate speech, slurs or harassment are not allowed.')
       return
     }
     const visit = replyChecks.current
@@ -1200,10 +1205,10 @@ function ShopDetail({
       for (const delay of [4000, 12000]) {
         visit.push(setTimeout(() => { if (visit === replyChecks.current) void loadReviews() }, delay))
       }
-      Alert.alert('Review saved', 'Thank you for sharing your experience.')
+      showAlert('Review saved', 'Thank you for sharing your experience.')
     } catch (error) {
       if (visit === replyChecks.current) {
-        Alert.alert('Could not save review', error instanceof Error ? error.message : 'Please try again.')
+        showAlert('Could not save review', error instanceof Error ? error.message : 'Please try again.')
       }
     } finally {
       // Always reset, or the next shop's Save button would stay disabled.
@@ -1221,12 +1226,12 @@ function ShopDetail({
           .from('review_reports')
           .upsert({ review_id: review.id, reporter_id: userId, reason }, { onConflict: 'review_id,reporter_id' })
         if (error) throw error
-        Alert.alert('Thanks for letting us know', 'We’ve hidden this review for you and our team will look at it within 24 hours.')
+        showAlert('Thanks for letting us know', 'We’ve hidden this review for you and our team will look at it within 24 hours.')
       } catch (e) {
-        Alert.alert('Could not send the report', e instanceof Error ? e.message : 'Please try again.')
+        showAlert('Could not send the report', e instanceof Error ? e.message : 'Please try again.')
       }
     }
-    Alert.alert('Report this review', 'Why are you reporting it?', [
+    showAlert('Report this review', 'Why are you reporting it?', [
       { text: 'Spam or fake', onPress: () => void submit('spam') },
       { text: 'Offensive or hateful', onPress: () => void submit('offensive') },
       { text: 'Harassment or bullying', onPress: () => void submit('harassment') },
@@ -1236,7 +1241,7 @@ function ShopDetail({
   }
 
   function blockAuthor(review: ShopReview) {
-    Alert.alert(
+    showAlert(
       'Block this person?',
       'You will no longer see any reviews written by this person, on any shop. You can undo this from your profile.',
       [
@@ -1251,9 +1256,9 @@ function ShopDetail({
                 .upsert({ blocker_id: userId, blocked_id: review.user_id }, { onConflict: 'blocker_id,blocked_id' })
               if (error) throw error
               setReviews((prev) => prev.filter((item) => item.user_id !== review.user_id))
-              Alert.alert('Blocked', 'You will not see reviews from this person any more.')
+              showAlert('Blocked', 'You will not see reviews from this person any more.')
             } catch (e) {
-              Alert.alert('Could not block', e instanceof Error ? e.message : 'Please try again.')
+              showAlert('Could not block', e instanceof Error ? e.message : 'Please try again.')
             }
           },
         },
@@ -1263,7 +1268,7 @@ function ShopDetail({
 
   function deleteReview() {
     if (!myReview) return
-    Alert.alert('Delete your review?', 'This cannot be undone.', [
+    showAlert('Delete your review?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
@@ -1275,7 +1280,7 @@ function ShopDetail({
             setReviewBody('')
             await loadReviews()
           } catch (error) {
-            Alert.alert('Could not delete review', error instanceof Error ? error.message : 'Please try again.')
+            showAlert('Could not delete review', error instanceof Error ? error.message : 'Please try again.')
           } finally {
             setSavingReview(false)
           }
@@ -1292,7 +1297,7 @@ function ShopDetail({
       if (error && error.code !== '23505') throw error
       await refresh()
     } catch (e) {
-      Alert.alert('Could not join', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not join', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setBusy(false)
     }
@@ -1338,7 +1343,7 @@ function ShopDetail({
         await Linking.openURL(data.saveUrl)
       }
     } catch (e) {
-      Alert.alert(Platform.OS === 'ios' ? 'Could not add to Apple Wallet' : 'Could not add to Google Wallet', e instanceof Error ? e.message : 'Please try again.')
+      showAlert(Platform.OS === 'ios' ? 'Could not add to Apple Wallet' : 'Could not add to Google Wallet', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setAddingToWallet(false)
     }
@@ -1364,6 +1369,12 @@ function ShopDetail({
           {business.category || 'Local business'}
           {business.address ? ` · ${formatAddress(business.address)}` : ''}
         </Text>
+        {pageRating ? (
+          <Text style={[styles.muted, { color: foreground, fontWeight: '700', marginTop: 4 }]}>
+            {pageRating}{' '}
+            <Text style={{ fontWeight: '400' }}>{reviews.length === 1 ? 'review' : 'reviews'}</Text>
+          </Text>
+        ) : null}
         {business.features?.length ? (
           <View style={featureStyles.row}>
             {business.features.map(id => (
@@ -1606,7 +1617,7 @@ function TrendingCard({ business, onPress }: { business: Business; onPress: () =
       </View>
       <View style={styles.trendingContent}>
         <Text style={styles.trendingName} numberOfLines={1}>{business.name}</Text>
-        <Text style={styles.muted} numberOfLines={1}>{business.category || 'Local business'}</Text>
+        <Text style={styles.muted} numberOfLines={1}>{[ratingLabel(business), business.category || 'Local business'].filter(Boolean).join(' · ')}</Text>
       </View>
     </Pressable>
   )
@@ -1624,7 +1635,7 @@ function NearbyRow({ business, onPress }: { business: Business; onPress: () => v
       )}
       <View style={{ flex: 1 }}>
         <Text style={styles.shopName} numberOfLines={1}>{business.name}</Text>
-        <Text style={styles.nearbyCategory} numberOfLines={1}>{business.category || 'Local business'}</Text>
+        <Text style={styles.nearbyCategory} numberOfLines={1}>{[ratingLabel(business), business.category || 'Local business'].filter(Boolean).join(' · ')}</Text>
         {business.address ? <Text style={styles.nearbyAddress} numberOfLines={1}>{formatAddress(business.address)}</Text> : null}
       </View>
       <ArrowRightIcon />
@@ -2190,9 +2201,9 @@ function AppHome({ session }: { session: Session }) {
       linkedMessage.current = `${outcome.card ? cardLabel(outcome.card) : 'Your card'} is linked. You’ll earn automatically at shops marked ⚡.`
       setCardLinked(true)
     } else if (outcome.kind === 'pending') {
-      Alert.alert('Almost done', 'We’re finishing linking your card. It will appear in Linked cards shortly.')
+      showAlert('Almost done', 'We’re finishing linking your card. It will appear in Linked cards shortly.')
     } else if (outcome.kind === 'error') {
-      Alert.alert(outcome.title, outcome.message)
+      showAlert(outcome.title, outcome.message)
     }
   }
 
@@ -2224,7 +2235,7 @@ function AppHome({ session }: { session: Session }) {
       visible={cardLinked}
       onFinished={() => {
         setCardLinked(false)
-        Alert.alert('Card linked', linkedMessage.current)
+        showAlert('Card linked', linkedMessage.current)
       }}
     />
   )
@@ -2282,7 +2293,10 @@ function AppHome({ session }: { session: Session }) {
       if (favs.error) throw favs.error
       setPlatformNotices(notices.error ? [] : ((notices.data || []) as PlatformNotice[]))
       setHomeCatalog(catalogRows.error ? [] : (catalogRows.data || []))
-      setBusinesses(shops.data || [])
+      // Star summaries for every shop, so people can see them before joining.
+      const ratings = await supabase.from('reviews').select('business_id,rating')
+      const stats = ratingStats(ratings.error ? [] : ratings.data || [])
+      setBusinesses((shops.data || []).map((shop: Business) => ({ ...shop, ...stats.get(shop.id) })))
       setMemberships(memberRows.data || [])
       setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business })))
       // Only shops this customer has actually joined (and hasn't opted out of
@@ -2299,7 +2313,7 @@ function AppHome({ session }: { session: Session }) {
       setStampCode(profile.data?.stamp_code || null)
       void syncShopperWidget(shops.data || [], memberRows.data || []).catch(() => undefined)
     } catch (e) {
-      Alert.alert('Could not refresh', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not refresh', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setLoading(false)
     }
@@ -2344,7 +2358,7 @@ function AppHome({ session }: { session: Session }) {
       }
       void trackUsageEvent(userId, isFav ? 'favourite_removed' : 'favourite_added')
     } catch (e) {
-      Alert.alert('Could not update favourites', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not update favourites', e instanceof Error ? e.message : 'Please try again.')
     }
   }
 
@@ -2356,7 +2370,7 @@ function AppHome({ session }: { session: Session }) {
       await load()
       void trackUsageEvent(userId, 'loyalty_card_joined')
     } catch (e) {
-      Alert.alert('Could not join', e instanceof Error ? e.message : 'Please try again.')
+      showAlert('Could not join', e instanceof Error ? e.message : 'Please try again.')
     }
   }
 
@@ -2453,6 +2467,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppRoot />
+        <AppAlertHost />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
@@ -2490,7 +2505,7 @@ function AppRoot() {
       const ok = isShopper((data || []).map((row: any) => row.role))
       setAllowed(ok)
       if (!ok) {
-        Alert.alert('Use the business app', 'This account is an owner or staff account. Please sign in to The Loyalty Loop for Business instead.')
+        showAlert('Use the business app', 'This account is an owner or staff account. Please sign in to The Loyalty Loop for Business instead.')
         await supabase.auth.signOut()
       }
     })()

@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canSendVisitThankYou } from "../_shared/visit-thank-you-auth.ts";
 
-const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
+const cors = { "Access-Control-Allow-Origin": "https://www.the-loyalty-loop.com", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const jsonHeaders = { ...cors, "Content-Type": "application/json" };
 
 Deno.serve(async (req) => {

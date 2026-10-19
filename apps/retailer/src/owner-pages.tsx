@@ -1,3 +1,4 @@
+import { showAlert } from "./components/AppAlert";
 import { currencySymbol, money, scaledLimit } from "./money";
 import {
   useCallback,
@@ -9,7 +10,6 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Linking,
   Pressable,
@@ -422,7 +422,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
       if (latest.error) throw latest.error;
       setReport(latest.data as ResearchReport | null);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "Could not load analytics",
         error instanceof Error ? error.message : "Please try again.",
       );
@@ -454,7 +454,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
         (data as { summary?: string }).summary || "No summary was returned.",
       );
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "AI summary unavailable",
         error instanceof Error ? error.message : "Please try again.",
       );
@@ -475,7 +475,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
       if (result.error) throw new Error(result.error);
       setReport(result);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "Research unavailable",
         error instanceof Error ? error.message : "Please try again.",
       );
@@ -516,7 +516,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
         },
       ]);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "Coach unavailable",
         error instanceof Error ? error.message : "Please try again.",
       );
@@ -713,13 +713,13 @@ function BrandingPage({
   const [busy, setBusy] = useState<"logo_url" | "cover_url" | null>(null);
   async function choose(field: "logo_url" | "cover_url") {
     if (preview)
-      return Alert.alert(
+      return showAlert(
         "Preview mode",
         "On a signed-in phone, this opens the photo library and uploads the selected image.",
       );
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted)
-      return Alert.alert(
+      return showAlert(
         "Photos permission needed",
         "Allow photo access to choose your shop image.",
       );
@@ -732,7 +732,7 @@ function BrandingPage({
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
     if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024)
-      return Alert.alert(
+      return showAlert(
         "Image is too large",
         "Choose an image smaller than 5MB.",
       );
@@ -765,14 +765,14 @@ function BrandingPage({
         .eq("id", business.id);
       if (updateError) throw updateError;
       await onBusinessChanged();
-      Alert.alert(
+      showAlert(
         "Image updated",
         field === "logo_url"
           ? "Your new logo is live."
           : "Your new cover image is live.",
       );
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "Upload failed",
         error instanceof Error ? error.message : "Please try again.",
       );
@@ -890,7 +890,7 @@ function ManualSpendSettings({
   async function saveCap() {
     const value = Number(cap.replace(/£|rs|[,\s]/gi, ""));
     if (!Number.isFinite(value) || value < 1 || value * 100 > scaledLimit(100_000)) {
-      return Alert.alert(`Choose an amount between ${pounds(100)} and ${pounds(scaledLimit(100_000))}`);
+      return showAlert(`Choose an amount between ${pounds(100)} and ${pounds(scaledLimit(100_000))}`);
     }
     setSaving(true);
     const { error } = await supabase
@@ -898,13 +898,13 @@ function ManualSpendSettings({
       .update({ manual_spend_max_pence: Math.round(value * 100) })
       .eq("id", business.id);
     setSaving(false);
-    if (error) return Alert.alert("Could not save", error.message);
+    if (error) return showAlert("Could not save", error.message);
     await onBusinessChanged();
-    Alert.alert("Limit saved", `Staff can now enter up to ${pounds(Math.round(value * 100))} per purchase.`);
+    showAlert("Limit saved", `Staff can now enter up to ${pounds(Math.round(value * 100))} per purchase.`);
   }
 
   function undo(entry: ManualSpendEntry) {
-    Alert.alert(
+    showAlert(
       `Undo ${pounds(entry.value)}?`,
       "This takes the amount back off the customer's progress. If it already earned them a reward, redeeming is paused until they spend enough again.",
       [
@@ -918,7 +918,7 @@ function ManualSpendSettings({
               _reason: "Undone by the shop owner",
             });
             if (error) {
-              Alert.alert(
+              showAlert(
                 "Could not undo",
                 error.message.includes("too_late")
                   ? "Entries can only be undone within 7 days."
@@ -1023,7 +1023,7 @@ function RewardsPage({
       .select("*")
       .eq("business_id", business.id)
       .order(spendShop ? "spend_threshold_pence" : "stamp_threshold", { nullsFirst: false });
-    if (error) return Alert.alert("Could not load rewards", error.message);
+    if (error) return showAlert("Could not load rewards", error.message);
     setItems((data || []) as RewardItem[]);
   }, [business.id, preview, spendShop]);
   useEffect(() => {
@@ -1031,18 +1031,18 @@ function RewardsPage({
   }, [load]);
   async function add() {
     if (!title.trim())
-      return Alert.alert("Add a reward name", "For example: Free coffee.");
+      return showAlert("Add a reward name", "For example: Free coffee.");
     const cleaned = amount.replace(/£|rs|[,\s]/gi, "");
     const pence = /^\d+(\.\d{1,2})?$/.test(cleaned) ? Math.round(Number(cleaned) * 100) : 0;
     if (spendShop) {
       if (pence < 100 || pence > scaledLimit(1_000_000))
-        return Alert.alert("Check the amount", `Enter how much customers spend to unlock it, between ${pounds(100)} and ${pounds(scaledLimit(1_000_000))}.`);
+        return showAlert("Check the amount", `Enter how much customers spend to unlock it, between ${pounds(100)} and ${pounds(scaledLimit(1_000_000))}.`);
       if (items.some((item) => item.spend_threshold_pence === pence))
-        return Alert.alert("Check the amount", "You already have a reward at that amount.");
+        return showAlert("Check the amount", "You already have a reward at that amount.");
     }
     const discountPence = discount.trim() ? parsePounds(discount) : null;
     if (discount.trim() && (discountPence === null || discountPence < 1 || discountPence > scaledLimit(1_000_000)))
-      return Alert.alert("Check the money off", `Enter an amount up to ${pounds(scaledLimit(1_000_000))}, or leave it empty.`);
+      return showAlert("Check the money off", `Enter an amount up to ${pounds(scaledLimit(1_000_000))}, or leave it empty.`);
     setBusy(true);
     const { error } = await supabase.from("reward_catalog").insert({
       discount_pence: discountPence,
@@ -1054,7 +1054,7 @@ function RewardsPage({
       sort_order: items.length,
     });
     setBusy(false);
-    if (error) return Alert.alert("Could not add reward", error.message);
+    if (error) return showAlert("Could not add reward", error.message);
     setTitle("");
     setDescription("");
     setAmount("");
@@ -1076,9 +1076,9 @@ function RewardsPage({
       })
       .eq("id", business.id);
     setSavingSignup(false);
-    if (error) return Alert.alert("Could not save", error.message);
+    if (error) return showAlert("Could not save", error.message);
     await onBusinessChanged();
-    Alert.alert(
+    showAlert(
       "Sign-up reward saved",
       signupReward.trim()
         ? "New customers will be offered it the moment they join."
@@ -1086,7 +1086,7 @@ function RewardsPage({
     );
   }
   function remove(item: RewardItem) {
-    Alert.alert("Delete reward?", item.title, [
+    showAlert("Delete reward?", item.title, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -1096,7 +1096,7 @@ function RewardsPage({
             .from("reward_catalog")
             .delete()
             .eq("id", item.id);
-          if (error) Alert.alert("Could not delete reward", error.message);
+          if (error) showAlert("Could not delete reward", error.message);
           else void load();
         },
       },
@@ -1261,7 +1261,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       .select("*")
       .eq("business_id", business.id)
       .order("created_at", { ascending: false });
-    if (error) return Alert.alert("Could not load staff", error.message);
+    if (error) return showAlert("Could not load staff", error.message);
     setItems((data || []) as StaffMember[]);
   }, [business.id, preview]);
   useEffect(() => {
@@ -1269,7 +1269,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
   }, [load]);
   async function invite() {
     if (!name.trim() || !email.trim() || password.length < 8)
-      return Alert.alert(
+      return showAlert(
         "Check the details",
         "Add a name, email and temporary password of at least 8 characters.",
       );
@@ -1294,12 +1294,12 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       setEmail("");
       setPassword("");
       await load();
-      Alert.alert(
+      showAlert(
         "Staff access ready",
         "They can now sign in to the business app.",
       );
     } catch (error) {
-      Alert.alert(
+      showAlert(
         "Could not create staff access",
         error instanceof Error ? error.message : "Please try again.",
       );
@@ -1315,7 +1315,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       .from("staff_members")
       .update({ [key]: !item[key] })
       .eq("id", item.id);
-    if (error) Alert.alert("Could not update permission", error.message);
+    if (error) showAlert("Could not update permission", error.message);
     else void load();
   }
   async function changeStatus(item: StaffMember) {
@@ -1324,7 +1324,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       .from("staff_members")
       .update({ status })
       .eq("id", item.id);
-    if (error) Alert.alert("Could not update staff access", error.message);
+    if (error) showAlert("Could not update staff access", error.message);
     else void load();
   }
   return (
@@ -1467,7 +1467,7 @@ function ReviewAiSettingsCard({ businessId }: { businessId: string }) {
       _sign_off: settings.sign_off?.trim() || null,
     });
     setBusy(false);
-    if (error) return Alert.alert("Could not save", error.code === "42501" ? "Only the shop owner can change AI replies." : error.message);
+    if (error) return showAlert("Could not save", error.code === "42501" ? "Only the shop owner can change AI replies." : error.message);
     setSaved(settings);
   }
   const Toggle = ({ value, onChange, title, detail, disabled = false }: { value: boolean; onChange: (value: boolean) => void; title: string; detail: string; disabled?: boolean }) => (
@@ -1515,7 +1515,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
       supabase.from("review_reply_drafts").select("review_id,status,body,updated_at").eq("business_id", business.id),
     ]);
     if (error) {
-      Alert.alert("Could not load reviews", error.message);
+      showAlert("Could not load reviews", error.message);
       return;
     }
     const items = (data || []) as CustomerReview[];
@@ -1539,7 +1539,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
     setWritingId(null);
     if (error || typeof data?.body !== "string") {
       const detail = error && "context" in error ? await (error.context as Response).json().catch(() => null) : null;
-      Alert.alert("AI reply", typeof detail?.error === "string" ? detail.error : "The AI couldn’t write a reply. Please try again.");
+      showAlert("AI reply", typeof detail?.error === "string" ? detail.error : "The AI couldn’t write a reply. Please try again.");
       return;
     }
     edited.current.delete(review.id);
@@ -1549,7 +1549,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
 
   async function dismiss(review: CustomerReview) {
     const { error } = await supabase.rpc("dismiss_review_reply_draft", { _review_id: review.id });
-    if (error) return Alert.alert("Could not dismiss", error.message);
+    if (error) return showAlert("Could not dismiss", error.message);
     edited.current.delete(review.id);
     await load();
   }
@@ -1565,7 +1565,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
   async function saveReply(review: CustomerReview) {
     const body = (drafts[review.id] || "").trim();
     if (!body) {
-      Alert.alert("Write a reply first", "Add a short response before saving.");
+      showAlert("Write a reply first", "Add a short response before saving.");
       return;
     }
     setBusyId(review.id);
@@ -1577,7 +1577,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
       await load();
     } catch (error) {
       const denied = typeof error === "object" && error !== null && "code" in error && error.code === "42501";
-      Alert.alert("Could not save reply", denied ? "You can only change replies you wrote." : error instanceof Error ? error.message : "Please try again.");
+      showAlert("Could not save reply", denied ? "You can only change replies you wrote." : error instanceof Error ? error.message : "Please try again.");
     } finally {
       setBusyId(null);
     }
@@ -1651,7 +1651,7 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
       .select("*")
       .eq("business_id", business.id)
       .order("created_at", { ascending: false });
-    if (error) return Alert.alert("Could not load support", error.message);
+    if (error) return showAlert("Could not load support", error.message);
     setItems((data || []) as SupportRequest[]);
   }, [business.id, preview]);
   useEffect(() => {
@@ -1659,7 +1659,7 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
   }, [load]);
   async function submit() {
     if (!subject.trim() || !body.trim())
-      return Alert.alert(
+      return showAlert(
         "Add some detail",
         "Enter a subject and explain what you need help with.",
       );
@@ -1672,11 +1672,11 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
       priority,
     });
     setBusy(false);
-    if (error) return Alert.alert("Could not send request", error.message);
+    if (error) return showAlert("Could not send request", error.message);
     setSubject("");
     setBody("");
     await load();
-    Alert.alert(
+    showAlert(
       "Request sent",
       "The Loyalty Loop team can now see it in the access panel.",
     );

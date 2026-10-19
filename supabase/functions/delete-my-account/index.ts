@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { adminClient, cardDb } from "../_shared/fidel-card-http.ts";
 import { deleteAllFidelCardsForUser } from "../_shared/fidel-cards.ts";
-const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
+const cors = { "Access-Control-Allow-Origin": "https://www.the-loyalty-loop.com", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 Deno.serve(async (req) => { if (req.method === 'OPTIONS') return new Response('ok',{headers:cors}); try {
   const auth=req.headers.get('Authorization'); if(!auth) throw new Error('Missing authorization');
   const admin=adminClient();

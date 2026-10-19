@@ -1,10 +1,10 @@
+import { AppAlertHost, showAlert } from "./src/components/AppAlert";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
 import { FALLBACK_COUNTRIES, guessCountry } from "./src/country";
 import {
   ActivityIndicator,
   AppState,
-  Alert,
   Image,
   Linking,
   Platform,
@@ -467,14 +467,14 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
   const signup = mode === "signup";
   async function submit() {
     if (!email.trim() || !password)
-      return Alert.alert(
+      return showAlert(
         "Check your details",
         "Enter your business email and password.",
       );
     if (signup && (!firstName.trim() || !lastName.trim()))
-      return Alert.alert("Check your details", "Enter your first name and surname.");
+      return showAlert("Check your details", "Enter your first name and surname.");
     if (signup && password.length < 8)
-      return Alert.alert("Choose a longer password", "Use at least 8 characters.");
+      return showAlert("Choose a longer password", "Use at least 8 characters.");
     setBusy(true);
     try {
       if (signup) {
@@ -495,7 +495,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
           return;
         }
         setMode("signin");
-        Alert.alert(
+        showAlert(
           "Check your email",
           `We've sent a confirmation link to ${email.trim()}. Follow it, then sign in here to set up your shop.`,
         );
@@ -508,7 +508,7 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
       if (error) throw error;
       onSession(data.session);
     } catch (e) {
-      Alert.alert(
+      showAlert(
         signup ? "Could not create account" : "Could not sign in",
         e instanceof Error ? e.message : "Please try again.",
       );
@@ -742,7 +742,7 @@ function StampsScreen({
       .then(({ data, error }) => {
         if (!active) return;
         if (error) {
-          Alert.alert("Could not check rewards", error.message);
+          showAlert("Could not check rewards", error.message);
           setHasReward(false);
           return;
         }
@@ -830,7 +830,7 @@ function StampsScreen({
     const name = matched.first_name || "this customer";
     const confirmed = await new Promise<boolean>((resolve) => {
       const big = amountPence * 2 >= cap;
-      Alert.alert(
+      showAlert(
         big ? `${pounds(amountPence)}. Is that right?` : `Add ${pounds(amountPence)} for ${name}?`,
         big ? `That's a large amount for one purchase. Check it before adding it for ${name}.` : undefined,
         [
@@ -853,7 +853,7 @@ function StampsScreen({
       const refusal = spendRefusal(error);
       if (refusal) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        Alert.alert("Can’t add this purchase", refusal);
+        showAlert("Can’t add this purchase", refusal);
         spendRef.current = null;
         void loadSpendSummary(matched.id);
         return;
@@ -874,14 +874,14 @@ function StampsScreen({
     } catch (e) {
       // spendRef is kept, so trying again cannot credit the purchase twice.
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Could not add purchase", e instanceof Error ? e.message : "Check the connection and try again.");
+      showAlert("Could not add purchase", e instanceof Error ? e.message : "Check the connection and try again.");
     } finally {
       setBusy(false);
     }
   }
 
   function undoSpend(entry: RecentSpend) {
-    Alert.alert(`Undo ${pounds(entry.value)}?`, "This takes the amount back off the customer's progress.", [
+    showAlert(`Undo ${pounds(entry.value)}?`, "This takes the amount back off the customer's progress.", [
       { text: "Keep it", style: "cancel" },
       {
         text: "Undo",
@@ -889,7 +889,7 @@ function StampsScreen({
         onPress: async () => {
           const { error } = await supabase.rpc("undo_manual_spend", { _transaction_id: entry.id, _reason: "Undone by staff" });
           const refusal = spendRefusal(error);
-          if (refusal || error) Alert.alert("Could not undo", refusal ?? error?.message ?? "Please try again.");
+          if (refusal || error) showAlert("Could not undo", refusal ?? error?.message ?? "Please try again.");
           else setLastSpendMessage(`${pounds(entry.value)} undone.`);
           void loadRecentSpend();
         },
@@ -957,7 +957,7 @@ function StampsScreen({
     const rewardToken = parseRewardQr(value);
     if (rewardToken) {
       if (mode !== "reward") {
-        Alert.alert("Reward QR code", "Switch to Reward mode before redeeming this QR code.");
+        showAlert("Reward QR code", "Switch to Reward mode before redeeming this QR code.");
         return;
       }
       setCamera(false);
@@ -978,7 +978,7 @@ function StampsScreen({
         setCode("");
         void loadMemberInfo(reward.user_id);
       } catch (e) {
-        Alert.alert("Could not find reward", e instanceof Error ? e.message : "Please try again.");
+        showAlert("Could not find reward", e instanceof Error ? e.message : "Please try again.");
       } finally {
         setBusy(false);
       }
@@ -986,7 +986,7 @@ function StampsScreen({
     }
     const match = value.match(/^loyaltyloop:customer:(.+)$/);
     if (!match) {
-      Alert.alert(
+      showAlert(
         "Not a Loyalty Loop code",
         mode === "reward" ? "Scan the customer's reward QR code." : "Scan a Loyalty Loop customer QR code.",
       );
@@ -1032,7 +1032,7 @@ function StampsScreen({
       setCode("");
       void loadMemberDetails(person.id);
     } catch (e) {
-      Alert.alert(
+      showAlert(
         mode === "reward" ? "Could not find reward" : "Could not find customer",
         e instanceof Error ? e.message : "Please try again.",
       );
@@ -1060,7 +1060,7 @@ function StampsScreen({
       const refusal = manualEntryRefusal(error);
       if (refusal) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        Alert.alert("Can’t add this entry", refusal);
+        showAlert("Can’t add this entry", refusal);
         if (error?.message?.includes("linked_customer_payment_method_required")) {
           setLinkStatus((current) => ({ manualToday: 0, nextAllowedAt: null, ...current, linked: true }));
           setAskPayment(true);
@@ -1084,7 +1084,7 @@ function StampsScreen({
       setShowSuccess(true);
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
+      showAlert(
         "Could not award",
         e instanceof Error
           ? e.message
@@ -1112,7 +1112,7 @@ function StampsScreen({
       setShowSuccess(true);
     } catch (e) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
+      showAlert(
         "Could not redeem",
         e instanceof Error && e.message.includes("business is inactive")
           ? "This shop is inactive. Ask the owner to reactivate it before redeeming a reward."
@@ -1189,7 +1189,7 @@ function StampsScreen({
               if (!permission?.granted) {
                 const result = await requestPermission();
                 if (!result.granted)
-                  return Alert.alert(
+                  return showAlert(
                     "Camera permission needed",
                     "Allow camera access to scan customer cards.",
                   );
@@ -1560,7 +1560,7 @@ function MembersPage({ business }: { business: Business }) {
     supabase
       .rpc("get_business_members", { _business_id: business.id })
       .then(({ data, error }) => {
-        if (error) Alert.alert("Could not load members", error.message);
+        if (error) showAlert("Could not load members", error.message);
         setMembers((data || []) as MemberRow[]);
         setLoading(false);
       });
@@ -1852,7 +1852,7 @@ function NewsPage({ business }: { business: Business }) {
       .eq("business_id", business.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
-        if (error) Alert.alert("Could not load news", error.message);
+        if (error) showAlert("Could not load news", error.message);
         setItems((data || []) as Announcement[]);
       });
   useEffect(() => {
@@ -1860,7 +1860,7 @@ function NewsPage({ business }: { business: Business }) {
   }, [business.id]);
   const publish = async () => {
     if (!title.trim())
-      return Alert.alert(
+      return showAlert(
         "Add a headline",
         "Give your announcement a short title.",
       );
@@ -1872,11 +1872,11 @@ function NewsPage({ business }: { business: Business }) {
       is_active: true,
     });
     setBusy(false);
-    if (error) return Alert.alert("Could not publish", error.message);
+    if (error) return showAlert("Could not publish", error.message);
     setTitle("");
     setBody("");
     load();
-    Alert.alert(
+    showAlert(
       "Published",
       "Customers can now see this announcement in News.",
     );
@@ -1886,7 +1886,7 @@ function NewsPage({ business }: { business: Business }) {
       .from("announcements")
       .update({ is_active: !item.is_active })
       .eq("id", item.id);
-    if (error) return Alert.alert("Could not update", error.message);
+    if (error) return showAlert("Could not update", error.message);
     load();
   };
   return (
@@ -2110,12 +2110,12 @@ function BusinessSettings({
   const toggleBiometricLock = async () => {
     const result = await setBiometricLock(!biometricEnabled);
     if (result.success) setBiometricEnabled(!biometricEnabled);
-    else Alert.alert("Could not update app lock", result.error);
+    else showAlert("Could not update app lock", result.error);
   };
   const toggleUsageAnalytics = async () => { const next = !analyticsEnabled; await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next); };
   const save = async () => {
     if (!name.trim())
-      return Alert.alert("Shop name needed", "Enter a name for your business.");
+      return showAlert("Shop name needed", "Enter a name for your business.");
     setSaving(true);
     try {
       // .select("id") matters here: without it, a write that RLS silently
@@ -2154,12 +2154,12 @@ function BusinessSettings({
         );
       }
       await onChanged();
-      Alert.alert(
+      showAlert(
         "Settings saved",
         "Your shop and loyalty programme are up to date.",
       );
     } catch (e) {
-      Alert.alert(
+      showAlert(
         "Could not save",
         e instanceof Error ? e.message : "Please try again.",
       );
@@ -2168,7 +2168,7 @@ function BusinessSettings({
     }
   };
   const toggleActive = () =>
-    Alert.alert(
+    showAlert(
       business.is_active === false ? "Reactivate shop?" : "Deactivate shop?",
       business.is_active === false
         ? "Customers will be able to discover and join this shop again."
@@ -2184,7 +2184,7 @@ function BusinessSettings({
               .update({ is_active: business.is_active === false })
               .eq("id", business.id);
             if (error)
-              return Alert.alert("Could not update shop", error.message);
+              return showAlert("Could not update shop", error.message);
             await onChanged();
           },
         },
@@ -2584,7 +2584,7 @@ function BusinessSettings({
           tile="orange"
           title="Sign out"
           onPress={() =>
-            Alert.alert("Sign out?", "You can sign back in at any time.", [
+            showAlert("Sign out?", "You can sign back in at any time.", [
               { text: "Cancel", style: "cancel" },
               {
                 text: "Sign out",
@@ -2644,7 +2644,7 @@ function confirmDeleteAccount(userId: string) {
       if (error) throw error;
       if (data && typeof data === "object" && "error" in data && data.error) throw new Error(String(data.error));
       await supabase.auth.signOut().catch(() => undefined);
-      Alert.alert(
+      showAlert(
         "Account deleted",
         leftoverFiles
           ? `Your account and its data have been permanently deleted. ${leftoverFiles} shop file(s) could not be removed; contact support and we will remove them.`
@@ -2652,12 +2652,12 @@ function confirmDeleteAccount(userId: string) {
       );
     } catch (e) {
       const message = e instanceof Error ? e.message : "Please try again.";
-      Alert.alert("Could not delete account", leftoverFiles
+      showAlert("Could not delete account", leftoverFiles
         ? `${message} ${leftoverFiles} file(s) from shops already deleted still need support cleanup.`
         : message);
     }
   };
-  Alert.alert(
+  showAlert(
     "Delete your account?",
     "This permanently deletes your login and personal data. Every shop you own (including its customers' loyalty progress, rewards and reviews) is deleted too. This cannot be undone.",
     [
@@ -2666,7 +2666,7 @@ function confirmDeleteAccount(userId: string) {
         text: "Continue",
         style: "destructive",
         onPress: () =>
-          Alert.alert("Are you absolutely sure?", "There is no way to recover the account or its shops afterwards.", [
+          showAlert("Are you absolutely sure?", "There is no way to recover the account or its shops afterwards.", [
             { text: "Keep my account", style: "cancel" },
             { text: "Delete everything", style: "destructive", onPress: () => void run() },
           ]),
@@ -2722,15 +2722,15 @@ function SpendProgramSetup({
       sort_order: index,
     }));
     if (rows.some((row) => !row.title)) {
-      Alert.alert("Add a reward", "Every reward needs a name, for example: Free coffee.");
+      showAlert("Add a reward", "Every reward needs a name, for example: Free coffee.");
       return;
     }
     if (rows.some((row) => row.spend_threshold_pence === null)) {
-      Alert.alert("Check the amounts", `Enter how much customers spend for each reward, between ${poundsWhole(100)} and ${poundsWhole(scaledLimit(1_000_000))}.`);
+      showAlert("Check the amounts", `Enter how much customers spend for each reward, between ${poundsWhole(100)} and ${poundsWhole(scaledLimit(1_000_000))}.`);
       return;
     }
     if (new Set(rows.map((row) => row.spend_threshold_pence)).size !== rows.length) {
-      Alert.alert("Check the amounts", "Each reward needs a different amount.");
+      showAlert("Check the amounts", "Each reward needs a different amount.");
       return;
     }
     setSaving(true);
@@ -2744,7 +2744,7 @@ function SpendProgramSetup({
       if (rewardError) throw rewardError;
       onDone();
     } catch (e) {
-      Alert.alert("Could not save your loyalty programme", e instanceof Error ? e.message : "Please try again.");
+      showAlert("Could not save your loyalty programme", e instanceof Error ? e.message : "Please try again.");
     } finally {
       setSaving(false);
     }
@@ -2881,7 +2881,7 @@ function StampProgramSetup({
       sort_order: index,
     }));
     if (rows.some((row) => !row.title)) {
-      Alert.alert("Add a reward", "Every reward needs a name, for example: Free coffee.");
+      showAlert("Add a reward", "Every reward needs a name, for example: Free coffee.");
       return;
     }
     setSaving(true);
@@ -2899,7 +2899,7 @@ function StampProgramSetup({
       if (rewardError) throw rewardError;
       onDone();
     } catch (e) {
-      Alert.alert("Could not save your loyalty programme", e instanceof Error ? e.message : "Please try again.");
+      showAlert("Could not save your loyalty programme", e instanceof Error ? e.message : "Please try again.");
     } finally {
       setSaving(false);
     }
@@ -3052,7 +3052,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
 
   async function create() {
     if (!name.trim()) {
-      Alert.alert("Add your shop name", "Customers will see this on their loyalty card.");
+      showAlert("Add your shop name", "Customers will see this on their loyalty card.");
       return;
     }
     setSaving(true);
@@ -3071,7 +3071,7 @@ function BusinessSetup({ ownerId, onCreated }: { ownerId: string; onCreated: () 
       if (error) throw error;
       onCreated();
     } catch (e) {
-      Alert.alert("Could not create your shop", e instanceof Error ? e.message : "Please try again.");
+      showAlert("Could not create your shop", e instanceof Error ? e.message : "Please try again.");
     } finally {
       setSaving(false);
     }
@@ -3266,7 +3266,7 @@ function Dashboard({
           : all[0] || null,
       );
     } catch (e) {
-      Alert.alert(
+      showAlert(
         "Could not load business",
         e instanceof Error ? e.message : "Please try again.",
       );
@@ -3539,6 +3539,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppRoot />
+        <AppAlertHost />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -3599,7 +3600,7 @@ function AppRoot() {
       setIsOwner(roles.includes("business_owner"));
       setAllowed(ok);
       if (!ok) {
-        Alert.alert(
+        showAlert(
           "Use the shopper app",
           "This is a customer account. Please sign in to The Loyalty Loop shopper app.",
         );

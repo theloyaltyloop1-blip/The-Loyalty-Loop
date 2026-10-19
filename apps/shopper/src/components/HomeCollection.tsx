@@ -4,6 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg'
 import { colors as c, fonts } from '../theme'
 import { homeProgress, type HomeShop, type HomeMember, type HomeTier } from '../home-progress'
 import { shopMoney } from '../money'
+import { ratingLabel } from '../ratings'
 import { formatMiles, nearestFirst, pickFeatured, type Coords } from '../distance'
 import { categoryRails, heroSlides, newestShops } from '../home-rails'
 import type { LocationStatus } from '../use-user-location'
@@ -95,7 +96,7 @@ function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { sho
   return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={width + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
     {items.map(({ shop, miles }) => <Pressable accessibilityRole="button" accessibilityLabel={shopLabel(shop, miles)} key={shop.id} onPress={() => onSelect(shop)} style={({ pressed }) => [s.tile, { width }, pressed && s.pressed]}>
       <ShopPhoto shop={shop} distance={miles !== null ? formatMiles(miles) : undefined} />
-      <View style={s.tileCopy}><Text style={s.tileName} numberOfLines={1}>{shop.name}</Text><Text style={s.tileCategory} numberOfLines={1}>{shop.category || 'Local independent'}</Text></View>
+      <View style={s.tileCopy}><Text style={s.tileName} numberOfLines={1}>{shop.name}</Text><Text style={s.tileCategory} numberOfLines={1}>{[ratingLabel(shop), shop.category || 'Local independent'].filter(Boolean).join(' · ')}</Text></View>
     </Pressable>)}
   </ScrollView>
 }
@@ -146,7 +147,7 @@ export function CategoryCircles({ categories, selected, onSelect }: { categories
 
 function ShopRow<T extends RailShop>({ shop, miles, onSelect }: { shop: T; miles: number | null; onSelect: (shop: T) => void }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={shopLabel(shop, miles)} onPress={() => onSelect(shop)} style={({ pressed }) => [s.row, pressed && s.pressed]}>
-    <ShopMark shop={shop} /><View style={s.rowCopy}><Text style={s.rowName} numberOfLines={1}>{shop.name}</Text><Text style={s.rowMeta} numberOfLines={1}>{[shop.category || 'Local independent', miles !== null ? formatMiles(miles) : null].filter(Boolean).join(' · ')}</Text></View><Arrow color={c.primary} />
+    <ShopMark shop={shop} /><View style={s.rowCopy}><Text style={s.rowName} numberOfLines={1}>{shop.name}</Text><Text style={s.rowMeta} numberOfLines={1}>{[ratingLabel(shop), shop.category || 'Local independent', miles !== null ? formatMiles(miles) : null].filter(Boolean).join(' · ')}</Text></View><Arrow color={c.primary} />
   </Pressable>
 }
 

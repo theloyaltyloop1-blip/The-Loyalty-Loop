@@ -11,6 +11,48 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Owner voice line, basic version (2026-10-18) - Claude
+- What: the owner calls a Twilio number, enters a PIN, and describes a feature. Twilio transcribes it into `voice_requests`, and an SMS confirms it was logged. Built on a branch only; it never deploys.
+- Files: `supabase/functions/voice-call/index.ts`, `supabase/migrations/20261018180000_voice_requests.sql`, `supabase/config.toml` (voice-call, verify_jwt=false), `docs/VOICE_LINE_SETUP.md`.
+- Checks: code only. `deno check` couldn't run (no local deno, and the edge-runtime types need `openai` installed). **Not deployed, migration not applied, not tested with a real call.**
+- Update: migration applied and `voice-call` deployed to tgukdabfvvoywawmzbdo with verify_jwt off. A GET returns 405 and a POST returns 503 "Not configured", because no TWILIO_* or VOICE_* secrets exist on the project yet.
+- Update 2026-10-19: added and deployed a call-me link (`?step=callme&key=VOICE_TRIGGER_KEY`, where Twilio rings the owner), because the trial account only has a US number. The owner check now accepts the owner as either From or To. A request without the key returns 503 until the secrets exist. Not yet tested with a real call.
+- Next (owner): claim the Twilio trial number, then set VOICE_TRIGGER_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, VOICE_OWNER_PHONE and VOICE_PIN on the project. Next (Claude): apply the migration, deploy `voice-call`, point the Twilio number at it, test a call, then create the scheduled pick-up task.
+
+## Shopper: branded pop-ups (2026-10-18) - Claude
+
+- Owner disliked the grey system Alert box (seen on the country question). New `apps/shopper/src/components/AppAlert.tsx`: `showAlert()` has the same arguments as `Alert.alert` and shows a bottom sheet (uses `Sheet`) with a tinted icon badge, display font and pill buttons (main action filled orange, red when destructive, Cancel last). `<AppAlertHost />` is mounted in `App`. Calls fall back to the system Alert if the host isn't mounted. All 41 shopper `Alert.alert` calls were switched.
+- Checked: tsc clean, 21/21 tests, `expo export --platform android` bundles. **Published by OTA** (owner asked), production channel. Runtime 1.0.1: Android 20b8cfda, iOS 3414179e. Runtime 1.0.0: Android e56fe8b7, iOS 2f843b2e (`Sheet` is already in the 1.0.0 builds). Not yet seen on a device.
+- **Business app matched (commit 5bcf17e).** Same `AppAlert.tsx` (design-tokens colours), all 86 `Alert.alert` calls switched, host mounted in `App`. tsc clean, 8/8 tests, android export bundles. Published by OTA, production channel. Runtime 1.0.1: Android 3fdad7db, iOS 9af85861. Runtime 1.0.0: Android 5f5411b9, iOS e87aa33c. Note: the 1.0.0 OTA also brings the Business country/currency changes to current store apps (the DB column exists; `expo-localization` is guarded). Not seen on a device.
+- Open: a drag-dismiss on the country question saves nothing (the guess is used for that session and it isn't asked again until restart).
+
+---
+
+## Business 1.0.1 submitted to both stores (2026-10-18) - Claude
+
+- Built from commit d47c8bb (countries/currency work). **Android** build 44b66aec (versionCode 132) submitted to the Play production track for review. **iOS** build 9702b4d0 (build 13) processed VALID. ASC version 1.0.1 (5e19af26) created, "What's new" set for en-US and en-GB, review submission c8f07489 is **WAITING_FOR_REVIEW**, released after approval.
+- Both apps' 1.0.1 builds are now in review on both stores. (Owner) Watch for the results.
+
+---
+
+## Reviews: shop replies broken, star summaries added (2026-10-18) - Claude
+
+- **Found.** Reviews save fine, including stars-only (POST 201 at 20:54 UTC; the owner deleted that test review at 20:55). The automatic shop reply never runs: the live `ai-review-reply` function has `verify_jwt: true`, but `supabase/config.toml` says `false`, and the `request_ai_review_reply` trigger calls it with no token. Gateway answers 401 (20:49 and 20:54), so drafts stay `queued` (review 5d34b1c0, Test Shop for ££).
+- **Fixed.** `ai-review-reply` redeployed with verify_jwt off (owner approved), matching config.toml. Re-ran review 5d34b1c0 via `net.http_post`: 200, draft `ready`. It was held for the owner (safety reason `offer_or_account`), not auto-posted; that's working as designed. The owner approves it on the Business app's Reviews page.
+- **Published (commit 96af927).** OTA "Star ratings on shop cards and pages", production channel. Runtime 1.0.1: Android 3dcaf9d4, iOS 3d2d1030. Runtime 1.0.0 (current store apps, published by setting the version to 1.0.0 temporarily, then restored): Android 35dfe338, iOS df78c4b4. New native modules are guarded with `requireOptionalNativeModule`, so they're safe on 1.0.0. Not yet checked on a phone.
+
+---
+
+## Shopper 1.0.1 submitted to both stores (2026-10-18) - Claude
+
+- Built from commit d6bdc11 (includes "check for an update on launch", the countries work and `expo-location`/`expo-localization`). EAS records gitCommitHash d6bdc11c4c858a33808f23903f4e17088ca7c968 for both builds. Build numbers committed in d12691a.
+- **Android** build c84d6ab7 (versionCode 132): submitted to the Play production track, sent for review.
+- **iOS** build bed38d9c (build 14): Apple processing VALID. App Store version 1.0.1 created via the ASC API with that build, "What's new" set (en-GB), review submission sent. State **WAITING_FOR_REVIEW**, released automatically after approval.
+- **Business app was not rebuilt.** It is still the store 1.0.0; its 1.0.1 country changes are committed but unbuilt.
+- **Next.** (Owner) Watch for the Apple and Google review results. (Claude/Codex) Build and submit Business 1.0.1 when the owner asks. Pakistan phone/WhatsApp login is proposed, not started.
+
+---
+
 ## Countries: Pakistan support and 1.0.1 store builds (2026-10-18) - Claude
 
 - **What changed.** New `countries` table (GB: GBP, card-linking on; PK: PKR, whole rupees, card-linking off, `amount_scale` 300). `profiles.country_code` (null until the shopper confirms) and `businesses.country_code` (default GB). Spend caps and discount limits now scale per country, enforced by triggers `businesses_country_amounts` and `reward_catalog_country_amounts`. Migration `20261018120000_countries.sql` **applied to live** (owner approved); checked afterwards: both existing shops GB, cap 20000 unchanged.
@@ -2598,6 +2640,18 @@ Owner approved publication/migrations. Bounded repair a485380 is live via READY 
 - Changed: auth/owner contexts derive loading per user (no role/onboarding redirect races; owner load failure shows retry screen instead of onboarding); logged-out guards; profile/shop/analytics/settings/announcements/reviews/support/brand load+save error states and toasts; `lib/categories.ts` category copy/icons; `onBrandColor` for light brand colours; cookie banner padding; 200%-text reflow; 44px touch targets, focus rings, QR titles, sonner contrast; empty-state CTAs; type-aware oxlint (no-floating/misused-promises) — 0 errors.
 - Checks: tsc and `oxlint --type-aware` pass. Built with dummy Supabase, axe (wcag2a/aa/22aa) on 33 routes at 390px for anon/consumer/owner plus fail mode: 0 violations. 200% text at 390px: only Profile 12px and Help 1px overflow remain. Mocked data only; not tested against real Supabase or devices.
 - Next: owner reviews/merges PR and deploys web (owner); real-backend smoke test of owner/consumer flows (Codex).
+
+## Audit fix-list applied LIVE (2026-10-19) - Claude, owner-approved ("apply everything to the live DB and deploy")
+
+- Checked the 9-item list against live tgukdabfvvoywawmzbdo before changing anything. Stale items: (1) `VITE_SITE_URL` is read nowhere in apps/web, so there is nothing to set. (3) `businesses.is_active` already exists live.
+- (5) Reviews: the existing `enforce_review_update_scope` trigger already blocked changes to user_id/business_id. It now also blocks non-admin changes to `id`/`created_at`, so authors can change only rating and body. Column grants are unchanged on purpose: the web review upsert sends user_id/business_id. No reviews exist live yet, so it is not exercised on real data.
+- (6) RLS initplan: every public policy now uses `(select auth.uid())` (DO-block rewrite). (7) The six FOR ALL write policies (announcements, business_photos, reward_catalog, staff_members, business_feature_settings, platform_announcements) are split into _ins/_upd/_del. Their USING clause is OR'd into each table's SELECT policy, so read access is unchanged. (8) 60 FK indexes added (public + whatsapp_archive). (9) Dropped 4 unused indexes that cover no FK. Kept 4 that cover FKs, plus the new voice_requests index.
+- Migration: supabase/migrations/20261019100000_review_scope_and_db_performance.sql (applied via MCP as `review_scope_and_db_performance`). Performance advisor after the change: initplan 0, multiple_permissive 0, unindexed FK 0. "Unused index" now lists the brand-new indexes, which is expected.
+- Smoke test: a signed-in non-member sees the 1 approved business and catalog as before. NOTE, pre-existing and unchanged: role `anon` gets "permission denied for function is_active_staff_of" when reading businesses, because has_role and the other helpers are granted to authenticated only. Confirm no logged-out web screen queries businesses.
+- (4) CORS: 16 functions plus _shared/fidel-card-http.ts and _shared/shop-requests.ts now return `Access-Control-Allow-Origin: https://www.the-loyalty-loop.com` instead of `*`. map-pin stays `*` (public images); whatsapp-handoff already used an allow-list. Redeployed 22 functions with live verify_jwt settings preserved (`--no-verify-jwt` for ai-review-reply, create-apple-wallet-pass, send-owner-legal-documents, shop-request-notify). OPTIONS checks return the domain. Native apps are unaffected (CORS is browser-only). Local web dev against live functions from localhost is now blocked for these functions.
+- (2) Live site bundle contains the Supabase URL, so production env is set. apps/web/vite.config.ts now fails `vite build` if VITE_SUPABASE_URL/ANON_KEY are missing (tested both ways). I can't reach Vercel from here: the CLI/MCP are logged into a different team, so the env list was not inspected directly.
+- Not touched: voice-call function, its migration, config.toml change and docs/VOICE_LINE_SETUP.md (someone else's uncommitted work).
+- Next (Codex): browser-check owner flows that call functions (analytics, coach chat, staff creation, wallet pass, delete shop) on www for CORS errors. Check the anon helper-grant note above.
 
 ## Copy-ready prompt for Claude Code
 

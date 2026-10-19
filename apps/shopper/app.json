@@ -14,11 +14,11 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "13"
+      "buildNumber": "14"
     },
     "android": {
       "package": "com.theloyaltyloop.shopper",
-      "versionCode": 131,
+      "versionCode": 132,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#F8E4C6",
