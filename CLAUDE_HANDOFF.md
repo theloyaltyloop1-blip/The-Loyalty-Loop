@@ -2801,6 +2801,102 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 - Not verified on a device or in a browser (no sign-in available). Device layout, spotlight alignment and the points/tier screens still need a test-channel OTA to "Business (Test)" that only the owner can approve.
 - Open: Part B's own UI (programme setup page, tier/points on the scan screens, shopper display, points redeem button is in D, wallet pass, WhatsApp copy) is still unbuilt. Migrations 20261020100000 and 20261020110000 are NOT applied to production.
 
+## Codex continuation — 19 October 2026 — verification complete, local only
+
+- Worktree: `C:/Users/zahih/AppData/Local/Temp/integ`, branch `loyalty-integration`, merge tip d0a89f9 (D, E, C already merged). Changes below are uncommitted. Nothing pushed, deployed, published or applied to production. Shared project root remains on unrelated `owner-redesign-on-origin-main`; its source changes are preserved.
+- **Fixed real Part C SQL syntax error:** actual PostgreSQL rejected the unparenthesized CASE expression in the reward-threshold IF condition. Added parentheses in `supabase/migrations/20261020110000_create_shop_with_programme.sql`. Also explicitly reject NULL programme as `invalid_programme`. Claude's earlier whole-SQL parse did not establish PL/pgSQL correctness.
+- **Repeatable database regression:** `apps/api/test/integration/create-shop-programme.test.mjs`, using the already-declared embedded-postgres dependency. Executes actual Part C migration, actual Part B tier table/validation/RLS/ladder functions in a transaction; verifies stamps, spend, tiers, points, PK points, ownership/unverified defaults, anonymous/missing identity/non-owner refusals and invalid-input matrix. Final ROLLBACK is checked independently: onboarding function/tier table absent, zero shops remain. 8/8 PASS. CI's existing API integration glob discovers it.
+- **Fixed lost E-over-D wiring:** `apps/retailer/src/shop-pages.tsx` now registers Programme and QR poster TourTargets and offers owners Take the tour via the existing restart callback. Kept tile width on the measured wrapper. `apps/web/src/components/owner-walkthrough.tsx` explicitly ignores the navigation promise, fixing its lint error. React checklist review of these bounded edits: stable component boundaries, unconditional hook call, existing effect cleanup and owner-only restart; visual acceptance still pending.
+
+### Checks actually completed
+- Application/shared node tests: **154/154 PASS** (loyalty 21, retailer 21, shopper 30, web tour 3, edge shared 79).
+- API unit tests: **10/10 PASS**. API database files run independently: **121 PASS, 1 pre-existing SKIP**, zero failing files across 21 files (includes onboarding 8). Full fetched migration history remains explicitly skipped because embedded PostgreSQL lacks pg_net.
+- TypeScript: retailer, shopper, admin, web and API PASS. Web production build and API build PASS. Web lint PASS with existing warnings; API lint PASS. `git diff --check` PASS. Final web build used placeholder Supabase environment, with the existing large-chunk warning.
+- Commands: root node --test across package/app/shared *.test files; `node --test apps/api/test/integration/create-shop-programme.test.mjs`; API npm test/typecheck/build/lint; app tsc; web npm run build/lint. API DB files ran through tsx with `--test --test-force-exit --test-timeout=90000`, three files at a time. Local ignored `integration-*.log` files hold outputs.
+- Hosted read-only check: `create_shop_with_programme` and `membership_tiers` both absent on tgukdabfvvoywawmzbdo. No hosted DDL or test-data writes made.
+
+### Failures and limits (do not erase)
+- Recovered scratch create_test_payload.sql is unsuitable unchanged: no Part B prerequisites and NULL rate in Points success case. Original PL/pgSQL checker failure was a real SQL defect, now fixed and executed.
+- Initial sandbox native PostgreSQL initdb failed renaming a WAL file; sandbox API HTTP tests denied loopback connections. Unsandboxed disposable/local-network runs passed. Initial native harness count assertion compared pg bigint string with number; corrected to count(*)::int.
+- Combined API DB runner stalled after passing AI-review assertions and was interrupted. Isolated force-exit runs establish assertion results, **not clean worker-handle shutdown**. Do not call the combined command passed.
+- A final web-build rerun initially omitted required build env and failed; rerun with placeholder env passed.
+- The onboarding fixture is focused, **not full provider/history parity**: production country/default triggers and full Part B engine are not replayed. No browser/phone acceptance or Metro exports performed in this continuation.
+
+### Next actions / owner decisions
+- Review the uncommitted fixes and regression, then browser/device acceptance at 375px and with keyboard/reduced motion; verify spotlight registration/alignment, restart/seen state and programme flows against a migrated test database.
+- Part B owner programme setup, scan tier/points display, wallet/WhatsApp wording remain unfinished. Do not start those as if completed here.
+- Product owner must approve hosted migration/release work and any Business (Test) OTA. Production must receive Part B before Part C and both before releasing the new onboarding clients. PK Points earning-unit decision remains open. No new approval needed merely to review local work.
+
+### Codex ownership and browser stage — 19 October 2026
+- Owner reports Claude has no usage remaining; Codex continues directly. Claude handoff is continuity documentation, not a required reviewer/dependency.
+- New scripts/verify-loyalty-onboarding.cjs executes the real app with synthetic owner auth and exclusively mocked Supabase responses. Eight new-shop cases PASS at 375/1280px: stamps/tiers/points/spend, correct RPC programme/country/name, disabled incomplete steps, success screen holds, Points PK refusal/retry. No horizontal overflow or page errors. Images/results in .tmp/loyalty-browser.
+- Initial sandbox browser connection denied; sandbox preview also unreachable from external Chrome. Unsandboxed local preview/browser passed. Harness initially expected backend text while app intentionally displays generic retry message; expectation corrected. No live auth or API writes.
+- Review identified resumed PK tier editor using browser-guessed currency for the label; regression/fix next.
+
+## Codex continues directly — browser verification completed — 19 October 2026
+- Owner reports Claude usage exhausted. Codex owns continuation; no Claude review/sign-off dependency is imposed for this work. Copy-ready prompt is continuity documentation only.
+- In the integration worktree: added scripts/verify-loyalty-onboarding.cjs. Real local app, synthetic owner session, all remote requests mocked or blocked; no live shop creation. Nine cases PASS: stamps/tiers/points/spend at 375px and 1280px; Pakistan Points refusal/retry; disabled incomplete steps; RPC shape; success screen holds; no page errors or horizontal overflow; resumed Pakistan tiers show Rs without creating another shop.
+- Regression reproduced and fixed wrong GBP label on resumed PK tiers: apps/web/src/pages/owner/Onboarding.tsx now uses activeCountry.currency.symbol. Browser regression failed before the fix and all nine passed afterwards. Web type/build and lint rerun PASS; existing warnings only; git diff --check PASS.
+- Evidence: integration .tmp/loyalty-browser/results.json and eight mobile editor/success screenshots (local ignored artifacts). Tier editor screenshot inspected; consent banner can cover part of the long page. Real device keyboard/spotlight/animation acceptance remains unverified.
+- Harness recovery: sandbox loopback denied; unsandboxed browser plus preview passed. Initial test expected a backend error string, corrected to the existing generic retry message. No production changes, commits, push or OTA. Part B UI and tour browser/device acceptance remain next.
+
+- Preview follow-up: Vite initially blocked linked font files, so first screenshots used fallback fonts. Added only ignored .tmp/loyalty-vite.config.mjs with narrow worktree/dependency allowlist; production Vite config unchanged. Browser harness now fails on local HTTP asset errors. Final rerun: all 9 PASS, zero local asset/page errors; refreshed tier screenshot inspected. Temporary config bundled with optional esbuild/devtools resolution warnings but preview ran successfully.
+
+## Part B owner programme editors implemented — local, verification pending
+- New web components/programme-settings.tsx and native src/programme-page.tsx support individual tier/reward add/edit/remove with returned-row checks, fixed programme type, points earning-rate updates preserving other config, branded native confirmation and inline web confirmation. Tier edits describe recalculation; points describe customer-led redemption. Existing stamp/spend editors remain unchanged.
+- Shared package now has ProgrammeSnapshot/scan wording and item validation (zero-spend starting tiers, unique amounts, perks/name/cost limits). Existing settings/rewards entry points route tiers/points to the new editors. Types/browser/native checks have NOT run yet. Scan gates/display work follows. No migration/deployment.
+
+### Part B scan wiring implemented — verification pending
+- Retailer StampsScreen and web OwnerScan now use recordsSpend() so tiers/points record purchases through the existing idempotent RPC, payment-method guards, till flow and undo path. Shared snapshot fields extend the RPC response types; scan results show tier/perks/rolling spend/distance or points/rate/redemption guidance, with programme-specific purchase confirmation. Web staff-business query now includes country_code for currency display. No server change.
+- Initial typecheck invocation for web accidentally ran from repository root and failed (no root tsconfig); native typecheck passed. Correct web checks and regression/browser coverage follow.
+
+### Part B first verification stage completed
+- Retailer and web typechecks PASS; web lint PASS with existing warnings. Combined package/app/shared test suite 158/158 PASS (4 added programme-editor/scan/routing regressions). New tests cover zero starting tiers, same-row edits, numeric duplicate detection, invalid costs/perks/colour/limits, negative points after refunds and no stamp fallback.
+- Post-save list-load errors now mark editors unavailable until a successful reload, preventing a second create from a stale list after a confirmed write. Save/delete request returned-row checks remain.
+- Browser fixtures and Android local export running; results not yet claimed. All data changes remain mocked/local only.
+
+### Part B browser verification completed
+- Eight mocked browser checks PASS: tiers/points editor CRUD and scan-to-manual-purchase at 375/1280px, zero starting tier/duplicate validation, removal cancel/confirm, earning-rate config preservation, RLS-style save refusal/draft retention/retry, correct purchase RPC and idempotency key, PK currency and programme-specific success. No hosted API traffic. Evidence .tmp/programme-browser, harness scripts/verify-programme-screens.cjs.
+- Found/fixed rate-save feedback unmount: update owner context locally after confirmed returned row instead of refetching/unmounting the editor. Web build/lint and retailer types PASS after fix. Mechanical design detector returned []; screenshots reviewed; expanded tier/points summary to full-width within member card for readability.
+- Android export FAILED before new screens bundled: Metro cannot resolve existing @loyalty-loop/design-tokens through this temp worktree dependency junction. Native bundle/device checks remain unverified; no retry/install/release initiated. This is a real verification gap, not a passing export.
+
+## Part B owner programme and scan stage complete — 19 October 2026 — Codex
+- Integration worktree only: new web programme-settings.tsx and retailer programme-page.tsx, routed from existing Settings/Rewards entry points; tier add/edit/remove and perks/colour/12-month thresholds (zero starting level supported), points reward costs/details and future earning-rate edits. Programme type fixed; legacy stamp/spend editors preserved; native manual-spend settings reused.
+- Shared packages/loyalty/src/index.ts validation and scan snapshot/copy; web/retailer scan gates now record purchases for tiers/points, display current tier/perks/distance or points/rate and correct success text; web staff query includes country_code. Existing payment guards/idempotency/undo path retained. New tests and scripts/verify-programme-screens.cjs provide regression coverage.
+- Final checks: package/app/shared 158/158 PASS; 8 mocked browser editor/scan-purchase cases PASS at 375/1280px (including refusal/retry, cancel/delete, preserved config, PK currency); web/retailer types PASS; web production build/lint PASS with existing warnings; detector [] and git diff --check PASS. Final browser/build reconfirmed after widening scan summary. Screenshots/JSON in integration .tmp/programme-browser. React checklist reviewed; no new libraries or migration.
+- Failed/unverified: native Android export blocked by Metro resolving existing @loyalty-loop/design-tokens through dependency junction; no native bundle/device acceptance claimed. Browser backend is mocked, not a live migrated-provider test. Earlier rate-save feedback unmount found by browser regression and fixed via local owner-context update. No production migration, deploy, OTA, commit or push.
+- Owner requested conserving tokens; bounded owner/scan stage finished. Remaining Part B: shopper home card display, wallet Deno parity and WhatsApp/coach wording; live migration/device/tour/SumUp acceptance separately pending. Existing PK points-unit decision remains open. Codex remains owner; Claude is not a dependency.
+
+## Scope decision (2026-10-19)
+
+- Owner requested removing WhatsApp from the remaining loyalty programme work. Existing WhatsApp code and historical records are preserved; removing the existing feature was not explicitly confirmed. No implementation or tests changed. Remaining work: native bundling/device checks, shopper home and wallet programme display, and provider acceptance and release approval.
+
+## Native bundling continuation — 19 October 2026
+- Both Metro configs now watch real dependency-junction targets and explicitly alias local design tokens. Export checks pending. First edit script used the wrong cwd and failed before editing; corrected from root.
+- Sandbox ADB server failed; owner declined the access retry to conserve usage. Device verification remains blocked. No commits, hosted changes or releases. WhatsApp preserved.
+
+## Shopper home programme display implemented — verification pending
+- Home cards now branch on reward_model: server-maintained membership level for tiers (no invented spend), actual points balance including refund debt, catalogue points costs and affordable-reward badge. Points catalogue field added; legacy display preserved. No new data reads for tier spend; detail screen retains ladder/perks. Verification pending.
+
+## Wallet programme display implemented — verification pending
+- Wallet Deno helper now branches explicitly for tiers/points; all three pass endpoints select current_tier; reward catalogue loads points_cost. Tier pass shows authoritative stored level and app guidance; points shows signed balance and redemption guidance without implying the membership QR redeems a reward. Existing stamp/spend logic retained. No deployment. Checks follow.
+
+### Compatibility correction
+- Wallet catalogue requests points_cost only for new points shops; shopper retries the legacy catalogue selection if the new column is absent. Preserves stamp/spend operation before hosted migration approval. Added tier-level/refund-debt/redemption-copy regressions. Checks follow.
+
+## Native bundling and programme display checks — 19 October 2026 — Claude
+- Metro watch/alias fix works: `expo export --platform android` PASSES for both apps (shopper 1677 modules, retailer 3174 modules). Export output went to scratch dirs outside the repo; no device run, nothing installed.
+- Checks PASS: shopper `tsc --noEmit`; wallet-progress tests 5/5; packages/loyalty, shopper and programme tests 45/45; shopper home-progress and home-rails tests 12/12.
+- NOT verified: on-device rendering of shopper home and wallet programme cards (ADB unavailable in sandbox; owner declined retry). No browser/wallet pass test run. Wallet Deno helper has no live run.
+- No commits, migrations, deploys, OTA or releases. WhatsApp code untouched. Migrations 20261020100000 and 20261020110000 still NOT applied.
+- Next actions: Owner (or Claude with device access) to run a `Business (Test)` / shopper test-channel OTA and check the home and wallet cards on a phone. Owner decision needed before any hosted migration, commit or release.
+
+## Onboarding SQL test RUN (2026-10-20) - Claude, integration branch
+- `create_shop_with_programme` tested in a rolled-back transaction on the live DB together with the two Part B changes it needs (reward_model widened, reward_catalog.points_cost). RESULT: stamps create, £ spend create, refuses empty name and duplicate amounts, anon cannot create: all PASS, 0 failures. Verified afterwards that nothing was kept (no function, no column, shop count unchanged at 4).
+- NOT covered by this run: the tiers and points branches of the function (they need the full Part B tables: membership_tiers, points redemptions).
+- The migration file itself is correct. An earlier failure came from my retyped copy in the test call, which had dropped parentheses around a CASE expression. Lesson: send migration text exactly as in the file.
+- Still NOT applied to production.
+
 ## Copy-ready prompt for Claude Code
 
-Next task (Claude): finish verifying the SumUp till link described in "SumUp till link BUILT locally (2026-10-19)". Once the product owner has a SumUp developer app and test reader, apply supabase/migrations/20261019200000_sumup_pos.sql to a Supabase branch (not production), test every pos_* RPC including permissions for owner / staff / customer, deploy sumup-connect, sumup-callback and sumup-sync to the branch, confirm the merchant-code lookup and history fields against the SumUp sandbox, and run the scan-to-credit flow in a browser. Record what was actually checked. Do not apply to production or set up the cron schedule without the owner's go-ahead.
+Continue in C:/Users/zahih/AppData/Local/Temp/integ on loyalty-integration. Read CLAUDE_HANDOFF.md. WhatsApp is out of the remaining loyalty programme scope; keep existing WhatsApp code. Native bundling exports pass for shopper and retailer. Next: on-device check of shopper home and wallet programme cards (needs a device or test-channel OTA the owner approves), then fix anything found. Product-owner approval is still required for hosted migrations, commits and releases.
