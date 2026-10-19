@@ -3,13 +3,15 @@ import { rewardWords } from '@/lib/shop-types'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, Lock, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { ReviewsSection } from '@/components/reviews-section'
+import { HowItWorks, openStatus } from '@/components/shop-profile'
+import { programmeIdFor } from '@loyalty-loop/loyalty'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShopMap } from '@/components/shop-map'
 import { featureBadge } from '@/lib/shop-features'
@@ -22,6 +24,9 @@ import {
   addFavourite,
   removeFavourite,
   fetchBusinessPhotos,
+  fetchMembershipTiers,
+  fetchRollingSpendPence,
+  type MembershipTier,
   type Business,
   type Membership,
   type RewardCatalogItem,
@@ -68,6 +73,8 @@ export function ShopDetail() {
   const [membership, setMembership] = React.useState<Membership | null>(null)
   const [catalog, setCatalog] = React.useState<RewardCatalogItem[]>([])
   const [photos, setPhotos] = React.useState<BusinessPhoto[]>([])
+  const [levels, setLevels] = React.useState<MembershipTier[]>([])
+  const [rollingSpend, setRollingSpend] = React.useState<number | null>(null)
   const [stampCode, setStampCode] = React.useState<string | null>(null)
   const [favourite, setFavourite] = React.useState(false)
   const [optedIn, setOptedIn] = React.useState(true)
@@ -99,6 +106,8 @@ export function ShopDetail() {
     const thisRequestId = ++requestIdRef.current
     let biz: Business | null
     let m: Membership | null, cat: RewardCatalogItem[], pics: BusinessPhoto[]
+    let tierRows: MembershipTier[] = []
+    let spendPence: number | null = null
     try {
       biz = await fetchBusinessBySlug(slug)
       if (!biz) {
@@ -110,6 +119,11 @@ export function ShopDetail() {
         fetchRewardCatalog(biz.id),
         fetchBusinessPhotos(biz.id),
       ])
+      if (programmeIdFor(biz) === 'tiers') {
+        tierRows = await fetchMembershipTiers(biz.id).catch(() => [])
+        // If this fails the page shows the next level's threshold, not a guessed distance.
+        spendPence = m ? await fetchRollingSpendPence(userId, biz.id).catch(() => null) : null
+      }
     } catch {
       if (thisRequestId === requestIdRef.current) { setLoadError(true); setReady(true) }
       return
@@ -129,6 +143,8 @@ export function ShopDetail() {
     joiningCardRef.current = false
     setCatalog(cat)
     setPhotos(pics)
+    setLevels(tierRows)
+    setRollingSpend(spendPence)
     setOptedIn(m ? !m.promos_opted_out : true)
     setReady(true)
   }, [slug, userId])
@@ -229,17 +245,18 @@ export function ShopDetail() {
     .sort((a, b) => a.spend_threshold_pence! - b.spend_threshold_pence!)
   const progress = Math.max(0, membership?.reward_progress_pence ?? 0)
   const nextTier = tiers.find((r) => r.spend_threshold_pence! > progress) ?? tiers[tiers.length - 1]
-  const firstTier = tiers[0]
   const targetPence = nextTier?.spend_threshold_pence ?? business.reward_threshold_pence ?? 2000
   const rewardTitle = nextTier?.title ?? 'Free reward'
-  const rewardSubtitle = (membership ? nextTier : firstTier)?.description ?? ''
   const remainingPence = Math.max(0, targetPence - progress)
 
   // Stamp / points / visits shops (reward_model 'stamp_legacy').
   const spendShop = business.reward_model === 'spend_threshold'
+  const programmeId = programmeIdFor(business)
+  const tierShop = programmeId === 'tiers'
+  const pointsShop = programmeId === 'points'
+  const status = openStatus(business.opening_hours)
+  const featureChips = [business.category, ...(business.features ?? []).map((id) => featureBadge(id, business.halal_certifier))].filter(Boolean) as string[]
   const StampIcon = categoryCopy(business.category).icon
-  // Light brand colours need a heavier shade for the white hero text to stay readable.
-  const heroShade = onBrandColor(business.brand_color) === '#ffffff' ? 0.2 : 0.55
   const stampsRequired = catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10
   const unit = rewardWords(business.loyalty_type).unit
   const stampProgress = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
@@ -305,93 +322,95 @@ export function ShopDetail() {
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
 
-      <div
-        className="relative mb-6 flex min-h-[280px] flex-col justify-end rounded-3xl bg-cover bg-center p-6 text-white sm:p-10"
-        style={{
-          background: business.cover_url
-            ? `linear-gradient(135deg, rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${business.cover_url}) center/cover`
-            : `linear-gradient(rgb(0 0 0 / ${heroShade}), rgb(0 0 0 / ${heroShade})), linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
-        }}
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button data-press-feedback
-              onClick={handleToggleFavourite}
-              aria-label={favourite ? `Remove ${business.name} from favourites` : `Add ${business.name} to favourites`}
-              className={
-                'absolute top-6 right-6 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
-                (favourite ? 'bg-card text-primary' : 'bg-card/90 text-foreground hover:bg-card')
-              }
-            >
-              <Heart className="h-5 w-5" fill={favourite ? 'currentColor' : 'none'} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="left">{favourite ? 'Remove from favourites' : 'Add to favourites'}</TooltipContent>
-        </Tooltip>
-
+      <section aria-label={`${business.name} profile`} className="mb-6 overflow-hidden rounded-3xl bg-card ring-1 ring-foreground/8">
         <div
-          className="h-16 w-16 rounded-2xl bg-card flex items-center justify-center font-display font-bold text-2xl mb-5 overflow-hidden ring-4 ring-white/20"
-          style={{ color: business.brand_color }}
+          className="relative h-44 sm:h-60"
+          style={{
+            background: business.cover_url
+              ? `url(${business.cover_url}) center/cover`
+              : `linear-gradient(135deg, ${business.brand_color}, ${darken(business.brand_color, 40)})`,
+          }}
         >
-          {business.logo_url ? (
-            <img src={business.logo_url} alt={`${business.name} logo`} className="h-full w-full object-cover" />
-          ) : (
-            business.name.charAt(0).toUpperCase()
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button data-press-feedback
+                onClick={handleToggleFavourite}
+                aria-label={favourite ? `Remove ${business.name} from favourites` : `Add ${business.name} to favourites`}
+                className={
+                  'absolute top-4 right-4 h-11 w-11 rounded-full flex items-center justify-center transition-colors duration-150 ease-out ' +
+                  (favourite ? 'bg-card text-primary' : 'bg-card/90 text-foreground hover:bg-card')
+                }
+              >
+                <Heart className="h-5 w-5" fill={favourite ? 'currentColor' : 'none'} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">{favourite ? 'Remove from favourites' : 'Add to favourites'}</TooltipContent>
+          </Tooltip>
         </div>
-
-        <h1 className="mb-1 flex min-w-0 items-center gap-2 pr-14 font-display text-3xl font-bold tracking-tight [overflow-wrap:anywhere] [text-shadow:0_1px_3px_rgb(0_0_0/0.35)] sm:text-5xl">
-          <span className="min-w-0">{business.name}</span>
-          {business.verification_status === 'verified' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <BadgeCheck tabIndex={0} className="h-7 w-7 text-white shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-white rounded-full" aria-label="Verified: we've confirmed this is a real business" />
-              </TooltipTrigger>
-              <TooltipContent>Verified: we've confirmed this is a real business</TooltipContent>
-            </Tooltip>
-          )}
-        </h1>
-        <p className="text-white/85 mb-2">{business.category}</p>
-        {business.features?.length ? (
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {business.features.map((id) => <span key={id} className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-black">{featureBadge(id, business.halal_certifier)}</span>)}
+        <div className="px-5 pb-6 sm:px-8 sm:pb-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div
+              className="-mt-10 flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-card font-display text-3xl font-bold ring-4 ring-card sm:-mt-12 sm:h-24 sm:w-24"
+              style={{ backgroundColor: business.logo_url ? undefined : business.brand_color }}
+            >
+              {business.logo_url ? (
+                <img src={business.logo_url} alt={`${business.name} logo`} className="h-full w-full object-cover" />
+              ) : (
+                <span style={{ color: onBrandColor(business.brand_color) }}>{business.name.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <div className="flex flex-col items-start gap-1.5 sm:items-end">
+              <button data-press-feedback
+                onClick={membership ? () => loyaltyCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : handleJoin}
+                disabled={joining}
+                className="h-12 rounded-full px-8 font-semibold transition-transform active:scale-[0.98] disabled:opacity-50"
+                style={{ backgroundColor: business.brand_color, color: onBrandColor(business.brand_color) }}
+              >
+                {joining ? 'Joining…' : membership ? 'Your card' : 'Join card'}
+              </button>
+              {joinError && <p role="alert" className="text-sm font-semibold text-destructive">{joinError}</p>}
+            </div>
           </div>
-        ) : null}
-        <p className="text-white/80 max-w-xl">{business.description}</p>
-      </div>
+          <h1 className="mt-4 flex min-w-0 items-center gap-2 font-display text-3xl font-bold tracking-tight text-foreground [overflow-wrap:anywhere] sm:text-4xl">
+            <span className="min-w-0">{business.name}</span>
+            {business.verification_status === 'verified' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <BadgeCheck tabIndex={0} className="h-7 w-7 shrink-0 rounded-full text-primary outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Verified: we've confirmed this is a real business" />
+                </TooltipTrigger>
+                <TooltipContent>Verified: we've confirmed this is a real business</TooltipContent>
+              </Tooltip>
+            )}
+          </h1>
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {featureChips.map((chip) => <li key={chip} className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground">{chip}</li>)}
+          </ul>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-foreground">
+            {business.rating_avg != null && (business.rating_count ?? 0) > 0 && (
+              <span>★ {Number(business.rating_avg).toFixed(1)} <span className="font-normal">({business.rating_count} {business.rating_count === 1 ? 'review' : 'reviews'})</span></span>
+            )}
+            {status && (
+              <span className={'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ' + (status.open ? 'bg-sage text-sage-ink' : 'bg-destructive/10 text-foreground')}>
+                <span className={'h-2 w-2 rounded-full ' + (status.open ? 'bg-green-600' : 'bg-destructive')} />
+                {status.label}
+              </span>
+            )}
+          </div>
+          {business.description && <p className="mt-4 max-w-2xl text-foreground">{business.description}</p>}
+        </div>
+      </section>
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
       <div className="min-w-0 space-y-6">
-      {!membership ? (
-        <div className="loyalty-card-panel rounded-3xl bg-peach p-8 text-center text-peach-ink sm:p-10" style={{ viewTransitionName: 'loyalty-card' }}>
-          <h2 className="text-2xl font-display font-bold tracking-tight mb-4">
-            Join {business.name}'s loyalty card
-          </h2>
-          <span className="inline-block rounded-full bg-card px-3 py-1 text-xs font-semibold text-foreground mb-3">
-            Your reward
-          </span>
-          <p className="text-2xl font-display font-bold tracking-tight">{spendShop ? firstTier?.title ?? 'Free reward' : catalog[0]?.title ?? 'Free reward'}</p>
-          <p className="text-sm text-peach-ink/80 mb-1">{spendShop ? rewardSubtitle : catalog[0]?.description ?? ''}</p>
-          <p className="text-sm text-peach-ink/80 mb-6">
-            {spendShop
-              ? `Spend ${poundsLabel(firstTier?.spend_threshold_pence ?? targetPence)} here to unlock it.`
-              : `Collect ${stampsRequired} ${unit}${stampsRequired === 1 ? '' : 's'} to unlock it.`}
-          </p>
-          <button data-press-feedback
-            onClick={handleJoin}
-            disabled={joining}
-            className="rounded-full px-8 h-12 font-semibold transition-transform active:scale-[0.98] disabled:opacity-50"
-            style={{ backgroundColor: business.brand_color, color: onBrandColor(business.brand_color) }}
-          >
-            {joining ? 'Joining…' : 'Join card'}
-          </button>
-          {joinError && <p className="mt-4 text-sm font-semibold text-destructive">{joinError}</p>}
-        </div>
-      ) : (
+      {membership ? (
         <div className="loyalty-card-panel rounded-3xl bg-card ring-1 ring-foreground/8 p-6 sm:p-8" style={{ viewTransitionName: 'loyalty-card' }}>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-display font-semibold tracking-tight text-foreground">
-              {spendShop
+              {tierShop
+                ? 'Your level'
+                : pointsShop
+                  ? 'Your points'
+                  : spendShop
                 ? 'Your progress'
                 : business.loyalty_type === 'points'
                   ? 'Your points'
@@ -400,13 +419,17 @@ export function ShopDetail() {
                     : 'Your stamp card'}
             </h2>
             <p className="text-sm font-semibold tabular-nums text-muted-foreground">
-              {spendShop
+              {tierShop
+                ? membership.current_tier || 'Getting started'
+                : pointsShop
+                  ? `${membership.points_balance} ${membership.points_balance === 1 ? 'point' : 'points'}`
+                  : spendShop
                 ? `${poundsLabel(progress)} / ${poundsLabel(targetPence)} · ${rewardTitle}`
                 : `${stampProgress} / ${stampsRequired} · ${catalog[0]?.title ?? 'Free reward'}`}
             </p>
           </div>
 
-          {!spendShop ? (
+          {tierShop || pointsShop ? null : !spendShop ? (
             <>
           {business.loyalty_type === 'points' ? (
             <div className="mb-8">
@@ -491,7 +514,9 @@ export function ShopDetail() {
               </p>
               <p className="font-semibold mb-1">Show this to staff</p>
               <p className="text-sm text-sage-ink/80 max-w-sm">
-                {spendShop
+                {tierShop || pointsShop
+                  ? 'They scan the code, or type the manual code above, and add what you spent.'
+                  : spendShop
                   ? 'They scan the code, or type the manual code above, and add what you spent. Rewards are added to your wallet automatically.'
                   : `They scan the code to add a ${unit}, or type the manual code above. ${Math.max(0, stampsRequired - stampProgress)} ${unit}${Math.max(0, stampsRequired - stampProgress) === 1 ? '' : 's'} to your next reward.`}
               </p>
@@ -515,31 +540,9 @@ export function ShopDetail() {
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 sm:p-7">
-        <h2 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-foreground mb-4">
-          <Gift className="h-5 w-5 text-primary" /> What you can earn
-        </h2>
-        <div className="flex flex-col gap-2">
-          {(spendShop ? (tiers.length ? tiers : [null]) : [null]).map((tier) => (
-            <div key={tier?.id ?? 'default'} className="rounded-2xl bg-amber/25 flex items-center gap-4 p-4">
-              <span className="h-10 w-10 rounded-full bg-amber flex items-center justify-center shrink-0">
-                <Lock className="h-4 w-4 text-amber-ink" />
-              </span>
-              <div>
-                <p className="font-semibold text-foreground">{spendShop ? tier?.title ?? 'Free reward' : catalog[0]?.title ?? 'Free reward'}</p>
-                {(spendShop ? tier?.description : catalog[0]?.description) && <p className="text-sm text-muted-foreground">{spendShop ? tier?.description : catalog[0]?.description}</p>}
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {spendShop
-                    ? `Unlocks after spending ${poundsLabel(tier?.spend_threshold_pence ?? targetPence)}`
-                    : `${stampsRequired} ${unit}${stampsRequired === 1 ? '' : 's'}`}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <HowItWorks business={business} membership={membership} catalog={catalog} tiers={levels} rollingSpendPence={rollingSpend} refetch={refetch} />
 
       {photos.length > 0 && (
         <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 sm:p-7">

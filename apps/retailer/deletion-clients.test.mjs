@@ -7,7 +7,7 @@ import ts from '../../node_modules/typescript/lib/typescript.js';
 // Evaluate the actual bounded functions with in-memory providers; no app/native
 // imports, credentials, database access or destructive requests are involved.
 const web = await readFile(new URL('../web/src/lib/businesses.ts', import.meta.url), 'utf8');
-const retailer = await readFile(new URL('./App.tsx', import.meta.url), 'utf8');
+const retailer = await readFile(new URL('./src/shop-pages.tsx', import.meta.url), 'utf8');
 function compile(source, start, end, globals) {
  const code = source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
  const exports = {};
@@ -30,7 +30,7 @@ async function accountRun(results) {
  const supabase={from:()=>({select:()=>({eq:async()=>({data:[{id:'shop',name:'Shop'}],error:null})})}),functions:{invoke:async(name,args)=>{calls.push({name,args});return results[name]}},auth:{signOut:async()=>{calls.push({name:'signOut'})}}};
  const Alert={alert:(title,body,buttons)=>{alerts.push({title,body,buttons});if(title==='Account deleted'||title==='Could not delete account') complete();}};
  const source=retailer.replace('function confirmDeleteAccount(userId: string)', 'export function confirmDeleteAccount(userId: string)');
- const {confirmDeleteAccount}=compile(source,'export function confirmDeleteAccount','const SPEND_REWARDS_HELP', {supabase,Alert});
+ const {confirmDeleteAccount}=compile(source,'export function confirmDeleteAccount','type ShopView', {supabase,showAlert:Alert.alert});
  confirmDeleteAccount('owner');
  alerts[0].buttons.find(b=>b.text==='Continue').onPress();
  alerts[1].buttons.find(b=>b.text==='Delete everything').onPress();

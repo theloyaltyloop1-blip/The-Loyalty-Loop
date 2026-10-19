@@ -34,6 +34,8 @@ export interface Business {
   logo_url: string | null
   cover_url: string | null
   opening_hours: OpeningHours | null
+  rating_avg?: number | null
+  rating_count?: number | null
   loyalty_type: 'stamp_card' | 'points' | 'tiered'
   loyalty_config: LoyaltyConfig
   reward_model: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'
@@ -60,6 +62,7 @@ export interface RewardCatalogItem {
   stamp_threshold: number
   spend_threshold_pence: number | null
   sort_order: number
+  points_cost?: number | null
 }
 
 export interface Membership {
@@ -72,6 +75,18 @@ export interface Membership {
   promos_opted_out: boolean
   visit_count?: number | null
   last_activity_at?: string | null
+  current_tier_id?: string | null
+  current_tier?: string | null
+}
+
+export interface MembershipTier {
+  id: string
+  business_id: string
+  name: string
+  spend_threshold_pence: number
+  perks: string[] | null
+  colour: string | null
+  sort_order: number
 }
 
 export async function fetchBusinesses(): Promise<Business[]> {
@@ -291,6 +306,32 @@ export async function joinBusiness(userId: string, businessId: string): Promise<
     .single()
   if (error) throw error
   return data as Membership
+}
+
+/** The shop's membership levels, lowest first. Public to signed-in customers. */
+export async function fetchMembershipTiers(businessId: string): Promise<MembershipTier[]> {
+  const { data, error } = await supabase
+    .from('membership_tiers')
+    .select('id,business_id,name,spend_threshold_pence,perks,colour,sort_order')
+    .eq('business_id', businessId)
+    .order('spend_threshold_pence')
+  if (error) throw error
+  return data as MembershipTier[]
+}
+
+/** The customer's own £ spend at a shop over the last 12 months (they can read their own transactions). */
+export async function fetchRollingSpendPence(userId: string, businessId: string): Promise<number> {
+  const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('value')
+    .eq('user_id', userId)
+    .eq('business_id', businessId)
+    .eq('type', 'spend')
+    .is('voided_at', null)
+    .gt('created_at', since)
+  if (error) throw error
+  return (data ?? []).reduce((sum, row) => sum + Number(row.value || 0), 0)
 }
 
 export async function fetchRewardCatalog(businessId: string): Promise<RewardCatalogItem[]> {
