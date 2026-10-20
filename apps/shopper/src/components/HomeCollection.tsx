@@ -102,9 +102,9 @@ function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { sho
 }
 
 const CARD_TONES = [
-  { bg: c.olive, ink: c.oliveInk, track: '#617257' },
-  { bg: c.peach, ink: c.peachInk, track: '#E9BDA3' },
-  { bg: c.sage, ink: c.sageInk, track: '#C5D1BA' },
+  { bg: c.olive, ink: c.oliveInk, track: '#262A28' },
+  { bg: c.peach, ink: c.peachInk, track: '#362217' },
+  { bg: c.sage, ink: c.sageInk, track: '#262E1F' },
 ]
 
 // Your loyalty cards as a swipeable row, the one closest to a reward first.
@@ -127,7 +127,7 @@ function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }:
 }
 
 // Round category buttons you swipe through, like the cuisine row in delivery apps.
-const CIRCLE_TONES = [c.peach, c.sage, '#E4DCF0', '#F5E7B8', '#D6E6EE']
+const CIRCLE_TONES = [c.peach, c.sage, '#221C2E', '#2A2410', '#14232B']
 export function CategoryCircles({ categories, selected, onSelect }: { categories: [string, number][]; selected: string | null; onSelect: (category: string | null) => void }) {
   if (categories.length < 2) return null
   const item = (key: string | null, name: string, index: number) => {
@@ -273,7 +273,7 @@ const s = StyleSheet.create({
   tileCopy: { padding: 12, gap: 3 },
   tileName: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 17, color: c.foreground },
   tileCategory: { fontSize: 13, color: c.muted },
-  distancePill: { position: 'absolute', left: 10, top: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 14, backgroundColor: 'rgba(252,252,250,0.95)' },
+  distancePill: { position: 'absolute', left: 10, top: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 14, backgroundColor: 'rgba(26,28,27,0.95)' },
   distanceText: { color: c.foreground, fontSize: 12, fontWeight: '600' },
   circleItem: { width: 72, alignItems: 'center', gap: 8 },
   circle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent' },

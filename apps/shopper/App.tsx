@@ -154,10 +154,10 @@ function SearchBar({ value, onChangeText, accessibilityLabel }: { value: string;
   return (
     <View style={styles.searchBar}>
       <SearchIcon color={foreground} size={20} />
-      <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#000000" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
+      <TextInput keyboardAppearance="dark" accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#6B726D" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
       {value.length > 0 && (
         <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
-          <CloseIcon color="#737B74" size={16} />
+          <CloseIcon color="#7D847E" size={16} />
         </Pressable>
       )}
     </View>
@@ -248,10 +248,10 @@ function BoltIcon({ color = foreground, size = 14 }: IconProps) {
 function GoogleIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48">
-      <Path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
-      <Path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-      <Path fill="#4CAF50" d="M24 44c5.4 0 10.3-1.8 14.1-5l-6.5-5.5C29.5 35.4 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.7 16.3 44 24 44z" />
-      <Path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.5 5.5C39.6 37 44 31 44 24c0-1.3-.1-2.7-.4-3.5z" />
+      <Path fill="#EBCC70" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+      <Path fill="#EB8D70" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <Path fill="#89D28C" d="M24 44c5.4 0 10.3-1.8 14.1-5l-6.5-5.5C29.5 35.4 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.7 16.3 44 24 44z" />
+      <Path fill="#70AEEB" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.5 5.5C39.6 37 44 31 44 24c0-1.3-.1-2.7-.4-3.5z" />
     </Svg>
   )
 }
@@ -595,10 +595,10 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
             <View style={styles.dividerLine} />
           </View>
           {mode === 'signUp' && (
-            <TextInput value={name} onChangeText={setName} placeholder="First name" placeholderTextColor="#000000" style={styles.input} autoCapitalize="words" />
+            <TextInput keyboardAppearance="dark" value={name} onChangeText={setName} placeholder="First name" placeholderTextColor="#6B726D" style={styles.input} autoCapitalize="words" />
           )}
-          <TextInput value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor="#000000" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
-          <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor="#000000" style={styles.input} secureTextEntry />
+          <TextInput keyboardAppearance="dark" value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor="#6B726D" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
+          <TextInput keyboardAppearance="dark" value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor="#6B726D" style={styles.input} secureTextEntry />
           <Button title={busy ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Create shopper account'} onPress={submit} disabled={busy} />
           <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
             <Text style={styles.link}>{mode === 'signIn' ? 'New here? Create an account' : 'Already have an account? Sign in'}</Text>
@@ -655,15 +655,15 @@ const openUrl = (url: string) => void Linking.openURL(url)
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const TILES = {
-  blue: { bg: '#DCE6D2', fg: '#3E5235' },
-  purple: { bg: '#F3E3D3', fg: '#8A4A2B' },
-  rose: { bg: '#F8DCCB', fg: '#B5431C' },
-  amber: { bg: '#FBE7BF', fg: '#8A5A00' },
-  green: { bg: '#DCEBD9', fg: '#2F7A3F' },
-  teal: { bg: '#D7E6E0', fg: '#2E6656' },
-  slate: { bg: '#E6E8E2', fg: '#545C55' },
-  orange: { bg: '#FDE2D2', fg: primary },
-  red: { bg: '#f8dcd8', fg: '#b54439' },
+  blue: { bg: '#26311B', fg: '#9FD289' },
+  purple: { bg: '#362617', fg: '#D89F83' },
+  rose: { bg: '#362317', fg: '#E99072' },
+  amber: { bg: '#362B17', fg: '#EBC070' },
+  green: { bg: '#1E321A', fg: '#89D298' },
+  teal: { bg: '#1D2F28', fg: '#89D2BD' },
+  slate: { bg: '#1F2221', fg: '#7D847E' },
+  orange: { bg: '#362217', fg: primary },
+  red: { bg: '#361B17', fg: '#D88A83' },
 } as const
 type Tile = keyof typeof TILES
 
@@ -676,7 +676,7 @@ function SettingsRow({ icon, tile = 'slate', title, detail, onPress, right, dang
         <Text style={[styles.settingsRowTitle, danger && styles.settingsRowTitleDanger]}>{title}</Text>
         {detail ? <Text style={styles.settingsRowDetail} numberOfLines={2}>{detail}</Text> : null}
       </View>
-      {right ?? (onPress ? <ChevronRightIcon color="#A3AAA2" size={18} /> : null)}
+      {right ?? (onPress ? <ChevronRightIcon color="#7D847E" size={18} /> : null)}
     </Pressable>
   )
 }
@@ -776,7 +776,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <Text style={styles.sheetTitle}>{SETTINGS_TITLES.root}</Text>
           ) : (
             <Pressable onPress={() => setView('root')} hitSlop={10} style={styles.sheetBack}>
-              <ChevronLeftIcon size={18} color="#737B74" />
+              <ChevronLeftIcon size={18} color="#7D847E" />
               <Text style={styles.sheetTitle}>{SETTINGS_TITLES[view]}</Text>
             </Pressable>
           )}
@@ -887,7 +887,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <>
               <View style={styles.settingsCard}>
                 <Text style={styles.settingsFieldLabel}>First name</Text>
-                <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#000000" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
+                <TextInput keyboardAppearance="dark" value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#6B726D" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
                 <Text style={styles.settingsFieldHelp}>Shops see this name when they record a purchase or you leave a review.</Text>
               </View>
               <View style={styles.settingsCard}>
@@ -1431,7 +1431,7 @@ function ShopDetail({
           cardLinking.cards.length === 0 ? (
             <View style={styles.autoEarnCard}>
               <View style={styles.autoEarnRow}>
-                <BoltIcon color="#c77c12" size={16} />
+                <BoltIcon color="#EBB870" size={16} />
                 <Text style={styles.autoEarnTitle}>Earn automatically here</Text>
               </View>
               <Text style={styles.autoEarnCopy}>Link the card you pay with. When you use it here, your progress updates by itself.</Text>
@@ -1444,7 +1444,7 @@ function ShopDetail({
             </View>
           ) : (
             <View style={styles.autoEarnChip}>
-              <BoltIcon color="#c77c12" size={14} />
+              <BoltIcon color="#EBB870" size={14} />
               <Text style={styles.autoEarnChipText}>Pay with a linked card to earn automatically</Text>
             </View>
           )
@@ -1577,11 +1577,11 @@ function ShopDetail({
                   </Pressable>
                 ))}
               </View>
-              <TextInput
+              <TextInput keyboardAppearance="dark"
                 value={reviewBody}
                 onChangeText={setReviewBody}
                 placeholder="What did you enjoy?"
-                placeholderTextColor="#000000"
+                placeholderTextColor="#6B726D"
                 multiline
                 maxLength={2000}
                 style={styles.reviewInput}
@@ -1714,11 +1714,11 @@ const featureStyles = StyleSheet.create({
   filterRow: { gap: 8, paddingVertical: 8, paddingRight: 8 },
   chip: { borderRadius: 999, borderWidth: 1.5, borderColor: primary, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: card },
   chipActive: { backgroundColor: primary },
-  chipText: { color: '#000000', fontWeight: '700', fontSize: 13 },
+  chipText: { color: '#9DA49E', fontWeight: '700', fontSize: 13 },
   chipTextActive: { color: '#fff' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  badge: { borderRadius: 999, backgroundColor: '#EEF3E6', paddingHorizontal: 12, paddingVertical: 4 },
-  badgeText: { color: '#000000', fontSize: 12, fontWeight: '700' },
+  badge: { borderRadius: 999, backgroundColor: '#293419', paddingHorizontal: 12, paddingVertical: 4 },
+  badgeText: { color: '#9DA49E', fontSize: 12, fontWeight: '700' },
 })
 
 function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk }: {
@@ -1766,7 +1766,21 @@ function initialsOf(name: string) {
 }
 
 // Hides Google's own business, hospital and transit labels so only our shop pins show.
+// Dark map to sit with the dark premium theme, with shop/POI clutter hidden.
 const QUIET_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#1a1c1b' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#8e958f' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#111312' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#2c302e' }] },
+  { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#1e2120' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#18241a' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2e2c' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#151716' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a3f3c' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#a3aaa4' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#202322' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1417' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4d5a5f' }] },
   { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
   { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
   { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
@@ -2188,24 +2202,26 @@ function FavouritesTab({
 // Discover tab back in the bottom bar; everything behind it is untouched.
 const SHOW_DISCOVER_TAB = false
 
+const TAB_IDLE = '#8E958F'
 const TABS: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
-  { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? primary : foreground} /> },
-  { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? primary : foreground} filled={active} /> },
-  { id: 'map', label: 'Map', icon: (active) => <MapPinIcon color={active ? primary : foreground} /> },
-  { id: 'news', label: 'News', icon: (active) => <MegaphoneIcon color={active ? primary : foreground} /> },
-  { id: 'rewards', label: 'Rewards', icon: (active) => <GiftIcon color={active ? primary : foreground} /> },
-  { id: 'favourites', label: 'Favourites', icon: (active) => <HeartIcon color={active ? primary : foreground} filled={active} /> },
+  { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? '#fff' : TAB_IDLE} /> },
+  { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? '#fff' : TAB_IDLE} filled={active} /> },
+  { id: 'map', label: 'Map', icon: (active) => <MapPinIcon color={active ? '#fff' : TAB_IDLE} /> },
+  { id: 'news', label: 'News', icon: (active) => <MegaphoneIcon color={active ? '#fff' : TAB_IDLE} /> },
+  { id: 'rewards', label: 'Rewards', icon: (active) => <GiftIcon color={active ? '#fff' : TAB_IDLE} /> },
+  { id: 'favourites', label: 'Favourites', icon: (active) => <HeartIcon color={active ? '#fff' : TAB_IDLE} filled={active} /> },
 ]
 
 function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
+  const insets = useSafeAreaInsets()
   return (
-    <View style={styles.tabs}>
+    <View style={[styles.tabs, { bottom: Math.max(insets.bottom, 12) + 4 }]}>
       {TABS.filter(({ id }) => id !== 'discover' || SHOW_DISCOVER_TAB).map(({ id, label, icon }) => {
         const active = tab === id
         return (
-          <Pressable key={id} style={({ pressed }) => [styles.tab, pressed && styles.pressed]} onPress={() => onChange(id)}>
+          <Pressable key={id} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: active }} style={({ pressed }) => [styles.tab, active && styles.tabActivePill, pressed && styles.pressed]} onPress={() => onChange(id)}>
             {icon(active)}
-            <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+            {active ? <Text numberOfLines={1} style={styles.tabTextActive}>{label}</Text> : null}
           </Pressable>
         )
       })}
@@ -2470,7 +2486,7 @@ function AppHome({ session }: { session: Session }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
-      <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="light-content" backgroundColor="#0A0B0A" />
       {!discovering && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
       {!discovering && (
         <PlatformBanner
@@ -2530,6 +2546,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <StatusBar barStyle="light-content" backgroundColor="#0A0B0A" />
         <AppRoot />
         <AppAlertHost />
       </SafeAreaProvider>
@@ -2635,39 +2652,39 @@ const styles = StyleSheet.create({
   onboardingLogo: { width: 66, height: 66, resizeMode: 'contain', marginBottom: 44 },
   onboardingTitle: { color: foreground, fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: 'row', gap: 8, marginTop: 36, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#CBD1C3' },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#262A28' },
   onboardingDotActive: { width: 26, backgroundColor: primary },
   onboardingConsent: { marginTop: 28 },
   onboardingSkip: { alignItems: 'center', padding: 16 },
   onboardingSkipText: { color: primary, fontSize: 15, fontWeight: '700' },
 
-  mark: { width: 64, height: 64, borderRadius: 18, backgroundColor: card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 28, overflow: 'hidden' },
+  mark: { width: 64, height: 64, borderRadius: 18, backgroundColor: card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 28, overflow: 'hidden' },
   markImage: { width: 46, height: 46, resizeMode: 'contain' },
 
   eyebrow: { color: primary, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 12 },
   hero: { color: foreground, fontSize: 36, fontFamily: FONT_DISPLAY, lineHeight: 42, letterSpacing: -1 },
   title: { color: foreground, fontSize: 26, fontFamily: FONT_DISPLAY, lineHeight: 31, letterSpacing: -0.5 },
-  copy: { color: '#000000', fontSize: 16, lineHeight: 24, marginTop: 16 },
-  description: { color: '#000000', fontSize: 15, lineHeight: 22, marginTop: 8 },
+  copy: { color: '#9DA49E', fontSize: 16, lineHeight: 24, marginTop: 16 },
+  description: { color: '#9DA49E', fontSize: 15, lineHeight: 22, marginTop: 8 },
   landingTitle: { color: foreground, fontSize: 16, fontWeight: '800', marginTop: 3 },
-  landingCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginBottom: 8 },
+  landingCopy: { color: '#9DA49E', fontSize: 13, lineHeight: 19, marginBottom: 8 },
 
   card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#1C2620', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
-  input: { backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.14)', paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  input: { backgroundColor: '#1F2221', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#151716', borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.16)', paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   searchInput: { flex: 1, paddingVertical: 16, color: foreground, fontSize: 16 },
-  askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
+  askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: '#362217', borderWidth: 1, borderColor: '#593926' },
   askShopIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
   askShopTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
-  askShopCopy: { color: '#000000', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+  askShopCopy: { color: '#9DA49E', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
   appleButton: { width: '100%', height: 48, marginBottom: 12 },
   appleButtonAndroid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#000', borderRadius: 12 },
   appleButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', paddingVertical: 16 },
+  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#151716', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.16)', paddingVertical: 16 },
   googleButtonText: { color: foreground, fontWeight: '800', fontSize: 15 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.1)' },
-  dividerText: { color: '#000000', fontSize: 12, fontWeight: '700' },
+  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.13)' },
+  dividerText: { color: '#9DA49E', fontSize: 12, fontWeight: '700' },
 
   button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 16, marginTop: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', shadowColor: primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: foreground, marginTop: 20 },
@@ -2676,107 +2693,107 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.6 },
   link: { color: primary, textAlign: 'center', fontWeight: '700', marginTop: 8 },
-  small: { color: '#000000', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 24 },
+  small: { color: '#9DA49E', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 24 },
   authHelpLink: { alignSelf: 'center', marginTop: 16, paddingVertical: 8, paddingHorizontal: 12 },
-  authHelpLinkText: { color: '#000000', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  authHelpLinkText: { color: '#9DA49E', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 
   // Header
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' },
   headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerLogo: { width: 32, height: 32, borderRadius: 8 },
   headerTitle: { fontSize: 17, fontWeight: '800', color: foreground },
-  headerProfileButton: { width: 40, height: 40, aspectRatio: 1, flexShrink: 0, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
+  headerProfileButton: { width: 40, height: 40, aspectRatio: 1, flexShrink: 0, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
 
   pageTitle: { fontSize: 26, fontFamily: FONT_DISPLAY, color: foreground, letterSpacing: -0.5, marginBottom: 16, marginTop: 4 },
 
   // Category pills
   pillRow: { gap: 8, paddingBottom: 24 },
-  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.1)', backgroundColor: card },
+  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.13)', backgroundColor: card },
   pillActive: { backgroundColor: primary, borderColor: primary },
   pillText: { fontSize: 13, fontWeight: '700', color: foreground },
   pillTextActive: { color: '#fff' },
 
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  sectionEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#000000' },
+  sectionEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#9DA49E' },
   sparkle: { color: primary, fontSize: 13 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: foreground },
 
   // Announcements
   announcementRow: { gap: 12, paddingBottom: 28 },
-  announcementCard: { width: 240, backgroundColor: card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  announcementCard: { width: 240, backgroundColor: card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   announcementBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(232,112,59,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  announcementFrom: { fontSize: 11, fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: 0.4 },
+  announcementFrom: { fontSize: 11, fontWeight: '700', color: '#9DA49E', textTransform: 'uppercase', letterSpacing: 0.4 },
   announcementTitle: { fontSize: 15, fontWeight: '800', color: foreground, marginTop: 4 },
-  announcementBody: { fontSize: 13, color: '#000000', marginTop: 4, lineHeight: 18 },
+  announcementBody: { fontSize: 13, color: '#9DA49E', marginTop: 4, lineHeight: 18 },
 
   // Trending grid
   trendingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
-  trendingCard: { width: '47%', borderRadius: 18, backgroundColor: card, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  trendingCard: { width: '47%', borderRadius: 18, backgroundColor: card, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   trendingCover: { height: 90, width: '100%' },
   trendingContent: { padding: 12 },
   trendingName: { fontSize: 14, fontWeight: '800', color: foreground },
 
   // Nearby list
-  nearbyRow: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: card, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  nearbyRow: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: card, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   nearbyLogo: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   logoLetter: { color: '#fff', fontWeight: '800', fontSize: 17, lineHeight: 20, textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
-  nearbyCategory: { color: '#000000', fontSize: 13, fontWeight: '600', marginTop: 3 },
-  nearbyAddress: { color: '#000000', fontSize: 12, fontWeight: '400', marginTop: 2 },
+  nearbyCategory: { color: '#9DA49E', fontSize: 13, fontWeight: '600', marginTop: 3 },
+  nearbyAddress: { color: '#9DA49E', fontSize: 12, fontWeight: '400', marginTop: 2 },
   shopName: { fontSize: 16, fontWeight: '800', color: foreground },
-  muted: { color: '#000000', fontSize: 12.5, lineHeight: 18, marginTop: 2 },
-  empty: { color: '#000000', fontSize: 15, lineHeight: 22, marginTop: 12 },
+  muted: { color: '#9DA49E', fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  empty: { color: '#9DA49E', fontSize: 15, lineHeight: 22, marginTop: 12 },
 
   // Map
-  mapWrap: { height: 320, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 20 },
-  mapPlaceholder: { backgroundColor: card, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', padding: 24, alignItems: 'center', gap: 12, marginBottom: 20 },
-  mapPlaceholderText: { textAlign: 'center', color: '#000000', fontSize: 13.5, lineHeight: 19 },
+  mapWrap: { height: 320, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 20 },
+  mapPlaceholder: { backgroundColor: card, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 24, alignItems: 'center', gap: 12, marginBottom: 20 },
+  mapPlaceholderText: { textAlign: 'center', color: '#9DA49E', fontSize: 13.5, lineHeight: 19 },
 
   // News
-  newsCard: { backgroundColor: card, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  newsCard: { backgroundColor: card, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   newsTitle: { fontSize: 16, fontWeight: '800', color: foreground, marginTop: 4 },
-  newsDate: { color: '#000000', fontSize: 11, marginTop: 8 },
+  newsDate: { color: '#9DA49E', fontSize: 11, marginTop: 8 },
 
   // Shop detail
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 },
   back: { color: foreground, fontWeight: '700', fontSize: 15 },
   detailCover: { height: 190, width: '100%', borderRadius: 22, overflow: 'hidden', marginBottom: 20 },
-  favouriteButton: { position: 'absolute', top: 14, right: 14, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
+  favouriteButton: { position: 'absolute', top: 14, right: 14, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(26,28,27,0.92)', alignItems: 'center', justifyContent: 'center' },
 
   joinCard: { backgroundColor: card, borderRadius: 22, padding: 28, marginTop: 20, alignItems: 'center' },
   joinTitle: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center', marginBottom: 12 },
-  rewardPill: { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 12 },
-  rewardPillText: { fontSize: 11, fontWeight: '700', color: '#000000' },
+  rewardPill: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 12 },
+  rewardPillText: { fontSize: 11, fontWeight: '700', color: '#9DA49E' },
   rewardTitleLarge: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center' },
   rewardTierList: { alignSelf: 'stretch', gap: 8, marginTop: 2 },
-  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#1F2221', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
   rewardTierThreshold: { color: foreground, fontSize: 13, fontWeight: '800' },
   rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 16 },
 
-  loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#000000' },
-  bar: { height: 9, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.07)', overflow: 'hidden' },
+  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#9DA49E' },
+  bar: { height: 9, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.09)', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },
-  qrText: { color: '#000000', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
-  manualCodeLabel: { color: '#000000', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
+  qrText: { color: '#9DA49E', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
+  manualCodeLabel: { color: '#9DA49E', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
   manualCode: { color: foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 4 },
-  securityCard: { backgroundColor: '#EDEFE9', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
-  securityCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 4 },
-  securityButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(79,100,56,0.12)' },
+  securityCard: { backgroundColor: '#1F2221', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  securityCopy: { color: '#9DA49E', fontSize: 13, lineHeight: 19, marginTop: 4 },
+  securityButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(242,103,42,0.14)' },
   securityButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
   lockScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
   lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 24 },
-  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1C2620', borderRadius: 999, height: 46, marginTop: 20 },
+  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#262A28', borderRadius: 999, height: 46, marginTop: 20 },
   walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Visit and contact details
   visitSection: { marginTop: 28 },
-  mapEmbed: { height: 150, marginTop: 12, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#E7EAE2' },
+  mapEmbed: { height: 150, marginTop: 12, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: '#1F2221' },
   nativeMap: { flex: 1 },
-  shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
+  shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.16)' },
   shopNotifyTitle: { fontSize: 14, fontWeight: '700', color: foreground },
-  shopNotifyCopy: { color: '#000000', fontSize: 12, marginTop: 1, lineHeight: 16 },
+  shopNotifyCopy: { color: '#9DA49E', fontSize: 12, marginTop: 1, lineHeight: 16 },
   settingsSheet: { paddingHorizontal: 20, maxHeight: '80%' },
   settingsSheetScroll: { paddingBottom: 20, gap: 20 },
   sheetBack: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -2786,52 +2803,52 @@ const styles = StyleSheet.create({
   settingsHeroAvatarText: { color: '#fff', fontFamily: FONT_DISPLAY, fontSize: 20 },
   settingsHeroName: { color: '#fff', fontSize: 20, fontFamily: FONT_DISPLAY },
   settingsHeroEmail: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 },
-  settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12 },
+  settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#151716', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12 },
   settingsHeroButtonIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
   settingsHeroButtonTitle: { color: foreground, fontWeight: '800', fontSize: 15 },
-  settingsHeroButtonCopy: { color: '#000000', fontSize: 12.5, marginTop: 1 },
+  settingsHeroButtonCopy: { color: '#9DA49E', fontSize: 12.5, marginTop: 1 },
   settingsGroup: { gap: 8 },
-  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 8 },
+  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#9DA49E', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 8 },
   settingsCard: { backgroundColor: card, borderRadius: 18, overflow: 'hidden' },
   settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
-  settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.12)' },
-  settingsRowPressed: { backgroundColor: 'rgba(0,0,0,0.04)' },
+  settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.16)' },
+  settingsRowPressed: { backgroundColor: 'rgba(255,255,255,0.05)' },
   settingsIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   settingsRowBody: { flex: 1 },
   settingsRowTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
-  settingsRowTitleDanger: { color: '#b54439' },
-  settingsRowDetail: { color: '#000000', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
-  settingsFooter: { textAlign: 'center', color: '#000000', fontSize: 12, marginTop: 4 },
-  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 16 },
+  settingsRowTitleDanger: { color: '#D88A83' },
+  settingsRowDetail: { color: '#9DA49E', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+  settingsFooter: { textAlign: 'center', color: '#9DA49E', fontSize: 12, marginTop: 4 },
+  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: '#9DA49E', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 16 },
   settingsInput: { fontSize: 17, color: foreground, paddingHorizontal: 16, paddingVertical: 12 },
-  settingsFieldHelp: { color: '#000000', fontSize: 12.5, paddingHorizontal: 16, paddingBottom: 16, lineHeight: 17 },
-  settingsEmpty: { color: '#000000', fontSize: 14, lineHeight: 20, padding: 16 },
+  settingsFieldHelp: { color: '#9DA49E', fontSize: 12.5, paddingHorizontal: 16, paddingBottom: 16, lineHeight: 17 },
+  settingsEmpty: { color: '#9DA49E', fontSize: 14, lineHeight: 20, padding: 16 },
   cardScreen: { backgroundColor: card, borderRadius: 24, padding: 24, alignItems: 'center' },
-  cardQr: { backgroundColor: '#fff', padding: 16, borderRadius: 20 },
+  cardQr: { backgroundColor: '#151716', padding: 16, borderRadius: 20 },
   cardName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: foreground, marginTop: 20 },
   pinWrap: { alignItems: 'center', width: 60, height: 66, paddingTop: 8 },
   pinHalo: { position: 'absolute', top: 0, width: 56, height: 56, borderRadius: 28, opacity: 0.22 },
   pinBody: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-  pinInner: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  pinInner: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#151716', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   pinLogo: { width: 32, height: 32 },
   pinInitial: { fontWeight: '900', fontSize: 14, letterSpacing: -0.5 },
   pinTail: { width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 11, borderLeftColor: 'transparent', borderRightColor: 'transparent', marginTop: -4 },
   pinShadow: { width: 16, height: 5, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.2)', marginTop: 1 },
-  mapAddress: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 8 },
-  directionsButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, backgroundColor: 'rgba(79,100,56,0.12)', paddingHorizontal: 16, paddingVertical: 12 },
+  mapAddress: { color: '#9DA49E', fontSize: 13, lineHeight: 19, marginTop: 8 },
+  directionsButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, backgroundColor: 'rgba(242,103,42,0.14)', paddingHorizontal: 16, paddingVertical: 12 },
   directionsButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
-  contactList: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', borderRadius: 18, overflow: 'hidden', backgroundColor: card },
-  contactRow: { minHeight: 54, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.07)' },
+  contactList: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 18, overflow: 'hidden', backgroundColor: card },
+  contactRow: { minHeight: 54, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.09)' },
   contactLabel: { color: foreground, fontSize: 14, fontWeight: '800', flexShrink: 0 },
   contactValue: { color: primary, fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
 
   // Shop gallery — a tall, photo-first scrolling feed.
   gallerySection: { marginTop: 32 },
   galleryHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
-  gallerySubheading: { color: '#000000', fontSize: 12.5, marginTop: 3 },
+  gallerySubheading: { color: '#9DA49E', fontSize: 12.5, marginTop: 3 },
   galleryCount: { color: primary, fontSize: 12, fontWeight: '800' },
   shortsFeed: { gap: 16, marginTop: 12 },
-  shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: '#DFE3DA', position: 'relative' },
+  shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: '#1F2221', position: 'relative' },
   shortImage: { width: '100%', height: '100%' },
   shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 16, justifyContent: 'flex-end', backgroundColor: 'rgba(20,20,18,0.42)' },
   shortIndex: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
@@ -2839,54 +2856,54 @@ const styles = StyleSheet.create({
 
   // Reviews
   reviewsSection: { marginTop: 32 },
-  reviewHint: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
-  reviewComposer: { backgroundColor: card, borderRadius: 18, padding: 16, marginTop: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
+  reviewHint: { color: '#9DA49E', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
+  reviewComposer: { backgroundColor: card, borderRadius: 18, padding: 16, marginTop: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
   reviewComposerTitle: { fontSize: 15, fontWeight: '800', color: foreground },
   starRow: { flexDirection: 'row', gap: 4, marginTop: 8 },
   starButton: { paddingVertical: 3, paddingRight: 3 },
-  star: { fontSize: 29, lineHeight: 34, color: '#000000' },
+  star: { fontSize: 29, lineHeight: 34, color: '#9DA49E' },
   starSelected: { color: accent },
-  reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.12)', backgroundColor: '#fff', color: foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 12, paddingVertical: 12, textAlignVertical: 'top' },
-  deleteReview: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
+  reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', backgroundColor: '#151716', color: foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 12, paddingVertical: 12, textAlignVertical: 'top' },
+  deleteReview: { color: '#D88A83', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
   reviewList: { marginTop: 20, gap: 16 },
-  reviewItem: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.09)', paddingTop: 16 },
+  reviewItem: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', paddingTop: 16 },
   reviewHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   reviewAuthor: { fontSize: 14, fontWeight: '800', color: foreground },
-  reviewDate: { color: '#000000', fontSize: 11.5 },
+  reviewDate: { color: '#9DA49E', fontSize: 11.5 },
   reviewStars: { color: accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
-  reviewBody: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
+  reviewBody: { color: '#9DA49E', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
   reviewReply: { marginTop: 12, marginLeft: 8, paddingLeft: 12, borderLeftWidth: 3 },
   reviewReplyTitle: { color: ink, fontSize: 13, fontWeight: '800' },
   reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  reviewModLink: { color: '#000000', fontSize: 12, fontWeight: '600' },
-  reviewModDot: { color: '#000000', fontSize: 12 },
+  reviewModLink: { color: '#9DA49E', fontSize: 12, fontWeight: '600' },
+  reviewModDot: { color: '#9DA49E', fontSize: 12 },
   blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  blockRowText: { color: '#000000', fontSize: 13 },
+  blockRowText: { color: '#9DA49E', fontSize: 13 },
   blockRowUnblock: { color: primary, fontSize: 13, fontWeight: '700' },
-  spendHint: { color: '#000000', fontSize: 12.5, lineHeight: 17, marginTop: 8 },
-  cardsExplainer: { backgroundColor: '#e0f2e4', borderRadius: 18, padding: 16, gap: 4 },
-  cardsExplainerTitle: { fontSize: 15, fontWeight: '800', color: '#1f5c33', marginBottom: 2 },
-  cardsExplainerLine: { fontSize: 13.5, color: '#2f5a3b', lineHeight: 19 },
-  cardsHelp: { color: '#000000', fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
-  autoEarnCard: { backgroundColor: '#fdeccd', borderRadius: 18, padding: 16, marginTop: 16, gap: 8 },
+  spendHint: { color: '#9DA49E', fontSize: 12.5, lineHeight: 17, marginTop: 8 },
+  cardsExplainer: { backgroundColor: '#17361E', borderRadius: 18, padding: 16, gap: 4 },
+  cardsExplainerTitle: { fontSize: 15, fontWeight: '800', color: '#85D69F', marginBottom: 2 },
+  cardsExplainerLine: { fontSize: 13.5, color: '#89D29D', lineHeight: 19 },
+  cardsHelp: { color: '#9DA49E', fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
+  autoEarnCard: { backgroundColor: '#362B17', borderRadius: 18, padding: 16, marginTop: 16, gap: 8 },
   autoEarnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  autoEarnTitle: { fontSize: 15, fontWeight: '800', color: '#7a4a0c' },
-  autoEarnCopy: { fontSize: 13.5, color: '#6b4a1c', lineHeight: 19 },
-  autoEarnChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: '#fdeccd', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, marginTop: 12 },
-  autoEarnChipText: { fontSize: 12.5, fontWeight: '700', color: '#7a4a0c' },
+  autoEarnTitle: { fontSize: 15, fontWeight: '800', color: '#EBB570' },
+  autoEarnCopy: { fontSize: 13.5, color: '#DDB57E', lineHeight: 19 },
+  autoEarnChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: '#362B17', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, marginTop: 12 },
+  autoEarnChipText: { fontSize: 12.5, fontWeight: '700', color: '#EBB570' },
 
   // Rewards
-  reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   rewardShop: { color: primary, fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
   rewardTitle: { color: foreground, fontSize: 21, fontFamily: FONT_DISPLAY, marginTop: 8 },
   rewardQr: { alignItems: 'center', marginTop: 16 },
 
   // Favourites
-  favouriteCard: { backgroundColor: card, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  favouriteCard: { backgroundColor: card, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   favouriteTopRow: { marginBottom: 12 },
   favouriteLogo: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  categoryLabel: { fontSize: 11, fontWeight: '700', color: '#000000', letterSpacing: 0.6, marginTop: 4 },
-  favouriteDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.07)', marginVertical: 16 },
+  categoryLabel: { fontSize: 11, fontWeight: '700', color: '#9DA49E', letterSpacing: 0.6, marginTop: 4 },
+  favouriteDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.09)', marginVertical: 16 },
   favouriteBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   favouriteTapRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   favouriteDot: { width: 10, height: 10, borderRadius: 5 },
@@ -2898,16 +2915,18 @@ const styles = StyleSheet.create({
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: { backgroundColor: background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, maxHeight: '90%' },
   sheetScroll: { paddingBottom: 16 },
-  deleteAccount: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 16 },
+  deleteAccount: { color: '#D88A83', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.16)', alignSelf: 'center', marginBottom: 16 },
   sheetHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  sheetTitle: { fontSize: 13, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase' },
+  sheetTitle: { fontSize: 13, fontWeight: '800', color: '#9DA49E', letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // Bottom tab bar
-  tabs: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', backgroundColor: card, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.07)', paddingTop: 12, paddingBottom: 24 },
-  tab: { flex: 1, alignItems: 'center', gap: 3 },
-  tabText: { color: '#000000', fontWeight: '700', fontSize: 11 },
-  tabTextActive: { color: primary },
+  // Floating dark glass bar: idle tabs are icons, the open tab is an orange pill.
+  tabs: { position: 'absolute', left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 2, padding: 6, borderRadius: 999, backgroundColor: 'rgba(28,30,29,0.97)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 10 },
+  tab: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 999 },
+  tabActivePill: { flex: 2.1, paddingHorizontal: 12, backgroundColor: primary },
+  tabText: { color: '#8E958F', fontWeight: '700', fontSize: 11 },
+  tabTextActive: { color: '#fff', fontWeight: '800', fontSize: 13, flexShrink: 1 },
 
   // Discover feed
   discoverGradient: { ...StyleSheet.absoluteFillObject },
@@ -2932,5 +2951,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
   discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: background, paddingHorizontal: 40 },
-  discoverEmptyText: { color: '#000000', fontSize: 14, textAlign: 'center' },
+  discoverEmptyText: { color: '#9DA49E', fontSize: 14, textAlign: 'center' },
 })

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View, type AlertButton } from 'react-native'
-import { colors as c, fonts } from '@loyalty-loop/design-tokens'
+import { colors as c, fonts } from '../theme'
 import { Sheet } from './Sheet'
 
 // Branded replacement for the grey system Alert: same call shape as

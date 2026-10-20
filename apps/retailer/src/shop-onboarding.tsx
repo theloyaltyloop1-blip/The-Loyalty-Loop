@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BadgeCheck, Check, Gem, Plus, QrCode, ScanLine, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
-import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { colors, fonts } from "./theme";
 import {
   PROGRAMMES,
   SHOP_KINDS,
@@ -65,7 +65,7 @@ function CardPreview({ programme, name, draft, symbol }: { programme: ProgrammeI
         <View style={styles.stampRow}>
           {Array.from({ length: total }, (_, i) => (
             <View key={i} style={[styles.stamp, i < 3 && styles.stampFilled]}>
-              {i < 3 ? <Check size={12} color="#000" /> : null}
+              {i < 3 ? <Check size={12} color="#9DA49E" /> : null}
             </View>
           ))}
         </View>
@@ -262,13 +262,13 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
           <>
             <Text style={styles.hero}>What's your{"\n"}shop called?</Text>
             <Text style={styles.copy}>Customers will see this on their loyalty card.</Text>
-            <TextInput
+            <TextInput keyboardAppearance="dark"
               style={styles.input}
               value={name}
               onChangeText={setName}
               maxLength={80}
               placeholder="e.g. Bean & Bird"
-              placeholderTextColor="#000000"
+              placeholderTextColor="#6B726D"
               autoFocus
             />
             <View style={styles.chipRow}>
@@ -313,16 +313,16 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
                       <Text style={styles.editTitle}>Level {index + 1}</Text>
                       {draft.tiers.length > 1 && (
                         <Pressable onPress={() => setDraft((d) => d && { ...d, tiers: d.tiers.filter((_, i) => i !== index) })} hitSlop={8} accessibilityLabel="Remove level">
-                          <Trash2 size={18} color="#000" />
+                          <Trash2 size={18} color="#9DA49E" />
                         </Pressable>
                       )}
                     </View>
                     <Text style={styles.fieldLabel}>Name</Text>
-                    <TextInput style={styles.input} value={tier.name} maxLength={40} onChangeText={(v) => patchTier(index, { name: v })} placeholderTextColor="#000000" />
+                    <TextInput keyboardAppearance="dark" style={styles.input} value={tier.name} maxLength={40} onChangeText={(v) => patchTier(index, { name: v })} placeholderTextColor="#6B726D" />
                     <Text style={styles.fieldLabel}>Spend in a year ({symbol})</Text>
-                    <TextInput style={styles.input} value={tier.amount} keyboardType="decimal-pad" onChangeText={(v) => patchTier(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor="#000000" />
+                    <TextInput keyboardAppearance="dark" style={styles.input} value={tier.amount} keyboardType="decimal-pad" onChangeText={(v) => patchTier(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor="#6B726D" />
                     <Text style={styles.fieldLabel}>Perks (one per line)</Text>
-                    <TextInput style={[styles.input, { height: 92, textAlignVertical: "top" }]} value={tier.perks} multiline onChangeText={(v) => patchTier(index, { perks: v })} placeholderTextColor="#000000" />
+                    <TextInput keyboardAppearance="dark" style={[styles.input, { height: 92, textAlignVertical: "top" }]} value={tier.perks} multiline onChangeText={(v) => patchTier(index, { perks: v })} placeholderTextColor="#6B726D" />
                   </View>
                 ))
               : draft.rewards.map((reward, index) => (
@@ -331,16 +331,16 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
                       <Text style={styles.editTitle}>Reward {draft.rewards.length > 1 ? index + 1 : ""}</Text>
                       {draft.rewards.length > 1 && (
                         <Pressable onPress={() => setDraft((d) => d && { ...d, rewards: d.rewards.filter((_, i) => i !== index) })} hitSlop={8} accessibilityLabel="Remove reward">
-                          <Trash2 size={18} color="#000" />
+                          <Trash2 size={18} color="#9DA49E" />
                         </Pressable>
                       )}
                     </View>
                     <Text style={styles.fieldLabel}>What do they get?</Text>
-                    <TextInput style={styles.input} value={reward.title} maxLength={80} onChangeText={(v) => patchReward(index, { title: v })} placeholder="e.g. Free coffee" placeholderTextColor="#000000" />
+                    <TextInput keyboardAppearance="dark" style={styles.input} value={reward.title} maxLength={80} onChangeText={(v) => patchReward(index, { title: v })} placeholder="e.g. Free coffee" placeholderTextColor="#6B726D" />
                     <Text style={styles.fieldLabel}>
                       {activeProgramme === "stamps" ? "Stamps needed" : activeProgramme === "points" ? "Points needed" : `Customer spends (${symbol})`}
                     </Text>
-                    <TextInput style={styles.input} value={reward.amount} keyboardType="decimal-pad" onChangeText={(v) => patchReward(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor="#000000" />
+                    <TextInput keyboardAppearance="dark" style={styles.input} value={reward.amount} keyboardType="decimal-pad" onChangeText={(v) => patchReward(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor="#6B726D" />
                   </View>
                 ))}
 
@@ -363,7 +363,7 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
             {activeProgramme === "points" && (
               <View style={styles.editCard}>
                 <Text style={styles.fieldLabel}>Points earned for every {symbol}1 spent</Text>
-                <TextInput style={styles.input} value={draft.pointsPerPound} keyboardType="number-pad" onChangeText={(v) => setDraft((d) => d && { ...d, pointsPerPound: v.replace(/[^0-9]/g, "") })} placeholderTextColor="#000000" />
+                <TextInput keyboardAppearance="dark" style={styles.input} value={draft.pointsPerPound} keyboardType="number-pad" onChangeText={(v) => setDraft((d) => d && { ...d, pointsPerPound: v.replace(/[^0-9]/g, "") })} placeholderTextColor="#6B726D" />
               </View>
             )}
 
@@ -424,32 +424,32 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: cream },
   content: { flexGrow: 1, padding: 24, paddingBottom: 48 },
   dots: { flexDirection: "row", gap: 8, marginTop: 6, marginBottom: 26 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#CBD1C3" },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#262A28" },
   dotActive: { width: 26, backgroundColor: orange },
-  hero: { color: "#000000", fontSize: 36, lineHeight: 42, letterSpacing: -1, fontFamily: fonts.nativeDisplay },
-  copy: { color: "#000000", fontSize: 16, lineHeight: 24, marginTop: 8 },
+  hero: { color: "#9DA49E", fontSize: 36, lineHeight: 42, letterSpacing: -1, fontFamily: fonts.nativeDisplay },
+  copy: { color: "#9DA49E", fontSize: 16, lineHeight: 24, marginTop: 8 },
   stack: { gap: 12, marginTop: 22, marginBottom: 16 },
-  optionCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#fff", borderRadius: 20, borderWidth: 2, borderColor: "#eee0cc", padding: 18 },
+  optionCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#151716", borderRadius: 20, borderWidth: 2, borderColor: "#594426", padding: 18 },
   optionCardActive: { backgroundColor: orange, borderColor: orange },
-  optionTitle: { color: "#000000", fontSize: 17, fontWeight: "800" },
-  optionBlurb: { color: "#000000", fontSize: 13, marginTop: 2 },
-  suggestion: { backgroundColor: "#FFF3DC", borderRadius: 18, padding: 16, marginBottom: 18, gap: 4 },
-  suggestionTitle: { color: "#000000", fontSize: 15, fontWeight: "800" },
-  suggestionText: { color: "#000000", fontSize: 14, lineHeight: 20 },
+  optionTitle: { color: "#9DA49E", fontSize: 17, fontWeight: "800" },
+  optionBlurb: { color: "#9DA49E", fontSize: 13, marginTop: 2 },
+  suggestion: { backgroundColor: "#362B17", borderRadius: 18, padding: 16, marginBottom: 18, gap: 4 },
+  suggestionTitle: { color: "#9DA49E", fontSize: 15, fontWeight: "800" },
+  suggestionText: { color: "#9DA49E", fontSize: 14, lineHeight: 20 },
   link: { color: orange, fontSize: 15, fontWeight: "800", marginTop: 4, textDecorationLine: "underline" },
-  input: { backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: "#000000", fontSize: 16, marginTop: 6, borderWidth: 1, borderColor: "#eee0cc" },
+  input: { backgroundColor: "#151716", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: "#9DA49E", fontSize: 16, marginTop: 6, borderWidth: 1, borderColor: "#594426" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14, marginBottom: 20 },
-  chipLabel: { color: "#000000", fontSize: 14 },
-  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5, borderColor: "rgba(0,0,0,0.15)", backgroundColor: "#fff" },
+  chipLabel: { color: "#9DA49E", fontSize: 14 },
+  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)", backgroundColor: "#151716" },
   chipActive: { backgroundColor: orange, borderColor: orange },
-  chipText: { color: "#000000", fontWeight: "800", fontSize: 13 },
-  editCard: { backgroundColor: "#fff", borderRadius: 18, padding: 16, marginTop: 14, gap: 2 },
+  chipText: { color: "#9DA49E", fontWeight: "800", fontSize: 13 },
+  editCard: { backgroundColor: "#151716", borderRadius: 18, padding: 16, marginTop: 14, gap: 2 },
   editHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  editTitle: { flex: 1, color: "#000000", fontSize: 15, fontWeight: "800" },
+  editTitle: { flex: 1, color: "#9DA49E", fontSize: 15, fontWeight: "800" },
   swatch: { width: 14, height: 14, borderRadius: 7 },
-  fieldLabel: { color: "#000000", fontSize: 13, fontWeight: "700", marginTop: 10 },
+  fieldLabel: { color: "#9DA49E", fontSize: 13, fontWeight: "700", marginTop: 10 },
   addRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14 },
-  problem: { color: "#000000", fontSize: 14, fontWeight: "700", marginTop: 12 },
+  problem: { color: "#9DA49E", fontSize: 14, fontWeight: "700", marginTop: 12 },
   preview: { backgroundColor: BRAND_COLOR, borderRadius: 20, padding: 18 },
   previewEyebrow: { color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   previewName: { color: "#fff", fontSize: 22, fontFamily: fonts.nativeDisplay, marginTop: 4, marginBottom: 12 },
@@ -457,18 +457,18 @@ const styles = StyleSheet.create({
   previewBig: { color: "#fff", fontSize: 30, fontWeight: "800" },
   stampRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   stamp: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
-  stampFilled: { backgroundColor: "#fff" },
+  stampFilled: { backgroundColor: "#151716" },
   tierPill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  tierPillText: { color: "#000000", fontSize: 12, fontWeight: "800" },
+  tierPillText: { color: "#9DA49E", fontSize: 12, fontWeight: "800" },
   bar: { height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.25)", overflow: "hidden" },
-  barFill: { height: 10, width: "33%", borderRadius: 5, backgroundColor: "#fff" },
-  button: { backgroundColor: green, borderRadius: 999, minHeight: 54, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", padding: 15, marginTop: 16 },
+  barFill: { height: 10, width: "33%", borderRadius: 5, backgroundColor: "#151716" },
+  button: { backgroundColor: "#F2672A", borderRadius: 999, minHeight: 54, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", padding: 15, marginTop: 16 },
   buttonSecondary: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: green },
   buttonText: { color: "#fff", fontWeight: "800", fontSize: 16, textAlign: "center" },
   back: { alignItems: "center", padding: 16 },
-  backText: { color: "#000000", fontSize: 15, fontWeight: "700" },
+  backText: { color: "#9DA49E", fontSize: 15, fontWeight: "700" },
   liveBadge: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#3FA34D", alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 14 },
   sheetBody: { padding: 20, paddingBottom: 32, gap: 12 },
-  pickerSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28 },
-  sheetTitle: { color: "#000000", fontSize: 20, fontWeight: "800", marginBottom: 4 },
+  pickerSheet: { backgroundColor: "#151716", borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  sheetTitle: { color: "#9DA49E", fontSize: 20, fontWeight: "800", marginBottom: 4 },
 });

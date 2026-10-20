@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { Check } from "lucide-react-native";
-import { colors } from "@loyalty-loop/design-tokens";
+import { colors } from '../theme';
 
 /** Brief (~0.5s) success confirmation shown after a stamp is awarded or a
  * reward is redeemed: a green checkmark that pops in with a spring, holds

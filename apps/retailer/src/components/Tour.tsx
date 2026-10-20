@@ -320,7 +320,7 @@ export function TourOverlay() {
           <Defs>
             <Mask id="tour-hole">
               <Rect x={0} y={0} width={size.width} height={size.height} fill="#fff" />
-              <AnimatedRect animatedProps={holeProps} rx={18} ry={18} fill="#000" />
+              <AnimatedRect animatedProps={holeProps} rx={18} ry={18} fill="#9DA49E" />
             </Mask>
           </Defs>
           <Rect x={0} y={0} width={size.width} height={size.height} fill={DIM} mask="url(#tour-hole)" />
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#151716',
     borderRadius: 22,
     padding: 18,
     shadowColor: '#000',
@@ -372,10 +372,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 12,
   },
-  copy: { color: '#000', fontSize: 18, fontWeight: '800', lineHeight: 24 },
+  copy: { color: '#9DA49E', fontSize: 18, fontWeight: '800', lineHeight: 24 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   skip: { minHeight: 44, justifyContent: 'center', paddingRight: 16 },
-  skipText: { color: '#000', fontSize: 15, fontWeight: '700', opacity: 0.6 },
+  skipText: { color: '#9DA49E', fontSize: 15, fontWeight: '700', opacity: 0.6 },
   pill: {
     minHeight: 46,
     paddingHorizontal: 28,

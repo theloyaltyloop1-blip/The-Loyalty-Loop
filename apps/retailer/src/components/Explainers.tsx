@@ -35,19 +35,19 @@ export const EXPLAINER_CAPTIONS: Record<ExplainerKind, string> = {
 }
 
 const LOOP_MS = 5600
-const INK = '#1B1B1B'
-const ORANGE = '#C0501F'
-const GREEN = '#2F6B3F'
+const INK = '#F4F3EF'
+const ORANGE = '#F2672A'
+const GREEN = '#4CC07A'
 const GOLD = '#E0A82E'
-const PAPER = '#FFFFFF'
-const TRACK = '#E8DFD0'
+const PAPER = '#151716'
+const TRACK = '#332A19'
 const BG: Record<ExplainerKind, string> = {
-  join: '#FFF1E3',
-  scan: '#E8F3EA',
-  stamps: '#FFF1E3',
-  tiers: '#F1ECFA',
-  points: '#FFF6DD',
-  spend: '#E8F3EA',
+  join: '#2A1D14',
+  scan: '#15241A',
+  stamps: '#2A1D14',
+  tiers: '#1F1A2B',
+  points: '#29230F',
+  spend: '#15241A',
 }
 
 /** 0 before a, 1 after b, linear between. */
@@ -192,8 +192,8 @@ function Stamps({ t }: { t: Clock }) {
 
 function Tiers({ t }: { t: Clock }) {
   const steps = [
-    { x: 40, h: 46, colour: '#B87333', label: 'Member', a: 0.04, b: 0.2 },
-    { x: 124, h: 76, colour: '#8D97A3', label: 'Silver', a: 0.26, b: 0.46 },
+    { x: 40, h: 46, colour: '#DCAC7F', label: 'Member', a: 0.04, b: 0.2 },
+    { x: 124, h: 76, colour: '#7D847E', label: 'Silver', a: 0.26, b: 0.46 },
     { x: 208, h: 106, colour: GOLD, label: 'Gold', a: 0.52, b: 0.74 },
   ]
   return (
@@ -227,7 +227,7 @@ function Points({ t, reduced }: { t: Clock; reduced: boolean }) {
   return (
     <>
       {[0, 1, 2, 3].map((i) => (
-        <ACircle key={i} t={t} cx={64 + i * 64} r={11} fill={GOLD} stroke="#B4811A" strokeWidth={2} map={(v) => { 'worklet'; const p = ramp(v, 0.06 + i * 0.16, 0.18 + i * 0.16); return { cy: 18 + p * 34, opacity: p > 0 && p < 1 ? 1 : 0 } }} />
+        <ACircle key={i} t={t} cx={64 + i * 64} r={11} fill={GOLD} stroke="#EAC270" strokeWidth={2} map={(v) => { 'worklet'; const p = ramp(v, 0.06 + i * 0.16, 0.18 + i * 0.16); return { cy: 18 + p * 34, opacity: p > 0 && p < 1 ? 1 : 0 } }} />
       ))}
       <Rect x={40} y={118} width={240} height={14} rx={7} fill={TRACK} />
       <ARect t={t} x={40} y={118} height={14} rx={7} fill={ORANGE} map={(v) => { 'worklet'; return { width: 240 * ramp(v, 0.08, 0.74) } }} />
@@ -289,5 +289,5 @@ export function Explainer({ kind, caption, showCaption = true }: { kind: Explain
 const styles = StyleSheet.create({
   wrap: { width: '100%' },
   frame: { width: '100%', aspectRatio: 320 / 180, borderRadius: 22, overflow: 'hidden' },
-  caption: { color: '#000', fontSize: 16, fontWeight: '800', marginTop: 10, textAlign: 'center' },
+  caption: { color: '#9DA49E', fontSize: 16, fontWeight: '800', marginTop: 10, textAlign: 'center' },
 })

@@ -54,7 +54,7 @@ import {
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
-import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { colors, fonts } from "./src/theme";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
@@ -120,7 +120,7 @@ function BusinessOnboarding({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
   const finish = async (analyticsAllowed: boolean) => { await completeOnboarding(analyticsAllowed); onComplete(); };
   return <SafeAreaView style={styles.safe}>
-    <StatusBar barStyle="dark-content" />
+    <StatusBar barStyle="light-content" backgroundColor="#0A0B0A" />
     <KeyboardAwareScrollView contentContainerStyle={styles.onboarding}>
     <View style={styles.onboardingMark}><Text style={styles.markText}>↻</Text></View>
     {step === 0 ? <>
@@ -420,11 +420,11 @@ function DiscountCharge({
   return (
     <View style={{ marginBottom: 12 }}>
       <Text style={styles.copy}>{`This reward takes ${pounds(discountPence)} off the bill.`}</Text>
-      <TextInput
+      <TextInput keyboardAppearance="dark"
         value={billTotal}
         onChangeText={onBillTotalChange}
         placeholder="Bill total, e.g. 20.00"
-        placeholderTextColor="#000000"
+        placeholderTextColor="#6B726D"
         keyboardType="decimal-pad"
         style={styles.input}
         accessibilityLabel="Bill total in pounds"
@@ -569,39 +569,39 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
         <View style={styles.card}>
           {signup && (
             <>
-              <TextInput
+              <TextInput keyboardAppearance="dark"
                 style={styles.input}
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="First name"
-                placeholderTextColor="#000000"
+                placeholderTextColor="#6B726D"
                 autoCapitalize="words"
               />
-              <TextInput
+              <TextInput keyboardAppearance="dark"
                 style={styles.input}
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Surname"
-                placeholderTextColor="#000000"
+                placeholderTextColor="#6B726D"
                 autoCapitalize="words"
               />
             </>
           )}
-          <TextInput
+          <TextInput keyboardAppearance="dark"
             style={styles.input}
             value={email}
             onChangeText={setEmail}
             placeholder="Business email address"
-            placeholderTextColor="#000000"
+            placeholderTextColor="#6B726D"
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          <TextInput
+          <TextInput keyboardAppearance="dark"
             style={styles.input}
             value={password}
             onChangeText={setPassword}
             placeholder={signup ? "Password (8+ characters)" : "Password"}
-            placeholderTextColor="#000000"
+            placeholderTextColor="#6B726D"
             secureTextEntry
           />
           <Button
@@ -1263,13 +1263,13 @@ function StampsScreen({
           </Sheet>
           <View style={styles.card}>
             <Text style={styles.section}>{mode === "reward" ? "Or enter their reward or customer code" : "Or enter their code"}</Text>
-            <TextInput
-              placeholderTextColor="#000000"
+            <TextInput keyboardAppearance="dark"
+              placeholderTextColor="#6B726D"
               style={[styles.input, styles.customerCodeInput]}
               value={code}
               onChangeText={setCode}
               placeholder={mode === "reward" ? "Reward or customer short code" : "Customer short code"}
-              selectionColor="#111111"
+              selectionColor="#F4F3EF"
               autoCapitalize="characters"
             />
             <Button
@@ -1678,21 +1678,21 @@ function CustomersHome({ business }: { business: Business }) {
             <Pressable
               key={value}
               onPress={() => setAudience(value)}
-              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : "#EFE9DF" }}
+              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : "#1F2221" }}
             >
-              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#59615A" }}>{label}</Text>
+              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#9DA49E" }}>{label}</Text>
             </Pressable>
           ))}
         </View>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor="#000000" />
-        <TextInput
+        <TextInput keyboardAppearance="dark" style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor="#6B726D" />
+        <TextInput keyboardAppearance="dark"
           style={[styles.input, { height: 96, textAlignVertical: "top", marginTop: 10 }]}
           value={body}
           onChangeText={setBody}
           maxLength={1000}
           multiline
           placeholder="Come in this week and we'll have something waiting."
-          placeholderTextColor="#000000"
+          placeholderTextColor="#6B726D"
         />
         <Button title={sending ? "Sending…" : "Send message"} onPress={() => void send()} />
       </View>
@@ -1743,12 +1743,12 @@ function MembersPage({ business }: { business: Business }) {
       <Text style={styles.pageIntro}>
         Everyone collecting rewards at {business.name}.
       </Text>
-      <TextInput
+      <TextInput keyboardAppearance="dark"
         style={styles.searchInput}
         value={search}
         onChangeText={setSearch}
         placeholder="Search members"
-        placeholderTextColor="#000000"
+        placeholderTextColor="#6B726D"
       />
       {loading ? (
         <ActivityIndicator color={green} style={{ marginTop: 30 }} />
@@ -1975,7 +1975,7 @@ function AnalyticsPage({
           aLabel="Purchases"
           bLabel="Visitors"
           aColor={orange}
-          bColor="#3E5235"
+          bColor="#9FD289"
         />
       </View>
       <View style={styles.chartCard}>
@@ -1986,8 +1986,8 @@ function AnalyticsPage({
           bKey="oldCustomers"
           aLabel="New"
           bLabel="Returning"
-          aColor="#3FA34D"
-          bColor="#1C2620"
+          aColor="#89D293"
+          bColor="#F4F3EF"
         />
       </View>
       <View style={styles.insightCard}>
@@ -2072,20 +2072,20 @@ function NewsPage({ business }: { business: Business }) {
       </Text>
       <View style={styles.composeCard}>
         <Text style={styles.composeTitle}>Create an announcement</Text>
-        <TextInput
+        <TextInput keyboardAppearance="dark"
           style={styles.settingsInput}
           value={title}
           onChangeText={setTitle}
           placeholder="Headline"
-          placeholderTextColor="#000000"
+          placeholderTextColor="#6B726D"
           maxLength={120}
         />
-        <TextInput
+        <TextInput keyboardAppearance="dark"
           style={[styles.settingsInput, styles.textArea]}
           value={body}
           onChangeText={setBody}
           placeholder="What would you like customers to know?"
-          placeholderTextColor="#000000"
+          placeholderTextColor="#6B726D"
           multiline
           textAlignVertical="top"
           maxLength={2000}
@@ -2432,7 +2432,7 @@ function Dashboard({
       onRestart={() => { setOwnerPage(null); setTab("home"); }}
     >
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#0A0B0A" />
       {platformNotices.filter((notice) => !dismissedNoticeIds.has(notice.id)).map((notice) => (
         <View key={notice.id} style={styles.platformBanner}>
           <Text style={styles.platformBannerText}>
@@ -2485,10 +2485,10 @@ function Dashboard({
                         paddingHorizontal: 14,
                         paddingVertical: 8,
                         borderRadius: 999,
-                        backgroundColor: tab === sub.id ? orange : "#EFE9DF",
+                        backgroundColor: tab === sub.id ? orange : "#1F2221",
                       }}
                     >
-                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#59615A" }}>{sub.label}</Text>
+                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#9DA49E" }}>{sub.label}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -2725,10 +2725,10 @@ const styles = StyleSheet.create({
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   onboarding: { flexGrow: 1, padding: 28, justifyContent: "center" },
-  onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: green, alignItems: "center", justifyContent: "center", marginBottom: 42 },
-  onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
+  onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#1E2120", alignItems: "center", justifyContent: "center", marginBottom: 42 },
+  onboardingTitle: { color: '#F4F3EF', fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#CBD1C3" },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#262A28" },
   onboardingDotActive: { width: 26, backgroundColor: orange },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: "center", padding: 16 },
@@ -2738,7 +2738,7 @@ const styles = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: green,
+    backgroundColor: "#1E2120",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -2765,21 +2765,21 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     letterSpacing: -0.7,
   },
-  copy: { color: "#000000", fontSize: 16, lineHeight: 24, marginTop: 9 },
+  copy: { color: "#9DA49E", fontSize: 16, lineHeight: 24, marginTop: 9 },
   setupOptionCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    backgroundColor: "#fff",
+    backgroundColor: "#151716",
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: "#eee0cc",
+    borderColor: "#594426",
     padding: 16,
   },
   setupOptionCardActive: { backgroundColor: orange, borderColor: orange },
   setupOptionTitle: { color: green, fontSize: 16, fontWeight: "800" },
   setupOptionTitleActive: { color: "#fff" },
-  setupOptionBlurb: { color: "#000000", fontSize: 13, marginTop: 2 },
+  setupOptionBlurb: { color: "#9DA49E", fontSize: 13, marginTop: 2 },
   setupOptionBlurbActive: { color: "rgba(255,255,255,0.85)" },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   categoryChip: {
@@ -2787,23 +2787,23 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1.5,
-    borderColor: "rgba(0,0,0,0.12)",
-    backgroundColor: "#fff",
+    borderColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "#151716",
   },
   categoryChipActive: { backgroundColor: orange, borderColor: orange },
   categoryChipText: { color: green, fontWeight: "800", fontSize: 13 },
   categoryChipTextActive: { color: "#fff" },
   small: {
-    color: "#000000",
+    color: "#9DA49E",
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
     marginTop: 22,
   },
   authHelpLink: { alignSelf: "center", marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
-  authHelpLinkText: { color: "#000000", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  authHelpLinkText: { color: "#9DA49E", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#151716",
     borderRadius: 18,
     padding: 18,
     marginTop: 24,
@@ -2814,16 +2814,16 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
   },
   input: {
-    backgroundColor: "#f4f1eb",
+    backgroundColor: "#312A1B",
     borderRadius: 11,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    color: "#243021",
+    color: "#97D289",
     fontSize: 16,
   },
-  customerCodeInput: { color: "#111111" },
+  customerCodeInput: { color: "#F4F3EF" },
   button: {
-    backgroundColor: green,
+    backgroundColor: "#F2672A",
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -2854,7 +2854,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 13,
     borderRadius: 21,
-    backgroundColor: "#fff",
+    backgroundColor: "#151716",
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -2879,30 +2879,30 @@ const styles = StyleSheet.create({
   match: {
     marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#e7e3da",
+    borderTopColor: "#4D4532",
     paddingTop: 14,
   },
   matchTitle: { fontSize: 17, fontWeight: "800", color: green },
   cameraSheet: { flex: 1 },
-  spendBanner: { backgroundColor: "#e0f2e4", borderRadius: 18, padding: 14, marginTop: 16 },
-  spendBannerText: { color: "#1f5c33", fontSize: 15, fontWeight: "800", textAlign: "center" },
-  spendProgress: { color: "#000000", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
+  spendBanner: { backgroundColor: "#17361E", borderRadius: 18, padding: 14, marginTop: 16 },
+  spendBannerText: { color: "#85D69F", fontSize: 15, fontWeight: "800", textAlign: "center" },
+  spendProgress: { color: "#9DA49E", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
   spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: green, textAlign: "center", marginTop: 4 },
-  spendCap: { color: "#000000", fontSize: 13, textAlign: "center", marginBottom: 12 },
+  spendCap: { color: "#9DA49E", fontSize: 13, textAlign: "center", marginBottom: 12 },
   keypad: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginBottom: 14 },
-  keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center" },
+  keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.07)", alignItems: "center", justifyContent: "center" },
   keypadKeyText: { fontSize: 24, fontFamily: FONT_DISPLAY, color: green },
-  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.12)" },
+  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.16)" },
   recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80 },
-  recentTime: { flex: 1, color: "#000000", fontSize: 14 },
+  recentTime: { flex: 1, color: "#9DA49E", fontSize: 14 },
   recentUndo: { color: orange, fontSize: 14, fontWeight: "800" },
   paySheet: { backgroundColor: cream, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
   paySheetHandle: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.18)", marginBottom: 16 },
   paySheetTitle: { fontSize: 21, fontFamily: FONT_DISPLAY, color: green },
-  paySheetCopy: { color: "#000000", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
+  paySheetCopy: { color: "#9DA49E", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
   paySheetQuestion: { fontSize: 16, fontWeight: "800", color: green, marginTop: 18 },
   paySheetButtons: { gap: 10, marginTop: 12 },
-  paySheetNote: { color: "#000000", fontSize: 13, textAlign: "center", marginTop: 12 },
+  paySheetNote: { color: "#9DA49E", fontSize: 13, textAlign: "center", marginTop: 12 },
   cameraWrap: { flex: 1, padding: 20, backgroundColor: "#111" },
   cameraTitle: {
     color: "#fff",
@@ -2915,7 +2915,7 @@ const styles = StyleSheet.create({
     width: "31%",
     minHeight: 132,
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "rgba(255,255,255,0.18)",
     borderRadius: 20,
     padding: 14,
     backgroundColor: "rgba(255,255,255,.52)",
@@ -2925,7 +2925,7 @@ const styles = StyleSheet.create({
   statIcon: { fontSize: 20, color: orange, fontFamily: FONT_DISPLAY },
   statValue: {
     fontSize: 28,
-    color: "#171815",
+    color: "#F4F3EF",
     fontFamily: FONT_DISPLAY,
     marginTop: 12,
     letterSpacing: -0.5,
@@ -2933,7 +2933,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#000000",
+    color: "#9DA49E",
     fontWeight: "700",
   },
   welcomeRow: {
@@ -2947,13 +2947,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.7,
-    color: "#000000",
+    color: "#9DA49E",
   },
   welcomeTitle: {
     fontSize: 34,
     lineHeight: 40,
     fontFamily: FONT_DISPLAY,
-    color: "#151613",
+    color: "#F4F3EF",
     letterSpacing: -1,
   },
   homeLogo: {
@@ -2966,7 +2966,7 @@ const styles = StyleSheet.create({
   homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
   setupCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "rgba(255,255,255,0.18)",
     borderRadius: 22,
     padding: 18,
     backgroundColor: "rgba(255,255,255,.55)",
@@ -2975,7 +2975,7 @@ const styles = StyleSheet.create({
   setupTitle: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#191A17",
+    color: "#F4F3EF",
     marginBottom: 13,
   },
   checkRow: {
@@ -2989,15 +2989,15 @@ const styles = StyleSheet.create({
     height: 23,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#31322E",
+    borderColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
-  checkDone: { borderColor: orange, backgroundColor: "#F8C9B6" },
-  checkMark: { fontSize: 13, fontWeight: "900", color: "#8C3820" },
-  checkText: { fontSize: 14, fontWeight: "700", color: "#000000" },
-  checkTextDone: { color: "#000000", textDecorationLine: "line-through" },
-  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#1C2620", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  checkDone: { borderColor: orange, backgroundColor: "#362017" },
+  checkMark: { fontSize: 13, fontWeight: "900", color: "#E1917A" },
+  checkText: { fontSize: 14, fontWeight: "700", color: "#9DA49E" },
+  checkTextDone: { color: "#9DA49E", textDecorationLine: "line-through" },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#262A28", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
   setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
   setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
@@ -3022,7 +3022,7 @@ const styles = StyleSheet.create({
   reportButtonBlack: {
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#262A28",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3033,7 +3033,7 @@ const styles = StyleSheet.create({
   cameraStartButton: {
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#262A28",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
@@ -3045,10 +3045,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(20,20,18,.07)",
+    borderBottomColor: "rgba(255,255,255,0.09)",
   },
-  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#000000", flexShrink: 0, marginRight: 12 },
-  memberInfoValue: { flex: 1, fontSize: 13, color: "#1C2620", fontWeight: "700", textAlign: "right" },
+  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#9DA49E", flexShrink: 0, marginRight: 12 },
+  memberInfoValue: { flex: 1, fontSize: 13, color: "#F4F3EF", fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
     borderRadius: 32,
@@ -3071,12 +3071,12 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     fontFamily: FONT_DISPLAY,
     letterSpacing: -0.8,
-    color: "#171815",
+    color: "#F4F3EF",
   },
   pageIntro: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#000000",
+    color: "#9DA49E",
     marginTop: 7,
     marginBottom: 20,
   },
@@ -3084,17 +3084,17 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.1)",
+    borderColor: "rgba(255,255,255,0.13)",
     backgroundColor: "rgba(255,255,255,.72)",
     paddingHorizontal: 15,
     fontSize: 15,
-    color: "#111",
+    color: "#F4F3EF",
     marginBottom: 14,
   },
   memberCard: {
     minHeight: 76,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.09)",
+    borderColor: "rgba(255,255,255,0.12)",
     borderRadius: 18,
     backgroundColor: "rgba(255,255,255,.7)",
     padding: 13,
@@ -3111,25 +3111,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  memberName: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
-  memberMeta: { fontSize: 12, color: "#000000", marginTop: 3 },
+  memberName: { fontSize: 16, fontWeight: "900", color: "#F4F3EF" },
+  memberMeta: { fontSize: 12, color: "#9DA49E", marginTop: 3 },
   memberProgress: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#1C2620",
+    color: "#F4F3EF",
     textAlign: "right",
   },
-  memberUnit: { fontSize: 10, color: "#000000", textAlign: "right" },
+  memberUnit: { fontSize: 10, color: "#9DA49E", textAlign: "right" },
   emptyState: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#000000",
+    color: "#9DA49E",
     textAlign: "center",
     paddingVertical: 36,
   },
   periodSwitch: {
     flexDirection: "row",
-    backgroundColor: "#E6DFD3",
+    backgroundColor: "#31291C",
     borderRadius: 15,
     padding: 4,
     marginBottom: 24,
@@ -3141,13 +3141,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  periodActive: { backgroundColor: "#1C2620" },
-  periodText: { fontSize: 12, fontWeight: "800", color: "#000000" },
+  periodActive: { backgroundColor: "#262A28" },
+  periodText: { fontSize: 12, fontWeight: "800", color: "#9DA49E" },
   periodTextActive: { color: "#fff" },
   analyticsHeading: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#1A1B18",
+    color: "#F4F3EF",
     marginTop: 8,
     marginBottom: 13,
   },
@@ -3155,13 +3155,13 @@ const styles = StyleSheet.create({
   chartsHeading: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#000000",
+    color: "#9DA49E",
     marginTop: 18,
     marginBottom: 10,
   },
   chartCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "rgba(255,255,255,0.18)",
     borderRadius: 20,
     padding: 16,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3170,17 +3170,17 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#1C2620",
+    color: "#F4F3EF",
     marginBottom: 10,
   },
   chartWrap: { height: 80, width: "100%" },
   chartLegendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   chartLegendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11, fontWeight: "800", color: "#000000" },
+  legendLabel: { fontSize: 11, fontWeight: "800", color: "#9DA49E" },
   insightCard: {
     borderRadius: 22,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#262A28",
     padding: 20,
     marginTop: 10,
     marginBottom: 15,
@@ -3198,20 +3198,20 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginTop: 9,
   },
-  insightCopy: { fontSize: 14, lineHeight: 21, color: "#000000", marginTop: 9 },
+  insightCopy: { fontSize: 14, lineHeight: 21, color: "#9DA49E", marginTop: 9 },
   totalCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "rgba(255,255,255,0.18)",
     borderRadius: 20,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.55)",
     marginBottom: 16,
   },
-  totalTitle: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
-  totalLine: { fontSize: 13, color: "#000000", marginTop: 7 },
+  totalTitle: { fontSize: 16, fontWeight: "900", color: "#F4F3EF" },
+  totalLine: { fontSize: 13, color: "#9DA49E", marginTop: 7 },
   composeCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "rgba(255,255,255,0.18)",
     borderRadius: 22,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3221,30 +3221,30 @@ const styles = StyleSheet.create({
   composeTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#191A17",
+    color: "#F4F3EF",
     marginBottom: 2,
   },
   newsCard: {
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.1)",
+    borderColor: "rgba(255,255,255,0.13)",
     borderRadius: 19,
     padding: 16,
     backgroundColor: "rgba(255,255,255,.68)",
     marginBottom: 11,
   },
   newsHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  newsTitle: { fontSize: 16, fontWeight: "900", color: "#1A1B18", flex: 1 },
+  newsTitle: { fontSize: 16, fontWeight: "900", color: "#F4F3EF", flex: 1 },
   statusPill: {
     borderRadius: 10,
-    backgroundColor: "#D8E8D5",
+    backgroundColor: "#1F311B",
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  statusDraft: { backgroundColor: "#E5E1D9" },
-  statusText: { fontSize: 9, fontWeight: "900", color: "#000000" },
-  newsBody: { fontSize: 13, lineHeight: 19, color: "#000000", marginTop: 8 },
-  newsDate: { fontSize: 11, color: "#000000", marginTop: 10 },
-  navIcon: { fontSize: 21, lineHeight: 23, color: "#000000" },
+  statusDraft: { backgroundColor: "#2D291F" },
+  statusText: { fontSize: 9, fontWeight: "900", color: "#9DA49E" },
+  newsBody: { fontSize: 13, lineHeight: 19, color: "#9DA49E", marginTop: 8 },
+  newsDate: { fontSize: 11, color: "#9DA49E", marginTop: 10 },
+  navIcon: { fontSize: 21, lineHeight: 23, color: "#9DA49E" },
   navIconActive: { color: orange },
   tabPressed: { opacity: 0.55, transform: [{ scale: 0.94 }] },
   settingsHero: {
@@ -3265,14 +3265,14 @@ const styles = StyleSheet.create({
     fontSize: 29,
     lineHeight: 34,
     fontFamily: FONT_DISPLAY,
-    color: "#1C2620",
+    color: "#F4F3EF",
     letterSpacing: -0.7,
     maxWidth: 250,
   },
   settingsSubtitle: {
     fontSize: 14,
     lineHeight: 21,
-    color: "#000000",
+    color: "#9DA49E",
     marginTop: 9,
     maxWidth: 275,
   },
@@ -3291,54 +3291,54 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.3,
-    color: "#000000",
+    color: "#9DA49E",
     marginLeft: 4,
     marginTop: 8,
     marginBottom: 9,
   },
   settingsGroup: {
-    backgroundColor: "rgba(255,255,255,.82)",
+    backgroundColor: "rgba(26,28,27,0.82)",
     borderRadius: 22,
     padding: 17,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: "rgba(255,255,255,0.09)",
   },
   settingsGroupNoPadding: {
-    backgroundColor: "rgba(255,255,255,.82)",
+    backgroundColor: "rgba(26,28,27,0.82)",
     borderRadius: 22,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: "rgba(255,255,255,0.09)",
     overflow: "hidden",
   },
   fieldLabel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#000000",
+    color: "#9DA49E",
     marginTop: 8,
     marginBottom: 7,
   },
   settingsInput: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#EDEFE9",
+    backgroundColor: "#1F2221",
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
+    borderColor: "rgba(255,255,255,0.1)",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#111",
+    color: "#F4F3EF",
     fontSize: 15,
   },
   textArea: { minHeight: 96 },
   readOnlyNotice: {
-    backgroundColor: "#FDECCD",
+    backgroundColor: "#362B17",
     borderRadius: 13,
     padding: 12,
     marginBottom: 4,
   },
   readOnlyNoticeText: {
-    color: "#8A5A12",
+    color: "#EBBA70",
     fontSize: 12.5,
     lineHeight: 18,
     fontWeight: "700",
@@ -3346,18 +3346,18 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#EDEFE9",
+    backgroundColor: "#1F2221",
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
+    borderColor: "rgba(255,255,255,0.1)",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#000000",
+    color: "#9DA49E",
     fontSize: 15,
   },
   fieldHelp: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: "#000000",
+    color: "#9DA49E",
     marginTop: 2,
     marginBottom: 6,
   },
@@ -3369,25 +3369,25 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
-    backgroundColor: "#F8F5EE",
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "#362C17",
   },
   tierBadge: {
     minWidth: 40,
     height: 40,
     borderRadius: 12,
     paddingHorizontal: 8,
-    backgroundColor: "#E0F2E4",
+    backgroundColor: "#17361E",
     alignItems: "center",
     justifyContent: "center",
   },
-  tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: "#1C2620" },
-  tierMeta: { fontSize: 12, color: "#000000", marginTop: 2 },
+  tierBadgeText: { color: "#85D69F", fontWeight: "900", fontSize: 15 },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: "#F4F3EF" },
+  tierMeta: { fontSize: 12, color: "#9DA49E", marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",
-    backgroundColor: "#EAE4D9",
+    backgroundColor: "#31291B",
     borderRadius: 14,
     padding: 4,
     marginBottom: 12,
@@ -3399,14 +3399,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#1C2620" },
-  segmentText: { fontSize: 13, fontWeight: "800", color: "#000000" },
+  segmentActive: { backgroundColor: "#262A28" },
+  segmentText: { fontSize: 13, fontWeight: "800", color: "#9DA49E" },
   segmentTextActive: { color: "#fff" },
   stepper: {
     height: 50,
     flexDirection: "row",
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.12)",
+    borderColor: "rgba(255,255,255,0.16)",
     borderRadius: 14,
     overflow: "hidden",
     marginBottom: 12,
@@ -3415,16 +3415,16 @@ const styles = StyleSheet.create({
     width: 52,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EEE8DC",
+    backgroundColor: "#332B19",
   },
-  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#1C2620" },
+  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#F4F3EF" },
   stepperInput: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
     fontWeight: "900",
-    color: "#111",
-    backgroundColor: "#fff",
+    color: "#F4F3EF",
+    backgroundColor: "#151716",
   },
   stepperValue: {
     flex: 1,
@@ -3434,13 +3434,13 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     includeFontPadding: false,
     fontWeight: "900",
-    color: "#111",
-    backgroundColor: "#fff",
+    color: "#F4F3EF",
+    backgroundColor: "#151716",
   },
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#262A28",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -3454,7 +3454,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(20,20,18,.07)",
+    borderBottomColor: "rgba(255,255,255,0.09)",
   },
   settingsRowLast: { borderBottomWidth: 0 },
   settingsIcon: {
@@ -3464,18 +3464,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#1C2620" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#F4F3EF" },
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#000000",
+    color: "#9DA49E",
     marginTop: 3,
   },
-  dangerText: { color: "#B73B32" },
+  dangerText: { color: "#DC857F" },
   settingsFootnote: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#000000",
+    color: "#9DA49E",
     textAlign: "center",
     paddingHorizontal: 18,
     marginTop: -8,
@@ -3488,14 +3488,14 @@ const styles = StyleSheet.create({
     bottom: 16,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(28,30,29,0.97)",
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 999,
     padding: 6,
     gap: 2,
     shadowColor: "#000",
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.55,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 10,
@@ -3511,6 +3511,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tabActivePill: { flex: 1.7, paddingHorizontal: 12, backgroundColor: orange },
-  tabText: { color: "#59615A", fontWeight: "700", fontSize: 12.5 },
+  tabText: { color: "#7D847E", fontWeight: "700", fontSize: 12.5 },
   tabActive: { color: "#fff", fontWeight: "800" },
 });
