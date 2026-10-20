@@ -769,19 +769,19 @@ function StampsScreen({
   useEffect(() => {
     let active = true;
     setHasReward(null);
-    void supabase
-      .from("reward_catalog")
-      .select("id")
-      .eq("business_id", business.id)
-      .limit(1)
-      .then(({ data, error }) => {
+    // A shop on membership tiers has levels instead of rewards, so either counts.
+    void Promise.all([
+      supabase.from("reward_catalog").select("id").eq("business_id", business.id).limit(1),
+      supabase.from("membership_tiers").select("id").eq("business_id", business.id).limit(1),
+    ]).then(([rewards, tiers]) => {
         if (!active) return;
-        if (error) {
-          showAlert("Could not check rewards", error.message);
+        if (rewards.error) {
+          showAlert("Could not check rewards", rewards.error.message);
           setHasReward(false);
           return;
         }
-        setHasReward((data || []).length > 0);
+        const hasTiers = !tiers.error && (tiers.data || []).length > 0;
+        setHasReward((rewards.data || []).length > 0 || hasTiers);
       });
     return () => {
       active = false;
@@ -1714,6 +1714,23 @@ function MembersPage({ business }: { business: Business }) {
         setLoading(false);
       });
   }, [business.id]);
+  // Membership-tier shops show each member's level instead of a stamp count.
+  const tiersShop = business.reward_model === "tiers";
+  const pointsShop = business.reward_model === "points";
+  const [levels, setLevels] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    if (!tiersShop) return;
+    void supabase
+      .from("memberships")
+      .select("user_id,current_tier")
+      .eq("business_id", business.id)
+      .then(({ data }) => {
+        const map: Record<string, string | null> = {};
+        for (const row of (data || []) as { user_id: string; current_tier: string | null }[])
+          map[row.user_id] = row.current_tier;
+        setLevels(map);
+      });
+  }, [business.id, tiersShop]);
   const shown = members.filter((member) =>
     `${member.first_name || ""} ${member.last_name || ""}`
       .toLowerCase()
@@ -1741,7 +1758,11 @@ function MembersPage({ business }: { business: Business }) {
             [member.first_name, member.last_name].filter(Boolean).join(" ") ||
             "Customer";
           const spendShop = business.reward_model === "spend_threshold";
-          const progress = spendShop
+          const progress = tiersShop
+            ? levels[member.user_id] || "No level yet"
+            : pointsShop
+              ? member.points_balance
+              : spendShop
             ? poundsWhole(Math.max(0, member.reward_progress_pence ?? 0))
             : business.loyalty_type === "points"
               ? member.points_balance
@@ -1767,7 +1788,11 @@ function MembersPage({ business }: { business: Business }) {
               <View>
                 <Text style={styles.memberProgress}>{progress}</Text>
                 <Text style={styles.memberUnit}>
-                  {spendShop
+                  {tiersShop
+                    ? "level"
+                    : pointsShop
+                      ? "points"
+                      : spendShop
                     ? "spent"
                     : business.loyalty_type === "points"
                       ? "points"
@@ -2368,10 +2393,9 @@ function Dashboard({
   }, []);
   // Four tabs: Home, Analytics, Scan, Shop. Analytics groups insights, the
   // customer lists and news posts as sub-tabs.
-  const ANALYTICS_TABS = ["analytics", "customers", "members", "news"] as const;
+  const ANALYTICS_TABS = ["analytics", "members", "news"] as const;
   const ANALYTICS_SUBTABS = [
     { id: "analytics", label: "Insights" },
-    { id: "customers", label: "Customers" },
     { id: "members", label: "Members" },
     { id: "news", label: "News" },
   ] as const;

@@ -1464,6 +1464,16 @@ function ShopDetail({
               <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
             )}
             {programmeId === 'points' && pointsView.next ? <Text style={styles.spendHint}>{pointsView.label}</Text> : null}
+            {programmeId === 'tiers' && rollingSpend != null && tiers.length ? (() => {
+              const standing = tierStanding(tiers, rollingSpend)
+              return (
+                <Text style={styles.spendHint}>
+                  {standing.next
+                    ? `Spend ${pounds(standing.toNextPence as number, business.country_code)} more here to reach ${standing.next.name}.`
+                    : `You're on the top level here.`}
+                </Text>
+              )
+            })() : null}
             {spendShop ? (
               <Text style={styles.spendHint}>
                 {membership.redemption_blocked_reason
