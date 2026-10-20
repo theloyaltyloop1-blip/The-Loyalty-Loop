@@ -1,4 +1,4 @@
-// App colours, light or dark, chosen by the person in Settings.
+// App colours, light (default) or dark, chosen by the person in Settings.
 // Dark premium (2026-10-20): near-black surfaces, one orange accent, soft white
 // type. Light: the shared tokens (the earlier look, same as the website).
 // Styles are built once at start-up, so the mode is read synchronously before
@@ -13,9 +13,9 @@ const KEY = 'theme_mode'
 
 function readMode(): ThemeMode {
   try {
-    return SecureStore.getItem(KEY) === 'light' ? 'light' : 'dark'
+    return SecureStore.getItem(KEY) === 'dark' ? 'dark' : 'light'
   } catch {
-    return 'dark'
+    return 'light'
   }
 }
 
