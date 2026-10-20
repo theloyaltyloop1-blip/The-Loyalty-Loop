@@ -44,13 +44,14 @@ import { parsePounds } from "./reward-discount";
 import { supabase } from "./supabase";
 import { fonts } from "./theme";
 
+import { pick } from "./theme";
 const FONT_DISPLAY = fonts.nativeDisplay;
 
 const orange = "#E8703B";
-const ink = "#F4F3EF";
-const muted = "#9DA49E";
-const cream = "#362817";
-const card = "#151716";
+const ink = pick("#1C2620", "#F4F3EF");
+const muted = pick("#000000", "#9DA49E");
+const cream = pick("#F8EAD8", "#362817");
+const card = pick("#FCFCFA", "#151716");
 
 export type NativeOwnerPage =
   | "ai"
@@ -262,11 +263,11 @@ function Field({
   keyboardType?: "default" | "email-address" | "number-pad" | "decimal-pad";
 }) {
   return (
-    <TextInput keyboardAppearance="dark"
+    <TextInput keyboardAppearance={pick('light', 'dark')}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#6B726D"
+      placeholderTextColor={pick("#000000", "#6B726D")}
       multiline={multiline}
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
@@ -672,11 +673,11 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
               )}
             </View>
             <View style={styles.coachRow}>
-              <TextInput keyboardAppearance="dark"
+              <TextInput keyboardAppearance={pick('light', 'dark')}
                 value={coachInput}
                 onChangeText={setCoachInput}
                 placeholder="Ask the coach…"
-                placeholderTextColor="#6B726D"
+                placeholderTextColor={pick("#000000", "#6B726D")}
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
               />
               <Pressable
@@ -1194,7 +1195,7 @@ function RewardsPage({
               onPress={() => remove(item)}
               style={styles.iconButton}
             >
-              <Trash2 size={18} color="#D78A84" />
+              <Trash2 size={18} color={pick("#B4433A", "#D78A84")} />
             </Pressable>
           </View>
         ))
@@ -1356,7 +1357,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
             </Text>
           </View>
           <Pressable accessibilityLabel={`Delete ${level.name}`} onPress={() => remove(level)} style={styles.iconButton}>
-            <Trash2 size={18} color="#D78A84" />
+            <Trash2 size={18} color={pick("#B4433A", "#D78A84")} />
           </Pressable>
         </Pressable>
       ))}
@@ -1378,7 +1379,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
                   key={c}
                   onPress={() => setColour(c)}
                   accessibilityLabel={`Colour ${c}`}
-                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: 3, borderColor: c === colour ? "#F4F3EF" : "transparent" }}
+                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: 3, borderColor: c === colour ? pick("#000000", "#F4F3EF") : "transparent" }}
                 />
               ))}
             </View>
@@ -2040,7 +2041,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#333C35", "rgba(255,255,255,0.18)"),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: card,
@@ -2055,7 +2056,7 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#333C35", "rgba(255,255,255,0.18)"),
     borderRadius: 24,
     padding: 18,
     marginBottom: 16,
@@ -2075,23 +2076,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tutorialRow: { flexDirection: "row", gap: 13, alignItems: "flex-start" },
-  tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#362117", alignItems: "center", justifyContent: "center" },
-  tutorialNumberText: { color: "#E1917A", fontWeight: "900" },
+  tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: pick("#F7D9CB", "#362117"), alignItems: "center", justifyContent: "center" },
+  tutorialNumberText: { color: pick("#8C3820", "#E1917A"), fontWeight: "900" },
   tutorialAction: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44, borderRadius: 13, backgroundColor: cream, paddingHorizontal: 12, marginTop: 13 },
   tutorialActionText: { color: ink, fontSize: 13, fontWeight: "900" },
-  body: { color: "#9DA49E", lineHeight: 21, fontSize: 14 },
+  body: { color: pick("#000000", "#9DA49E"), lineHeight: 21, fontSize: 14 },
   muted: { color: muted, lineHeight: 20, fontSize: 14 },
   primaryButton: {
     minHeight: 48,
     borderRadius: 999,
-    backgroundColor: "#F2672A",
+    backgroundColor: pick(ink, "#F2672A"),
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 18,
     marginTop: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.72)",
-    shadowColor: "#F2672A",
+    shadowColor: pick(ink, "#F2672A"),
     shadowOpacity: 0.16,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -2111,8 +2112,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
-    backgroundColor: "#151716",
+    borderColor: pick("#C9C3B8", "rgba(255,255,255,0.09)"),
+    backgroundColor: pick("#fff", "#151716"),
     paddingHorizontal: 14,
     color: ink,
     fontSize: 15,
@@ -2123,7 +2124,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 16,
     padding: 4,
-    backgroundColor: "#332919",
+    backgroundColor: pick("#E9E0D2", "#332919"),
     marginBottom: 16,
   },
   segmentItem: {
@@ -2133,7 +2134,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#F2672A" },
+  segmentActive: { backgroundColor: pick(ink, "#F2672A") },
   segmentText: {
     textTransform: "capitalize",
     color: muted,
@@ -2151,7 +2152,7 @@ const styles = StyleSheet.create({
     width: "48%",
     minHeight: 118,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#333C35", "rgba(255,255,255,0.18)"),
     borderRadius: 19,
     backgroundColor: card,
     padding: 14,
@@ -2160,14 +2161,14 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 29, fontFamily: FONT_DISPLAY, color: ink },
   metricLabel: { color: muted, fontWeight: "700", fontSize: 12, marginTop: 3 },
   metricChange: {
-    color: "#88D39D",
+    color: pick("#2D7A43", "#88D39D"),
     fontSize: 11,
     fontWeight: "800",
     marginTop: 8,
   },
-  negative: { color: "#D78A84" },
+  negative: { color: pick("#B4433A", "#D78A84") },
   loader: { marginVertical: 50 },
-  report: { marginTop: 14, color: "#9DA49E", fontSize: 14, lineHeight: 21 },
+  report: { marginTop: 14, color: pick("#000000", "#9DA49E"), fontSize: 14, lineHeight: 21 },
   source: {
     flexDirection: "row",
     alignItems: "center",
@@ -2225,7 +2226,7 @@ const styles = StyleSheet.create({
     gap: 11,
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#333C35", "rgba(255,255,255,0.18)"),
     borderRadius: 20,
     padding: 15,
     marginBottom: 11,
@@ -2251,14 +2252,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 46,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#4B4335",
+    borderTopColor: pick("#D6D0C5", "#4B4335"),
   },
   permissionLabel: { flex: 1, color: ink, fontSize: 14, fontWeight: "700" },
   toggle: {
     width: 46,
     height: 27,
     borderRadius: 14,
-    backgroundColor: "#262A28",
+    backgroundColor: pick("#CCC7BE", "#262A28"),
     padding: 3,
   },
   toggleOn: { backgroundColor: orange },
@@ -2266,7 +2267,7 @@ const styles = StyleSheet.create({
     width: 21,
     height: 21,
     borderRadius: 11,
-    backgroundColor: "#151716",
+    backgroundColor: pick("#fff", "#151716"),
   },
   toggleKnobOn: { marginLeft: 19 },
   staffHeading: {
@@ -2277,16 +2278,16 @@ const styles = StyleSheet.create({
   },
   status: {
     borderRadius: 999,
-    backgroundColor: "#362317",
-    color: "#E19879",
+    backgroundColor: pick("#F2D8C8", "#362317"),
+    color: pick("#9A4522", "#E19879"),
     paddingHorizontal: 8,
     paddingVertical: 5,
     overflow: "hidden",
     fontWeight: "900",
     fontSize: 9,
   },
-  statusRevoked: { backgroundColor: "#331D1A", color: "#D58B85" },
-  statusResolved: { backgroundColor: "#1B311B", color: "#85D69D" },
+  statusRevoked: { backgroundColor: pick("#EFE1DF", "#331D1A"), color: pick("#9B3C35", "#D58B85") },
+  statusResolved: { backgroundColor: pick("#DDECDD", "#1B311B"), color: pick("#26713C", "#85D69D") },
   requestHeading: {
     flexDirection: "row",
     alignItems: "center",
@@ -2294,7 +2295,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  reviewRating: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#362217", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999 },
+  reviewRating: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: pick("#FFF0E8", "#362217"), paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999 },
   reviewRatingText: { color: ink, fontSize: 12, fontWeight: "900" },
   reply: {
     borderLeftWidth: 3,
@@ -2303,18 +2304,18 @@ const styles = StyleSheet.create({
     marginTop: 13,
   },
   replyTitle: { color: ink, fontWeight: "900", marginBottom: 4 },
-  aiCard: { backgroundColor: "#362217", borderRadius: 20, padding: 16, marginTop: 12, marginBottom: 4, gap: 6 },
+  aiCard: { backgroundColor: pick("#FFF0E8", "#362217"), borderRadius: 20, padding: 16, marginTop: 12, marginBottom: 4, gap: 6 },
   aiCardHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
   aiCardTitle: { color: ink, fontSize: 18, fontWeight: "900" },
   aiToggleRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 },
-  aiSwitch: { width: 46, height: 26, borderRadius: 13, backgroundColor: "#1F2221", padding: 3 },
+  aiSwitch: { width: 46, height: 26, borderRadius: 13, backgroundColor: pick("#D9D6CE", "#1F2221"), padding: 3 },
   aiSwitchOn: { backgroundColor: orange },
-  aiKnob: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#151716" },
+  aiKnob: { width: 20, height: 20, borderRadius: 10, backgroundColor: pick("#fff", "#151716") },
   aiKnobOn: { transform: [{ translateX: 20 }] },
   aiReplyHeading: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  aiChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#362217", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
+  aiChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: pick("#FFF0E8", "#362217"), borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
   aiChipText: { color: orange, fontSize: 11, fontWeight: "900" },
-  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#362217", borderRadius: 12, padding: 10, marginBottom: 6 },
+  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: pick("#FFF0E8", "#362217"), borderRadius: 12, padding: 10, marginBottom: 6 },
   aiNoteText: { color: ink, flex: 1, fontSize: 13 },
   date: { color: muted, fontSize: 11, marginTop: 12 },
 });

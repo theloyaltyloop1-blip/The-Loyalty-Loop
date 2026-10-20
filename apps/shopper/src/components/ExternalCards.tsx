@@ -8,6 +8,7 @@ import { supabase } from '../supabase'
 import { externalCardCache, type Card } from '../external-cards'
 import { barcodeSvg, brandFormatChoice, BRANDS, checkedNumber, FORMATS, type BarcodeFormat } from '../external-card-barcode'
 
+import { pick } from '../theme'
 // No camera import: current store-build camera linkage/permission is unproven.
 // Typed entry remains available without changing the native binary.
 export function ExternalCards({ userId }: { userId: string }) {
@@ -116,12 +117,12 @@ export function ExternalCards({ userId }: { userId: string }) {
     {selected ? <>
       {action('Back to my cards', () => { setSelected(null); setMessage('') })}
       <Text style={s.heading}>Show your {selected.label} card here</Text>
-      <ScrollView horizontal contentContainerStyle={{ minWidth: width - 40, alignItems: 'center', backgroundColor: '#151716', padding: 12 }}>
+      <ScrollView horizontal contentContainerStyle={{ minWidth: width - 40, alignItems: 'center', backgroundColor: pick('#fff', '#151716'), padding: 12 }}>
         {drawing ? <SvgXml xml={drawing} width={Math.max(200, width - 64)} height={170} /> : <Text style={s.copy}>Barcode unavailable. Use the number below.</Text>}
       </ScrollView>
       <Text selectable style={[s.copy, { textAlign: 'center', fontSize: 20 }]}>{selected.card_number}</Text>
       <Text style={s.copy}>Card name</Text>
-      <TextInput keyboardAppearance="dark" accessibilityLabel="Card name" value={label} onChangeText={setLabel} maxLength={40} style={s.input} />
+      <TextInput keyboardAppearance={pick('light', 'dark')} accessibilityLabel="Card name" value={label} onChangeText={setLabel} maxLength={40} style={s.input} />
       {action(busy ? 'Saving…' : 'Save name', () => void save())}
       {action('Delete card', confirmDelete)}
     </> : adding ? <>
@@ -129,23 +130,23 @@ export function ExternalCards({ userId }: { userId: string }) {
       <Text style={s.heading}>Add a card</Text>
       <Text style={s.copy}>Choose the shop</Text>
       <View style={s.wrap}>{BRANDS.map(([key, name]) => <Pressable accessibilityRole="button" accessibilityState={{ selected: brand === key }} key={key} onPress={() => chooseBrand(key, name)} style={[s.choice, brand === key && s.chosen]}><Text style={s.copy}>{name}</Text></Pressable>)}</View>
-      <Text style={s.copy}>Card name</Text><TextInput keyboardAppearance="dark" accessibilityLabel="Card name" value={label} onChangeText={setLabel} maxLength={40} style={s.input} />
+      <Text style={s.copy}>Card name</Text><TextInput keyboardAppearance={pick('light', 'dark')} accessibilityLabel="Card name" value={label} onChangeText={setLabel} maxLength={40} style={s.input} />
       <Text style={s.copy}>Barcode format: {format.toUpperCase().replace('_', '-')}</Text>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: showFormatPicker }} onPress={() => setShowFormatPicker(value => !value)} style={s.choice}><Text style={s.copy}>Change format</Text></Pressable>
       {showFormatPicker && <><Text style={s.copy}>Match the format on your original card.</Text><View style={s.wrap}>{FORMATS.map(item => <Pressable accessibilityRole="button" accessibilityState={{ selected: item === format }} key={item} onPress={() => setFormat(item)} style={[s.choice, item === format && s.chosen]}><Text style={s.copy}>{item.toUpperCase().replace('_', '-')}</Text></Pressable>)}</View></>}
-      <Text style={s.copy}>Card number</Text><TextInput keyboardAppearance="dark" accessibilityLabel="Card number" value={number} onChangeText={setNumber} autoCapitalize="none" autoCorrect={false} maxLength={128} style={s.input} placeholder="Type the number below the barcode" placeholderTextColor="#6B726D" />
+      <Text style={s.copy}>Card number</Text><TextInput keyboardAppearance={pick('light', 'dark')} accessibilityLabel="Card number" value={number} onChangeText={setNumber} autoCapitalize="none" autoCorrect={false} maxLength={128} style={s.input} placeholder="Type the number below the barcode" placeholderTextColor={pick("#000", "#6B726D")} />
       <Text style={s.copy}>Some offers still need switching on in the shop's own app.</Text>
       {action(busy ? 'Saving…' : 'Save card', () => void save())}
     </> : <>
       {!cards.length && loaded && <Text style={s.heading}>Your other cards, ready at the till.</Text>}
-      {cards.map((card, index) => <Pressable accessibilityRole="button" key={card.id} onPress={() => { setSelected(card); setLabel(card.label); setMessage('') }} style={[s.card, { backgroundColor: index % 2 ? '#2E1F17' : '#1F2617' }]}><Text style={s.heading}>{card.label}</Text><Text style={s.copy}>Show card</Text></Pressable>)}
+      {cards.map((card, index) => <Pressable accessibilityRole="button" key={card.id} onPress={() => { setSelected(card); setLabel(card.label); setMessage('') }} style={[s.card, { backgroundColor: index % 2 ? pick('#E9C6AE', '#2E1F17') : pick('#D5DFBB', '#1F2617') }]}><Text style={s.heading}>{card.label}</Text><Text style={s.copy}>Show card</Text></Pressable>)}
       {action(cards.length >= 30 ? '30 cards saved' : 'Add a card', () => { setAdding(true); chooseBrand('nectar', 'Nectar'); setMessage('') }, busy || !loaded || cards.length >= 30)}
     </>}
   </View>
 }
 const s = StyleSheet.create({
-  copy: { color: '#9DA49E', fontSize: 15, lineHeight: 22 }, heading: { color: '#9DA49E', fontFamily: fonts.nativeDisplay, fontSize: 23 },
-  card: { padding: 24, borderRadius: 20, gap: 20 }, input: { color: '#9DA49E', fontSize: 17, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', borderRadius: 12, backgroundColor: '#151716' },
+  copy: { color: pick('#000', '#9DA49E'), fontSize: 15, lineHeight: 22 }, heading: { color: pick('#000', '#9DA49E'), fontFamily: fonts.nativeDisplay, fontSize: 23 },
+  card: { padding: 24, borderRadius: 20, gap: 20 }, input: { color: pick('#000', '#9DA49E'), fontSize: 17, padding: 16, borderWidth: 1, borderColor: pick('#68705E', 'rgba(255,255,255,0.18)'), borderRadius: 12, backgroundColor: pick('#fff', '#151716') },
   action: { padding: 16, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', minHeight: 48 }, actionText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { padding: 12, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', minHeight: 44 }, chosen: { backgroundColor: '#2C3418', borderWidth: 2 },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { padding: 12, borderRadius: 18, borderWidth: 1, borderColor: pick('#68705E', 'rgba(255,255,255,0.18)'), minHeight: 44 }, chosen: { backgroundColor: pick('#D5DFBB', '#2C3418'), borderWidth: 2 },
 })

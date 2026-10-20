@@ -75,6 +75,7 @@ import { programmeIdFor, recordsSpend, standingFromSnapshot, type ProgrammeSnaps
 import { useForegroundUpdateFetch, useLaunchUpdate } from "./src/launch-update";
 import { BusinessSettings } from "./src/shop-pages";
 
+import { pick } from "./src/theme";
 const FONT_DISPLAY = fonts.nativeDisplay;
 
 function BusinessLanding({ onContinue }: { onContinue: () => void }) {
@@ -120,7 +121,7 @@ function BusinessOnboarding({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
   const finish = async (analyticsAllowed: boolean) => { await completeOnboarding(analyticsAllowed); onComplete(); };
   return <SafeAreaView style={styles.safe}>
-    <StatusBar barStyle="light-content" backgroundColor="#0A0B0A" />
+    <StatusBar barStyle={pick("dark-content", "light-content")} backgroundColor={colors.background} />
     <KeyboardAwareScrollView contentContainerStyle={styles.onboarding}>
     <View style={styles.onboardingMark}><Text style={styles.markText}>↻</Text></View>
     {step === 0 ? <>
@@ -420,11 +421,11 @@ function DiscountCharge({
   return (
     <View style={{ marginBottom: 12 }}>
       <Text style={styles.copy}>{`This reward takes ${pounds(discountPence)} off the bill.`}</Text>
-      <TextInput keyboardAppearance="dark"
+      <TextInput keyboardAppearance={pick('light', 'dark')}
         value={billTotal}
         onChangeText={onBillTotalChange}
         placeholder="Bill total, e.g. 20.00"
-        placeholderTextColor="#6B726D"
+        placeholderTextColor={pick("#000000", "#6B726D")}
         keyboardType="decimal-pad"
         style={styles.input}
         accessibilityLabel="Bill total in pounds"
@@ -569,39 +570,39 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
         <View style={styles.card}>
           {signup && (
             <>
-              <TextInput keyboardAppearance="dark"
+              <TextInput keyboardAppearance={pick('light', 'dark')}
                 style={styles.input}
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="First name"
-                placeholderTextColor="#6B726D"
+                placeholderTextColor={pick("#000000", "#6B726D")}
                 autoCapitalize="words"
               />
-              <TextInput keyboardAppearance="dark"
+              <TextInput keyboardAppearance={pick('light', 'dark')}
                 style={styles.input}
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Surname"
-                placeholderTextColor="#6B726D"
+                placeholderTextColor={pick("#000000", "#6B726D")}
                 autoCapitalize="words"
               />
             </>
           )}
-          <TextInput keyboardAppearance="dark"
+          <TextInput keyboardAppearance={pick('light', 'dark')}
             style={styles.input}
             value={email}
             onChangeText={setEmail}
             placeholder="Business email address"
-            placeholderTextColor="#6B726D"
+            placeholderTextColor={pick("#000000", "#6B726D")}
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          <TextInput keyboardAppearance="dark"
+          <TextInput keyboardAppearance={pick('light', 'dark')}
             style={styles.input}
             value={password}
             onChangeText={setPassword}
             placeholder={signup ? "Password (8+ characters)" : "Password"}
-            placeholderTextColor="#6B726D"
+            placeholderTextColor={pick("#000000", "#6B726D")}
             secureTextEntry
           />
           <Button
@@ -1263,13 +1264,13 @@ function StampsScreen({
           </Sheet>
           <View style={styles.card}>
             <Text style={styles.section}>{mode === "reward" ? "Or enter their reward or customer code" : "Or enter their code"}</Text>
-            <TextInput keyboardAppearance="dark"
-              placeholderTextColor="#6B726D"
+            <TextInput keyboardAppearance={pick('light', 'dark')}
+              placeholderTextColor={pick("#000000", "#6B726D")}
               style={[styles.input, styles.customerCodeInput]}
               value={code}
               onChangeText={setCode}
               placeholder={mode === "reward" ? "Reward or customer short code" : "Customer short code"}
-              selectionColor="#F4F3EF"
+              selectionColor={pick("#111111", "#F4F3EF")}
               autoCapitalize="characters"
             />
             <Button
@@ -1678,21 +1679,21 @@ function CustomersHome({ business }: { business: Business }) {
             <Pressable
               key={value}
               onPress={() => setAudience(value)}
-              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : "#1F2221" }}
+              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : pick("#EFE9DF", "#1F2221") }}
             >
-              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#9DA49E" }}>{label}</Text>
+              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : pick("#59615A", "#9DA49E") }}>{label}</Text>
             </Pressable>
           ))}
         </View>
-        <TextInput keyboardAppearance="dark" style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor="#6B726D" />
-        <TextInput keyboardAppearance="dark"
+        <TextInput keyboardAppearance={pick('light', 'dark')} style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor={pick("#000000", "#6B726D")} />
+        <TextInput keyboardAppearance={pick('light', 'dark')}
           style={[styles.input, { height: 96, textAlignVertical: "top", marginTop: 10 }]}
           value={body}
           onChangeText={setBody}
           maxLength={1000}
           multiline
           placeholder="Come in this week and we'll have something waiting."
-          placeholderTextColor="#6B726D"
+          placeholderTextColor={pick("#000000", "#6B726D")}
         />
         <Button title={sending ? "Sending…" : "Send message"} onPress={() => void send()} />
       </View>
@@ -1743,12 +1744,12 @@ function MembersPage({ business }: { business: Business }) {
       <Text style={styles.pageIntro}>
         Everyone collecting rewards at {business.name}.
       </Text>
-      <TextInput keyboardAppearance="dark"
+      <TextInput keyboardAppearance={pick('light', 'dark')}
         style={styles.searchInput}
         value={search}
         onChangeText={setSearch}
         placeholder="Search members"
-        placeholderTextColor="#6B726D"
+        placeholderTextColor={pick("#000000", "#6B726D")}
       />
       {loading ? (
         <ActivityIndicator color={green} style={{ marginTop: 30 }} />
@@ -1975,7 +1976,7 @@ function AnalyticsPage({
           aLabel="Purchases"
           bLabel="Visitors"
           aColor={orange}
-          bColor="#9FD289"
+          bColor={pick("#3E5235", "#9FD289")}
         />
       </View>
       <View style={styles.chartCard}>
@@ -1986,8 +1987,8 @@ function AnalyticsPage({
           bKey="oldCustomers"
           aLabel="New"
           bLabel="Returning"
-          aColor="#89D293"
-          bColor="#F4F3EF"
+          aColor={pick("#3FA34D", "#89D293")}
+          bColor={pick("#1C2620", "#F4F3EF")}
         />
       </View>
       <View style={styles.insightCard}>
@@ -2072,20 +2073,20 @@ function NewsPage({ business }: { business: Business }) {
       </Text>
       <View style={styles.composeCard}>
         <Text style={styles.composeTitle}>Create an announcement</Text>
-        <TextInput keyboardAppearance="dark"
+        <TextInput keyboardAppearance={pick('light', 'dark')}
           style={styles.settingsInput}
           value={title}
           onChangeText={setTitle}
           placeholder="Headline"
-          placeholderTextColor="#6B726D"
+          placeholderTextColor={pick("#000000", "#6B726D")}
           maxLength={120}
         />
-        <TextInput keyboardAppearance="dark"
+        <TextInput keyboardAppearance={pick('light', 'dark')}
           style={[styles.settingsInput, styles.textArea]}
           value={body}
           onChangeText={setBody}
           placeholder="What would you like customers to know?"
-          placeholderTextColor="#6B726D"
+          placeholderTextColor={pick("#000000", "#6B726D")}
           multiline
           textAlignVertical="top"
           maxLength={2000}
@@ -2432,7 +2433,7 @@ function Dashboard({
       onRestart={() => { setOwnerPage(null); setTab("home"); }}
     >
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0B0A" />
+      <StatusBar barStyle={pick("dark-content", "light-content")} backgroundColor={colors.background} />
       {platformNotices.filter((notice) => !dismissedNoticeIds.has(notice.id)).map((notice) => (
         <View key={notice.id} style={styles.platformBanner}>
           <Text style={styles.platformBannerText}>
@@ -2485,10 +2486,10 @@ function Dashboard({
                         paddingHorizontal: 14,
                         paddingVertical: 8,
                         borderRadius: 999,
-                        backgroundColor: tab === sub.id ? orange : "#1F2221",
+                        backgroundColor: tab === sub.id ? orange : pick("#EFE9DF", "#1F2221"),
                       }}
                     >
-                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#9DA49E" }}>{sub.label}</Text>
+                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : pick("#59615A", "#9DA49E") }}>{sub.label}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -2725,10 +2726,10 @@ const styles = StyleSheet.create({
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   onboarding: { flexGrow: 1, padding: 28, justifyContent: "center" },
-  onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#1E2120", alignItems: "center", justifyContent: "center", marginBottom: 42 },
-  onboardingTitle: { color: '#F4F3EF', fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
+  onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: pick(green, "#1E2120"), alignItems: "center", justifyContent: "center", marginBottom: 42 },
+  onboardingTitle: { color: pick('#1D1C1A', '#F4F3EF'), fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#262A28" },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: pick("#CBD1C3", "#262A28") },
   onboardingDotActive: { width: 26, backgroundColor: orange },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: "center", padding: 16 },
@@ -2738,7 +2739,7 @@ const styles = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: "#1E2120",
+    backgroundColor: pick(green, "#1E2120"),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -2765,21 +2766,21 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     letterSpacing: -0.7,
   },
-  copy: { color: "#9DA49E", fontSize: 16, lineHeight: 24, marginTop: 9 },
+  copy: { color: pick("#000000", "#9DA49E"), fontSize: 16, lineHeight: 24, marginTop: 9 },
   setupOptionCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    backgroundColor: "#151716",
+    backgroundColor: pick("#fff", "#151716"),
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: "#594426",
+    borderColor: pick("#eee0cc", "#594426"),
     padding: 16,
   },
   setupOptionCardActive: { backgroundColor: orange, borderColor: orange },
   setupOptionTitle: { color: green, fontSize: 16, fontWeight: "800" },
   setupOptionTitleActive: { color: "#fff" },
-  setupOptionBlurb: { color: "#9DA49E", fontSize: 13, marginTop: 2 },
+  setupOptionBlurb: { color: pick("#000000", "#9DA49E"), fontSize: 13, marginTop: 2 },
   setupOptionBlurbActive: { color: "rgba(255,255,255,0.85)" },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   categoryChip: {
@@ -2787,23 +2788,23 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.16)",
-    backgroundColor: "#151716",
+    borderColor: pick("rgba(0,0,0,0.12)", "rgba(255,255,255,0.16)"),
+    backgroundColor: pick("#fff", "#151716"),
   },
   categoryChipActive: { backgroundColor: orange, borderColor: orange },
   categoryChipText: { color: green, fontWeight: "800", fontSize: 13 },
   categoryChipTextActive: { color: "#fff" },
   small: {
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
     marginTop: 22,
   },
   authHelpLink: { alignSelf: "center", marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
-  authHelpLinkText: { color: "#9DA49E", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  authHelpLinkText: { color: pick("#000000", "#9DA49E"), fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
   card: {
-    backgroundColor: "#151716",
+    backgroundColor: pick("#fff", "#151716"),
     borderRadius: 18,
     padding: 18,
     marginTop: 24,
@@ -2814,16 +2815,16 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
   },
   input: {
-    backgroundColor: "#312A1B",
+    backgroundColor: pick("#f4f1eb", "#312A1B"),
     borderRadius: 11,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    color: "#97D289",
+    color: pick("#243021", "#97D289"),
     fontSize: 16,
   },
-  customerCodeInput: { color: "#F4F3EF" },
+  customerCodeInput: { color: pick("#111111", "#F4F3EF") },
   button: {
-    backgroundColor: "#F2672A",
+    backgroundColor: pick(green, "#F2672A"),
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -2854,7 +2855,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 13,
     borderRadius: 21,
-    backgroundColor: "#151716",
+    backgroundColor: pick("#fff", "#151716"),
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -2879,30 +2880,30 @@ const styles = StyleSheet.create({
   match: {
     marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#4D4532",
+    borderTopColor: pick("#e7e3da", "#4D4532"),
     paddingTop: 14,
   },
   matchTitle: { fontSize: 17, fontWeight: "800", color: green },
   cameraSheet: { flex: 1 },
-  spendBanner: { backgroundColor: "#17361E", borderRadius: 18, padding: 14, marginTop: 16 },
-  spendBannerText: { color: "#85D69F", fontSize: 15, fontWeight: "800", textAlign: "center" },
-  spendProgress: { color: "#9DA49E", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
+  spendBanner: { backgroundColor: pick("#e0f2e4", "#17361E"), borderRadius: 18, padding: 14, marginTop: 16 },
+  spendBannerText: { color: pick("#1f5c33", "#85D69F"), fontSize: 15, fontWeight: "800", textAlign: "center" },
+  spendProgress: { color: pick("#000000", "#9DA49E"), fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
   spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: green, textAlign: "center", marginTop: 4 },
-  spendCap: { color: "#9DA49E", fontSize: 13, textAlign: "center", marginBottom: 12 },
+  spendCap: { color: pick("#000000", "#9DA49E"), fontSize: 13, textAlign: "center", marginBottom: 12 },
   keypad: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginBottom: 14 },
-  keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.07)", alignItems: "center", justifyContent: "center" },
+  keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: pick("rgba(0,0,0,0.05)", "rgba(255,255,255,0.07)"), alignItems: "center", justifyContent: "center" },
   keypadKeyText: { fontSize: 24, fontFamily: FONT_DISPLAY, color: green },
-  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.16)" },
+  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pick("rgba(0,0,0,0.12)", "rgba(255,255,255,0.16)") },
   recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80 },
-  recentTime: { flex: 1, color: "#9DA49E", fontSize: 14 },
+  recentTime: { flex: 1, color: pick("#000000", "#9DA49E"), fontSize: 14 },
   recentUndo: { color: orange, fontSize: 14, fontWeight: "800" },
   paySheet: { backgroundColor: cream, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
   paySheetHandle: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.18)", marginBottom: 16 },
   paySheetTitle: { fontSize: 21, fontFamily: FONT_DISPLAY, color: green },
-  paySheetCopy: { color: "#9DA49E", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
+  paySheetCopy: { color: pick("#000000", "#9DA49E"), fontSize: 15.5, lineHeight: 22, marginTop: 8 },
   paySheetQuestion: { fontSize: 16, fontWeight: "800", color: green, marginTop: 18 },
   paySheetButtons: { gap: 10, marginTop: 12 },
-  paySheetNote: { color: "#9DA49E", fontSize: 13, textAlign: "center", marginTop: 12 },
+  paySheetNote: { color: pick("#000000", "#9DA49E"), fontSize: 13, textAlign: "center", marginTop: 12 },
   cameraWrap: { flex: 1, padding: 20, backgroundColor: "#111" },
   cameraTitle: {
     color: "#fff",
@@ -2915,7 +2916,7 @@ const styles = StyleSheet.create({
     width: "31%",
     minHeight: 132,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#26302A", "rgba(255,255,255,0.18)"),
     borderRadius: 20,
     padding: 14,
     backgroundColor: "rgba(255,255,255,.52)",
@@ -2925,7 +2926,7 @@ const styles = StyleSheet.create({
   statIcon: { fontSize: 20, color: orange, fontFamily: FONT_DISPLAY },
   statValue: {
     fontSize: 28,
-    color: "#F4F3EF",
+    color: pick("#171815", "#F4F3EF"),
     fontFamily: FONT_DISPLAY,
     marginTop: 12,
     letterSpacing: -0.5,
@@ -2933,7 +2934,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     fontWeight: "700",
   },
   welcomeRow: {
@@ -2947,13 +2948,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.7,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
   },
   welcomeTitle: {
     fontSize: 34,
     lineHeight: 40,
     fontFamily: FONT_DISPLAY,
-    color: "#F4F3EF",
+    color: pick("#151613", "#F4F3EF"),
     letterSpacing: -1,
   },
   homeLogo: {
@@ -2966,7 +2967,7 @@ const styles = StyleSheet.create({
   homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
   setupCard: {
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#26302A", "rgba(255,255,255,0.18)"),
     borderRadius: 22,
     padding: 18,
     backgroundColor: "rgba(255,255,255,.55)",
@@ -2975,7 +2976,7 @@ const styles = StyleSheet.create({
   setupTitle: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#F4F3EF",
+    color: pick("#191A17", "#F4F3EF"),
     marginBottom: 13,
   },
   checkRow: {
@@ -2989,15 +2990,15 @@ const styles = StyleSheet.create({
     height: 23,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#31322E", "rgba(255,255,255,0.18)"),
     alignItems: "center",
     justifyContent: "center",
   },
-  checkDone: { borderColor: orange, backgroundColor: "#362017" },
-  checkMark: { fontSize: 13, fontWeight: "900", color: "#E1917A" },
-  checkText: { fontSize: 14, fontWeight: "700", color: "#9DA49E" },
-  checkTextDone: { color: "#9DA49E", textDecorationLine: "line-through" },
-  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#262A28", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  checkDone: { borderColor: orange, backgroundColor: pick("#F8C9B6", "#362017") },
+  checkMark: { fontSize: 13, fontWeight: "900", color: pick("#8C3820", "#E1917A") },
+  checkText: { fontSize: 14, fontWeight: "700", color: pick("#000000", "#9DA49E") },
+  checkTextDone: { color: pick("#000000", "#9DA49E"), textDecorationLine: "line-through" },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: pick("#1C2620", "#262A28"), flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
   setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
   setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
@@ -3022,7 +3023,7 @@ const styles = StyleSheet.create({
   reportButtonBlack: {
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#262A28",
+    backgroundColor: pick("#1C2620", "#262A28"),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3033,7 +3034,7 @@ const styles = StyleSheet.create({
   cameraStartButton: {
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#262A28",
+    backgroundColor: pick("#1C2620", "#262A28"),
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
@@ -3045,10 +3046,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.09)",
+    borderBottomColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
   },
-  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#9DA49E", flexShrink: 0, marginRight: 12 },
-  memberInfoValue: { flex: 1, fontSize: 13, color: "#F4F3EF", fontWeight: "700", textAlign: "right" },
+  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: pick("#000000", "#9DA49E"), flexShrink: 0, marginRight: 12 },
+  memberInfoValue: { flex: 1, fontSize: 13, color: pick("#1C2620", "#F4F3EF"), fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
     borderRadius: 32,
@@ -3071,12 +3072,12 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     fontFamily: FONT_DISPLAY,
     letterSpacing: -0.8,
-    color: "#F4F3EF",
+    color: pick("#171815", "#F4F3EF"),
   },
   pageIntro: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginTop: 7,
     marginBottom: 20,
   },
@@ -3084,17 +3085,17 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.13)",
+    borderColor: pick("rgba(20,20,18,.1)", "rgba(255,255,255,0.13)"),
     backgroundColor: "rgba(255,255,255,.72)",
     paddingHorizontal: 15,
     fontSize: 15,
-    color: "#F4F3EF",
+    color: pick("#111", "#F4F3EF"),
     marginBottom: 14,
   },
   memberCard: {
     minHeight: 76,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: pick("rgba(20,20,18,.09)", "rgba(255,255,255,0.12)"),
     borderRadius: 18,
     backgroundColor: "rgba(255,255,255,.7)",
     padding: 13,
@@ -3111,25 +3112,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  memberName: { fontSize: 16, fontWeight: "900", color: "#F4F3EF" },
-  memberMeta: { fontSize: 12, color: "#9DA49E", marginTop: 3 },
+  memberName: { fontSize: 16, fontWeight: "900", color: pick("#1C2620", "#F4F3EF") },
+  memberMeta: { fontSize: 12, color: pick("#000000", "#9DA49E"), marginTop: 3 },
   memberProgress: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#F4F3EF",
+    color: pick("#1C2620", "#F4F3EF"),
     textAlign: "right",
   },
-  memberUnit: { fontSize: 10, color: "#9DA49E", textAlign: "right" },
+  memberUnit: { fontSize: 10, color: pick("#000000", "#9DA49E"), textAlign: "right" },
   emptyState: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     textAlign: "center",
     paddingVertical: 36,
   },
   periodSwitch: {
     flexDirection: "row",
-    backgroundColor: "#31291C",
+    backgroundColor: pick("#E6DFD3", "#31291C"),
     borderRadius: 15,
     padding: 4,
     marginBottom: 24,
@@ -3141,13 +3142,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  periodActive: { backgroundColor: "#262A28" },
-  periodText: { fontSize: 12, fontWeight: "800", color: "#9DA49E" },
+  periodActive: { backgroundColor: pick("#1C2620", "#262A28") },
+  periodText: { fontSize: 12, fontWeight: "800", color: pick("#000000", "#9DA49E") },
   periodTextActive: { color: "#fff" },
   analyticsHeading: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#F4F3EF",
+    color: pick("#1A1B18", "#F4F3EF"),
     marginTop: 8,
     marginBottom: 13,
   },
@@ -3155,13 +3156,13 @@ const styles = StyleSheet.create({
   chartsHeading: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginTop: 18,
     marginBottom: 10,
   },
   chartCard: {
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#26302A", "rgba(255,255,255,0.18)"),
     borderRadius: 20,
     padding: 16,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3170,17 +3171,17 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#F4F3EF",
+    color: pick("#1C2620", "#F4F3EF"),
     marginBottom: 10,
   },
   chartWrap: { height: 80, width: "100%" },
   chartLegendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   chartLegendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11, fontWeight: "800", color: "#9DA49E" },
+  legendLabel: { fontSize: 11, fontWeight: "800", color: pick("#000000", "#9DA49E") },
   insightCard: {
     borderRadius: 22,
-    backgroundColor: "#262A28",
+    backgroundColor: pick("#1C2620", "#262A28"),
     padding: 20,
     marginTop: 10,
     marginBottom: 15,
@@ -3198,20 +3199,20 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginTop: 9,
   },
-  insightCopy: { fontSize: 14, lineHeight: 21, color: "#9DA49E", marginTop: 9 },
+  insightCopy: { fontSize: 14, lineHeight: 21, color: pick("#000000", "#9DA49E"), marginTop: 9 },
   totalCard: {
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#26302A", "rgba(255,255,255,0.18)"),
     borderRadius: 20,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.55)",
     marginBottom: 16,
   },
-  totalTitle: { fontSize: 16, fontWeight: "900", color: "#F4F3EF" },
-  totalLine: { fontSize: 13, color: "#9DA49E", marginTop: 7 },
+  totalTitle: { fontSize: 16, fontWeight: "900", color: pick("#1C2620", "#F4F3EF") },
+  totalLine: { fontSize: 13, color: pick("#000000", "#9DA49E"), marginTop: 7 },
   composeCard: {
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: pick("#26302A", "rgba(255,255,255,0.18)"),
     borderRadius: 22,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3221,30 +3222,30 @@ const styles = StyleSheet.create({
   composeTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#F4F3EF",
+    color: pick("#191A17", "#F4F3EF"),
     marginBottom: 2,
   },
   newsCard: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.13)",
+    borderColor: pick("rgba(20,20,18,.1)", "rgba(255,255,255,0.13)"),
     borderRadius: 19,
     padding: 16,
     backgroundColor: "rgba(255,255,255,.68)",
     marginBottom: 11,
   },
   newsHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  newsTitle: { fontSize: 16, fontWeight: "900", color: "#F4F3EF", flex: 1 },
+  newsTitle: { fontSize: 16, fontWeight: "900", color: pick("#1A1B18", "#F4F3EF"), flex: 1 },
   statusPill: {
     borderRadius: 10,
-    backgroundColor: "#1F311B",
+    backgroundColor: pick("#D8E8D5", "#1F311B"),
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  statusDraft: { backgroundColor: "#2D291F" },
-  statusText: { fontSize: 9, fontWeight: "900", color: "#9DA49E" },
-  newsBody: { fontSize: 13, lineHeight: 19, color: "#9DA49E", marginTop: 8 },
-  newsDate: { fontSize: 11, color: "#9DA49E", marginTop: 10 },
-  navIcon: { fontSize: 21, lineHeight: 23, color: "#9DA49E" },
+  statusDraft: { backgroundColor: pick("#E5E1D9", "#2D291F") },
+  statusText: { fontSize: 9, fontWeight: "900", color: pick("#000000", "#9DA49E") },
+  newsBody: { fontSize: 13, lineHeight: 19, color: pick("#000000", "#9DA49E"), marginTop: 8 },
+  newsDate: { fontSize: 11, color: pick("#000000", "#9DA49E"), marginTop: 10 },
+  navIcon: { fontSize: 21, lineHeight: 23, color: pick("#000000", "#9DA49E") },
   navIconActive: { color: orange },
   tabPressed: { opacity: 0.55, transform: [{ scale: 0.94 }] },
   settingsHero: {
@@ -3265,14 +3266,14 @@ const styles = StyleSheet.create({
     fontSize: 29,
     lineHeight: 34,
     fontFamily: FONT_DISPLAY,
-    color: "#F4F3EF",
+    color: pick("#1C2620", "#F4F3EF"),
     letterSpacing: -0.7,
     maxWidth: 250,
   },
   settingsSubtitle: {
     fontSize: 14,
     lineHeight: 21,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginTop: 9,
     maxWidth: 275,
   },
@@ -3291,54 +3292,54 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.3,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginLeft: 4,
     marginTop: 8,
     marginBottom: 9,
   },
   settingsGroup: {
-    backgroundColor: "rgba(26,28,27,0.82)",
+    backgroundColor: pick("rgba(255,255,255,.82)", "rgba(26,28,27,0.82)"),
     borderRadius: 22,
     padding: 17,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
   },
   settingsGroupNoPadding: {
-    backgroundColor: "rgba(26,28,27,0.82)",
+    backgroundColor: pick("rgba(255,255,255,.82)", "rgba(26,28,27,0.82)"),
     borderRadius: 22,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
     overflow: "hidden",
   },
   fieldLabel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginTop: 8,
     marginBottom: 7,
   },
   settingsInput: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#1F2221",
+    backgroundColor: pick("#EDEFE9", "#1F2221"),
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: pick("rgba(20,20,18,.08)", "rgba(255,255,255,0.1)"),
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#F4F3EF",
+    color: pick("#111", "#F4F3EF"),
     fontSize: 15,
   },
   textArea: { minHeight: 96 },
   readOnlyNotice: {
-    backgroundColor: "#362B17",
+    backgroundColor: pick("#FDECCD", "#362B17"),
     borderRadius: 13,
     padding: 12,
     marginBottom: 4,
   },
   readOnlyNoticeText: {
-    color: "#EBBA70",
+    color: pick("#8A5A12", "#EBBA70"),
     fontSize: 12.5,
     lineHeight: 18,
     fontWeight: "700",
@@ -3346,18 +3347,18 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#1F2221",
+    backgroundColor: pick("#EDEFE9", "#1F2221"),
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: pick("rgba(20,20,18,.08)", "rgba(255,255,255,0.1)"),
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     fontSize: 15,
   },
   fieldHelp: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginTop: 2,
     marginBottom: 6,
   },
@@ -3369,25 +3370,25 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "#362C17",
+    borderColor: pick("rgba(20,20,18,.08)", "rgba(255,255,255,0.1)"),
+    backgroundColor: pick("#F8F5EE", "#362C17"),
   },
   tierBadge: {
     minWidth: 40,
     height: 40,
     borderRadius: 12,
     paddingHorizontal: 8,
-    backgroundColor: "#17361E",
+    backgroundColor: pick("#E0F2E4", "#17361E"),
     alignItems: "center",
     justifyContent: "center",
   },
-  tierBadgeText: { color: "#85D69F", fontWeight: "900", fontSize: 15 },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: "#F4F3EF" },
-  tierMeta: { fontSize: 12, color: "#9DA49E", marginTop: 2 },
+  tierBadgeText: { color: pick("#2F8A4C", "#85D69F"), fontWeight: "900", fontSize: 15 },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: pick("#1C2620", "#F4F3EF") },
+  tierMeta: { fontSize: 12, color: pick("#000000", "#9DA49E"), marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",
-    backgroundColor: "#31291B",
+    backgroundColor: pick("#EAE4D9", "#31291B"),
     borderRadius: 14,
     padding: 4,
     marginBottom: 12,
@@ -3399,14 +3400,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#262A28" },
-  segmentText: { fontSize: 13, fontWeight: "800", color: "#9DA49E" },
+  segmentActive: { backgroundColor: pick("#1C2620", "#262A28") },
+  segmentText: { fontSize: 13, fontWeight: "800", color: pick("#000000", "#9DA49E") },
   segmentTextActive: { color: "#fff" },
   stepper: {
     height: 50,
     flexDirection: "row",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: pick("rgba(20,20,18,.12)", "rgba(255,255,255,0.16)"),
     borderRadius: 14,
     overflow: "hidden",
     marginBottom: 12,
@@ -3415,16 +3416,16 @@ const styles = StyleSheet.create({
     width: 52,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#332B19",
+    backgroundColor: pick("#EEE8DC", "#332B19"),
   },
-  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#F4F3EF" },
+  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: pick("#1C2620", "#F4F3EF") },
   stepperInput: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
     fontWeight: "900",
-    color: "#F4F3EF",
-    backgroundColor: "#151716",
+    color: pick("#111", "#F4F3EF"),
+    backgroundColor: pick("#fff", "#151716"),
   },
   stepperValue: {
     flex: 1,
@@ -3434,13 +3435,13 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     includeFontPadding: false,
     fontWeight: "900",
-    color: "#F4F3EF",
-    backgroundColor: "#151716",
+    color: pick("#111", "#F4F3EF"),
+    backgroundColor: pick("#fff", "#151716"),
   },
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#262A28",
+    backgroundColor: pick("#1C2620", "#262A28"),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -3454,7 +3455,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.09)",
+    borderBottomColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
   },
   settingsRowLast: { borderBottomWidth: 0 },
   settingsIcon: {
@@ -3464,18 +3465,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#F4F3EF" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: pick("#1C2620", "#F4F3EF") },
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginTop: 3,
   },
-  dangerText: { color: "#DC857F" },
+  dangerText: { color: pick("#B73B32", "#DC857F") },
   settingsFootnote: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     textAlign: "center",
     paddingHorizontal: 18,
     marginTop: -8,
@@ -3488,14 +3489,14 @@ const styles = StyleSheet.create({
     bottom: 16,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(28,30,29,0.97)",
+    backgroundColor: pick("#FFFFFF", "rgba(28,30,29,0.97)"),
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: pick("rgba(20,20,18,.08)", "rgba(255,255,255,0.1)"),
     borderRadius: 999,
     padding: 6,
     gap: 2,
     shadowColor: "#000",
-    shadowOpacity: 0.55,
+    shadowOpacity: pick(0.16, 0.55),
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 10,
@@ -3511,6 +3512,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tabActivePill: { flex: 1.7, paddingHorizontal: 12, backgroundColor: orange },
-  tabText: { color: "#7D847E", fontWeight: "700", fontSize: 12.5 },
+  tabText: { color: pick("#59615A", "#7D847E"), fontWeight: "700", fontSize: 12.5 },
   tabActive: { color: "#fff", fontWeight: "800" },
 });

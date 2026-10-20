@@ -37,6 +37,7 @@ import {
   Trash2,
   Users,
   type LucideIcon,
+  Moon,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
 import { colors, fonts } from "./theme";
@@ -47,9 +48,10 @@ import { biometricLockEnabled, setBiometricLock } from "./biometric";
 import { getUsageAnalyticsConsent, setUsageAnalyticsConsent } from "./usage-analytics";
 import type { NativeOwnerPage } from "./owner-pages";
 
+import { pick, isDark, setThemeMode, themeMode, type ThemeMode } from "./theme";
 const FONT_DISPLAY = fonts.nativeDisplay;
 const { foreground: green, primary: orange } = colors;
-const ink = "#F4F3EF";
+const ink = pick("#1C2620", "#F4F3EF");
 
 export type ShopBusiness = {
   id: string;
@@ -95,14 +97,14 @@ function poundsWhole(pence: number): string {
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const SETTINGS_TILES = {
-  blue: { bg: "#26311B", fg: "#9FD289" },
-  purple: { bg: "#362617", fg: "#D89F83" },
-  amber: { bg: "#362B17", fg: "#EBC070" },
-  green: { bg: "#1E321A", fg: "#89D298" },
-  teal: { bg: "#1D2F28", fg: "#89D2BD" },
-  slate: { bg: "#1F2221", fg: "#7D847E" },
-  orange: { bg: "#362217", fg: "#E99772" },
-  red: { bg: "#361B17", fg: "#DC857F" },
+  blue: { bg: pick("#DCE6D2", "#26311B"), fg: pick("#3E5235", "#9FD289") },
+  purple: { bg: pick("#F3E3D3", "#362617"), fg: pick("#8A4A2B", "#D89F83") },
+  amber: { bg: pick("#FBE7BF", "#362B17"), fg: pick("#8A5A00", "#EBC070") },
+  green: { bg: pick("#DCEBD9", "#1E321A"), fg: pick("#2F7A3F", "#89D298") },
+  teal: { bg: pick("#D7E6E0", "#1D2F28"), fg: pick("#2E6656", "#89D2BD") },
+  slate: { bg: pick("#E6E8E2", "#1F2221"), fg: pick("#545C55", "#7D847E") },
+  orange: { bg: pick("#FDE2D2", "#362217"), fg: pick("#C4531F", "#E99772") },
+  red: { bg: pick("#F8DCD8", "#361B17"), fg: pick("#B73B32", "#DC857F") },
 } as const;
 type SettingsTile = keyof typeof SETTINGS_TILES;
 
@@ -150,9 +152,44 @@ function SettingsRow({
       </View>
       {right ??
         (onPress ? (
-          <ChevronRight size={20} color={danger ? "#FF6B60" : "#6B726D"} />
+          <ChevronRight size={20} color={danger ? pick("#B73B32", "#FF6B60") : pick("#A2A49D", "#6B726D")} />
         ) : null)}
     </Pressable>
+  );
+}
+
+/** Light / Dark switch. Styles are built at start-up, so a change restarts the app. */
+function AppearanceToggle() {
+  const choose = (mode: ThemeMode) => {
+    if (mode === themeMode) return;
+    showAlert(
+      mode === "dark" ? "Switch to dark mode?" : "Switch to light mode?",
+      "The app restarts to apply it. You stay signed in.",
+      [
+        { text: "Switch", onPress: () => void setThemeMode(mode) },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
+  };
+  return (
+    <View style={styles.appearanceToggle}>
+      {(["light", "dark"] as const).map((mode) => {
+        const active = mode === themeMode;
+        return (
+          <Pressable
+            key={mode}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            onPress={() => choose(mode)}
+            style={[styles.appearanceOption, active && styles.appearanceOptionActive]}
+          >
+            <Text style={[styles.appearanceOptionText, active && styles.appearanceOptionTextActive]}>
+              {mode === "light" ? "Light" : "Dark"}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -345,7 +382,7 @@ function ShopHome({
           <View style={styles.heroMeta}>
             {business.category ? <Text style={styles.heroCategory}>{business.category}</Text> : null}
             <View style={[styles.pill, live ? styles.pillLive : styles.pillHidden]}>
-              <View style={[styles.pillDot, { backgroundColor: live ? "#4CC07A" : "#FF6B60" }]} />
+              <View style={[styles.pillDot, { backgroundColor: live ? pick("#2F8A4C", "#4CC07A") : pick("#B73B32", "#FF6B60") }]} />
               <Text style={styles.pillText}>{live ? "Live" : "Hidden"}</Text>
             </View>
           </View>
@@ -376,7 +413,7 @@ function ShopHome({
               ))}
               {!missing.length ? (
                 <View style={styles.completeRow}>
-                  <Check size={16} color="#85D69F" strokeWidth={3} />
+                  <Check size={16} color={pick("#2F8A4C", "#85D69F")} strokeWidth={3} />
                   <Text style={styles.completeText}>Customers see everything they need.</Text>
                 </View>
               ) : null}
@@ -653,27 +690,27 @@ function ShopDetailsPage({
           <Text style={styles.groupLabel}>SHOP PROFILE</Text>
           <View style={styles.settingsGroup}>
             <Text style={styles.fieldLabel}>Shop name</Text>
-            <TextInput keyboardAppearance="dark"
+            <TextInput keyboardAppearance={pick('light', 'dark')}
               style={styles.settingsInput}
               value={name}
               onChangeText={setName}
-              placeholderTextColor="#6B726D"
+              placeholderTextColor={pick("#000000", "#6B726D")}
             />
             <Text style={styles.fieldLabel}>Category</Text>
-            <TextInput keyboardAppearance="dark"
+            <TextInput keyboardAppearance={pick('light', 'dark')}
               style={styles.settingsInput}
               value={category}
               onChangeText={setCategory}
               placeholder="Cafe, salon, restaurant…"
-              placeholderTextColor="#6B726D"
+              placeholderTextColor={pick("#000000", "#6B726D")}
             />
             <Text style={styles.fieldLabel}>Description</Text>
-            <TextInput keyboardAppearance="dark"
+            <TextInput keyboardAppearance={pick('light', 'dark')}
               style={[styles.settingsInput, styles.textArea]}
               value={description}
               onChangeText={setDescription}
               placeholder="Tell customers what makes you special"
-              placeholderTextColor="#6B726D"
+              placeholderTextColor={pick("#000000", "#6B726D")}
               multiline
               textAlignVertical="top"
             />
@@ -717,30 +754,30 @@ function ShopDetailsPage({
               </>
             ) : null}
             <Text style={styles.fieldLabel}>Address</Text>
-            <TextInput keyboardAppearance="dark"
+            <TextInput keyboardAppearance={pick('light', 'dark')}
               style={styles.settingsInput}
               value={address}
               onChangeText={setAddress}
-              placeholderTextColor="#6B726D"
+              placeholderTextColor={pick("#000000", "#6B726D")}
             />
             <View style={styles.twoColumns}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Postcode</Text>
-                <TextInput keyboardAppearance="dark"
+                <TextInput keyboardAppearance={pick('light', 'dark')}
                   style={styles.settingsInput}
                   value={postcode}
                   onChangeText={setPostcode}
-                  placeholderTextColor="#6B726D"
+                  placeholderTextColor={pick("#000000", "#6B726D")}
                   autoCapitalize="characters"
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Phone</Text>
-                <TextInput keyboardAppearance="dark"
+                <TextInput keyboardAppearance={pick('light', 'dark')}
                   style={styles.settingsInput}
                   value={phone}
                   onChangeText={setPhone}
-                  placeholderTextColor="#6B726D"
+                  placeholderTextColor={pick("#000000", "#6B726D")}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -778,7 +815,7 @@ function ShopDetailsPage({
               style={({ pressed }) => [styles.catalogueLink, pressed && styles.pressed]}
             >
               <View style={styles.tierBadge}>
-                <Gift size={18} color="#85D69F" />
+                <Gift size={18} color={pick("#2F8A4C", "#85D69F")} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.tierTitle}>Rewards catalogue</Text>
@@ -792,7 +829,7 @@ function ShopDetailsPage({
                         : `Add what customers unlock and at how many ${unit}`}
                 </Text>
               </View>
-              <ChevronRight size={18} color="#85D69F" />
+              <ChevronRight size={18} color={pick("#2F8A4C", "#85D69F")} />
             </Pressable>
           </View>
           <Pressable
@@ -914,6 +951,17 @@ function AccountPage({
   return (
     <View>
       <PageHeader title="Settings & account" onBack={onBack} />
+      <Text style={styles.groupLabel}>APPEARANCE</Text>
+      <View style={styles.settingsGroupNoPadding}>
+        <SettingsRow
+          icon={Moon}
+          tile="slate"
+          title="Theme"
+          detail={isDark ? "Dark" : "Light"}
+          right={<AppearanceToggle />}
+          last
+        />
+      </View>
       <Text style={styles.groupLabel}>SECURITY & PRIVACY</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
@@ -925,7 +973,7 @@ function AccountPage({
             <Switch
               value={biometricEnabled}
               onValueChange={() => void toggleBiometricLock()}
-              trackColor={{ true: green }}
+              trackColor={{ true: pick(green, orange) }}
             />
           }
         />
@@ -938,7 +986,7 @@ function AccountPage({
             <Switch
               value={analyticsEnabled}
               onValueChange={() => void toggleUsageAnalytics()}
-              trackColor={{ true: green }}
+              trackColor={{ true: pick(green, orange) }}
             />
           }
           last
@@ -1044,18 +1092,23 @@ function AccountPage({
 }
 
 const styles = StyleSheet.create({
+  appearanceToggle: { flexDirection: "row", padding: 3, borderRadius: 999, backgroundColor: pick("#EDEFE9", "#1F2221") },
+  appearanceOption: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },
+  appearanceOptionActive: { backgroundColor: orange },
+  appearanceOptionText: { fontSize: 13, fontWeight: "700", color: pick("#59615A", "#9DA49E") },
+  appearanceOptionTextActive: { color: "#fff" },
   pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.5 },
   fill: { width: "100%", height: "100%" },
-  copy: { fontSize: 13, lineHeight: 19, color: "#9DA49E", marginBottom: 6 },
+  copy: { fontSize: 13, lineHeight: 19, color: pick("#000000", "#9DA49E"), marginBottom: 6 },
   hero: {
     marginTop: 18,
     marginBottom: 16,
     borderRadius: 28,
     overflow: "hidden",
-    backgroundColor: "#151716",
+    backgroundColor: pick("#fff", "#151716"),
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
   },
   cover: { height: 130, width: "100%" },
   heroBody: { paddingHorizontal: 18, paddingBottom: 18 },
@@ -1080,7 +1133,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   heroMeta: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" },
-  heroCategory: { fontSize: 14, fontWeight: "700", color: "#9DA49E" },
+  heroCategory: { fontSize: 14, fontWeight: "700", color: pick("#000000", "#9DA49E") },
   pill: {
     flexDirection: "row",
     alignItems: "center",
@@ -1089,23 +1142,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 5,
   },
-  pillLive: { backgroundColor: "#1E321A" },
-  pillHidden: { backgroundColor: "#361B17" },
+  pillLive: { backgroundColor: pick("#DCEBD9", "#1E321A") },
+  pillHidden: { backgroundColor: pick("#F8DCD8", "#361B17") },
   pillDot: { width: 7, height: 7, borderRadius: 4 },
-  pillText: { fontSize: 12, fontWeight: "900", color: "#9DA49E" },
+  pillText: { fontSize: 12, fontWeight: "900", color: pick("#000000", "#9DA49E") },
   meter: {
     marginTop: 18,
     borderRadius: 20,
-    backgroundColor: "#362B17",
+    backgroundColor: pick("#FBE7BF", "#362B17"),
     padding: 15,
   },
   meterTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  meterTitle: { fontSize: 15, fontWeight: "900", color: "#9DA49E" },
-  meterCount: { fontSize: 13, fontWeight: "800", color: "#9DA49E" },
+  meterTitle: { fontSize: 15, fontWeight: "900", color: pick("#000000", "#9DA49E") },
+  meterCount: { fontSize: 13, fontWeight: "800", color: pick("#000000", "#9DA49E") },
   meterTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.16)",
+    backgroundColor: pick("rgba(0,0,0,.12)", "rgba(255,255,255,0.16)"),
     marginTop: 10,
     marginBottom: 6,
     overflow: "hidden",
@@ -1117,7 +1170,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     minHeight: 44,
   },
-  missingLabel: { fontSize: 14, fontWeight: "700", color: "#9DA49E" },
+  missingLabel: { fontSize: 14, fontWeight: "700", color: pick("#000000", "#9DA49E") },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1125,11 +1178,11 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 14,
     borderRadius: 17,
-    backgroundColor: "#F2672A",
+    backgroundColor: pick(ink, "#F2672A"),
   },
   addButtonText: { color: "#fff", fontSize: 13, fontWeight: "900" },
   completeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  completeText: { fontSize: 13, fontWeight: "700", color: "#9DA49E" },
+  completeText: { fontSize: 13, fontWeight: "700", color: pick("#000000", "#9DA49E") },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 12 },
   tile: {
     width: "47.9%",
@@ -1151,8 +1204,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tileTitle: { fontSize: 18, fontFamily: FONT_DISPLAY, color: "#9DA49E", letterSpacing: -0.3 },
-  tileDetail: { fontSize: 12, lineHeight: 17, color: "#9DA49E", marginTop: 3 },
+  tileTitle: { fontSize: 18, fontFamily: FONT_DISPLAY, color: pick("#000000", "#9DA49E"), letterSpacing: -0.3 },
+  tileDetail: { fontSize: 12, lineHeight: 17, color: pick("#000000", "#9DA49E"), marginTop: 3 },
   posterRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1160,7 +1213,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 16,
     marginBottom: 20,
-    backgroundColor: "#362617",
+    backgroundColor: pick("#F3E3D3", "#362617"),
   },
   posterIcon: {
     width: 48,
@@ -1170,16 +1223,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  posterTitle: { fontSize: 17, fontFamily: FONT_DISPLAY, color: "#9DA49E" },
-  posterDetail: { fontSize: 13, color: "#9DA49E", marginTop: 2 },
+  posterTitle: { fontSize: 17, fontFamily: FONT_DISPLAY, color: pick("#000000", "#9DA49E") },
+  posterDetail: { fontSize: 13, color: pick("#000000", "#9DA49E"), marginTop: 2 },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 20, marginBottom: 18 },
   backButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "rgba(26,28,27,0.82)",
+    backgroundColor: pick("rgba(255,255,255,.82)", "rgba(26,28,27,0.82)"),
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1188,54 +1241,54 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.3,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     marginLeft: 4,
     marginTop: 8,
     marginBottom: 9,
   },
   settingsGroup: {
-    backgroundColor: "rgba(26,28,27,0.82)",
+    backgroundColor: pick("rgba(255,255,255,.82)", "rgba(26,28,27,0.82)"),
     borderRadius: 22,
     padding: 17,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
   },
   settingsGroupNoPadding: {
-    backgroundColor: "rgba(26,28,27,0.82)",
+    backgroundColor: pick("rgba(255,255,255,.82)", "rgba(26,28,27,0.82)"),
     borderRadius: 22,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
     overflow: "hidden",
   },
-  fieldLabel: { fontSize: 13, fontWeight: "800", color: "#9DA49E", marginTop: 12, marginBottom: 7 },
+  fieldLabel: { fontSize: 13, fontWeight: "800", color: pick("#000000", "#9DA49E"), marginTop: 12, marginBottom: 7 },
   settingsInput: {
     minHeight: 50,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: pick("rgba(20,20,18,.12)", "rgba(255,255,255,0.16)"),
     paddingHorizontal: 14,
     fontSize: 15,
-    color: "#9DA49E",
-    backgroundColor: "#151716",
+    color: pick("#000000", "#9DA49E"),
+    backgroundColor: pick("#fff", "#151716"),
   },
   textArea: { minHeight: 96, paddingTop: 12 },
-  readOnlyNotice: { borderRadius: 14, backgroundColor: "#362B17", padding: 12, marginBottom: 4 },
-  readOnlyNoticeText: { fontSize: 13, lineHeight: 19, color: "#9DA49E" },
-  readOnlyValue: { fontSize: 15, lineHeight: 22, color: "#9DA49E", fontWeight: "600" },
-  fieldHelp: { fontSize: 12, lineHeight: 18, color: "#9DA49E", marginTop: 8 },
+  readOnlyNotice: { borderRadius: 14, backgroundColor: pick("#FBE7BF", "#362B17"), padding: 12, marginBottom: 4 },
+  readOnlyNoticeText: { fontSize: 13, lineHeight: 19, color: pick("#000000", "#9DA49E") },
+  readOnlyValue: { fontSize: 15, lineHeight: 22, color: pick("#000000", "#9DA49E"), fontWeight: "600" },
+  fieldHelp: { fontSize: 12, lineHeight: 18, color: pick("#000000", "#9DA49E"), marginTop: 8 },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   categoryChip: {
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 999,
-    backgroundColor: "#151716",
+    backgroundColor: pick("#fff", "#151716"),
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: pick("rgba(20,20,18,.12)", "rgba(255,255,255,0.16)"),
   },
-  categoryChipActive: { backgroundColor: "#F2672A", borderColor: "#F2672A" },
-  categoryChipText: { fontSize: 13, fontWeight: "800", color: "#9DA49E" },
+  categoryChipActive: { backgroundColor: pick(ink, "#F2672A"), borderColor: pick(ink, "#F2672A") },
+  categoryChipText: { fontSize: 13, fontWeight: "800", color: pick("#000000", "#9DA49E") },
   categoryChipTextActive: { color: "#fff" },
   catalogueLink: {
     flexDirection: "row",
@@ -1244,7 +1297,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     padding: 13,
     borderRadius: 18,
-    backgroundColor: "#1E321A",
+    backgroundColor: pick("#DCEBD9", "#1E321A"),
   },
   tierBadge: {
     width: 38,
@@ -1255,23 +1308,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tierTitle: { fontSize: 15, fontWeight: "800", color: ink },
-  tierMeta: { fontSize: 12, color: "#9DA49E", marginTop: 2 },
+  tierMeta: { fontSize: 12, color: pick("#000000", "#9DA49E"), marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",
     borderRadius: 16,
-    backgroundColor: "#1F2221",
+    backgroundColor: pick("#E6E8E2", "#1F2221"),
     padding: 4,
     gap: 4,
   },
   segmentButton: { flex: 1, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  segmentActive: { backgroundColor: "#2C302E" },
-  segmentText: { fontSize: 13, fontWeight: "800", color: "#9DA49E" },
-  segmentTextActive: { color: "#F4F3EF" },
+  segmentActive: { backgroundColor: pick("#fff", "#2C302E") },
+  segmentText: { fontSize: 13, fontWeight: "800", color: pick("#000000", "#9DA49E") },
+  segmentTextActive: { color: pick("#000000", "#F4F3EF") },
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#F2672A",
+    backgroundColor: pick(ink, "#F2672A"),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -1285,7 +1338,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.09)",
+    borderBottomColor: pick("rgba(20,20,18,.07)", "rgba(255,255,255,0.09)"),
   },
   settingsRowLast: { borderBottomWidth: 0 },
   settingsIcon: {
@@ -1296,12 +1349,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   settingsRowTitle: { fontSize: 15, fontWeight: "800", color: ink },
-  settingsRowDetail: { fontSize: 12, lineHeight: 17, color: "#9DA49E", marginTop: 3 },
-  dangerText: { color: "#DC857F" },
+  settingsRowDetail: { fontSize: 12, lineHeight: 17, color: pick("#000000", "#9DA49E"), marginTop: 3 },
+  dangerText: { color: pick("#B73B32", "#DC857F") },
   settingsFootnote: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#9DA49E",
+    color: pick("#000000", "#9DA49E"),
     textAlign: "center",
     paddingHorizontal: 18,
     marginTop: -8,
