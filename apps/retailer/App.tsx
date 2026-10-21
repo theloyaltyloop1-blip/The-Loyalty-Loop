@@ -1599,7 +1599,8 @@ function CustomersHome({ business }: { business: Business }) {
     [audience, setAudience] = useState<"all" | "inactive_30" | "regulars">("all"),
     [title, setTitle] = useState(""),
     [body, setBody] = useState(""),
-    [sending, setSending] = useState(false);
+    [sending, setSending] = useState(false),
+    [emailing, setEmailing] = useState(false);
   useEffect(() => {
     supabase.rpc("get_business_members", { _business_id: business.id }).then(({ data, error }) => {
       if (error) showAlert("Could not load customers", error.message);
@@ -1607,7 +1608,8 @@ function CustomersHome({ business }: { business: Business }) {
     });
   }, [business.id]);
   const cutoff = Date.now() - 30 * 86400000;
-  const seen = (m: MemberRow) => (m.last_activity_at ? new Date(m.last_activity_at).getTime() : 0);
+  // Same rule as the server: no visit yet counts from the day they joined.
+  const seen = (m: MemberRow) => new Date(m.last_activity_at || m.joined_at).getTime();
   const list = members || [];
   const loyal = list.filter((m) => seen(m) >= cutoff).sort((a, b) => b.visit_count - a.visit_count).slice(0, 5);
   const quiet = list.filter((m) => seen(m) < cutoff).sort((a, b) => seen(b) - seen(a));
@@ -1625,7 +1627,7 @@ function CustomersHome({ business }: { business: Business }) {
     setSending(true);
     const { error } = await supabase
       .from("business_promotions")
-      .insert({ business_id: business.id, title: title.trim(), body: body.trim(), audience });
+      .insert({ business_id: business.id, title: title.trim(), body: body.trim(), audience, status: "sent" });
     setSending(false);
     if (error) {
       showAlert("Could not send", error.message);
@@ -1633,13 +1635,34 @@ function CustomersHome({ business }: { business: Business }) {
     }
     setTitle("");
     setBody("");
-    showAlert("Message sent", "Your customers will see it shortly.");
+    showAlert("Message sent", "It's on its way to their phones and their inbox.");
+  }
+  async function emailQuiet() {
+    setEmailing(true);
+    const { data, error } = await supabase.functions.invoke("send-winback-emails", {
+      body: { business_id: business.id, days_inactive_threshold: 30 },
+    });
+    setEmailing(false);
+    if (error) {
+      showAlert("Could not send emails", "Try again in a minute.");
+      return;
+    }
+    const result = data as { sent?: number; skipped?: number; message?: string };
+    if (!result.sent && !result.skipped) {
+      showAlert("Nobody to email", "Everyone has visited in the last 30 days.");
+      return;
+    }
+    showAlert(
+      "Emails sent",
+      `${result.sent ?? 0} sent with a comeback code.` +
+        (result.skipped ? ` ${result.skipped} already had one this month.` : ""),
+    );
   }
   return (
     <View>
-      <Text style={styles.pageKicker}>CUSTOMERS</Text>
-      <Text style={styles.pageTitle}>Your customers</Text>
-      <Text style={styles.pageIntro}>Who comes back, who has gone quiet, and a quick way to say hello.</Text>
+      <Text style={styles.pageKicker}>WIN BACK</Text>
+      <Text style={styles.pageTitle}>Bring them back</Text>
+      <Text style={styles.pageIntro}>See who has gone quiet, then send them a push notification or an email.</Text>
       {members === null ? (
         <ActivityIndicator color={green} style={{ marginTop: 30 }} />
       ) : (
@@ -1694,7 +1717,14 @@ function CustomersHome({ business }: { business: Business }) {
           placeholder="Come in this week and we'll have something waiting."
           placeholderTextColor="#000000"
         />
-        <Button title={sending ? "Sending…" : "Send message"} onPress={() => void send()} />
+        <Button title={sending ? "Sending…" : "Send push notification"} onPress={() => void send()} />
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Email customers who've gone quiet</Text>
+        <Text style={[styles.pageIntro, { marginTop: 6 }]}>
+          Everyone who hasn't visited in 30 days gets an email with a comeback code. Nobody gets more than one a month.
+        </Text>
+        <Button title={emailing ? "Sending…" : "Send win-back emails"} onPress={() => void emailQuiet()} />
       </View>
     </View>
   );
@@ -2368,9 +2398,10 @@ function Dashboard({
   }, []);
   // Four tabs: Home, Analytics, Scan, Shop. Analytics groups insights, the
   // customer lists and news posts as sub-tabs.
-  const ANALYTICS_TABS = ["analytics", "members", "news"] as const;
+  const ANALYTICS_TABS = ["analytics", "customers", "members", "news"] as const;
   const ANALYTICS_SUBTABS = [
     { id: "analytics", label: "Insights" },
+    { id: "customers", label: "Win back" },
     { id: "members", label: "Members" },
     { id: "news", label: "News" },
   ] as const;

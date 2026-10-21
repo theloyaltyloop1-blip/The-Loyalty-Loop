@@ -80,7 +80,7 @@ export function OwnerCustomers() {
     setError(null)
     const { error: err } = await supabase
       .from('business_promotions')
-      .insert({ business_id: business.id, title: title.trim(), body: body.trim(), audience })
+      .insert({ business_id: business.id, title: title.trim(), body: body.trim(), audience, status: 'sent' })
     setBusy(false)
     if (err) {
       setError('Could not send your message. Try again.')

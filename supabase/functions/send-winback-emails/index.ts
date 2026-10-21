@@ -8,6 +8,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // (winback_email_log), sends via Resend, logs each send.
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+// Must be an address on a domain verified in Resend. The resend.dev fallback
+// only delivers to the Resend account owner, so real customers get nothing.
+const FROM_EMAIL = Deno.env.get("WINBACK_FROM_EMAIL") ?? "The Loyalty Loop <onboarding@resend.dev>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -136,7 +139,7 @@ Deno.serve(async (req: Request) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "The Loyalty Loop <onboarding@resend.dev>",
+            from: FROM_EMAIL,
             to: [profile.email],
             subject,
             html,
