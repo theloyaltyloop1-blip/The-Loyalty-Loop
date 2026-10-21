@@ -102,6 +102,7 @@ Deno.serve(async (req: Request) => {
       .from("winback_email_log")
       .select("user_id")
       .eq("business_id", businessId)
+      .eq("status", "sent") // a failed send must not lock the customer out for a month
       .gte("sent_at", recentCutoff);
     const recentlySentIds = new Set((recentlySent ?? []).map((r) => r.user_id));
 

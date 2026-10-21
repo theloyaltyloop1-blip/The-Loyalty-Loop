@@ -1647,7 +1647,11 @@ function CustomersHome({ business }: { business: Business }) {
       showAlert("Could not send emails", "Try again in a minute.");
       return;
     }
-    const result = data as { sent?: number; skipped?: number; message?: string };
+    const result = data as { sent?: number; skipped?: number; errors?: number; message?: string };
+    if (!result.sent && result.errors) {
+      showAlert("Emails not sent", "Email sending isn't set up yet. Push notifications still work.");
+      return;
+    }
     if (!result.sent && !result.skipped) {
       showAlert("Nobody to email", "Everyone has visited in the last 30 days.");
       return;
