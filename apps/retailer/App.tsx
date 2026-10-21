@@ -2368,10 +2368,9 @@ function Dashboard({
   }, []);
   // Four tabs: Home, Analytics, Scan, Shop. Analytics groups insights, the
   // customer lists and news posts as sub-tabs.
-  const ANALYTICS_TABS = ["analytics", "customers", "members", "news"] as const;
+  const ANALYTICS_TABS = ["analytics", "members", "news"] as const;
   const ANALYTICS_SUBTABS = [
     { id: "analytics", label: "Insights" },
-    { id: "customers", label: "Customers" },
     { id: "members", label: "Members" },
     { id: "news", label: "News" },
   ] as const;

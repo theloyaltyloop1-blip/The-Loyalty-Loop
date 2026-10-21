@@ -20,13 +20,12 @@ const SHOP_PATHS = ['/owner/settings', '/owner/reviews', '/owner/support', '/own
 
 const OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Scan', to: '/owner/scan', icon: ScanLine },
-  { label: 'Customers', to: '/owner', icon: Users, group: CUSTOMERS_PATHS },
+  { label: 'Customers', to: '/owner/analytics', icon: Users, group: CUSTOMERS_PATHS },
   { label: 'Shop', to: '/owner/settings', icon: Store, group: SHOP_PATHS },
 ]
 
 const SUB_TABS: Record<string, { label: string; to: string }[]> = {
   customers: [
-    { label: 'Customers', to: '/owner' },
     { label: 'Insights', to: '/owner/analytics' },
     { label: 'News posts', to: '/owner/announcements' },
     { label: 'Alerts', to: '/owner/notifications' },
