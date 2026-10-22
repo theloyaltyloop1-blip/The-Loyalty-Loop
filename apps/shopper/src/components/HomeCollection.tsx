@@ -102,12 +102,6 @@ function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { sho
   </ScrollView>
 }
 
-const CARD_TONES = [
-  { bg: c.olive, ink: c.oliveInk, track: '#617257' },
-  { bg: c.peach, ink: c.peachInk, track: '#E9BDA3' },
-  { bg: c.sage, ink: c.sageInk, track: '#C5D1BA' },
-]
-
 // Your loyalty cards as a swipeable row, the one closest to a reward first.
 function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
   const { width } = useWindowDimensions()
@@ -115,15 +109,8 @@ function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }:
   const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
     .sort((a, b) => b.progress.fraction - a.progress.fraction)
   return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={cardWidth + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
-    {cards.map(({ shop, progress }, index) => {
-      const tone = CARD_TONES[index % CARD_TONES.length]
-      const ready = progress.threshold !== null && progress.fraction >= 1
-      if (shop.card_design) return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={{ width: cardWidth }}><LoyaltyCard shop={shop} value={progress.value} target={progress.threshold ?? 1} showProgress={progress.threshold !== null} label={progress.label} reward={progress.title || "Your loyalty card"} stamps={shop.reward_model !== "spend_threshold" && !["points", "tiered"].includes(shop.loyalty_type || "")} compact /></Pressable>;
-      return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.loyaltyCard, { backgroundColor: tone.bg, width: cardWidth }, pressed && s.pressed]}>
-        <View style={s.cardTop}><ShopMark shop={shop} /><View style={{ flex: 1 }}><Text style={[s.cardName, { color: tone.ink }]} numberOfLines={1}>{shop.name}</Text><Text style={[s.cardReward, { color: tone.ink }]} numberOfLines={1}>{progress.title || 'Your loyalty card'}</Text></View></View>
-        {progress.threshold ? <View style={[s.progressTrack, { backgroundColor: tone.track }]} accessible accessibilityRole="progressbar" accessibilityLabel={progress.label} accessibilityValue={{ min: 0, max: progress.threshold, now: Math.min(progress.value, progress.threshold), text: progress.label }}><View style={[s.progressFill, { backgroundColor: tone.ink, width: `${progress.fraction * 100}%` }]} /></View> : null}
-        <View style={s.cardFooter}><Text style={[s.cardCount, { color: tone.ink }]}>{progress.label}</Text>{ready && <View style={s.readyPill}><Text style={s.readyText}>Reward ready</Text></View>}</View>
-      </Pressable>
+    {cards.map(({ shop, progress }) => {
+      return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={{ width: cardWidth }}><LoyaltyCard shop={shop} value={progress.value} target={progress.threshold ?? 1} showProgress={progress.threshold !== null} label={progress.label} reward={progress.title || "Your loyalty card"} stamps={shop.reward_model !== "spend_threshold" && !["points", "tiered"].includes(shop.loyalty_type || "")} compact /></Pressable>;
     })}
   </ScrollView>
 }

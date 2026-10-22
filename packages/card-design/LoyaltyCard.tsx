@@ -28,6 +28,7 @@ import {
   normalizeDesign,
   designForProgress,
   materialOpacity,
+  defaultDesignFor,
   type CardDesign,
 } from "./model";
 
@@ -35,6 +36,7 @@ export type CardShop = {
   name: string;
   logo_url?: string | null;
   brand_color?: string | null;
+  category?: string | null;
   card_design?: unknown;
 };
 const typeface = (font: CardDesign["font"]) =>
@@ -205,7 +207,7 @@ export function LoyaltyCard({
   showProgress?: boolean;
 }) {
   const d = designForProgress(
-    normalizeDesign(shop.card_design, shop.brand_color),
+    normalizeDesign(shop.card_design ?? defaultDesignFor(shop.category, shop.brand_color), shop.brand_color),
     stamps,
   );
   const [contentWidth, setContentWidth] = useState(280);

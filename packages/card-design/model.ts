@@ -97,6 +97,17 @@ export const TEMPLATES: { name: string; design: CardDesign }[] = [
     },
   },
 ];
+// Shops that haven't designed a card yet still get one, chosen from their
+// category, so every card in the shopper app is a designed card.
+export function defaultDesignFor(category?: string | null, brand?: string | null): CardDesign {
+  const c = (category || "").toLowerCase();
+  const pick = (name: string) => TEMPLATES.find((t) => t.name === name)!.design;
+  if (/caf|coffee|tea/.test(c)) return pick("Coffee house");
+  if (/barber|hair|salon|beauty|nail/.test(c)) return pick("The barbershop");
+  if (/bak|cake|dessert|patisser|sweet/.test(c)) return pick("Freshly baked");
+  if (/gym|fitness|sport|yoga|train/.test(c)) return pick("Training club");
+  return { ...DEFAULT_DESIGN, color: hex(brand, DEFAULT_DESIGN.color), secondary: "#F2C46D", icon: "star" };
+}
 const hex = (v: unknown, fallback: string) =>
   typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v : fallback;
 function one<T extends string>(

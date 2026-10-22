@@ -1455,7 +1455,6 @@ function ShopDetail({
 
         {membership ? (
           <View style={styles.loyaltyCard} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
-            {business.card_design ? (
               <LoyaltyCard
                 shop={business}
                 value={programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? Math.round(tierStanding(tiers, rollingSpend).fraction * 100) : 0) : programmeId === 'points' ? (pointsView.next ? Math.round(pointsView.fraction * 100) : 100) : value}
@@ -1465,21 +1464,6 @@ function ShopDetail({
                 stamps={!spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '')}
                 animate
               />
-            ) : (
-              <>
-              <View style={styles.loyaltyCardHeaderRow}>
-                <Text style={styles.sectionTitle}>{programmeId === 'tiers' ? 'Your level' : programmeId === 'points' ? 'Your points' : spendShop ? 'Your spend' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
-                <Text style={styles.loyaltyCardCount}>{programmeId === 'tiers' ? membership.current_tier || 'Getting started' : programmeId === 'points' ? `${value} ${value === 1 ? 'point' : 'points'}` : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}</Text>
-              </View>
-              {programmeId === 'tiers' ? (
-                rollingSpend != null && tiers.length ? <LoyaltyProgressBar pct={tierStanding(tiers, rollingSpend).fraction * 100} color={business.brand_color || primary} /> : null
-              ) : programmeId === 'points' ? (
-                pointsView.next ? <LoyaltyProgressBar pct={pointsView.fraction * 100} color={business.brand_color || primary} /> : null
-              ) : (
-                <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
-              )}
-              </>
-            )}
             {programmeId === 'points' && pointsView.next ? <Text style={styles.spendHint}>{pointsView.label}</Text> : null}
             {spendShop ? (
               <Text style={styles.spendHint}>
