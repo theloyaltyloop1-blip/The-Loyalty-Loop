@@ -1,3 +1,4 @@
+import { LoyaltyCard } from "../../../../packages/card-design/LoyaltyCard";
 import { useState, type ReactNode } from 'react'
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
@@ -117,6 +118,7 @@ function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }:
     {cards.map(({ shop, progress }, index) => {
       const tone = CARD_TONES[index % CARD_TONES.length]
       const ready = progress.threshold !== null && progress.fraction >= 1
+      if (shop.card_design) return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={{ width: cardWidth }}><LoyaltyCard shop={shop} value={progress.value} target={progress.threshold ?? 1} showProgress={progress.threshold !== null} label={progress.label} reward={progress.title || "Your loyalty card"} stamps={shop.reward_model !== "spend_threshold" && !["points", "tiered"].includes(shop.loyalty_type || "")} compact /></Pressable>;
       return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.loyaltyCard, { backgroundColor: tone.bg, width: cardWidth }, pressed && s.pressed]}>
         <View style={s.cardTop}><ShopMark shop={shop} /><View style={{ flex: 1 }}><Text style={[s.cardName, { color: tone.ink }]} numberOfLines={1}>{shop.name}</Text><Text style={[s.cardReward, { color: tone.ink }]} numberOfLines={1}>{progress.title || 'Your loyalty card'}</Text></View></View>
         {progress.threshold ? <View style={[s.progressTrack, { backgroundColor: tone.track }]} accessible accessibilityRole="progressbar" accessibilityLabel={progress.label} accessibilityValue={{ min: 0, max: progress.threshold, now: Math.min(progress.value, progress.threshold), text: progress.label }}><View style={[s.progressFill, { backgroundColor: tone.ink, width: `${progress.fraction * 100}%` }]} /></View> : null}

@@ -400,7 +400,7 @@ function ShopHome({
           <BigTile
             icon={ImageIcon}
             tile="orange"
-            title="Photos & branding"
+            title="Design your card"
             detail="Logo and cover"
             onPress={() => onOpenPage("branding")}
           />

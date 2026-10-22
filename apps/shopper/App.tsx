@@ -1,3 +1,5 @@
+import { CARD_FONTS } from "../../packages/card-design/fonts";
+import { LoyaltyCard } from "../../packages/card-design/LoyaltyCard";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
@@ -332,6 +334,7 @@ type Business = {
   tiktok?: string | null
   youtube?: string | null
   brand_color?: string
+  card_design?: unknown
   logo_url?: string | null
   cover_url?: string | null
   opening_hours?: OpeningHours | null
@@ -1452,16 +1455,30 @@ function ShopDetail({
 
         {membership ? (
           <View style={styles.loyaltyCard} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
-            <View style={styles.loyaltyCardHeaderRow}>
-              <Text style={styles.sectionTitle}>{programmeId === 'tiers' ? 'Your level' : programmeId === 'points' ? 'Your points' : spendShop ? 'Your spend' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
-              <Text style={styles.loyaltyCardCount}>{programmeId === 'tiers' ? membership.current_tier || 'Getting started' : programmeId === 'points' ? `${value} ${value === 1 ? 'point' : 'points'}` : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}</Text>
-            </View>
-            {programmeId === 'tiers' ? (
-              rollingSpend != null && tiers.length ? <LoyaltyProgressBar pct={tierStanding(tiers, rollingSpend).fraction * 100} color={business.brand_color || primary} /> : null
-            ) : programmeId === 'points' ? (
-              pointsView.next ? <LoyaltyProgressBar pct={pointsView.fraction * 100} color={business.brand_color || primary} /> : null
+            {business.card_design ? (
+              <LoyaltyCard
+                shop={business}
+                value={programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? Math.round(tierStanding(tiers, rollingSpend).fraction * 100) : 0) : programmeId === 'points' ? (pointsView.next ? Math.round(pointsView.fraction * 100) : 100) : value}
+                target={programmeId === 'tiers' || programmeId === 'points' ? 100 : threshold}
+                label={programmeId === 'tiers' ? membership.current_tier || 'Getting started' : programmeId === 'points' ? `${value} ${value === 1 ? 'point' : 'points'}` : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}
+                reward={nextTier?.title ?? 'Your next reward'}
+                stamps={!spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '')}
+                animate
+              />
             ) : (
-              <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
+              <>
+              <View style={styles.loyaltyCardHeaderRow}>
+                <Text style={styles.sectionTitle}>{programmeId === 'tiers' ? 'Your level' : programmeId === 'points' ? 'Your points' : spendShop ? 'Your spend' : business.loyalty_type === 'tiered' ? 'Your visits' : 'Your stamp card'}</Text>
+                <Text style={styles.loyaltyCardCount}>{programmeId === 'tiers' ? membership.current_tier || 'Getting started' : programmeId === 'points' ? `${value} ${value === 1 ? 'point' : 'points'}` : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}</Text>
+              </View>
+              {programmeId === 'tiers' ? (
+                rollingSpend != null && tiers.length ? <LoyaltyProgressBar pct={tierStanding(tiers, rollingSpend).fraction * 100} color={business.brand_color || primary} /> : null
+              ) : programmeId === 'points' ? (
+                pointsView.next ? <LoyaltyProgressBar pct={pointsView.fraction * 100} color={business.brand_color || primary} /> : null
+              ) : (
+                <LoyaltyProgressBar pct={Math.min(100, (value / threshold) * 100)} color={business.brand_color || primary} />
+              )}
+              </>
             )}
             {programmeId === 'points' && pointsView.next ? <Text style={styles.spendHint}>{pointsView.label}</Text> : null}
             {spendShop ? (
@@ -2378,6 +2395,20 @@ function AppHome({ session }: { session: Session }) {
   }, [])
 
   useEffect(() => {
+    let active = true;
+    const refreshDesigns = async () => {
+      const { data, error } = await supabase.from('businesses').select('id,card_design').eq('is_active', true);
+      if (!active || error || !data) return;
+      const designs = new Map(data.map(row => [row.id, row.card_design]));
+      setBusinesses(rows => rows.map(row => designs.has(row.id) ? { ...row, card_design: designs.get(row.id) } : row));
+      setSelected(row => row && designs.has(row.id) ? { ...row, card_design: designs.get(row.id) } : row);
+    };
+    const channel = supabase.channel('shop-card-designs').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses' }, () => { void refreshDesigns(); }).subscribe(status => { if (status === 'SUBSCRIBED') void refreshDesigns(); });
+    const foreground = AppState.addEventListener('change', state => { if (state === 'active') void refreshDesigns(); });
+    return () => { active = false; foreground.remove(); void supabase.removeChannel(channel); };
+  }, [userId])
+
+  useEffect(() => {
     const openWidgetDestination = ({ url }: { url: string }) => {
       if (url.includes('widget/qr')) {
         setSelected(null)
@@ -2516,7 +2547,7 @@ function AppHome({ session }: { session: Session }) {
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold })
+  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold })
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

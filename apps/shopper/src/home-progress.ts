@@ -1,6 +1,7 @@
 import { pointsStanding, progressFor, tierStanding } from '@loyalty-loop/loyalty'
 
 export type HomeShop = {
+  card_design?: unknown;
   id: string; name: string; category?: string | null; description?: string | null;
   address?: string | null; logo_url?: string | null; cover_url?: string | null; brand_color?: string | null;
   loyalty_type?: string; loyalty_config?: { stamps_required?: number; points_per_pound?: number };

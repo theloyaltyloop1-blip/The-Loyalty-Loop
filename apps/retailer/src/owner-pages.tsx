@@ -1,3 +1,4 @@
+import { CardDesigner } from "./CardDesigner";
 import { showAlert } from "./components/AppAlert";
 import { Explainer, type ExplainerKind } from "./components/Explainers";
 import { buildShopArgs, parseAmount, PROGRAMMES, programmeIdFor, type ProgrammeId } from "@loyalty-loop/loyalty";
@@ -71,6 +72,7 @@ export type NativeOnboardingDestination =
   | "tools";
 
 export interface NativeBusiness {
+  card_design?: unknown;
   id: string;
   name: string;
   logo_url?: string | null;
@@ -715,7 +717,15 @@ function BrandingPage({
   preview = false,
 }: PageProps) {
   const [busy, setBusy] = useState<"logo_url" | "cover_url" | null>(null);
+  const [cardDirty, setCardDirty] = useState(false), [cardBusy, setCardBusy] = useState(false);
+  const cardState = useCallback((dirty: boolean, saving: boolean) => { setCardDirty(dirty); setCardBusy(saving); }, []);
+  const leaveBranding = () => {
+    if (cardBusy) return showAlert('Please wait', 'Your card image or design is still saving.');
+    if (!cardDirty) return onBack();
+    showAlert('Discard your card changes?', 'Your saved card will stay as it is.', [{ text: 'Keep editing', style: 'cancel' }, { text: 'Discard changes', style: 'destructive', onPress: onBack }]);
+  };
   async function choose(field: "logo_url" | "cover_url") {
+    if (cardDirty || cardBusy) return showAlert("Finish your card design first", "Save or discard your card changes before updating shop images.");
     if (preview)
       return showAlert(
         "Preview mode",
@@ -787,10 +797,11 @@ function BrandingPage({
   return (
     <View>
       <PageHeader
-        title="Logo & cover images"
+        title="Your shop design"
         eyebrow="SHOP BRANDING"
-        onBack={onBack}
+        onBack={leaveBranding}
       />
+      <CardDesigner key={business.id} business={business} onSaved={onBusinessChanged} preview={preview} onStateChange={cardState} />
       <Section>
         <Text style={styles.cardTitle}>Storefront preview</Text>
         <View

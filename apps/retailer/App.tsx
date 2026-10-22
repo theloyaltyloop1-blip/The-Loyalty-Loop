@@ -1,3 +1,4 @@
+import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { AppAlertHost, showAlert } from "./src/components/AppAlert";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
@@ -149,6 +150,7 @@ type Business = {
   phone?: string | null;
   website?: string | null;
   brand_color?: string;
+  card_design?: unknown;
   logo_url?: string | null;
   cover_url?: string | null;
   is_active?: boolean;
@@ -2582,7 +2584,7 @@ function Dashboard({
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold });
+  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold });
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
