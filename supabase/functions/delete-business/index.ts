@@ -16,8 +16,9 @@ Deno.serve(async req => {
     const { business_id, confirmation_name } = await req.json();
     if (typeof business_id !== "string" || !/^[0-9a-f-]{36}$/i.test(business_id) || typeof confirmation_name !== "string") return json({ error: "Invalid shop or confirmation" }, 400);
     const caller = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false } });
-    const { data: shop, error: lookupError } = await admin.from("businesses").select("owner_id,name,verification_document_path").eq("id", business_id).single();
-    if (lookupError || !shop) return json({ error: "Shop not found" }, 404);
+    const { data: found, error: lookupError } = await admin.from("businesses").select("owner_id,name,business_private(verification_document_path)").eq("id", business_id).single();
+    if (lookupError || !found) return json({ error: "Shop not found" }, 404);
+    const shop = { ...found, verification_document_path: (found.business_private as { verification_document_path: string | null } | null)?.verification_document_path ?? null };
     const { data: isAdmin, error: roleError } = await caller.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (roleError) throw roleError;
     if (shop.owner_id !== user.id && !isAdmin) return json({ error: "Not permitted" }, 403);

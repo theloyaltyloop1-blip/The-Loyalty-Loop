@@ -47,10 +47,7 @@ export interface Business {
   features: string[] | null
   halal_certifier: string | null
   verification_status: 'unverified' | 'pending' | 'verified' | 'rejected'
-  verification_document_path: string | null
-  verification_document_label: string | null
   verification_submitted_at: string | null
-  verification_rejection_reason: string | null
   is_active: boolean
   whatsapp_onboarding_enabled: boolean
   trending: boolean
@@ -851,6 +848,22 @@ export async function redeemReward(rewardId: string) {
 
 const MAX_DOC_BYTES = 10 * 1024 * 1024
 const ALLOWED_DOC_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
+
+/** Owner/admin-only shop details, kept out of the publicly readable shop row. */
+export interface BusinessPrivate {
+  verification_document_label: string | null
+  verification_rejection_reason: string | null
+}
+
+export async function fetchBusinessPrivate(businessId: string): Promise<BusinessPrivate | null> {
+  const { data, error } = await supabase
+    .from('business_private')
+    .select('verification_document_label,verification_rejection_reason')
+    .eq('business_id', businessId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
 
 /** Uploads a proof-of-business document to the private
  * owner_verification_docs bucket at `{auth.uid()}/{businessId}-{timestamp}.{ext}`

@@ -21,6 +21,8 @@ import {
   fetchWinbackLog,
   triggerWinbackEmails,
   submitVerificationDocument,
+  fetchBusinessPrivate,
+  type BusinessPrivate,
   fetchStaffMembers,
   inviteStaffMember,
   setStaffStatus,
@@ -1480,6 +1482,15 @@ function VerificationTab() {
   const [label, setLabel] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [details, setDetails] = React.useState<BusinessPrivate | null>(null)
+  const businessId = business?.id
+  const verificationStatus = business?.verification_status
+  React.useEffect(() => {
+    if (!businessId) return
+    let active = true
+    fetchBusinessPrivate(businessId).then(d => { if (active) setDetails(d) }).catch(() => {})
+    return () => { active = false }
+  }, [businessId, verificationStatus])
 
   if (!business || !session) return null
 
@@ -1496,9 +1507,9 @@ function VerificationTab() {
       const updated = await submitVerificationDocument(business!.id, session!.user.id, file, label.trim())
       updateLocalBusiness({
         verification_status: updated.verification_status,
-        verification_document_label: updated.verification_document_label,
         verification_submitted_at: updated.verification_submitted_at,
       })
+      setDetails(d => ({ verification_rejection_reason: null, ...d, verification_document_label: label.trim() }))
       setFile(null)
       setLabel('')
       if (inputRef.current) inputRef.current.value = ''
@@ -1522,12 +1533,12 @@ function VerificationTab() {
           <div>
             <p className="font-display text-lg font-semibold tracking-tight text-foreground">{meta.label}</p>
             <p className="text-xs text-muted-foreground">
-              {status === 'verified' && business.verification_document_label
-                ? `Verified from ${business.verification_document_label}`
+              {status === 'verified' && details?.verification_document_label
+                ? `Verified from ${details.verification_document_label}`
                 : status === 'pending'
                   ? 'An admin will review your document soon.'
                   : status === 'rejected'
-                    ? business.verification_rejection_reason ?? 'Your submission was rejected. Resubmit below.'
+                    ? details?.verification_rejection_reason ?? 'Your submission was rejected. Resubmit below.'
                     : 'Upload a document to earn the verified badge.'}
             </p>
           </div>
