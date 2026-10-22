@@ -1454,7 +1454,8 @@ function ShopDetail({
         ) : null}
 
         {membership ? (
-          <View style={styles.loyaltyCard} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
+          <>
+          <View style={styles.designedCardWrap} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
               <LoyaltyCard
                 shop={business}
                 value={programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? Math.round(tierStanding(tiers, rollingSpend).fraction * 100) : 0) : programmeId === 'points' ? (pointsView.next ? Math.round(pointsView.fraction * 100) : 100) : value}
@@ -1464,6 +1465,8 @@ function ShopDetail({
                 stamps={!spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '')}
                 animate
               />
+            </View>
+          <View style={styles.loyaltyCard}>
             {programmeId === 'points' && pointsView.next ? <Text style={styles.spendHint}>{pointsView.label}</Text> : null}
             {spendShop ? (
               <Text style={styles.spendHint}>
@@ -1491,6 +1494,7 @@ function ShopDetail({
               <Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: primary }} />
             </View>
           </View>
+          </>
         ) : null}
 
         <HowItWorks
@@ -2757,6 +2761,7 @@ const styles = StyleSheet.create({
   rewardTierThreshold: { color: foreground, fontSize: 13, fontWeight: '800' },
   rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 16 },
 
+  designedCardWrap: { marginTop: 20 },
   loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#000000' },
