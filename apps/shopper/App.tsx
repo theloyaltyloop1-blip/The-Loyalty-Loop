@@ -1,5 +1,6 @@
 import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { LoyaltyCard } from "../../packages/card-design/LoyaltyCard";
+import { ShopBackdrop, ShopSkinProvider, cardFrame, shopSkin, skinStyles } from "../../packages/card-design/skin";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
@@ -1405,19 +1406,28 @@ function ShopDetail({
     }
   }
 
+  const skin = useMemo(() => shopSkin(business), [business.card_design, business.category, business.brand_color])
+  // The whole page wears the shop's design; the QR tile stays black on white so it scans.
+  const ss = useMemo(() => {
+    const skinned = skinStyles(styles, skin, { keep: ['qrText', 'pressed', 'disabled', 'nativeMap', 'mapEmbed', 'shortCard', 'shortImage', 'shortOverlay', 'shortShopName', 'shortIndex', 'favouriteButton'], clear: ['screen'] })
+    return { ...skinned, qrWrap: [styles.qrWrap, { backgroundColor: '#FFFFFF', alignSelf: 'center' as const, padding: 16, borderRadius: 18 }] }
+  }, [skin])
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAwareScrollView ref={scrollRef} contentContainerStyle={styles.screen}>
-        <Pressable onPress={onBack} style={styles.backRow}>
-          <ChevronLeftIcon size={18} />
-          <Text style={styles.back}>Back</Text>
+    <ShopSkinProvider value={skin}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: skin.bg }]}>
+      <StatusBar barStyle={skin.dark ? 'light-content' : 'dark-content'} />
+      <ShopBackdrop skin={skin} />
+      <KeyboardAwareScrollView ref={scrollRef} contentContainerStyle={ss.screen}>
+        <Pressable onPress={onBack} style={ss.backRow}>
+          <ChevronLeftIcon size={18} color={skin.ink} />
+          <Text style={ss.back}>Back</Text>
         </Pressable>
 
         <ShopHero
           business={business}
           favouriteButton={
-            <Pressable onPress={onToggleFavourite} style={({ pressed }) => [styles.favouriteButton, pressed && styles.pressed]}>
-              <HeartIcon color={favourite ? primary : foreground} filled={favourite} size={18} />
+            <Pressable onPress={onToggleFavourite} style={({ pressed }) => [ss.favouriteButton, pressed && ss.pressed]}>
+              <HeartIcon color={favourite ? skin.accent : skin.ink} filled={favourite} size={18} />
             </Pressable>
           }
           ratingText={pageRating || null}
@@ -1428,16 +1438,16 @@ function ShopDetail({
           onJoin={join}
           onYourCard={() => scrollRef.current?.scrollTo({ y: Math.max(0, cardY.current - 12), animated: true })}
         />
-        {business.description ? <Text style={styles.description}>{business.description}</Text> : null}
+        {business.description ? <Text style={ss.description}>{business.description}</Text> : null}
 
         {cardLinking.enabled && cardLinking.linkedShopIds.has(business.id) ? (
           cardLinking.cards.length === 0 ? (
-            <View style={styles.autoEarnCard}>
-              <View style={styles.autoEarnRow}>
+            <View style={ss.autoEarnCard}>
+              <View style={ss.autoEarnRow}>
                 <BoltIcon color="#c77c12" size={16} />
-                <Text style={styles.autoEarnTitle}>Earn automatically here</Text>
+                <Text style={ss.autoEarnTitle}>Earn automatically here</Text>
               </View>
-              <Text style={styles.autoEarnCopy}>Link the card you pay with. When you use it here, your progress updates by itself.</Text>
+              <Text style={ss.autoEarnCopy}>Link the card you pay with. When you use it here, your progress updates by itself.</Text>
               <Button
                 secondary
                 title={cardLinking.stage === 'preparing' ? 'Preparing…' : cardLinking.stage === 'verifying' ? 'Checking your card…' : 'Link a card'}
@@ -1446,16 +1456,16 @@ function ShopDetail({
               />
             </View>
           ) : (
-            <View style={styles.autoEarnChip}>
+            <View style={ss.autoEarnChip}>
               <BoltIcon color="#c77c12" size={14} />
-              <Text style={styles.autoEarnChipText}>Pay with a linked card to earn automatically</Text>
+              <Text style={ss.autoEarnChipText}>Pay with a linked card to earn automatically</Text>
             </View>
           )
         ) : null}
 
         {membership ? (
           <>
-          <View style={styles.designedCardWrap} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
+          <View style={[ss.designedCardWrap, cardFrame(skin)]} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
               <LoyaltyCard
                 shop={business}
                 value={programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? Math.round(tierStanding(tiers, rollingSpend).fraction * 100) : 0) : programmeId === 'points' ? (pointsView.next ? Math.round(pointsView.fraction * 100) : 100) : value}
@@ -1466,32 +1476,32 @@ function ShopDetail({
                 animate
               />
             </View>
-          <View style={styles.loyaltyCard}>
-            {programmeId === 'points' && pointsView.next ? <Text style={styles.spendHint}>{pointsView.label}</Text> : null}
+          <View style={ss.loyaltyCard}>
+            {programmeId === 'points' && pointsView.next ? <Text style={ss.spendHint}>{pointsView.label}</Text> : null}
             {spendShop ? (
-              <Text style={styles.spendHint}>
+              <Text style={ss.spendHint}>
                 {membership.redemption_blocked_reason
                   ? 'Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.'
                   : `Spend ${pounds(Math.max(0, threshold - value), business.country_code)} more here to unlock ${nextTier?.title ?? 'your next reward'}.`}
               </Text>
             ) : null}
-            <View style={styles.qrWrap}>
+            <View style={ss.qrWrap}>
               <QRCode value={`loyaltyloop:customer:${userId}`} size={150} />
-              <Text style={styles.qrText}>Show this QR code when you pay</Text>
+              <Text style={ss.qrText}>Show this QR code when you pay</Text>
             </View>
-            <Text style={styles.manualCodeLabel}>OR ENTER THIS CODE</Text>
-            <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
-            <Pressable onPress={addToWallet} disabled={addingToWallet} style={({ pressed }) => [styles.walletButton, addingToWallet && styles.disabled, pressed && styles.pressed]}>
+            <Text style={ss.manualCodeLabel}>OR ENTER THIS CODE</Text>
+            <Text selectable style={ss.manualCode}>{stampCode || 'Loading…'}</Text>
+            <Pressable onPress={addToWallet} disabled={addingToWallet} style={({ pressed }) => [ss.walletButton, addingToWallet && ss.disabled, pressed && ss.pressed]}>
               <WalletIcon size={17} />
-              <Text style={styles.walletButtonText}>{addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'}</Text>
+              <Text style={ss.walletButtonText}>{addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'}</Text>
             </Pressable>
-            <View style={styles.shopNotifyRow}>
-              <BellIcon color={primary} size={18} />
-              <View style={styles.settingsRowBody}>
-                <Text style={styles.shopNotifyTitle}>News & offers from {business.name}</Text>
-                <Text style={styles.shopNotifyCopy}>Get a notification when they post an announcement</Text>
+            <View style={ss.shopNotifyRow}>
+              <BellIcon color={skin.accent} size={18} />
+              <View style={ss.settingsRowBody}>
+                <Text style={ss.shopNotifyTitle}>News & offers from {business.name}</Text>
+                <Text style={ss.shopNotifyCopy}>Get a notification when they post an announcement</Text>
               </View>
-              <Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: primary }} />
+              <Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: skin.accent }} />
             </View>
           </View>
           </>
@@ -1507,15 +1517,15 @@ function ShopDetail({
           refresh={refresh}
         />
 
-        {mapDestination ? <View style={styles.visitSection}>
-          <Text style={styles.sectionTitle}>Find your way there</Text>
+        {mapDestination ? <View style={ss.visitSection}>
+          <Text style={ss.sectionTitle}>Find your way there</Text>
           {hasMapCoordinates ? (
-            <View style={styles.mapEmbed}>
+            <View style={ss.mapEmbed}>
               <MapView
                 customMapStyle={QUIET_MAP_STYLE}
                 showsPointsOfInterest={false}
                 provider={PROVIDER_GOOGLE}
-                style={styles.nativeMap}
+                style={ss.nativeMap}
                 initialRegion={{
                   latitude: business.lat!,
                   longitude: business.lng!,
@@ -1529,46 +1539,46 @@ function ShopDetail({
               </MapView>
             </View>
           ) : null}
-          <Text style={styles.mapAddress}>{business.address || 'Open Google Maps for directions'}</Text>
-          <Pressable onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`)} style={({ pressed }) => [styles.directionsButton, pressed && styles.pressed]}>
-            <Text style={styles.directionsButtonText}>Get directions in Google Maps →</Text>
+          <Text style={ss.mapAddress}>{business.address || 'Open Google Maps for directions'}</Text>
+          <Pressable onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`)} style={({ pressed }) => [ss.directionsButton, pressed && ss.pressed]}>
+            <Text style={ss.directionsButtonText}>Get directions in Google Maps →</Text>
           </Pressable>
         </View> : null}
 
-        {(business.phone || socialLinks.length > 0) ? <View style={styles.visitSection}>
-          <Text style={styles.sectionTitle}>Stay connected</Text>
-          <View style={styles.contactList}>
-            {business.phone && <Pressable onPress={() => void Linking.openURL(`tel:${business.phone}`)} style={styles.contactRow}><Text style={styles.contactLabel}>Call the shop</Text><Text style={styles.contactValue}>{business.phone}</Text></Pressable>}
-            {socialLinks.map((link) => <Pressable key={link.label} onPress={() => void Linking.openURL(link.url)} style={styles.contactRow}><Text style={styles.contactLabel}>{link.label}</Text><Text numberOfLines={1} style={styles.contactValue}>{link.value}</Text></Pressable>)}
+        {(business.phone || socialLinks.length > 0) ? <View style={ss.visitSection}>
+          <Text style={ss.sectionTitle}>Stay connected</Text>
+          <View style={ss.contactList}>
+            {business.phone && <Pressable onPress={() => void Linking.openURL(`tel:${business.phone}`)} style={ss.contactRow}><Text style={ss.contactLabel}>Call the shop</Text><Text style={ss.contactValue}>{business.phone}</Text></Pressable>}
+            {socialLinks.map((link) => <Pressable key={link.label} onPress={() => void Linking.openURL(link.url)} style={ss.contactRow}><Text style={ss.contactLabel}>{link.label}</Text><Text numberOfLines={1} style={ss.contactValue}>{link.value}</Text></Pressable>)}
           </View>
         </View> : null}
 
-        {business.opening_hours && Object.keys(business.opening_hours).length > 0 ? <View style={styles.visitSection}>
-          <Text style={styles.sectionTitle}>Opening hours</Text>
+        {business.opening_hours && Object.keys(business.opening_hours).length > 0 ? <View style={ss.visitSection}>
+          <Text style={ss.sectionTitle}>Opening hours</Text>
           <OpeningHoursList hours={business.opening_hours} />
         </View> : null}
 
-        {membership && gallery.length > 0 && <View style={styles.gallerySection}>
-          <View style={styles.galleryHeading}><View><Text style={styles.sectionTitle}>From the shop</Text><Text style={styles.gallerySubheading}>Scroll through their latest moments</Text></View><Text style={styles.galleryCount}>{gallery.length} photos</Text></View>
-          <View style={styles.shortsFeed}>
-            {gallery.map((photo, index) => <View key={photo.id} style={styles.shortCard}>
-              <Image source={{ uri: photo.url }} style={styles.shortImage} resizeMode="cover" />
-              <View style={styles.shortOverlay}><Text style={styles.shortIndex}>{String(index + 1).padStart(2, '0')} / {String(gallery.length).padStart(2, '0')}</Text><Text style={styles.shortShopName}>{business.name}</Text></View>
+        {membership && gallery.length > 0 && <View style={ss.gallerySection}>
+          <View style={ss.galleryHeading}><View><Text style={ss.sectionTitle}>From the shop</Text><Text style={ss.gallerySubheading}>Scroll through their latest moments</Text></View><Text style={ss.galleryCount}>{gallery.length} photos</Text></View>
+          <View style={ss.shortsFeed}>
+            {gallery.map((photo, index) => <View key={photo.id} style={ss.shortCard}>
+              <Image source={{ uri: photo.url }} style={ss.shortImage} resizeMode="cover" />
+              <View style={ss.shortOverlay}><Text style={ss.shortIndex}>{String(index + 1).padStart(2, '0')} / {String(gallery.length).padStart(2, '0')}</Text><Text style={ss.shortShopName}>{business.name}</Text></View>
             </View>)}
           </View>
         </View>}
 
-        <View style={styles.reviewsSection}>
-          <Text style={styles.sectionTitle}>Reviews</Text>
+        <View style={ss.reviewsSection}>
+          <Text style={ss.sectionTitle}>Reviews</Text>
           {!membership ? (
-            <Text style={styles.reviewHint}>Join this loyalty card to share your experience.</Text>
+            <Text style={ss.reviewHint}>Join this loyalty card to share your experience.</Text>
           ) : (
-            <View style={styles.reviewComposer}>
-              <Text style={styles.reviewComposerTitle}>{myReview ? 'Update your review' : 'Share your experience'}</Text>
-              <View style={styles.starRow}>
+            <View style={ss.reviewComposer}>
+              <Text style={ss.reviewComposerTitle}>{myReview ? 'Update your review' : 'Share your experience'}</Text>
+              <View style={ss.starRow}>
                 {[1, 2, 3, 4, 5].map((rating) => (
-                  <Pressable key={rating} onPress={() => setReviewRating(rating)} hitSlop={8} style={styles.starButton}>
-                    <Text style={[styles.star, rating <= reviewRating && styles.starSelected]}>★</Text>
+                  <Pressable key={rating} onPress={() => setReviewRating(rating)} hitSlop={8} style={ss.starButton}>
+                    <Text style={[ss.star, rating <= reviewRating && ss.starSelected]}>★</Text>
                   </Pressable>
                 ))}
               </View>
@@ -1579,41 +1589,41 @@ function ShopDetail({
                 placeholderTextColor="#000000"
                 multiline
                 maxLength={2000}
-                style={styles.reviewInput}
+                style={ss.reviewInput}
               />
               <Button title={savingReview ? 'Saving…' : myReview ? 'Update review' : 'Post review'} onPress={saveReview} disabled={savingReview} />
-              {myReview && <Pressable onPress={deleteReview} disabled={savingReview}><Text style={styles.deleteReview}>Delete review</Text></Pressable>}
+              {myReview && <Pressable onPress={deleteReview} disabled={savingReview}><Text style={ss.deleteReview}>Delete review</Text></Pressable>}
             </View>
           )}
 
           {reviewsLoading ? (
             <ActivityIndicator color={primary} style={{ marginTop: 20 }} />
           ) : reviews.length === 0 ? (
-            <Text style={styles.reviewHint}>Be the first to review this shop.</Text>
+            <Text style={ss.reviewHint}>Be the first to review this shop.</Text>
           ) : (
-            <View style={styles.reviewList}>
+            <View style={ss.reviewList}>
               {reviews.map((review) => (
-                <View key={review.id} style={styles.reviewItem}>
-                  <View style={styles.reviewHeaderRow}>
-                    <Text style={styles.reviewAuthor}>{review.user_id === userId ? 'You' : 'Neighbour'}</Text>
-                    <Text style={styles.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</Text>
+                <View key={review.id} style={ss.reviewItem}>
+                  <View style={ss.reviewHeaderRow}>
+                    <Text style={ss.reviewAuthor}>{review.user_id === userId ? 'You' : 'Neighbour'}</Text>
+                    <Text style={ss.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</Text>
                   </View>
-                  <Text style={styles.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</Text>
-                  {!!review.body && <Text style={styles.reviewBody}>{review.body}</Text>}
+                  <Text style={ss.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</Text>
+                  {!!review.body && <Text style={ss.reviewBody}>{review.body}</Text>}
                   {reviewReply(review) && (
-                    <View style={[styles.reviewReply, { borderLeftColor: business.brand_color || primary }]}>
-                      <Text style={styles.reviewReplyTitle}>Reply from {business.name}</Text>
-                      <Text style={styles.reviewBody}>{reviewReply(review)?.body}</Text>
+                    <View style={[ss.reviewReply, { borderLeftColor: business.brand_color || primary }]}>
+                      <Text style={ss.reviewReplyTitle}>Reply from {business.name}</Text>
+                      <Text style={ss.reviewBody}>{reviewReply(review)?.body}</Text>
                     </View>
                   )}
                   {review.user_id !== userId && (
-                    <View style={styles.reviewModRow}>
+                    <View style={ss.reviewModRow}>
                       <Pressable onPress={() => reportReview(review)} hitSlop={8}>
-                        <Text style={styles.reviewModLink}>Report</Text>
+                        <Text style={ss.reviewModLink}>Report</Text>
                       </Pressable>
-                      <Text style={styles.reviewModDot}>·</Text>
+                      <Text style={ss.reviewModDot}>·</Text>
                       <Pressable onPress={() => blockAuthor(review)} hitSlop={8}>
-                        <Text style={styles.reviewModLink}>Block this person</Text>
+                        <Text style={ss.reviewModLink}>Block this person</Text>
                       </Pressable>
                     </View>
                   )}
@@ -1625,6 +1635,7 @@ function ShopDetail({
       </KeyboardAwareScrollView>
       <SuccessCheck visible={showStampSuccess} onFinished={() => setShowStampSuccess(false)} />
     </SafeAreaView>
+    </ShopSkinProvider>
   )
 }
 

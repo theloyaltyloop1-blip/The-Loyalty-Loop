@@ -4,6 +4,7 @@ import { PROGRAMMES, pointsStanding, programmeIdFor, tierStanding, type PointsRe
 import { showAlert } from './components/AppAlert'
 import { supabase } from './supabase'
 import { colors } from './theme'
+import { useShopSkin, useSkinStyles } from '../../../packages/card-design/skin'
 
 const { primary } = colors
 
@@ -48,16 +49,17 @@ export function openStatus(hours: OpeningHours | null | undefined, now = new Dat
 }
 
 export function OpeningHoursList({ hours }: { hours: OpeningHours }) {
+  const st = useSkinStyles(styles)
   const today = DAYS[(new Date().getDay() + 6) % 7].key
   return (
-    <View style={styles.hoursList}>
+    <View style={st.hoursList}>
       {DAYS.map(({ key, label }) => {
         const day = hours[key]
         const isToday = key === today
         return (
-          <View key={key} style={styles.hoursRow}>
-            <Text style={[styles.hoursDay, isToday && styles.hoursToday]}>{label}</Text>
-            <Text style={[styles.hoursTime, isToday && styles.hoursToday]}>
+          <View key={key} style={st.hoursRow}>
+            <Text style={[st.hoursDay, isToday && st.hoursToday]}>{label}</Text>
+            <Text style={[st.hoursTime, isToday && st.hoursToday]}>
               {!day || day.closed ? 'Closed' : `${formatTime(day.open)} to ${formatTime(day.close)}`}
             </Text>
           </View>
@@ -103,39 +105,41 @@ export function ShopHero({
   onJoin: () => void
   onYourCard: () => void
 }) {
-  const brand = business.brand_color || primary
+  const st = useSkinStyles(styles)
+  const skin = useShopSkin()
+  const brand = skin?.accent ?? (business.brand_color || primary)
   const status = openStatus(business.opening_hours)
   const chips = [business.category || 'Local business', ...featureLabels]
   return (
-    <View style={styles.hero}>
-      <View style={[styles.cover, { backgroundColor: brand }]}>
+    <View style={st.hero}>
+      <View style={[st.cover, { backgroundColor: brand }]}>
         {business.cover_url ? <Image source={{ uri: business.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
         {favouriteButton}
       </View>
-      <View style={styles.heroBody}>
-        <View style={[styles.logo, { backgroundColor: brand }]}>
+      <View style={st.heroBody}>
+        <View style={[st.logo, { backgroundColor: brand }]}>
           {business.logo_url ? (
-            <Image source={{ uri: business.logo_url }} style={styles.logoImage} />
+            <Image source={{ uri: business.logo_url }} style={st.logoImage} />
           ) : (
-            <Text style={styles.logoLetter}>{business.name.charAt(0).toUpperCase()}</Text>
+            <Text style={st.logoLetter}>{business.name.charAt(0).toUpperCase()}</Text>
           )}
         </View>
-        <Text style={styles.name}>{business.name}</Text>
-        <View style={styles.chipRow}>
+        <Text style={st.name}>{business.name}</Text>
+        <View style={st.chipRow}>
           {chips.map((chip) => (
-            <View key={chip} style={styles.chip}><Text style={styles.chipText}>{chip}</Text></View>
+            <View key={chip} style={st.chip}><Text style={st.chipText}>{chip}</Text></View>
           ))}
         </View>
-        <View style={styles.metaRow}>
+        <View style={st.metaRow}>
           {ratingText ? (
-            <Text style={styles.metaText}>
-              {ratingText} <Text style={styles.metaLight}>({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</Text>
+            <Text style={st.metaText}>
+              {ratingText} <Text style={st.metaLight}>({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</Text>
             </Text>
           ) : null}
           {status ? (
-            <View style={[styles.statusPill, status.open ? styles.statusOpen : styles.statusClosed]}>
-              <View style={[styles.statusDot, { backgroundColor: status.open ? '#2F8A4C' : '#B73B32' }]} />
-              <Text style={styles.statusText}>{status.label}</Text>
+            <View style={[st.statusPill, status.open ? st.statusOpen : st.statusClosed]}>
+              <View style={[st.statusDot, { backgroundColor: status.open ? '#2F8A4C' : '#B73B32' }]} />
+              <Text style={st.statusText}>{status.label}</Text>
             </View>
           ) : null}
         </View>
@@ -143,9 +147,9 @@ export function ShopHero({
           accessibilityRole="button"
           onPress={isMember ? onYourCard : onJoin}
           disabled={joining}
-          style={({ pressed }) => [styles.cta, { backgroundColor: brand }, joining && { opacity: 0.6 }, pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] }]}
+          style={({ pressed }) => [st.cta, { backgroundColor: brand }, joining && { opacity: 0.6 }, pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] }]}
         >
-          <Text style={[styles.ctaText, { color: readableOn(brand) }]}>{joining ? 'Joining…' : isMember ? 'Your card' : 'Join card'}</Text>
+          <Text style={[st.ctaText, { color: readableOn(brand) }]}>{joining ? 'Joining…' : isMember ? 'Your card' : 'Join card'}</Text>
         </Pressable>
       </View>
     </View>
@@ -216,13 +220,14 @@ export function HowItWorks({
   money: (pence: number) => string
   refresh: () => Promise<void>
 }) {
+  const st = useSkinStyles(styles)
   const brand = business.brand_color || primary
   const programme = PROGRAMMES[programmeIdFor(business)]
   return (
-    <View style={styles.how}>
-      <Text style={styles.howEyebrow}>HOW IT WORKS</Text>
-      <Text style={styles.howTitle}>{programme.name}</Text>
-      <Text style={styles.howPitch}>{programme.pitch}</Text>
+    <View style={st.how}>
+      <Text style={st.howEyebrow}>HOW IT WORKS</Text>
+      <Text style={st.howTitle}>{programme.name}</Text>
+      <Text style={st.howPitch}>{programme.pitch}</Text>
       {programme.id === 'stamps' ? <StampsHow business={business} membership={membership} catalog={catalog} brand={brand} /> : null}
       {programme.id === 'spend' ? <SpendHow business={business} membership={membership} catalog={catalog} brand={brand} money={money} /> : null}
       {programme.id === 'tiers' ? <TiersHow membership={membership} tiers={tiers} rollingSpendPence={rollingSpendPence} brand={brand} money={money} /> : null}
@@ -232,13 +237,14 @@ export function HowItWorks({
 }
 
 function StampsHow({ business, membership, catalog, brand }: { business: HowBusiness; membership: HowMembership; catalog: CatalogRow[]; brand: string }) {
+  const st = useSkinStyles(styles)
   const unit = business.loyalty_type === 'points' ? 'point' : business.loyalty_type === 'tiered' ? 'visit' : 'stamp'
   const required = Math.max(1, Math.min(20, catalog[0]?.stamp_threshold ?? business.loyalty_config?.stamps_required ?? 10))
   const have = business.loyalty_type === 'points' ? membership?.points_balance ?? 0 : membership?.stamp_count ?? 0
   const reward = catalog[0]?.title ?? 'a reward'
   return (
     <View>
-      <View style={styles.stampRow}>
+      <View style={st.stampRow}>
         {Array.from({ length: required }).map((_, i) => {
           const last = i === required - 1
           const filled = i < have
@@ -246,22 +252,22 @@ function StampsHow({ business, membership, catalog, brand }: { business: HowBusi
             <View
               key={i}
               style={[
-                styles.stamp,
+                st.stamp,
                 filled ? { backgroundColor: brand, borderColor: brand } : last ? { borderColor: brand, borderStyle: 'dashed' } : null,
               ]}
             >
-              <Text style={[styles.stampText, filled && { color: readableOn(brand) }]}>{last ? '★' : i + 1}</Text>
+              <Text style={[st.stampText, filled && { color: readableOn(brand) }]}>{last ? '★' : i + 1}</Text>
             </View>
           )
         })}
       </View>
-      <Text style={styles.howLine}>Collect {required} {unit}{required === 1 ? '' : 's'} and get {reward}.</Text>
+      <Text style={st.howLine}>Collect {required} {unit}{required === 1 ? '' : 's'} and get {reward}.</Text>
       {catalog.length > 1 ? (
-        <View style={styles.rowList}>
+        <View style={st.rowList}>
           {catalog.map((reward) => (
-            <View key={reward.id} style={styles.listRow}>
-              <Text style={styles.listRowStrong}>{reward.stamp_threshold} {unit}{reward.stamp_threshold === 1 ? '' : 's'}</Text>
-              <Text style={styles.listRowText}>{reward.title}</Text>
+            <View key={reward.id} style={st.listRow}>
+              <Text style={st.listRowStrong}>{reward.stamp_threshold} {unit}{reward.stamp_threshold === 1 ? '' : 's'}</Text>
+              <Text style={st.listRowText}>{reward.title}</Text>
             </View>
           ))}
         </View>
@@ -271,38 +277,40 @@ function StampsHow({ business, membership, catalog, brand }: { business: HowBusi
 }
 
 function SpendHow({ business, membership, catalog, brand, money }: { business: HowBusiness; membership: HowMembership; catalog: CatalogRow[]; brand: string; money: (pence: number) => string }) {
+  const st = useSkinStyles(styles)
   const rungs = catalog.filter((r) => (r.spend_threshold_pence ?? 0) > 0).sort((a, b) => (a.spend_threshold_pence as number) - (b.spend_threshold_pence as number))
   const progress = Math.max(0, membership?.reward_progress_pence ?? 0)
   const next = rungs.find((r) => (r.spend_threshold_pence as number) > progress) ?? rungs[rungs.length - 1]
   return (
     <View>
-      <View style={styles.rowList}>
+      <View style={st.rowList}>
         {rungs.map((reward) => {
           const reached = membership && (reward.spend_threshold_pence as number) <= progress
           return (
-            <View key={reward.id} style={[styles.listRow, reached && { backgroundColor: brand }]}>
-              <Text style={[styles.listRowStrong, reached && { color: readableOn(brand) }]}>Spend {money(reward.spend_threshold_pence as number).replace(/\.00$/, '')}</Text>
-              <Text style={[styles.listRowText, reached && { color: readableOn(brand) }]}>{reward.title}</Text>
+            <View key={reward.id} style={[st.listRow, reached && { backgroundColor: brand }]}>
+              <Text style={[st.listRowStrong, reached && { color: readableOn(brand) }]}>Spend {money(reward.spend_threshold_pence as number).replace(/\.00$/, '')}</Text>
+              <Text style={[st.listRowText, reached && { color: readableOn(brand) }]}>{reward.title}</Text>
             </View>
           )
         })}
       </View>
       {membership && next ? (
-        <Text style={styles.howLine}>
+        <Text style={st.howLine}>
           {(next.spend_threshold_pence as number) > progress
             ? `Spend ${money((next.spend_threshold_pence as number) - progress)} more to unlock ${next.title}.`
             : 'You have unlocked every reward in this round. A new round starts with your next purchase.'}
         </Text>
       ) : (
-        <Text style={styles.howLine}>Staff add what you spend when you pay. Rewards appear in your wallet as you unlock them.</Text>
+        <Text style={st.howLine}>Staff add what you spend when you pay. Rewards appear in your wallet as you unlock them.</Text>
       )}
     </View>
   )
 }
 
 function TiersHow({ membership, tiers, rollingSpendPence, brand, money }: { membership: HowMembership; tiers: TierRow[]; rollingSpendPence: number | null; brand: string; money: (pence: number) => string }) {
+  const st = useSkinStyles(styles)
   const ladder = tiers.slice().sort((a, b) => a.spend_threshold_pence - b.spend_threshold_pence)
-  if (!ladder.length) return <Text style={styles.howLine}>This shop's levels are being set up.</Text>
+  if (!ladder.length) return <Text style={st.howLine}>This shop's levels are being set up.</Text>
   // The level comes from the member's own row (current_tier_id, kept by the database).
   // The distance to the next level uses their own spend over the last 12 months, and
   // is only shown when that could be read: no figure is guessed.
@@ -311,24 +319,24 @@ function TiersHow({ membership, tiers, rollingSpendPence, brand, money }: { memb
   const next = currentIndex >= 0 ? ladder[currentIndex + 1] ?? null : ladder[0]
   return (
     <View>
-      <View style={styles.rowList}>
+      <View style={st.rowList}>
         {ladder.map((tier, index) => {
           const here = index === currentIndex
           const reached = index <= currentIndex
           const colour = tier.colour || brand
           return (
-            <View key={tier.id} style={[styles.tierCard, here && { borderColor: colour, borderWidth: 2 }]}>
-              <View style={styles.tierHead}>
-                <View style={[styles.tierDot, { backgroundColor: colour }]} />
-                <Text style={styles.tierName}>{tier.name}</Text>
-                {here ? <View style={[styles.youPill, { backgroundColor: colour }]}><Text style={[styles.youPillText, { color: readableOn(colour) }]}>You are here</Text></View> : null}
-                {!here && reached ? <Text style={styles.reachedText}>Reached</Text> : null}
+            <View key={tier.id} style={[st.tierCard, here && { borderColor: colour, borderWidth: 2 }]}>
+              <View style={st.tierHead}>
+                <View style={[st.tierDot, { backgroundColor: colour }]} />
+                <Text style={st.tierName}>{tier.name}</Text>
+                {here ? <View style={[st.youPill, { backgroundColor: colour }]}><Text style={[st.youPillText, { color: readableOn(colour) }]}>You are here</Text></View> : null}
+                {!here && reached ? <Text style={st.reachedText}>Reached</Text> : null}
               </View>
-              <Text style={styles.tierThreshold}>{tier.spend_threshold_pence === 0 ? 'Everyone starts here' : `Spend ${money(tier.spend_threshold_pence).replace(/\.00$/, '')} in a year`}</Text>
+              <Text style={st.tierThreshold}>{tier.spend_threshold_pence === 0 ? 'Everyone starts here' : `Spend ${money(tier.spend_threshold_pence).replace(/\.00$/, '')} in a year`}</Text>
               {tier.perks?.length ? (
-                <View style={styles.perkList}>
+                <View style={st.perkList}>
                   {tier.perks.map((perk) => (
-                    <Text key={perk} style={styles.perk}>✓  {perk}</Text>
+                    <Text key={perk} style={st.perk}>✓  {perk}</Text>
                   ))}
                 </View>
               ) : null}
@@ -337,7 +345,7 @@ function TiersHow({ membership, tiers, rollingSpendPence, brand, money }: { memb
         })}
       </View>
       {membership ? (
-        <Text style={styles.howLine}>
+        <Text style={st.howLine}>
           {!next
             ? 'You are on the top level. Keep it by spending here through the year.'
             : standing && standing.next && standing.toNextPence != null
@@ -345,13 +353,14 @@ function TiersHow({ membership, tiers, rollingSpendPence, brand, money }: { memb
               : `Next level: ${next.name}, at ${money(next.spend_threshold_pence).replace(/\.00$/, '')} spent in a year.`}
         </Text>
       ) : (
-        <Text style={styles.howLine}>Join, then every purchase counts towards your level for the next 12 months.</Text>
+        <Text style={st.howLine}>Join, then every purchase counts towards your level for the next 12 months.</Text>
       )}
     </View>
   )
 }
 
 function PointsHow({ business, membership, catalog, brand, refresh }: { business: HowBusiness; membership: HowMembership; catalog: CatalogRow[]; brand: string; refresh: () => Promise<void> }) {
+  const st = useSkinStyles(styles)
   const rewards: PointsReward[] = catalog.filter((r) => (r.points_cost ?? 0) > 0).map((r) => ({ id: r.id, title: r.title, points_cost: r.points_cost as number }))
   const standing = pointsStanding(business, membership?.points_balance ?? 0, rewards)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -394,38 +403,38 @@ function PointsHow({ business, membership, catalog, brand, refresh }: { business
 
   return (
     <View>
-      <View style={styles.pointsBox}>
-        <Text style={styles.pointsBalance}>{membership ? standing.balance : standing.perPound}</Text>
-        <Text style={styles.pointsLabel}>{membership ? (standing.balance === 1 ? 'point' : 'points') : `point${standing.perPound === 1 ? '' : 's'} for every £1`}</Text>
+      <View style={st.pointsBox}>
+        <Text style={st.pointsBalance}>{membership ? standing.balance : standing.perPound}</Text>
+        <Text style={st.pointsLabel}>{membership ? (standing.balance === 1 ? 'point' : 'points') : `point${standing.perPound === 1 ? '' : 's'} for every £1`}</Text>
       </View>
-      <Text style={styles.howLine}>
+      <Text style={st.howLine}>
         You earn {standing.perPound} point{standing.perPound === 1 ? '' : 's'} for every £1 you spend here.
         {membership && standing.next && standing.toNext != null ? ` ${standing.toNext} more to get ${standing.next.title}.` : ''}
       </Text>
-      <View style={styles.rowList}>
+      <View style={st.rowList}>
         {rewards.map((reward) => {
           const can = Boolean(membership) && standing.balance >= reward.points_cost
           return (
-            <View key={reward.id} style={styles.listRow}>
+            <View key={reward.id} style={st.listRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.listRowText}>{reward.title}</Text>
-                <Text style={styles.listRowStrong}>{reward.points_cost} points</Text>
+                <Text style={st.listRowText}>{reward.title}</Text>
+                <Text style={st.listRowStrong}>{reward.points_cost} points</Text>
               </View>
               {membership ? (
                 <Pressable
                   accessibilityRole="button"
                   disabled={!can || busyId !== null}
                   onPress={() => void redeem(reward)}
-                  style={({ pressed }) => [styles.getButton, { backgroundColor: can ? brand : '#E4E2DA' }, pressed && { opacity: 0.8 }]}
+                  style={({ pressed }) => [st.getButton, { backgroundColor: can ? brand : '#E4E2DA' }, pressed && { opacity: 0.8 }]}
                 >
-                  <Text style={[styles.getButtonText, { color: can ? readableOn(brand) : '#000000' }]}>{busyId === reward.id ? 'Getting…' : 'Get reward'}</Text>
+                  <Text style={[st.getButtonText, { color: can ? readableOn(brand) : '#000000' }]}>{busyId === reward.id ? 'Getting…' : 'Get reward'}</Text>
                 </Pressable>
               ) : null}
             </View>
           )
         })}
       </View>
-      {!rewards.length ? <Text style={styles.howLine}>This shop's rewards are being set up.</Text> : null}
+      {!rewards.length ? <Text style={st.howLine}>This shop's rewards are being set up.</Text> : null}
     </View>
   )
 }

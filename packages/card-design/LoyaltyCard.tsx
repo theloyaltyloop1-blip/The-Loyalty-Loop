@@ -39,7 +39,7 @@ export type CardShop = {
   category?: string | null;
   card_design?: unknown;
 };
-const typeface = (font: CardDesign["font"]) =>
+export const typeface = (font: CardDesign["font"]) =>
   ({
     modern: "BricolageGrotesque_700Bold",
     classic: "CardClassic",
@@ -109,14 +109,16 @@ export function StampIcon({
     </Svg>
   );
 }
-function Material({ d }: { d: CardDesign }) {
+// Drawn at card size by default; the shop page passes its own size so the
+// texture covers the whole screen without stretching.
+export function Material({ d, w = 360, h = 240 }: { d: CardDesign; w?: number; h?: number }) {
   const id = useId().replace(/:/g, "");
   return (
     <Svg
       style={StyleSheet.absoluteFill}
       width="100%"
       height="100%"
-      viewBox="0 0 360 240"
+      viewBox={`0 0 ${w} ${h}`}
       preserveAspectRatio="none"
       opacity={d.background === "gradient" ? 1 : materialOpacity(d.color)}
     >
@@ -154,33 +156,33 @@ function Material({ d }: { d: CardDesign }) {
         </Pattern>
       </Defs>
       <Rect
-        width={360}
-        height={240}
+        width={w}
+        height={h}
         fill={d.background === "gradient" ? `url(#${id}g)` : d.color}
       />
       {d.background === "roast" && (
         <G stroke={d.secondary} strokeOpacity={0.09} fill="none">
-          {Array.from({ length: 22 }, (_, i) => (
-            <Circle key={i} cx={285} cy={50} r={12 + i * 13} strokeWidth={1} />
+          {Array.from({ length: Math.ceil(Math.max(w, h) / 13) + 4 }, (_, i) => (
+            <Circle key={i} cx={w - 75} cy={50} r={12 + i * 13} strokeWidth={1} />
           ))}
         </G>
       )}
       {d.background === "pinstripe" && (
         <G stroke="#FFFFFF" strokeOpacity={0.055} strokeWidth={8}>
-          {Array.from({ length: 25 }, (_, i) => (
-            <Path key={i} d={`M${i * 24 - 240} 0l240 240`} />
+          {Array.from({ length: Math.ceil((w + h) / 24) + 1 }, (_, i) => (
+            <Path key={i} d={`M${i * 24 - h} 0l${h} ${h}`} />
           ))}
         </G>
       )}
       {d.background === "paper" && (
         <G stroke="#AD783B" strokeOpacity={0.16} strokeWidth={0.6}>
-          {Array.from({ length: 60 }, (_, i) => (
-            <Path key={i} d={`M${i * 6} 0v240`} />
+          {Array.from({ length: Math.ceil(w / 6) + 1 }, (_, i) => (
+            <Path key={i} d={`M${i * 6} 0v${h}`} />
           ))}
         </G>
       )}
       {["kraft", "wood", "chalkboard", "marble"].includes(d.background) && (
-        <Rect width={360} height={240} fill={`url(#${id}p)`} />
+        <Rect width={w} height={h} fill={`url(#${id}p)`} />
       )}
     </Svg>
   );
