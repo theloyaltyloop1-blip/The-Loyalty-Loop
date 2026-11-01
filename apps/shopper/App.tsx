@@ -1,6 +1,6 @@
 import { CARD_FONTS } from "../../packages/card-design/fonts";
-import { LoyaltyCard } from "../../packages/card-design/LoyaltyCard";
-import { ShopBackdrop, ShopSkinProvider, cardFrame, shopSkin, skinStyles } from "../../packages/card-design/skin";
+import { ShopBackdrop, ShopSkinProvider, shopSkin, skinStyles } from "../../packages/card-design/skin";
+import { PassRow, ShopPass } from "../../packages/card-design/ShopPass";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
@@ -59,7 +59,7 @@ import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { AppAlertHost, showAlert } from './src/components/AppAlert'
 import { SuccessCheck } from './src/components/SuccessCheck'
-import { HowItWorks, OpeningHoursList, ShopHero, type OpeningHours, type TierRow } from './src/shop-profile'
+import { HowItWorks, OpeningHoursList, openStatus, type OpeningHours, type TierRow } from './src/shop-profile'
 import { pointsStanding, programmeIdFor, tierStanding } from '@loyalty-loop/loyalty'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
 import { trendingShops } from './src/trending'
@@ -1407,6 +1407,15 @@ function ShopDetail({
   }
 
   const skin = useMemo(() => shopSkin(business), [business.card_design, business.category, business.brand_color])
+  const passStamps = !spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '') && threshold > 0 && threshold <= 12
+  const passProgress = programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? tierStanding(tiers, rollingSpend).fraction : 0) : programmeId === 'points' ? (pointsView.next ? pointsView.fraction : 1) : threshold > 0 ? value / threshold : 0
+  const reward = nextTier?.title ?? 'your next reward'
+  const passLabel = !membership
+    ? `Join to start collecting for ${reward}`
+    : programmeId === 'tiers' ? membership.current_tier || 'Getting started'
+    : programmeId === 'points' ? (pointsView.next ? pointsView.label : `${value} ${value === 1 ? 'point' : 'points'}`)
+    : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)} · ${reward}`
+    : value >= threshold ? `${reward} is ready` : `${threshold - value} more for ${reward}`
   // The whole page wears the shop's design; the QR tile stays black on white so it scans.
   const ss = useMemo(() => {
     const skinned = skinStyles(styles, skin, { keep: ['qrText', 'pressed', 'disabled', 'nativeMap', 'mapEmbed', 'shortCard', 'shortImage', 'shortOverlay', 'shortShopName', 'shortIndex', 'favouriteButton'], clear: ['screen'] })
@@ -1418,27 +1427,47 @@ function ShopDetail({
       <StatusBar barStyle={skin.dark ? 'light-content' : 'dark-content'} />
       <ShopBackdrop skin={skin} />
       <KeyboardAwareScrollView ref={scrollRef} contentContainerStyle={ss.screen}>
-        <Pressable onPress={onBack} style={ss.backRow}>
-          <ChevronLeftIcon size={18} color={skin.ink} />
-          <Text style={ss.back}>Back</Text>
-        </Pressable>
-
-        <ShopHero
-          business={business}
-          favouriteButton={
-            <Pressable onPress={onToggleFavourite} style={({ pressed }) => [ss.favouriteButton, pressed && ss.pressed]}>
-              <HeartIcon color={favourite ? skin.accent : skin.ink} filled={favourite} size={18} />
-            </Pressable>
-          }
-          ratingText={pageRating || null}
-          reviewCount={reviews.length}
-          featureLabels={(business.features ?? []).map(id => featureBadge(id, business.halal_certifier))}
-          isMember={Boolean(membership)}
-          joining={busy}
-          onJoin={join}
-          onYourCard={() => scrollRef.current?.scrollTo({ y: Math.max(0, cardY.current - 12), animated: true })}
-        />
-        {business.description ? <Text style={ss.description}>{business.description}</Text> : null}
+        <View style={{ marginHorizontal: -20, marginTop: -20 }} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
+          <ShopPass
+            skin={skin}
+            shop={business}
+            eyebrow={[business.category || 'Local business', openStatus(business.opening_hours)?.label].filter(Boolean).join(' · ')}
+            stamps={membership && passStamps ? { filled: Math.min(value, threshold), total: threshold } : null}
+            progress={membership && !passStamps ? passProgress : null}
+            progressLabel={passLabel}
+            code={membership ? <QRCode value={`loyaltyloop:customer:${userId}`} size={190} /> : null}
+            action={membership ? null : (
+              <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: '#FFFFFF', borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48 }, (busy || pressed) && { opacity: 0.8 }]}>
+                <Text style={{ color: skin.dark ? skin.bg : skin.ink, fontWeight: '800', fontSize: 17 }}>{busy ? 'Joining…' : 'Join card'}</Text>
+              </Pressable>
+            )}
+            fields={[
+              ...(membership ? [{ label: 'Member code', value: stampCode || '…' }, { label: 'Next reward', value: nextTier?.title ?? 'Coming soon' }] : []),
+              ...(pageRating ? [{ label: 'Rating', value: `${pageRating} (${reviews.length})` }] : []),
+              ...(business.features?.length ? [{ label: 'Good to know', value: business.features.map(id => featureBadge(id, business.halal_certifier)).slice(0, 2).join(', ') }] : []),
+            ]}
+            topBar={
+              <>
+                <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack} hitSlop={12} style={{ padding: 8 }}>
+                  <ChevronLeftIcon size={24} color={skin.ink} />
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={favourite ? 'Remove from favourites' : 'Add to favourites'} onPress={onToggleFavourite} hitSlop={12} style={{ padding: 8 }}>
+                  <HeartIcon color={skin.ink} filled={favourite} size={22} />
+                </Pressable>
+              </>
+            }
+          />
+        </View>
+        {membership && spendShop && membership.redemption_blocked_reason ? (
+          <Text style={[ss.spendHint, { marginTop: 16 }]}>Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.</Text>
+        ) : null}
+        {membership ? (
+          <View style={{ gap: 12, marginTop: 16 }}>
+            <PassRow skin={skin} icon={<WalletIcon size={20} color={skin.ink} />} label={addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'} onPress={addingToWallet ? undefined : addToWallet} />
+            <PassRow skin={skin} icon={<BellIcon color={skin.ink} size={20} />} label="News and offers" right={<Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: skin.accent }} />} />
+          </View>
+        ) : null}
+        {business.description ? <Text style={[ss.description, { marginTop: 20 }]}>{business.description}</Text> : null}
 
         {cardLinking.enabled && cardLinking.linkedShopIds.has(business.id) ? (
           cardLinking.cards.length === 0 ? (
@@ -1461,50 +1490,6 @@ function ShopDetail({
               <Text style={ss.autoEarnChipText}>Pay with a linked card to earn automatically</Text>
             </View>
           )
-        ) : null}
-
-        {membership ? (
-          <>
-          <View style={[ss.designedCardWrap, cardFrame(skin)]} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
-              <LoyaltyCard
-                shop={business}
-                value={programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? Math.round(tierStanding(tiers, rollingSpend).fraction * 100) : 0) : programmeId === 'points' ? (pointsView.next ? Math.round(pointsView.fraction * 100) : 100) : value}
-                target={programmeId === 'tiers' || programmeId === 'points' ? 100 : threshold}
-                label={programmeId === 'tiers' ? membership.current_tier || 'Getting started' : programmeId === 'points' ? `${value} ${value === 1 ? 'point' : 'points'}` : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)}` : `${value} / ${threshold}`}
-                reward={nextTier?.title ?? 'Your next reward'}
-                stamps={!spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '')}
-                animate
-              />
-            </View>
-          <View style={ss.loyaltyCard}>
-            {programmeId === 'points' && pointsView.next ? <Text style={ss.spendHint}>{pointsView.label}</Text> : null}
-            {spendShop ? (
-              <Text style={ss.spendHint}>
-                {membership.redemption_blocked_reason
-                  ? 'Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.'
-                  : `Spend ${pounds(Math.max(0, threshold - value), business.country_code)} more here to unlock ${nextTier?.title ?? 'your next reward'}.`}
-              </Text>
-            ) : null}
-            <View style={ss.qrWrap}>
-              <QRCode value={`loyaltyloop:customer:${userId}`} size={150} />
-              <Text style={ss.qrText}>Show this QR code when you pay</Text>
-            </View>
-            <Text style={ss.manualCodeLabel}>OR ENTER THIS CODE</Text>
-            <Text selectable style={ss.manualCode}>{stampCode || 'Loading…'}</Text>
-            <Pressable onPress={addToWallet} disabled={addingToWallet} style={({ pressed }) => [ss.walletButton, addingToWallet && ss.disabled, pressed && ss.pressed]}>
-              <WalletIcon size={17} />
-              <Text style={ss.walletButtonText}>{addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'}</Text>
-            </Pressable>
-            <View style={ss.shopNotifyRow}>
-              <BellIcon color={skin.accent} size={18} />
-              <View style={ss.settingsRowBody}>
-                <Text style={ss.shopNotifyTitle}>News & offers from {business.name}</Text>
-                <Text style={ss.shopNotifyCopy}>Get a notification when they post an announcement</Text>
-              </View>
-              <Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: skin.accent }} />
-            </View>
-          </View>
-          </>
         ) : null}
 
         <HowItWorks

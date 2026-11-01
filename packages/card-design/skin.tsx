@@ -1,6 +1,6 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
-import { Material, typeface } from "./LoyaltyCard";
+import { typeface } from "./LoyaltyCard";
 import {
   cardAccent,
   cardInk,
@@ -43,7 +43,7 @@ export function shopSkin(shop: SkinShop): ShopSkin {
     bg: design.color,
     ink,
     muted: rgba(ink, 0.72),
-    panel: dark ? "rgba(255, 255, 255, 0.09)" : "rgba(255, 255, 255, 0.55)",
+    panel: dark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.06)",
     panelBorder: rgba(ink, 0.14),
     accent,
     onAccent: foreground(accent),
@@ -56,18 +56,10 @@ const SkinContext = createContext<ShopSkin | null>(null);
 export const ShopSkinProvider = SkinContext.Provider;
 export const useShopSkin = () => useContext(SkinContext);
 
-// The shop's colour and texture behind the whole page.
+// The shop's colour behind the whole page. Flat, like a wallet pass: texture
+// stays on the card itself.
 export function ShopBackdrop({ skin }: { skin: ShopSkin }) {
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  return (
-    <View
-      pointerEvents="none"
-      style={[StyleSheet.absoluteFill, { backgroundColor: skin.bg }]}
-      onLayout={(e) => setSize({ w: Math.round(e.nativeEvent.layout.width), h: Math.round(e.nativeEvent.layout.height) })}
-    >
-      {size.w > 0 && skin.design.background !== "photo" ? <Material d={skin.design} w={size.w} h={size.h} /> : null}
-    </View>
-  );
+  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: skin.bg }]} />;
 }
 
 const greyish = (color: unknown) => {
