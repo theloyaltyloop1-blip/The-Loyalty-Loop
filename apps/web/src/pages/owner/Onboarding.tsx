@@ -28,9 +28,14 @@ const COUNTRIES = [
   { code: 'PK', name: 'Pakistan', currency: { symbol: 'Rs', scale: 300 } as CurrencyInfo },
 ]
 
+// Hidden from the picker for now; kept above so a resumed shop there keeps its currency.
+const HIDDEN_COUNTRIES = ['PK']
+const SELECTABLE_COUNTRIES = COUNTRIES.filter((c) => !HIDDEN_COUNTRIES.includes(c.code))
+
 function guessCountryCode(): string {
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Karachi' ? 'PK' : 'GB'
+    const guess = Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Karachi' ? 'PK' : 'GB'
+    return SELECTABLE_COUNTRIES.some((c) => c.code === guess) ? guess : 'GB'
   } catch {
     return 'GB'
   }
@@ -305,9 +310,9 @@ export function OwnerOnboarding() {
               <Field label="Shop name">
                 <input className={inputClass} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bean & Bird" autoFocus />
               </Field>
-              <div className="flex flex-wrap items-center gap-2 mb-5">
+              {SELECTABLE_COUNTRIES.length > 1 && <div className="flex flex-wrap items-center gap-2 mb-5">
                 <span className="text-sm text-foreground/70">Based in</span>
-                {COUNTRIES.map((c) => (
+                {SELECTABLE_COUNTRIES.map((c) => (
                   <button
                     data-press-feedback
                     key={c.code}
@@ -318,7 +323,7 @@ export function OwnerOnboarding() {
                     {c.name}
                   </button>
                 ))}
-              </div>
+              </div>}
               <CardPreview programme={programme} name={name} draft={onboardingDefaults(programme, kind?.key ?? 'everyday', country.currency)} currency={country.currency} />
             </>
           )}

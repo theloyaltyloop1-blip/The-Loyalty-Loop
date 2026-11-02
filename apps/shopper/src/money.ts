@@ -20,6 +20,14 @@ export const FALLBACK_COUNTRIES: Country[] = [
 
 export const DEFAULT_COUNTRY = 'GB'
 
+// Countries hidden from every picker for now. Their rows stay above so an
+// existing shop in one still shows the right currency.
+export const HIDDEN_COUNTRIES = ['PK']
+
+/** Countries people can choose, without the hidden ones. */
+export const selectableCountries = (countries: Country[]) =>
+  countries.filter((country) => !HIDDEN_COUNTRIES.includes(country.code))
+
 export function findCountry(countries: Country[], code: string | null | undefined): Country {
   return (
     countries.find((country) => country.code === code) ??

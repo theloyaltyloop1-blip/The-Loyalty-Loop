@@ -1,12 +1,12 @@
 import { showAlert } from './components/AppAlert'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
-import { FALLBACK_COUNTRIES, findCountry, guessCountry, type Country } from './country'
+import { DEFAULT_COUNTRY, FALLBACK_COUNTRIES, findCountry, guessCountry, selectableCountries, type Country } from './country'
 
 // The shopper's country: guessed from the phone, confirmed once, then saved on
 // their profile so it stays put when they travel or use a VPN.
 export function useCountry(userId: string | null) {
-  const [countries, setCountries] = useState<Country[]>(FALLBACK_COUNTRIES)
+  const [countries, setCountries] = useState<Country[]>(() => selectableCountries(FALLBACK_COUNTRIES))
   const [code, setCode] = useState<string | null>(null)
   const asked = useRef(false)
 
@@ -26,18 +26,24 @@ export function useCountry(userId: string | null) {
         supabase.from('profiles').select('country_code').eq('id', userId).single(),
       ])
       if (cancelled) return
-      const available = list.error || !list.data?.length ? FALLBACK_COUNTRIES : (list.data as Country[])
+      const loaded = selectableCountries(list.error || !list.data?.length ? FALLBACK_COUNTRIES : (list.data as Country[]))
+      const available = loaded.length ? loaded : selectableCountries(FALLBACK_COUNTRIES)
       setCountries(available)
       const saved = profile.error ? null : (profile.data?.country_code as string | null)
-      if (saved) {
+      if (saved && available.some((country) => country.code === saved)) {
         setCode(saved)
+        return
+      }
+      // A saved country that is now hidden falls back to the default, quietly.
+      if (saved) {
+        setCode(DEFAULT_COUNTRY)
         return
       }
       // Older app versions before this column existed: keep everyone working
       // with the guess, and only ask when the profile row loaded fine.
       const guess = guessCountry(available.map((country) => country.code))
       setCode(guess)
-      if (profile.error || asked.current) return
+      if (profile.error || asked.current || available.length < 2) return
       asked.current = true
       const guessed = findCountry(available, guess)
       const others = available.filter((country) => country.code !== guess)

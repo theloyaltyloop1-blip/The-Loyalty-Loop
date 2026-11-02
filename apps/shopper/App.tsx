@@ -829,7 +829,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                 </SettingsGroup>
               )}
 
-              <SettingsGroup title="Country">
+              {country.countries.length > 1 && <SettingsGroup title="Country">
                 <SettingsRow
                   tile="teal"
                   icon={(c) => <HelpIcon color={c} size={18} />}
@@ -843,7 +843,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   }
                   last
                 />
-              </SettingsGroup>
+              </SettingsGroup>}
 
               <SettingsGroup title="Security & privacy">
                 <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: primary }} />} />

@@ -17,7 +17,7 @@ import {
 import { KeyboardAwareScrollView } from "./components/KeyboardAware";
 import { Sheet } from "./components/Sheet";
 import { showAlert } from "./components/AppAlert";
-import { FALLBACK_COUNTRIES, guessCountry } from "./country";
+import { FALLBACK_COUNTRIES, guessCountry, selectableCountries } from "./country";
 import { findCountry } from "./money";
 import { supabase } from "./supabase";
 
@@ -133,7 +133,8 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
   const [picking, setPicking] = useState(false);
   const [name, setName] = useState(resume?.name ?? "");
   // Guessed from the phone's time zone; the chip changes it. It sets the shop's currency.
-  const [countryCode, setCountryCode] = useState(() => resume?.country_code ?? guessCountry(FALLBACK_COUNTRIES.map((c) => c.code)));
+  const countryOptions = selectableCountries(FALLBACK_COUNTRIES);
+  const [countryCode, setCountryCode] = useState(() => resume?.country_code ?? guessCountry(countryOptions.map((c) => c.code)));
   const [draft, setDraft] = useState<ProgrammeDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -271,9 +272,9 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
               placeholderTextColor="#000000"
               autoFocus
             />
-            <View style={styles.chipRow}>
+            {countryOptions.length > 1 && <View style={styles.chipRow}>
               <Text style={styles.chipLabel}>Based in</Text>
-              {FALLBACK_COUNTRIES.map((c) => {
+              {countryOptions.map((c) => {
                 const active = c.code === countryCode;
                 return (
                   <Pressable
@@ -288,7 +289,7 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
                   </Pressable>
                 );
               })}
-            </View>
+            </View>}
             <CardPreview programme={programme} name={name} draft={onboardingDefaults(programme, kind?.key ?? "everyday", currency)} symbol={symbol} />
             <PrimaryButton
               title="Continue"
