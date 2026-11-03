@@ -2953,3 +2953,15 @@ Review branch claude/loyalty-b-screens-07db09 (commits 4e23167 and 73e309a, from
 - OTAs, all `--environment production`, branch production, each uploaded bundle checked for project ref, #0042AC and Inter_700Bold: shopper 1.0.2 android c7ec419a / ios 3403d4e7; shopper 1.0.1 android e9f2d4e1 / ios e7368722; Business 1.0.1 android 4129b525 / ios 158a97c0.
 - Undo: republish the previous production groups for each runtime (look them up on the EAS dashboard) and revert e4427e2 on main.
 **Still open:** no device check of either app (updates apply on the second launch); logo still orange (owner to decide); demo video and shop-row illustration keep old colours.
+
+## Bold redesign of four key screens (2026-11-03) - Claude, commit 634e2a5 on main, SHIPPED by OTA at owner's request ("build it and ship it and I'll see")
+**Why:** owner said the app looks "plain and boring and bad". Mockups (Design canvas https://claude.ai/artifact/A78FaANyHkXEsJP77Ak7as) were judged "close"; owner asked to build and ship to see it live.
+**Changed**
+- Shopper home (`apps/shopper/App.tsx` HomeTab, `src/components/HomeCollection.tsx`): date line + "Morning, <first name>." greeting; `NextRewardHero` sapphire block for the joined card nearest a reward (big "2 more" / "£8" / "Ready!", dots for ≤12 stamps else a bar, "Show my card"); floating navy tab bar, open tab is an ocean pill with its label ("Favourites" label now "Saved").
+- Shop card (`packages/card-design/ShopPass.tsx` + ShopDetail): new `count` prop draws a giant "3/6" (stamps), "£12/£20" (spend) or "40 pts"; tiers show none. Stamps 44px rounded squares; label larger.
+- Reward unlocked (`apps/shopper/src/components/RewardCelebration.tsx`): full-screen green modal once per new unredeemed reward. Seen ids in SecureStore `celebrated_reward_ids` (last 40); the first run records existing rewards silently. Shows on the shop page too.
+- Business home (`apps/retailer/App.tsx` DashboardHome): navy panel with active members (30 days) + "N quiet" badge, 7-day stamp/purchase bars (new query on `transactions.created_at`, max 5000 rows), huge ocean "Scan a customer", Redeem/Report pills, colour tiles; setup checklist only while incomplete.
+**Checks:** shopper + retailer `tsc --noEmit` clean; node tests 18/18 shopper, 21/21 retailer; `expo export --platform android` bundles both. No new native deps. Not run on a device or emulator.
+**Shipped (all `--environment production`, each bundle checked for project ref, sapphire, Inter and a new-screen string):** shopper 1.0.2 android cfb6328d / ios 0263b2cc; shopper 1.0.1 android dfe4e0d2 / ios c8de5f96; Business 1.0.1 android 5fabda6d / ios 317cd473.
+**Undo:** republish the previous Sapphire groups (shopper 1.0.2 c7ec419a/3403d4e7, 1.0.1 e9f2d4e1/e7368722; Business 4129b525/158a97c0).
+**Next (owner):** open each app twice and look; say what to change. Remaining screens (map, news, rewards list, settings, Business analytics/scan/shop) still have the old layout.
