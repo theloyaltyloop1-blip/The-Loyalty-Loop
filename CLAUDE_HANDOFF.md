@@ -2938,7 +2938,7 @@ Review branch claude/loyalty-b-screens-07db09 (commits 4e23167 and 73e309a, from
 
 - 2026-10-31: Win back confirmed shipped. send-winback-emails v28 deployed (ffd28ec). Business app production OTAs "Latest main (8b4356c)" and "Designed cards for every shop" (both platforms) contain ffd28ec, so no separate OTA. Still open (owner): verify a sending domain in Resend and set WINBACK_FROM_EMAIL; until then the app shows "Emails not sent". No device test of the Win back tab.
 
-## Sapphire look: new colours and font across both apps, website and marketing (2026-11-03) - Claude, branch `sapphire-theme` (worktree `.claude/worktrees/sapphire-theme`, from `card-design-release` d36a080), NOT committed, pushed, deployed or published
+## Sapphire look: new colours and font across both apps, website and marketing (2026-11-03) - Claude, branch `sapphire-theme` (worktree `.claude/worktrees/sapphire-theme`, from `card-design-release` d36a080). SHIPPED 2026-11-03 at owner's request: commit e4427e2 on main, website + OTAs live
 **Why:** owner sent two reference videos (colour-palette tips over website examples) and picked the "Sapphire + Ocean + Jade" palette with a light clean grotesk, for the shopper app, Business app, website and marketing.
 **Palette:** Sapphire Blue #0042AC (CTA), Ocean Blue #00D3FB (bright accent), Neon Jade #83FD80 (highlight), cool cloudy-white surfaces (#F3F7FC / #FDFDFE), navy ink #0F1C33. Font: Inter everywhere (display = Inter 600/700 with tight tracking).
 **Changed**
@@ -2948,4 +2948,8 @@ Review branch claude/loyalty-b-screens-07db09 (commits 4e23167 and 73e309a, from
 - `marketing/loyalty-loop-marketing-pack.html` (untracked, main checkout): navy/ocean/jade, Inter instead of Fraunces. Original saved in the session scratchpad.
 **Checks:** shopper and retailer `tsc --noEmit` clean. Website dev server previewed: home page renders in the new palette and Inter, no console errors. Marketing pack previewed. Not done: production web build (local build needs env; dev server works), no device run of either app, no dark-mode pass on the apps (this branch has no app dark mode; `dark-premium` was never merged into the main line).
 **Known leftovers:** logo image still orange; home-page demo video and the shop-row illustration keep old colours (media/illustration assets); `const orange` in `owner-pages.tsx` now holds sapphire (name only).
-**Next (owner approval):** look at the preview, then commit on `sapphire-theme`, merge, `eas update --environment production` per app, deploy web. Owner: decide on a new logo colour.
+**Shipped 2026-11-03 (owner said "Commit and ship"):**
+- e4427e2 pushed to origin/main; Vercel production deploy success; live CSS on www.the-loyalty-loop.com shows `--palette-orange-700:#0042ac` and Inter.
+- OTAs, all `--environment production`, branch production, each uploaded bundle checked for project ref, #0042AC and Inter_700Bold: shopper 1.0.2 android c7ec419a / ios 3403d4e7; shopper 1.0.1 android e9f2d4e1 / ios e7368722; Business 1.0.1 android 4129b525 / ios 158a97c0.
+- Undo: republish the previous production groups for each runtime (look them up on the EAS dashboard) and revert e4427e2 on main.
+**Still open:** no device check of either app (updates apply on the second launch); logo still orange (owner to decide); demo video and shop-row illustration keep old colours.
