@@ -45,7 +45,7 @@ export function ActivityFeed({ userId }: { userId: string }) {
           <div className="mt-5 divide-y divide-border border-t border-border">
             {items.length ? items.map((x) => (
               <div key={x.id} className="flex gap-4 py-4">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white" style={{ backgroundColor: x.business?.brand_color ?? '#E8703B' }}><History className="h-4 w-4" /></div>
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white" style={{ backgroundColor: x.business?.brand_color ?? '#0042AC' }}><History className="h-4 w-4" /></div>
                 <div className="flex-1">
                   <p className="font-semibold">{labels[x.type]}{x.type === 'spend' ? ` £${(x.value / 100).toFixed(2)}${x.voided_at ? ' (undone)' : ''}` : x.value > 1 ? ` ×${x.value}` : ''}</p>
                   <p className="text-sm text-muted-foreground">{x.business?.name ?? 'Local shop'} · {new Date(x.created_at).toLocaleString()}</p>

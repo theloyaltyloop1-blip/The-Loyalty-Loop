@@ -36,15 +36,15 @@ export const EXPLAINER_CAPTIONS: Record<ExplainerKind, string> = {
 
 const LOOP_MS = 5600
 const INK = '#1B1B1B'
-const ORANGE = '#C0501F'
+const ORANGE = '#0042AC'
 const GREEN = '#2F6B3F'
 const GOLD = '#E0A82E'
 const PAPER = '#FFFFFF'
 const TRACK = '#E8DFD0'
 const BG: Record<ExplainerKind, string> = {
-  join: '#FFF1E3',
+  join: '#DBE7FF',
   scan: '#E8F3EA',
-  stamps: '#FFF1E3',
+  stamps: '#DBE7FF',
   tiers: '#F1ECFA',
   points: '#FFF6DD',
   spend: '#E8F3EA',

@@ -15,7 +15,7 @@ function initialsOf(name: string) {
 
 /** Uses the same server-rendered Loyalty Loop pin artwork as the shopper apps. */
 function businessPinIcon(business: Business) {
-  const params = [`color=${encodeURIComponent(business.brand_color || '#E8703B')}`, `initials=${encodeURIComponent(initialsOf(business.name))}`, 'scale=2']
+  const params = [`color=${encodeURIComponent(business.brand_color || '#0042AC')}`, `initials=${encodeURIComponent(initialsOf(business.name))}`, 'scale=2']
   if (business.logo_url) params.push(`logo=${encodeURIComponent(business.logo_url)}`)
   return { url: `${PIN_ENDPOINT}?${params.join('&')}`, scaledSize: new google.maps.Size(60, 66), anchor: new google.maps.Point(30, 60) }
 }
@@ -37,7 +37,7 @@ function useGoogleMapsLoader() {
 export function ShopMap({
   lat,
   lng,
-  color = '#E8703B',
+  color = '#0042AC',
   editable = false,
   onChange,
   height = 220,

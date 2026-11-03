@@ -45,6 +45,7 @@ import * as Notifications from 'expo-notifications'
 import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
+import { Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { colors, fonts } from './src/theme'
 import { encodeRewardQr } from './src/reward-qr'
 import { hasSupabaseConfig, supabase } from './src/supabase'
@@ -160,7 +161,7 @@ function SearchBar({ value, onChangeText, accessibilityLabel }: { value: string;
       <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#000000" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
       {value.length > 0 && (
         <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
-          <CloseIcon color="#737B74" size={16} />
+          <CloseIcon color="#6D809A" size={16} />
         </Pressable>
       )}
     </View>
@@ -659,13 +660,13 @@ const openUrl = (url: string) => void Linking.openURL(url)
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const TILES = {
-  blue: { bg: '#DCE6D2', fg: '#3E5235' },
+  blue: { bg: '#DBE7FF', fg: '#062B6B' },
   purple: { bg: '#F3E3D3', fg: '#8A4A2B' },
   rose: { bg: '#F8DCCB', fg: '#B5431C' },
   amber: { bg: '#FBE7BF', fg: '#8A5A00' },
   green: { bg: '#DCEBD9', fg: '#2F7A3F' },
   teal: { bg: '#D7E6E0', fg: '#2E6656' },
-  slate: { bg: '#E6E8E2', fg: '#545C55' },
+  slate: { bg: '#E4ECF6', fg: '#50627C' },
   orange: { bg: '#FDE2D2', fg: primary },
   red: { bg: '#f8dcd8', fg: '#b54439' },
 } as const
@@ -680,7 +681,7 @@ function SettingsRow({ icon, tile = 'slate', title, detail, onPress, right, dang
         <Text style={[styles.settingsRowTitle, danger && styles.settingsRowTitleDanger]}>{title}</Text>
         {detail ? <Text style={styles.settingsRowDetail} numberOfLines={2}>{detail}</Text> : null}
       </View>
-      {right ?? (onPress ? <ChevronRightIcon color="#A3AAA2" size={18} /> : null)}
+      {right ?? (onPress ? <ChevronRightIcon color="#9DAEC4" size={18} /> : null)}
     </Pressable>
   )
 }
@@ -780,7 +781,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <Text style={styles.sheetTitle}>{SETTINGS_TITLES.root}</Text>
           ) : (
             <Pressable onPress={() => setView('root')} hitSlop={10} style={styles.sheetBack}>
-              <ChevronLeftIcon size={18} color="#737B74" />
+              <ChevronLeftIcon size={18} color="#6D809A" />
               <Text style={styles.sheetTitle}>{SETTINGS_TITLES[view]}</Text>
             </Pressable>
           )}
@@ -791,7 +792,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
         <KeyboardAwareScrollView pad={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
           {view === 'root' && (
             <>
-              <LinearGradient colors={[primary, '#c9542a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
+              <LinearGradient colors={[primary, '#00358A']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
                 <Pressable onPress={() => setView('name')} style={styles.settingsHeroRow}>
                   <View style={styles.settingsHeroAvatar}><Text style={styles.settingsHeroAvatarText}>{initialsOf(firstName)}</Text></View>
                   <View style={styles.settingsRowBody}>
@@ -2531,7 +2532,7 @@ function AppHome({ session }: { session: Session }) {
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold })
+  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_600SemiBold, Inter_700Bold })
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -2640,7 +2641,7 @@ const styles = StyleSheet.create({
   onboardingLogo: { width: 66, height: 66, resizeMode: 'contain', marginBottom: 44 },
   onboardingTitle: { color: foreground, fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: 'row', gap: 8, marginTop: 36, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#CBD1C3' },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#CDD9E8' },
   onboardingDotActive: { width: 26, backgroundColor: primary },
   onboardingConsent: { marginTop: 28 },
   onboardingSkip: { alignItems: 'center', padding: 16 },
@@ -2657,8 +2658,8 @@ const styles = StyleSheet.create({
   landingTitle: { color: foreground, fontSize: 16, fontWeight: '800', marginTop: 3 },
   landingCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginBottom: 8 },
 
-  card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#1C2620', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
-  input: { backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
+  card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#0F1C33', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
+  input: { backgroundColor: '#E4ECF6', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.14)', paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   searchInput: { flex: 1, paddingVertical: 16, color: foreground, fontSize: 16 },
   askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
@@ -2753,7 +2754,7 @@ const styles = StyleSheet.create({
   rewardPillText: { fontSize: 11, fontWeight: '700', color: '#000000' },
   rewardTitleLarge: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center' },
   rewardTierList: { alignSelf: 'stretch', gap: 8, marginTop: 2 },
-  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EDEFE9', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#E4ECF6', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
   rewardTierThreshold: { color: foreground, fontSize: 13, fontWeight: '800' },
   rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 16 },
 
@@ -2767,13 +2768,13 @@ const styles = StyleSheet.create({
   qrText: { color: '#000000', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
   manualCodeLabel: { color: '#000000', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
   manualCode: { color: foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 4 },
-  securityCard: { backgroundColor: '#EDEFE9', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
+  securityCard: { backgroundColor: '#E4ECF6', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
   securityCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 4 },
   securityButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(79,100,56,0.12)' },
   securityButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
   lockScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
   lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 24 },
-  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1C2620', borderRadius: 999, height: 46, marginTop: 20 },
+  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0F1C33', borderRadius: 999, height: 46, marginTop: 20 },
   walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Visit and contact details

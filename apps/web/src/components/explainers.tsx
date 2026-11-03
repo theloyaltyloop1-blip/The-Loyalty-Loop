@@ -26,12 +26,12 @@ const GREEN = '#2F6B3F'
 const GOLD = '#E0A82E'
 const TRACK = '#E8DFD0'
 const BG: Record<ExplainerKind, string> = {
-  join: '#FFF1E3',
-  scan: '#E8F3EA',
-  stamps: '#FFF1E3',
+  join: '#DBE7FF',
+  scan: '#CCF8FF',
+  stamps: '#DBE7FF',
   tiers: '#F1ECFA',
   points: '#FFF6DD',
-  spend: '#E8F3EA',
+  spend: '#CCF8FF',
 }
 
 type Style = { opacity?: number; transform?: string }

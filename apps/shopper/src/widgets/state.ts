@@ -52,7 +52,7 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
           unit: business.country_code === 'PK' ? 'rupees' : 'pounds',
           currencyPrefix: business.country_code === 'PK' ? 'Rs ' : '£',
           remaining: Math.ceil(Math.max(0, targetPence - progress) / 100),
-          brandColor: business.brand_color || '#EF7136',
+          brandColor: business.brand_color || '#0042AC',
           updatedAt: new Date().toISOString(),
         } satisfies ShopperWidgetState
       }
@@ -66,7 +66,7 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
         unit,
         currencyPrefix: '',
         remaining: Math.max(0, target - current),
-        brandColor: business.brand_color || '#EF7136',
+        brandColor: business.brand_color || '#0042AC',
         updatedAt: new Date().toISOString(),
       } satisfies ShopperWidgetState
     })
@@ -80,7 +80,7 @@ export async function syncShopperWidget(businesses: BusinessLike[], memberships:
     unit: 'pounds' as const,
     currencyPrefix: '£',
     remaining: 20,
-    brandColor: '#EF7136',
+    brandColor: '#0042AC',
     updatedAt: new Date().toISOString(),
   }
 

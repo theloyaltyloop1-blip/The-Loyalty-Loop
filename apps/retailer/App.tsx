@@ -55,6 +55,7 @@ import {
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
+import { Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
@@ -209,7 +210,7 @@ const PREVIEW_BUSINESS: Business = {
   address: "12 Market Street",
   postcode: "M1 1AA",
   phone: "0161 555 0102",
-  brand_color: "#E8703B",
+  brand_color: "#0042AC",
   is_active: true,
   loyalty_type: "stamp_card",
   loyalty_config: {
@@ -1709,7 +1710,7 @@ function CustomersHome({ business }: { business: Business }) {
               onPress={() => setAudience(value)}
               style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : "#EFE9DF" }}
             >
-              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#59615A" }}>{label}</Text>
+              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#50627C" }}>{label}</Text>
             </Pressable>
           ))}
         </View>
@@ -1986,7 +1987,7 @@ function AnalyticsPage({
           aLabel="Purchases"
           bLabel="Visitors"
           aColor={orange}
-          bColor="#3E5235"
+          bColor="#062B6B"
         />
       </View>
       <View style={styles.chartCard}>
@@ -1998,7 +1999,7 @@ function AnalyticsPage({
           aLabel="New"
           bLabel="Returning"
           aColor="#3FA34D"
-          bColor="#1C2620"
+          bColor="#0F1C33"
         />
       </View>
       <View style={styles.insightCard}>
@@ -2500,7 +2501,7 @@ function Dashboard({
                         backgroundColor: tab === sub.id ? orange : "#EFE9DF",
                       }}
                     >
-                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#59615A" }}>{sub.label}</Text>
+                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#50627C" }}>{sub.label}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -2584,7 +2585,7 @@ function Dashboard({
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold });
+  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_600SemiBold, Inter_700Bold });
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -2739,7 +2740,7 @@ const styles = StyleSheet.create({
   onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: green, alignItems: "center", justifyContent: "center", marginBottom: 42 },
   onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#CBD1C3" },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#CDD9E8" },
   onboardingDotActive: { width: 26, backgroundColor: orange },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: "center", padding: 16 },
@@ -2820,7 +2821,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     gap: 12,
     elevation: 2,
-    shadowColor: "#30442d",
+    shadowColor: "#062B6B",
     shadowOpacity: 0.08,
     shadowRadius: 15,
   },
@@ -2926,7 +2927,7 @@ const styles = StyleSheet.create({
     width: "31%",
     minHeight: 132,
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "#26344A",
     borderRadius: 20,
     padding: 14,
     backgroundColor: "rgba(255,255,255,.52)",
@@ -2977,7 +2978,7 @@ const styles = StyleSheet.create({
   homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
   setupCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "#26344A",
     borderRadius: 22,
     padding: 18,
     backgroundColor: "rgba(255,255,255,.55)",
@@ -3005,10 +3006,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkDone: { borderColor: orange, backgroundColor: "#F8C9B6" },
-  checkMark: { fontSize: 13, fontWeight: "900", color: "#8C3820" },
+  checkMark: { fontSize: 13, fontWeight: "900", color: "#0042AC" },
   checkText: { fontSize: 14, fontWeight: "700", color: "#000000" },
   checkTextDone: { color: "#000000", textDecorationLine: "line-through" },
-  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#1C2620", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#0F1C33", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
   setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
   setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
@@ -3023,7 +3024,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#3E5235",
+    backgroundColor: "#062B6B",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3033,7 +3034,7 @@ const styles = StyleSheet.create({
   reportButtonBlack: {
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#0F1C33",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3044,7 +3045,7 @@ const styles = StyleSheet.create({
   cameraStartButton: {
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#0F1C33",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
@@ -3059,7 +3060,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(20,20,18,.07)",
   },
   memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#000000", flexShrink: 0, marginRight: 12 },
-  memberInfoValue: { flex: 1, fontSize: 13, color: "#1C2620", fontWeight: "700", textAlign: "right" },
+  memberInfoValue: { flex: 1, fontSize: 13, color: "#0F1C33", fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
     borderRadius: 32,
@@ -3122,12 +3123,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  memberName: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
+  memberName: { fontSize: 16, fontWeight: "900", color: "#0F1C33" },
   memberMeta: { fontSize: 12, color: "#000000", marginTop: 3 },
   memberProgress: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#1C2620",
+    color: "#0F1C33",
     textAlign: "right",
   },
   memberUnit: { fontSize: 10, color: "#000000", textAlign: "right" },
@@ -3152,7 +3153,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  periodActive: { backgroundColor: "#1C2620" },
+  periodActive: { backgroundColor: "#0F1C33" },
   periodText: { fontSize: 12, fontWeight: "800", color: "#000000" },
   periodTextActive: { color: "#fff" },
   analyticsHeading: {
@@ -3172,7 +3173,7 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "#26344A",
     borderRadius: 20,
     padding: 16,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3181,7 +3182,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#1C2620",
+    color: "#0F1C33",
     marginBottom: 10,
   },
   chartWrap: { height: 80, width: "100%" },
@@ -3191,7 +3192,7 @@ const styles = StyleSheet.create({
   legendLabel: { fontSize: 11, fontWeight: "800", color: "#000000" },
   insightCard: {
     borderRadius: 22,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#0F1C33",
     padding: 20,
     marginTop: 10,
     marginBottom: 15,
@@ -3200,7 +3201,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 1.5,
-    color: "#F39A74",
+    color: "#00D3FB",
   },
   insightTitle: {
     fontSize: 20,
@@ -3212,17 +3213,17 @@ const styles = StyleSheet.create({
   insightCopy: { fontSize: 14, lineHeight: 21, color: "#000000", marginTop: 9 },
   totalCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "#26344A",
     borderRadius: 20,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.55)",
     marginBottom: 16,
   },
-  totalTitle: { fontSize: 16, fontWeight: "900", color: "#1C2620" },
+  totalTitle: { fontSize: 16, fontWeight: "900", color: "#0F1C33" },
   totalLine: { fontSize: 13, color: "#000000", marginTop: 7 },
   composeCard: {
     borderWidth: 2,
-    borderColor: "#26302A",
+    borderColor: "#26344A",
     borderRadius: 22,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3276,7 +3277,7 @@ const styles = StyleSheet.create({
     fontSize: 29,
     lineHeight: 34,
     fontFamily: FONT_DISPLAY,
-    color: "#1C2620",
+    color: "#0F1C33",
     letterSpacing: -0.7,
     maxWidth: 250,
   },
@@ -3333,7 +3334,7 @@ const styles = StyleSheet.create({
   settingsInput: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#EDEFE9",
+    backgroundColor: "#E4ECF6",
     borderWidth: 1,
     borderColor: "rgba(20,20,18,.08)",
     paddingHorizontal: 14,
@@ -3357,7 +3358,7 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#EDEFE9",
+    backgroundColor: "#E4ECF6",
     borderWidth: 1,
     borderColor: "rgba(20,20,18,.08)",
     paddingHorizontal: 14,
@@ -3393,7 +3394,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: "#1C2620" },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: "#0F1C33" },
   tierMeta: { fontSize: 12, color: "#000000", marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
@@ -3410,7 +3411,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#1C2620" },
+  segmentActive: { backgroundColor: "#0F1C33" },
   segmentText: { fontSize: 13, fontWeight: "800", color: "#000000" },
   segmentTextActive: { color: "#fff" },
   stepper: {
@@ -3428,7 +3429,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#EEE8DC",
   },
-  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#1C2620" },
+  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#0F1C33" },
   stepperInput: {
     flex: 1,
     textAlign: "center",
@@ -3451,7 +3452,7 @@ const styles = StyleSheet.create({
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#1C2620",
+    backgroundColor: "#0F1C33",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -3475,7 +3476,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#1C2620" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#0F1C33" },
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,
@@ -3522,6 +3523,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tabActivePill: { flex: 1.7, paddingHorizontal: 12, backgroundColor: orange },
-  tabText: { color: "#59615A", fontWeight: "700", fontSize: 12.5 },
+  tabText: { color: "#50627C", fontWeight: "700", fontSize: 12.5 },
   tabActive: { color: "#fff", fontWeight: "800" },
 });

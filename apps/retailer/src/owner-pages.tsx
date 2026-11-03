@@ -47,8 +47,8 @@ import { fonts } from "@loyalty-loop/design-tokens";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 
-const orange = "#E8703B";
-const ink = "#1C2620";
+const orange = "#0042AC";
+const ink = "#0F1C33";
 const muted = "#000000";
 const cream = "#F8EAD8";
 const card = "#FCFCFA";
@@ -2051,7 +2051,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: "#333C35",
+    borderColor: "#3B4B63",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: card,
@@ -2066,7 +2066,7 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "#333C35",
+    borderColor: "#3B4B63",
     borderRadius: 24,
     padding: 18,
     marginBottom: 16,
@@ -2087,7 +2087,7 @@ const styles = StyleSheet.create({
   },
   tutorialRow: { flexDirection: "row", gap: 13, alignItems: "flex-start" },
   tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#F7D9CB", alignItems: "center", justifyContent: "center" },
-  tutorialNumberText: { color: "#8C3820", fontWeight: "900" },
+  tutorialNumberText: { color: "#0042AC", fontWeight: "900" },
   tutorialAction: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44, borderRadius: 13, backgroundColor: cream, paddingHorizontal: 12, marginTop: 13 },
   tutorialActionText: { color: ink, fontSize: 13, fontWeight: "900" },
   body: { color: "#000000", lineHeight: 21, fontSize: 14 },
@@ -2162,7 +2162,7 @@ const styles = StyleSheet.create({
     width: "48%",
     minHeight: 118,
     borderWidth: 1.5,
-    borderColor: "#333C35",
+    borderColor: "#3B4B63",
     borderRadius: 19,
     backgroundColor: card,
     padding: 14,
@@ -2236,7 +2236,7 @@ const styles = StyleSheet.create({
     gap: 11,
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "#333C35",
+    borderColor: "#3B4B63",
     borderRadius: 20,
     padding: 15,
     marginBottom: 11,
@@ -2289,7 +2289,7 @@ const styles = StyleSheet.create({
   status: {
     borderRadius: 999,
     backgroundColor: "#F2D8C8",
-    color: "#9A4522",
+    color: "#00358A",
     paddingHorizontal: 8,
     paddingVertical: 5,
     overflow: "hidden",
@@ -2305,7 +2305,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  reviewRating: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FFF0E8", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999 },
+  reviewRating: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#DBE7FF", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999 },
   reviewRatingText: { color: ink, fontSize: 12, fontWeight: "900" },
   reply: {
     borderLeftWidth: 3,
@@ -2314,7 +2314,7 @@ const styles = StyleSheet.create({
     marginTop: 13,
   },
   replyTitle: { color: ink, fontWeight: "900", marginBottom: 4 },
-  aiCard: { backgroundColor: "#FFF0E8", borderRadius: 20, padding: 16, marginTop: 12, marginBottom: 4, gap: 6 },
+  aiCard: { backgroundColor: "#DBE7FF", borderRadius: 20, padding: 16, marginTop: 12, marginBottom: 4, gap: 6 },
   aiCardHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
   aiCardTitle: { color: ink, fontSize: 18, fontWeight: "900" },
   aiToggleRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 },
@@ -2323,9 +2323,9 @@ const styles = StyleSheet.create({
   aiKnob: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" },
   aiKnobOn: { transform: [{ translateX: 20 }] },
   aiReplyHeading: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  aiChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FFF0E8", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
+  aiChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#DBE7FF", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
   aiChipText: { color: orange, fontSize: 11, fontWeight: "900" },
-  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF0E8", borderRadius: 12, padding: 10, marginBottom: 6 },
+  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#DBE7FF", borderRadius: 12, padding: 10, marginBottom: 6 },
   aiNoteText: { color: ink, flex: 1, fontSize: 13 },
   date: { color: muted, fontSize: 11, marginTop: 12 },
 });
