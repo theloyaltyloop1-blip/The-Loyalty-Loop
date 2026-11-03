@@ -22,7 +22,8 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { CategoryCircles, HomeCollection, homeStyles } from './src/components/HomeCollection'
+import { CategoryCircles, HomeCollection, NextRewardHero, homeStyles } from './src/components/HomeCollection'
+import { RewardCelebration, markRewardsSeen, unseenReward } from './src/components/RewardCelebration'
 import { categoryCounts } from './src/home-rails'
 import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
 import { formatAddress } from './src/format-address'
@@ -1434,6 +1435,10 @@ function ShopDetail({
             shop={business}
             eyebrow={[business.category || 'Local business', openStatus(business.opening_hours)?.label].filter(Boolean).join(' · ')}
             stamps={membership && passStamps ? { filled: Math.min(value, threshold), total: threshold } : null}
+            count={!membership || programmeId === 'tiers' ? null
+              : programmeId === 'points' ? { value: String(value), of: ' pts' }
+              : spendShop ? (threshold > 0 ? { value: pounds(Math.min(value, threshold), business.country_code).replace(/\.00$/, ''), of: `/${pounds(threshold, business.country_code).replace(/\.00$/, '')}` } : null)
+              : passStamps ? { value: String(Math.min(value, threshold)), of: `/${threshold}` } : null}
             progress={membership && !passStamps ? passProgress : null}
             progressLabel={passLabel}
             code={membership ? <QRCode value={`loyaltyloop:customer:${userId}`} size={190} /> : null}
@@ -1713,7 +1718,15 @@ const featureStyles = StyleSheet.create({
   badgeText: { color: '#000000', fontSize: 12, fontWeight: '700' },
 })
 
-function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk }: {
+function greeting(firstName: string | undefined, now = new Date()) {
+  const hour = now.getHours()
+  const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'
+  const name = firstName?.trim().split(/\s+/)[0]
+  return name ? `${part},\n${name}.` : `Good\n${part.toLowerCase()}.`
+}
+
+function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk, firstName }: {
+  firstName?: string;
   businesses: Business[]; memberships: Membership[]; catalog: HomeTier[];
   announcements: Announcement[]; loading: boolean; onSelect: (business: Business) => void; onAsk: (query: string) => void;
 }) {
@@ -1724,7 +1737,9 @@ function HomeTab({ businesses, memberships, catalog, announcements, loading, onS
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
   return <>
-    <Text style={homeStyles.title}>Make a{ '\n' }local stop.</Text>
+    <Text style={homeStyles.dateLine}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}</Text>
+    <Text style={homeStyles.title}>{greeting(firstName)}</Text>
+    <NextRewardHero shops={businesses} memberships={memberships} catalog={catalog} onSelect={onSelect} />
     <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
     <CategoryCircles categories={categoryCounts(businesses)} selected={category} onSelect={setCategory} />
     <FeatureFilter selected={features} onChange={setFeatures} />
@@ -2180,13 +2195,16 @@ function FavouritesTab({
 // Discover tab back in the bottom bar; everything behind it is untouched.
 const SHOW_DISCOVER_TAB = false
 
+// Floating navy pill: the open tab is an ocean pill with its name, the rest are icons.
+const TAB_ON = '#04183D'
+const TAB_OFF = '#9DAEC4'
 const TABS: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
-  { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? primary : foreground} /> },
-  { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? primary : foreground} filled={active} /> },
-  { id: 'map', label: 'Map', icon: (active) => <MapPinIcon color={active ? primary : foreground} /> },
-  { id: 'news', label: 'News', icon: (active) => <MegaphoneIcon color={active ? primary : foreground} /> },
-  { id: 'rewards', label: 'Rewards', icon: (active) => <GiftIcon color={active ? primary : foreground} /> },
-  { id: 'favourites', label: 'Favourites', icon: (active) => <HeartIcon color={active ? primary : foreground} filled={active} /> },
+  { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? TAB_ON : TAB_OFF} /> },
+  { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? TAB_ON : TAB_OFF} filled={active} /> },
+  { id: 'map', label: 'Map', icon: (active) => <MapPinIcon color={active ? TAB_ON : TAB_OFF} /> },
+  { id: 'news', label: 'News', icon: (active) => <MegaphoneIcon color={active ? TAB_ON : TAB_OFF} /> },
+  { id: 'rewards', label: 'Rewards', icon: (active) => <GiftIcon color={active ? TAB_ON : TAB_OFF} /> },
+  { id: 'favourites', label: 'Saved', icon: (active) => <HeartIcon color={active ? TAB_ON : TAB_OFF} filled={active} /> },
 ]
 
 function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
@@ -2195,9 +2213,9 @@ function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => voi
       {TABS.filter(({ id }) => id !== 'discover' || SHOW_DISCOVER_TAB).map(({ id, label, icon }) => {
         const active = tab === id
         return (
-          <Pressable key={id} style={({ pressed }) => [styles.tab, pressed && styles.pressed]} onPress={() => onChange(id)}>
+          <Pressable key={id} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: active }} style={({ pressed }) => [styles.tab, active && styles.tabActive, pressed && styles.pressed]} onPress={() => onChange(id)}>
             {icon(active)}
-            <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+            {active && <Text style={styles.tabTextActive} numberOfLines={1}>{label}</Text>}
           </Pressable>
         )
       })}
@@ -2216,6 +2234,7 @@ function AppHome({ session }: { session: Session }) {
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [homeCatalog, setHomeCatalog] = useState<HomeTier[]>([])
   const [rewards, setRewards] = useState<Reward[]>([])
+  const [celebrate, setCelebrate] = useState<Reward | null>(null)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [platformNotices, setPlatformNotices] = useState<PlatformNotice[]>([])
   const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set())
@@ -2354,7 +2373,9 @@ function AppHome({ session }: { session: Session }) {
       const stats = ratingStats(ratings.error ? [] : ratings.data || [])
       setBusinesses((shops.data || []).map((shop: Business) => ({ ...shop, ...stats.get(shop.id) })))
       setMemberships((memberRows.data || []).map((m: any) => ({ ...m, rolling_spend_pence: spendRows.error ? null : rollingByShop.get(m.business_id) ?? 0 })))
-      setRewards((earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business })))
+      const rewardList: Reward[] = (earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business }))
+      setRewards(rewardList)
+      void unseenReward(rewardList).then(fresh => { if (fresh) setCelebrate(fresh) })
       // Only shops this customer has actually joined (and hasn't opted out of
       // promos from) — otherwise every shop on the platform shows up here.
       const newsMemberBusinessIds = new Set(
@@ -2452,10 +2473,19 @@ function AppHome({ session }: { session: Session }) {
     [businesses, shopperCountry.country.code],
   )
 
+  const celebration = (
+      <RewardCelebration
+        reward={celebrate}
+        onUse={() => { if (celebrate) void markRewardsSeen([celebrate.id]); setCelebrate(null); setSelected(null); setTab('rewards') }}
+        onLater={() => { if (celebrate) void markRewardsSeen([celebrate.id]); setCelebrate(null) }}
+      />
+  )
+
   if (selected) {
     return (
       <>
       {cardLinkedCheck}
+      {celebration}
       <ShopDetail
         business={selected}
         userId={userId}
@@ -2494,7 +2524,7 @@ function AppHome({ session }: { session: Session }) {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
-          {tab === 'home' && <HomeTab businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
+          {tab === 'home' && <HomeTab firstName={session.user.user_metadata?.first_name} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
           {tab === 'map' && <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
@@ -2504,6 +2534,7 @@ function AppHome({ session }: { session: Session }) {
         </ScrollView>
       )}
       {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
+      {celebration}
       <AskShopSheet visible={askShop !== null} initialQuery={askShop?.query ?? ''} location={askShop?.location} onClose={() => setAskShop(null)} onViewShop={id => { const shop=businesses.find(b => b.id === id); if(shop)setSelected(shop) }} />
       <SettingsSheet
         visible={showProfile}
@@ -2911,10 +2942,10 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 13, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // Bottom tab bar
-  tabs: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', backgroundColor: card, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.07)', paddingTop: 12, paddingBottom: 24 },
-  tab: { flex: 1, alignItems: 'center', gap: 3 },
-  tabText: { color: '#000000', fontWeight: '700', fontSize: 11 },
-  tabTextActive: { color: primary },
+  tabs: { position: 'absolute', left: 16, right: 16, bottom: 10, height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0F1C33', borderRadius: 999, paddingHorizontal: 8, shadowColor: '#0F1C33', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
+  tab: { height: 52, minWidth: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, paddingHorizontal: 12 },
+  tabActive: { backgroundColor: '#00D3FB', paddingHorizontal: 16 },
+  tabTextActive: { color: '#04183D', fontWeight: '800', fontSize: 15 },
 
   // Discover feed
   discoverGradient: { ...StyleSheet.absoluteFillObject },

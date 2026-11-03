@@ -52,6 +52,7 @@ import {
   X,
   type LucideIcon,
   Store,
+  ScanLine,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
@@ -182,6 +183,8 @@ type DashboardStats = {
   reviews: number;
   activeMembers: number;
   dormantMembers: number;
+  /** Stamps and purchases per day for the last 7 days, oldest first. */
+  week?: number[];
 };
 type MemberRow = {
   user_id: string;
@@ -226,6 +229,7 @@ const PREVIEW_STATS: DashboardStats = {
   reviews: 32,
   activeMembers: 96,
   dormantMembers: 52,
+  week: [9, 14, 11, 16, 21, 26, 13],
 };
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -1470,6 +1474,9 @@ function StatTile({
   );
 }
 
+// Home, Sapphire look: one big number on navy, the week as bars, one huge
+// Scan button. Setup steps only show while something is missing.
+const WEEKDAY = ["S", "M", "T", "W", "T", "F", "S"];
 function DashboardHome({
   business,
   stats,
@@ -1490,109 +1497,108 @@ function DashboardHome({
     { label: "Add your postcode", done: Boolean(business.postcode) },
     { label: "Write a short description", done: Boolean(business.description) },
   ];
-  const tileIcon = (Icon: typeof Users) => (
-    <Icon size={21} strokeWidth={2.1} color={orange} />
-  );
+  const spendShop = business.reward_model === "spend_threshold";
+  const week = stats.week ?? [];
+  const weekTotal = week.reduce((sum, n) => sum + n, 0);
+  const peak = Math.max(1, ...week);
+  const today = new Date().getDay();
+  const days = week.map((count, i) => ({ count, day: WEEKDAY[(today - (week.length - 1 - i) + 7) % 7], best: count === peak && count > 0 }));
   return (
-    <View>
-      <View style={styles.welcomeRow}>
-        <View>
-          <Text style={styles.dashboardLabel}>DASHBOARD</Text>
-          <Text style={styles.welcomeTitle}>WELCOME</Text>
-        </View>
+    <View style={{ gap: 14 }}>
+      <View style={styles.homeHeader}>
         {business.logo_url ? (
-          <Image
-            source={{ uri: business.logo_url }}
-            style={{ width: 42, height: 42, borderRadius: 21 }}
-          />
+          <Image source={{ uri: business.logo_url }} style={styles.homeHeaderLogo} />
         ) : (
-          <View
-            style={[
-              styles.homeLogo,
-              { backgroundColor: business.brand_color || orange },
-            ]}
-          >
-            <Text style={styles.homeLogoText}>{business.name.charAt(0)}</Text>
+          <View style={[styles.homeHeaderLogo, { backgroundColor: "#00D3FB", alignItems: "center", justifyContent: "center" }]}>
+            <Text style={styles.homeHeaderLetter}>{business.name.charAt(0).toUpperCase()}</Text>
           </View>
         )}
+        <Text style={styles.homeHeaderName} numberOfLines={1}>{business.name}</Text>
       </View>
-      <View style={styles.setupCard}>
-        <Text style={styles.setupTitle}>
-          {checklist.every((item) => item.done)
-            ? "Your shop is ready"
-            : "Finish setting up"}
-        </Text>
-        {checklist.map((item) => (
-          <View key={item.label} style={styles.checkRow}>
-            <View style={[styles.checkCircle, item.done && styles.checkDone]}>
-              <Text style={styles.checkMark}>{item.done ? "✓" : ""}</Text>
-            </View>
-            <Text style={[styles.checkText, item.done && styles.checkTextDone]}>
-              {item.label}
-            </Text>
+
+      <View style={styles.homePanel}>
+        <Text style={styles.homePanelLabel}>Last 30 days</Text>
+        <View style={styles.homeBigRow}>
+          <Text style={styles.homeBig} numberOfLines={1} adjustsFontSizeToFit>{stats.activeMembers}</Text>
+          {stats.dormantMembers > 0 ? (
+            <View style={styles.homeBadge}><Text style={styles.homeBadgeText}>{stats.dormantMembers} quiet</Text></View>
+          ) : null}
+        </View>
+        <Text style={styles.homeBigLabel}>{stats.activeMembers === 1 ? "regular came back" : "regulars came back"}</Text>
+        {week.length ? (
+          <View accessible accessibilityLabel={`${weekTotal} ${spendShop ? "purchases" : "stamps"} in the last 7 days`} style={styles.homeBars}>
+            {days.map((d, i) => (
+              <View key={i} style={styles.homeBarCol}>
+                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? "#83FD80" : "#2C66E0" }]} />
+                <Text style={styles.homeBarDay}>{d.day}</Text>
+              </View>
+            ))}
           </View>
-        ))}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open the setup guide"
-          onPress={onOpenGuide}
-          style={({ pressed }) => [styles.setupGuideButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.setupGuideText}>Open setup guide</Text>
-          <Text style={styles.setupGuideArrow}>›</Text>
-        </Pressable>
+        ) : null}
+        {week.length ? <Text style={styles.homeWeek}>{weekTotal} {spendShop ? "purchases" : "stamps"} this week</Text> : null}
       </View>
-      <View style={styles.statsGrid}>
-        <StatTile icon={tileIcon(Stamp)} value={stats.stamps} label={business.reward_model === "spend_threshold" ? "Purchases" : "Stamps"} />
-        <StatTile
-          icon={tileIcon(Users)}
-          value={stats.members}
-          label="Customers"
-        />
-        <StatTile icon={tileIcon(Gift)} value={stats.rewards} label="Rewards" />
-      </View>
-      <View style={styles.statsGrid}>
-        <StatTile
-          icon={tileIcon(BadgeCheck)}
-          value={stats.activeMembers}
-          label="Active Members"
-          wide
-        />
-        <StatTile
-          icon={tileIcon(Star)}
-          value={stats.dormantMembers}
-          label="Dormant Members"
-          wide
-        />
-      </View>
-      <View style={styles.pillRow}>
-        <Pressable
-          onPress={onIssueStamp}
-          style={({ pressed }) => [styles.pillButton, pressed && styles.pressed]}
-        >
-          <Stamp size={18} strokeWidth={2.2} color="#fff" />
-          <Text style={styles.pillButtonText}>{business.reward_model === "spend_threshold" ? "Record purchase" : "Issue Stamp"}</Text>
-        </Pressable>
-        <Pressable
-          onPress={onRedeemReward}
-          style={({ pressed }) => [styles.pillButton, pressed && styles.pressed]}
-        >
-          <Gift size={18} strokeWidth={2.2} color="#fff" />
-          <Text style={styles.pillButtonText}>Redeem Reward</Text>
-        </Pressable>
-      </View>
+
       <Pressable
-        onPress={onReport}
-        style={({ pressed }) => [
-          styles.reportButtonBlack,
-          pressed && styles.pressed,
-        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Scan a customer"
+        onPress={onIssueStamp}
+        style={({ pressed }) => [styles.homeScan, pressed && styles.pressed]}
       >
-        <Sparkles size={20} strokeWidth={2.2} color="#fff" />
-        <Text style={styles.reportButtonBlackText}>
-          Generate Business Report
-        </Text>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={styles.homeScanTitle}>Scan a customer</Text>
+          <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : "Stamp, spend or reward"}</Text>
+        </View>
+        <View style={styles.homeScanIcon}><ScanLine size={30} strokeWidth={2.2} color="#00D3FB" /></View>
       </Pressable>
+
+      <View style={styles.homePills}>
+        <Pressable accessibilityRole="button" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, { backgroundColor: "#83FD80" }, pressed && styles.pressed]}>
+          <Gift size={20} strokeWidth={2.2} color="#053107" />
+          <Text style={[styles.homePillText, { color: "#053107" }]}>Redeem</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.homePill, { backgroundColor: "#0042AC" }, pressed && styles.pressed]}>
+          <Sparkles size={20} strokeWidth={2.2} color="#FFFFFF" />
+          <Text style={[styles.homePillText, { color: "#FFFFFF" }]}>Report</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.homeTiles}>
+        <View style={[styles.homeTile, { backgroundColor: "#CCF8FF" }]}>
+          <Text style={[styles.homeTileValue, { color: "#032F42" }]} numberOfLines={1} adjustsFontSizeToFit>{stats.members}</Text>
+          <Text style={[styles.homeTileLabel, { color: "#032F42" }]}>Customers</Text>
+        </View>
+        <View style={[styles.homeTile, { backgroundColor: "#DBE7FF" }]}>
+          <Text style={[styles.homeTileValue, { color: "#04183D" }]} numberOfLines={1} adjustsFontSizeToFit>{stats.stamps}</Text>
+          <Text style={[styles.homeTileLabel, { color: "#04183D" }]}>{spendShop ? "Purchases" : "Stamps"}</Text>
+        </View>
+        <View style={[styles.homeTile, { backgroundColor: "#DCFFDB" }]}>
+          <Text style={[styles.homeTileValue, { color: "#053107" }]} numberOfLines={1} adjustsFontSizeToFit>{stats.rewards}</Text>
+          <Text style={[styles.homeTileLabel, { color: "#053107" }]}>Rewards</Text>
+        </View>
+      </View>
+
+      {checklist.some((item) => !item.done) ? (
+        <View style={styles.setupCard}>
+          <Text style={styles.setupTitle}>Finish setting up</Text>
+          {checklist.map((item) => (
+            <View key={item.label} style={styles.checkRow}>
+              <View style={[styles.checkCircle, item.done && styles.checkDone]}>
+                <Text style={styles.checkMark}>{item.done ? "✓" : ""}</Text>
+              </View>
+              <Text style={[styles.checkText, item.done && styles.checkTextDone]}>{item.label}</Text>
+            </View>
+          ))}
+          <Pressable accessibilityRole="button" accessibilityLabel="Open the setup guide" onPress={onOpenGuide} style={({ pressed }) => [styles.setupGuideButton, pressed && styles.pressed]}>
+            <Text style={styles.setupGuideText}>Open setup guide</Text>
+            <Text style={styles.setupGuideArrow}>›</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable accessibilityRole="button" onPress={onOpenGuide} style={({ pressed }) => [styles.homeGuideLink, pressed && styles.pressed]}>
+          <Text style={styles.homeGuideLinkText}>Setup guide</Text>
+          <ChevronRight size={18} color="#0042AC" />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -2360,7 +2366,22 @@ function Dashboard({
         .select("id", { count: "exact", head: true })
         .eq("business_id", selected.id),
       supabase.rpc("get_business_members", { _business_id: selected.id }),
-    ]).then(([members, stamps, todayActions, rewards, redeemed, reviews, memberRows]) => {
+      supabase
+        .from("transactions")
+        .select("created_at")
+        .eq("business_id", selected.id)
+        .in("type", ["stamp", "spend"])
+        .is("voided_at", null)
+        .gte("created_at", new Date(startOfToday.getTime() - 6 * 86400000).toISOString())
+        .limit(5000),
+    ]).then(([members, stamps, todayActions, rewards, redeemed, reviews, memberRows, weekRows]) => {
+      const week = [0, 0, 0, 0, 0, 0, 0];
+      ((weekRows.data || []) as { created_at: string }[]).forEach((row) => {
+        const day = new Date(row.created_at);
+        day.setHours(0, 0, 0, 0);
+        const back = Math.round((startOfToday.getTime() - day.getTime()) / 86400000);
+        if (back >= 0 && back < 7) week[6 - back]++;
+      });
       const cutoff = Date.now() - 30 * 86400000;
       let activeMembers = 0,
         dormantMembers = 0;
@@ -2379,6 +2400,7 @@ function Dashboard({
         reviews: reviews.count || 0,
         activeMembers,
         dormantMembers,
+        week: weekRows.error ? undefined : week,
       };
       setStats(nextStats);
       void syncRetailerWidget({
@@ -2948,6 +2970,35 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "700",
   },
+  homeHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  homeHeaderLogo: { width: 38, height: 38, borderRadius: 19 },
+  homeHeaderLetter: { color: "#04183D", fontSize: 16, fontWeight: "900" },
+  homeHeaderName: { flex: 1, fontSize: 17, fontWeight: "800", color: "#0F1C33" },
+  homePanel: { backgroundColor: "#071122", borderRadius: 32, padding: 22, gap: 6 },
+  homePanelLabel: { color: "#9DAEC4", fontSize: 13, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
+  homeBigRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 },
+  homeBig: { color: "#FFFFFF", fontFamily: FONT_DISPLAY, fontSize: 92, lineHeight: 94, letterSpacing: -5, includeFontPadding: false, flexShrink: 1 },
+  homeBadge: { height: 30, paddingHorizontal: 12, borderRadius: 999, backgroundColor: "#26344A", justifyContent: "center" },
+  homeBadgeText: { color: "#CDD9E8", fontSize: 14, fontWeight: "800" },
+  homeBigLabel: { color: "#CDD9E8", fontSize: 20, fontWeight: "700", letterSpacing: -0.4 },
+  homeBars: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 96, marginTop: 14 },
+  homeBarCol: { flex: 1, alignItems: "center", gap: 6 },
+  homeBar: { width: "100%", borderRadius: 10 },
+  homeBarDay: { color: "#9DAEC4", fontSize: 12, fontWeight: "700" },
+  homeWeek: { color: "#83FD80", fontSize: 14, fontWeight: "800", marginTop: 8 },
+  homeScan: { minHeight: 116, borderRadius: 32, backgroundColor: "#00D3FB", flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
+  homeScanTitle: { color: "#04183D", fontFamily: FONT_DISPLAY, fontSize: 30, lineHeight: 33, letterSpacing: -1.2 },
+  homeScanSub: { color: "#04183D", fontSize: 15, fontWeight: "700", opacity: 0.75 },
+  homeScanIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#04183D", alignItems: "center", justifyContent: "center" },
+  homePills: { flexDirection: "row", gap: 10 },
+  homePill: { flex: 1, height: 56, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  homePillText: { fontSize: 16, fontWeight: "800" },
+  homeTiles: { flexDirection: "row", gap: 10 },
+  homeTile: { flex: 1, borderRadius: 22, padding: 14, gap: 2 },
+  homeTileValue: { fontFamily: FONT_DISPLAY, fontSize: 30, letterSpacing: -1.2 },
+  homeTileLabel: { fontSize: 13, fontWeight: "700" },
+  homeGuideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 48 },
+  homeGuideLinkText: { color: "#0042AC", fontSize: 15, fontWeight: "800" },
   welcomeRow: {
     flexDirection: "row",
     alignItems: "center",

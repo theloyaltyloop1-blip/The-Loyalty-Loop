@@ -13,6 +13,7 @@ export function ShopPass({
   shop,
   eyebrow,
   stamps,
+  count,
   progress,
   progressLabel,
   code,
@@ -24,6 +25,8 @@ export function ShopPass({
   shop: { name: string; logo_url?: string | null; cover_url?: string | null };
   eyebrow: string;
   stamps: { filled: number; total: number } | null;
+  /** The big number on a member's card ("3" of "/6"); hidden when null. */
+  count?: { value: string; of: string } | null;
   progress: number | null;
   progressLabel: string | null;
   code: ReactNode;
@@ -47,13 +50,19 @@ export function ShopPass({
         <Text style={[s.eyebrow, { color: ink }]} numberOfLines={1}>{eyebrow}</Text>
         <Text style={[s.title, { color: ink, fontFamily: skin.font }]} numberOfLines={2} adjustsFontSizeToFit>{shop.name}</Text>
 
+        {count ? (
+          <View style={s.countRow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Text style={[s.countValue, { color: ink }]} numberOfLines={1} adjustsFontSizeToFit>{count.value}</Text>
+            <Text style={[s.countOf, { color: ink }]} numberOfLines={1}>{count.of}</Text>
+          </View>
+        ) : null}
         {stamps ? (
           <View style={s.stampRow} accessibilityLabel={progressLabel ?? undefined}>
             {Array.from({ length: stamps.total }, (_, i) => {
               const filled = i < stamps.filled;
               return (
                 <View key={i} style={[s.stamp, { borderColor: filled ? skin.accent : skin.panelBorder, backgroundColor: filled ? skin.accent : "transparent" }]}>
-                  {filled ? <StampIcon icon={d.icon} color={skin.onAccent} size={16} /> : null}
+                  {filled ? <StampIcon icon={d.icon} color={skin.onAccent} size={22} /> : null}
                 </View>
               );
             })}
@@ -63,7 +72,7 @@ export function ShopPass({
             <View style={[s.fill, { width: `${Math.round(Math.min(1, Math.max(0, progress)) * 100)}%`, backgroundColor: skin.accent }]} />
           </View>
         ) : null}
-        {progressLabel ? <Text style={[s.progressLabel, { color: ink }]}>{progressLabel}</Text> : null}
+        {progressLabel ? <Text style={[s.progressLabel, count && s.progressLabelBig, { color: ink }]}>{progressLabel}</Text> : null}
 
         {code ? <View style={s.codeTile}>{code}</View> : null}
         {action}
@@ -104,11 +113,15 @@ const s = StyleSheet.create({
   logoLetter: { fontSize: 40, fontWeight: "800" },
   eyebrow: { fontSize: 16, fontWeight: "500", marginTop: 16, opacity: 0.9 },
   title: { fontSize: 44, lineHeight: 50, fontWeight: "800", textAlign: "center", marginTop: 6, letterSpacing: -0.5 },
-  stampRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 22, maxWidth: 342 },
-  stamp: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
-  track: { height: 8, borderRadius: 4, alignSelf: "stretch", marginTop: 24, overflow: "hidden" },
-  fill: { height: "100%", borderRadius: 4 },
+  countRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "center", marginTop: 18, maxWidth: "100%" },
+  countValue: { fontSize: 120, lineHeight: 118, fontWeight: "900", letterSpacing: -6, includeFontPadding: false },
+  countOf: { fontSize: 40, lineHeight: 52, fontWeight: "800", letterSpacing: -1.5, opacity: 0.55, marginLeft: 4, includeFontPadding: false },
+  stampRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 10, marginTop: 22, maxWidth: 342 },
+  stamp: { width: 44, height: 44, borderRadius: 14, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  track: { height: 14, borderRadius: 7, alignSelf: "stretch", marginTop: 24, overflow: "hidden" },
+  fill: { height: "100%", borderRadius: 7 },
   progressLabel: { fontSize: 15, fontWeight: "600", marginTop: 12, textAlign: "center" },
+  progressLabelBig: { fontSize: 22, lineHeight: 27, fontWeight: "800", letterSpacing: -0.5, marginTop: 16, maxWidth: 300 },
   codeTile: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 22, marginTop: 26, alignItems: "center" },
   fields: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 24, paddingTop: 30, paddingBottom: 26, rowGap: 22 },
   field: { width: "50%", paddingRight: 8 },
