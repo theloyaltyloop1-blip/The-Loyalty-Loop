@@ -1,0 +1,47 @@
+/* Poster-look effects. Grain is an SVG noise tile; yellow is #FFFF00 and only
+   ever sits on dark or blue grounds, where it reads. */
+:root {
+  --fx-yellow: #FFFF00;
+  --fx-navy: #04183D;
+  --fx-ink: #071122;
+  --fx-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fx-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.fx-grain { position: relative; isolation: isolate; }
+.fx-grain::after { content: ''; position: absolute; inset: 0; background-image: var(--fx-grain); background-size: 180px; mix-blend-mode: overlay; opacity: .35; pointer-events: none; z-index: 0; border-radius: inherit; }
+.fx-grain > * { position: relative; z-index: 1; }
+
+/* Preloader */
+.fx-preloader { position: fixed; inset: 0; z-index: 100; background: #000; color: #fff; display: grid; place-items: center; transition: transform .75s var(--fx-ease); }
+.fx-preloader.is-lifting { transform: translateY(-100%); }
+.fx-preloader-word { font-family: var(--font-poster); font-weight: 900; font-size: clamp(64px, 16vw, 220px); letter-spacing: -0.04em; line-height: 1; color: var(--fx-yellow); }
+.fx-preloader-count { position: absolute; left: 32px; bottom: 28px; font: 600 clamp(28px, 4vw, 56px)/1 var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.fx-preloader-tag { position: absolute; right: 32px; bottom: 34px; font: 700 12px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+
+/* Page wipe */
+.fx-wipe { position: fixed; inset: 0; z-index: 90; background: var(--fx-yellow); pointer-events: none; animation: fx-wipe .7s var(--fx-ease) forwards; }
+@keyframes fx-wipe { from { transform: translateY(0); } to { transform: translateY(-101%); } }
+
+/* Reveal */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] { opacity: 0; transform: translateY(40px); transition: opacity .9s var(--fx-ease), transform .9s var(--fx-ease); transition-delay: calc(var(--d, 0) * 90ms); }
+  [data-reveal].is-in { opacity: 1; transform: none; }
+}
+
+/* Magnetic */
+[data-magnetic] { transition: transform .35s var(--fx-ease), background-color .2s, color .2s; will-change: transform; }
+
+/* Context cursor */
+.fx-cursor { position: fixed; left: 0; top: 0; z-index: 95; width: 0; height: 0; pointer-events: none; }
+.fx-cursor::before { content: ''; position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 999px; background: var(--fx-yellow); mix-blend-mode: difference; transition: transform .3s var(--fx-ease), opacity .2s; }
+.fx-cursor span { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%) scale(.3); opacity: 0; padding: 12px 18px; border-radius: 999px; background: var(--fx-yellow); color: var(--fx-navy); font: 800 13px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; transition: transform .35s var(--fx-ease), opacity .2s; }
+.fx-cursor.has-label::before { opacity: 0; transform: scale(.2); }
+.fx-cursor.has-label span { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+/* Confetti */
+.fx-confetti { position: fixed; inset: 0; z-index: 96; pointer-events: none; overflow: hidden; }
+.fx-confetti i { position: absolute; top: -20px; animation: fx-fall linear forwards; }
+@keyframes fx-fall { to { transform: translateY(110vh) rotate(720deg); } }
+.fx-confetti-note { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 16px 26px; border-radius: 999px; background: var(--fx-navy); color: var(--fx-yellow); font: 900 clamp(22px, 3vw, 34px)/1 var(--font-poster); text-transform: uppercase; letter-spacing: -0.01em; animation: fx-pop .5s var(--fx-ease) both; }
+@keyframes fx-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } }

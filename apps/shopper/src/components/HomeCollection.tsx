@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { colors as c, fonts } from '../theme'
+import { Grain, POSTER_FONT, YELLOW } from './Poster'
 import { homeProgress, type HomeShop, type HomeMember, type HomeTier } from '../home-progress'
 import { shopMoney } from '../money'
 import { ratingLabel } from '../ratings'
@@ -137,6 +138,8 @@ export function NextRewardHero<T extends RailShop>({ shops, memberships, catalog
   const dots = !progress.spend && progress.unit !== 'points' && threshold <= 12
   return <View style={s.nextCard}>
     <View style={s.nextGlow} />
+    <View style={s.nextStreak} />
+    <Grain />
     <View style={s.nextShop}>
       <View style={s.nextLogo}>{shop.logo_url ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : <Text style={s.nextLogoText}>{shop.name.trim().charAt(0).toUpperCase()}</Text>}</View>
       <Text style={s.nextShopName} numberOfLines={1}>{shop.name}</Text>
@@ -256,7 +259,7 @@ export function HomeCollection<T extends RailShop>({ shops, featured, membership
 
 export const homeStyles = StyleSheet.create({
   dateLine: { fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: c.muted, marginTop: 8 },
-  title: { fontFamily: fonts.nativeDisplay, fontSize: 46, lineHeight: 48, letterSpacing: -2, color: c.foreground, marginTop: 10, marginBottom: 20 },
+  title: { fontFamily: POSTER_FONT, fontSize: 52, lineHeight: 50, letterSpacing: -2, textTransform: 'uppercase', color: c.foreground, marginTop: 14, marginBottom: 20 },
   sectionHeading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 23, color: c.foreground, marginTop: 32, marginBottom: 16 },
 })
 const s = StyleSheet.create({
@@ -266,15 +269,16 @@ const s = StyleSheet.create({
   nextLogo: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   nextLogoText: { color: '#0042AC', fontSize: 14, fontWeight: '900' },
   nextShopName: { flex: 1, color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  nextBig: { color: '#00D3FB', fontFamily: fonts.nativeDisplay, fontSize: 72, lineHeight: 74, letterSpacing: -4, includeFontPadding: false },
-  nextLine: { color: '#FFFFFF', fontSize: 24, lineHeight: 28, fontWeight: '700', letterSpacing: -0.7, marginTop: 4 },
+  nextBig: { color: YELLOW, fontFamily: POSTER_FONT, fontSize: 80, lineHeight: 78, letterSpacing: -3, textTransform: 'uppercase', includeFontPadding: false },
+  nextStreak: { position: 'absolute', left: -40, top: 40, width: 520, height: 70, backgroundColor: '#FFFFFF', opacity: 0.07, transform: [{ rotate: '-24deg' }] },
+  nextLine: { color: '#FFFFFF', fontSize: 21, lineHeight: 25, fontWeight: '600', letterSpacing: -0.3, textTransform: 'uppercase', marginTop: 6 },
   nextDots: { flexDirection: 'row', gap: 6 },
   nextDot: { flex: 1, aspectRatio: 1, maxWidth: 28, borderRadius: 999, borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
-  nextDotOn: { backgroundColor: '#83FD80', borderColor: '#83FD80' },
+  nextDotOn: { backgroundColor: YELLOW, borderColor: YELLOW },
   nextTrack: { height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.22)', overflow: 'hidden' },
-  nextFill: { height: '100%', borderRadius: 6, backgroundColor: '#83FD80' },
+  nextFill: { height: '100%', borderRadius: 6, backgroundColor: YELLOW },
   nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, paddingHorizontal: 20, borderRadius: 999, backgroundColor: '#FFFFFF' },
-  nextButtonText: { color: '#0F1C33', fontSize: 15, fontWeight: '800' },
+  nextButtonText: { color: '#0F1C33', fontSize: 15, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
   pressed: { opacity: 0.78 },
   hero: { borderRadius: 22, overflow: 'hidden', backgroundColor: c.olive },
   photo: { height: 128, backgroundColor: c.sage, overflow: 'hidden' },

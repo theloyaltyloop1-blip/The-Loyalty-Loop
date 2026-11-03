@@ -47,6 +47,8 @@ import QRCode from 'react-native-qrcode-svg'
 import type { Session } from '@supabase/supabase-js'
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
 import { Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
+import { Rubik_800ExtraBold, Rubik_900Black } from '@expo-google-fonts/rubik'
+import { AppIntro, CornerLabels, FadeUp } from './src/components/Poster'
 import { colors, fonts } from './src/theme'
 import { encodeRewardQr } from './src/reward-qr'
 import { hasSupabaseConfig, supabase } from './src/supabase'
@@ -1737,9 +1739,9 @@ function HomeTab({ businesses, memberships, catalog, announcements, loading, onS
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
   return <>
-    <Text style={homeStyles.dateLine}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}</Text>
-    <Text style={homeStyles.title}>{greeting(firstName)}</Text>
-    <NextRewardHero shops={businesses} memberships={memberships} catalog={catalog} onSelect={onSelect} />
+    <FadeUp style={{ marginTop: 6 }}><CornerLabels left={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()} right="LOCAL LOYALTY" /></FadeUp>
+    <FadeUp delay={80}><Text style={homeStyles.title}>{greeting(firstName)}</Text></FadeUp>
+    <FadeUp delay={180}><NextRewardHero shops={businesses} memberships={memberships} catalog={catalog} onSelect={onSelect} /></FadeUp>
     <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
     <CategoryCircles categories={categoryCounts(businesses)} selected={category} onSelect={setCategory} />
     <FeatureFilter selected={features} onChange={setFeatures} />
@@ -2563,12 +2565,13 @@ function AppHome({ session }: { session: Session }) {
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_600SemiBold, Inter_700Bold })
+  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_600SemiBold, Inter_700Bold, Rubik_800ExtraBold, Rubik_900Black })
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppRoot />
         <AppAlertHost />
+        <AppIntro />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
@@ -2944,7 +2947,7 @@ const styles = StyleSheet.create({
   // Bottom tab bar
   tabs: { position: 'absolute', left: 16, right: 16, bottom: 10, height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0F1C33', borderRadius: 999, paddingHorizontal: 8, shadowColor: '#0F1C33', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
   tab: { height: 52, minWidth: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, paddingHorizontal: 12 },
-  tabActive: { backgroundColor: '#00D3FB', paddingHorizontal: 16 },
+  tabActive: { backgroundColor: '#FFFF00', paddingHorizontal: 16 },
   tabTextActive: { color: '#04183D', fontWeight: '800', fontSize: 15 },
 
   // Discover feed

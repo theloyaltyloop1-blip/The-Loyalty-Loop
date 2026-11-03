@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
+import { Grain, POSTER_FONT, YELLOW } from './Poster'
 
 // Full-screen "Reward unlocked" moment, shown once per new reward.
 // Seen reward ids live in SecureStore; the first run only records what's
@@ -32,7 +33,7 @@ export async function markRewardsSeen(ids: string[]) {
   }
 }
 
-const BITS = ['#0042AC', '#00D3FB', '#04183D', '#FFFFFF']
+const BITS = [YELLOW, '#00D3FB', '#83FD80', '#FFFFFF']
 
 export function RewardCelebration({ reward, onUse, onLater }: {
   reward: { title: string; business?: { name: string } | null } | null
@@ -65,6 +66,9 @@ export function RewardCelebration({ reward, onUse, onLater }: {
   return (
     <Modal visible animationType="fade" statusBarTranslucent onRequestClose={onLater}>
       <View style={s.screen}>
+        <View style={s.streak} />
+        <View style={[s.streak, s.streakTwo]} />
+        <Grain opacity={0.28} />
         {bits.map((bit, i) => <Animated.View key={i} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[s.bit, bit, { opacity: fall, transform: [...bit.transform, { translateY: fall.interpolate({ inputRange: [0, 1], outputRange: [-60, 0] }) }] }]} />)}
         <View style={s.badge}><Text style={s.badgeText}>Reward unlocked</Text></View>
         <Animated.Text accessibilityRole="header" style={[s.title, { transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }], opacity: pop }]} numberOfLines={4} adjustsFontSizeToFit>{title}.</Animated.Text>
@@ -79,16 +83,18 @@ export function RewardCelebration({ reward, onUse, onLater }: {
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#83FD80', paddingHorizontal: 22, paddingTop: 72, paddingBottom: 40 },
+  screen: { flex: 1, backgroundColor: '#0042AC', paddingHorizontal: 22, paddingTop: 72, paddingBottom: 40, overflow: 'hidden' },
+  streak: { position: 'absolute', left: -80, top: 120, width: 900, height: 120, backgroundColor: '#00D3FB', opacity: 0.18, transform: [{ rotate: '-28deg' }] },
+  streakTwo: { top: 380, height: 60, backgroundColor: '#FFFFFF', opacity: 0.08 },
   bit: { position: 'absolute' },
-  badge: { alignSelf: 'flex-start', height: 34, paddingHorizontal: 14, borderRadius: 999, backgroundColor: '#04183D', justifyContent: 'center' },
-  badgeText: { color: '#83FD80', fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
-  title: { marginTop: 34, color: '#04183D', fontFamily: 'Inter_700Bold', fontSize: 84, lineHeight: 80, letterSpacing: -5 },
-  copy: { marginTop: 20, color: '#04183D', fontSize: 20, lineHeight: 26, fontWeight: '600', maxWidth: 320 },
+  badge: { alignSelf: 'flex-start', height: 34, paddingHorizontal: 14, borderRadius: 999, backgroundColor: '#FFFFFF', justifyContent: 'center' },
+  badgeText: { color: '#04183D', fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+  title: { marginTop: 34, color: YELLOW, fontFamily: POSTER_FONT, fontSize: 92, lineHeight: 84, letterSpacing: -4, textTransform: 'uppercase' },
+  copy: { marginTop: 20, color: '#FFFFFF', fontSize: 19, lineHeight: 25, fontWeight: '600', textTransform: 'uppercase', maxWidth: 320 },
   actions: { marginTop: 'auto', gap: 10 },
-  primary: { height: 60, borderRadius: 999, backgroundColor: '#04183D', alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
+  primary: { height: 60, borderRadius: 999, backgroundColor: YELLOW, alignItems: 'center', justifyContent: 'center' },
+  primaryText: { color: '#04183D', fontSize: 17, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
   secondary: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  secondaryText: { color: '#04183D', fontSize: 16, fontWeight: '800' },
+  secondaryText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   pressed: { opacity: 0.8 },
 })

@@ -57,6 +57,8 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
 import { Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
+import { Rubik_800ExtraBold, Rubik_900Black } from "@expo-google-fonts/rubik";
+import { AppIntro, Grain, POSTER_FONT, YELLOW } from "./src/components/Poster";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
@@ -1517,6 +1519,8 @@ function DashboardHome({
       </View>
 
       <View style={styles.homePanel}>
+        <View style={styles.homeStreak} />
+        <Grain />
         <Text style={styles.homePanelLabel}>Last 30 days</Text>
         <View style={styles.homeBigRow}>
           <Text style={styles.homeBig} numberOfLines={1} adjustsFontSizeToFit>{stats.activeMembers}</Text>
@@ -1529,7 +1533,7 @@ function DashboardHome({
           <View accessible accessibilityLabel={`${weekTotal} ${spendShop ? "purchases" : "stamps"} in the last 7 days`} style={styles.homeBars}>
             {days.map((d, i) => (
               <View key={i} style={styles.homeBarCol}>
-                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? "#83FD80" : "#2C66E0" }]} />
+                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? YELLOW : "#2C66E0" }]} />
                 <Text style={styles.homeBarDay}>{d.day}</Text>
               </View>
             ))}
@@ -1548,7 +1552,7 @@ function DashboardHome({
           <Text style={styles.homeScanTitle}>Scan a customer</Text>
           <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : "Stamp, spend or reward"}</Text>
         </View>
-        <View style={styles.homeScanIcon}><ScanLine size={30} strokeWidth={2.2} color="#00D3FB" /></View>
+        <View style={styles.homeScanIcon}><ScanLine size={30} strokeWidth={2.2} color={YELLOW} /></View>
       </Pressable>
 
       <View style={styles.homePills}>
@@ -2607,12 +2611,13 @@ function Dashboard({
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_600SemiBold, Inter_700Bold });
+  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_600SemiBold, Inter_700Bold, Rubik_800ExtraBold, Rubik_900Black });
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppRoot />
         <AppAlertHost />
+        <AppIntro />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -2974,20 +2979,21 @@ const styles = StyleSheet.create({
   homeHeaderLogo: { width: 38, height: 38, borderRadius: 19 },
   homeHeaderLetter: { color: "#04183D", fontSize: 16, fontWeight: "900" },
   homeHeaderName: { flex: 1, fontSize: 17, fontWeight: "800", color: "#0F1C33" },
-  homePanel: { backgroundColor: "#071122", borderRadius: 32, padding: 22, gap: 6 },
+  homePanel: { backgroundColor: "#04183D", borderRadius: 32, padding: 22, gap: 6, overflow: "hidden" },
+  homeStreak: { position: "absolute", left: -60, top: 30, width: 700, height: 90, backgroundColor: "#0042AC", opacity: 0.55, transform: [{ rotate: "-24deg" }] },
   homePanelLabel: { color: "#9DAEC4", fontSize: 13, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
   homeBigRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 },
-  homeBig: { color: "#FFFFFF", fontFamily: FONT_DISPLAY, fontSize: 92, lineHeight: 94, letterSpacing: -5, includeFontPadding: false, flexShrink: 1 },
+  homeBig: { color: YELLOW, fontFamily: POSTER_FONT, fontSize: 104, lineHeight: 100, letterSpacing: -4, includeFontPadding: false, flexShrink: 1 },
   homeBadge: { height: 30, paddingHorizontal: 12, borderRadius: 999, backgroundColor: "#26344A", justifyContent: "center" },
   homeBadgeText: { color: "#CDD9E8", fontSize: 14, fontWeight: "800" },
-  homeBigLabel: { color: "#CDD9E8", fontSize: 20, fontWeight: "700", letterSpacing: -0.4 },
+  homeBigLabel: { color: "#FFFFFF", fontSize: 19, fontWeight: "700", letterSpacing: -0.2, textTransform: "uppercase" },
   homeBars: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 96, marginTop: 14 },
   homeBarCol: { flex: 1, alignItems: "center", gap: 6 },
-  homeBar: { width: "100%", borderRadius: 10 },
+  homeBar: { width: "100%", borderRadius: 8 },
   homeBarDay: { color: "#9DAEC4", fontSize: 12, fontWeight: "700" },
-  homeWeek: { color: "#83FD80", fontSize: 14, fontWeight: "800", marginTop: 8 },
-  homeScan: { minHeight: 116, borderRadius: 32, backgroundColor: "#00D3FB", flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
-  homeScanTitle: { color: "#04183D", fontFamily: FONT_DISPLAY, fontSize: 30, lineHeight: 33, letterSpacing: -1.2 },
+  homeWeek: { color: YELLOW, fontSize: 13, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase", marginTop: 8 },
+  homeScan: { minHeight: 120, borderRadius: 32, backgroundColor: YELLOW, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
+  homeScanTitle: { color: "#04183D", fontFamily: POSTER_FONT, fontSize: 34, lineHeight: 33, letterSpacing: -1.2, textTransform: "uppercase" },
   homeScanSub: { color: "#04183D", fontSize: 15, fontWeight: "700", opacity: 0.75 },
   homeScanIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#04183D", alignItems: "center", justifyContent: "center" },
   homePills: { flexDirection: "row", gap: 10 },
@@ -2995,7 +3001,7 @@ const styles = StyleSheet.create({
   homePillText: { fontSize: 16, fontWeight: "800" },
   homeTiles: { flexDirection: "row", gap: 10 },
   homeTile: { flex: 1, borderRadius: 22, padding: 14, gap: 2 },
-  homeTileValue: { fontFamily: FONT_DISPLAY, fontSize: 30, letterSpacing: -1.2 },
+  homeTileValue: { fontFamily: POSTER_FONT, fontSize: 32, letterSpacing: -1 },
   homeTileLabel: { fontSize: 13, fontWeight: "700" },
   homeGuideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 48 },
   homeGuideLinkText: { color: "#0042AC", fontSize: 15, fontWeight: "800" },

@@ -6,6 +6,7 @@
     "@bacons/apple-targets": "^5.0.0",
     "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.1",
+    "@expo-google-fonts/rubik": "^0.4.1",
     "@loyalty-loop/design-tokens": "*",
     "@supabase/supabase-js": "^2.112.2",
     "expo": "~54.0.36",

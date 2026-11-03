@@ -1,9 +1,10 @@
-import type { MouseEvent } from 'react'
+import { useRef, type CSSProperties, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Check, Gift, MapPin, QrCode } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { StoreBadges } from '@/components/store-badges'
+import { ContextCursor, Preloader, useEasterEgg, useMagnetic, useReveal, useScrollProgress } from '@/components/poster-fx'
 import { usePageMeta } from '@/lib/use-page-meta'
 import './landing.css'
 
@@ -23,10 +24,11 @@ function scrollToSection(event: MouseEvent<HTMLAnchorElement>) {
   window.history.replaceState(null, '', hash)
 }
 
+// How it works as three posters you scroll sideways through on a big screen.
 const STEPS = [
-  { icon: MapPin, tone: 'sage', title: 'Find your spot.', body: 'Explore participating shops on the map and join their loyalty cards.' },
-  { icon: QrCode, tone: 'amber', title: 'Show your code.', body: 'At the till, show your QR code or short code. Every visit adds a stamp towards your reward.' },
-  { icon: Gift, tone: 'orange', title: 'Enjoy your reward.', body: 'See your progress in the app. When your reward is ready, show the shop your redemption code.' },
+  { n: '01', tone: 'blue', title: 'Find your spot.', body: 'Explore participating shops on the map and join their loyalty cards.' },
+  { n: '02', tone: 'yellow', title: 'Show your code.', body: 'At the till, show your QR code or short code. Every visit adds a stamp towards your reward.' },
+  { n: '03', tone: 'ocean', title: 'Enjoy your reward.', body: 'See your progress in the app. When your reward is ready, show the shop your redemption code.' },
 ]
 
 const QUESTIONS = [
@@ -38,8 +40,8 @@ const QUESTIONS = [
 
 // Example cards for the hero stack. Shop names are illustrative, not real customers.
 const BACK_CARDS = [
-  { shop: 'Fade & Co. Barbers', reward: 'Every sixth trim free', tone: 'amber' },
-  { shop: 'Pip’s Bakehouse', reward: 'Collect 8 stamps, a loaf on us', tone: 'orange' },
+  { shop: 'Fade & Co. Barbers', reward: 'Every sixth trim free', tone: 'ocean' },
+  { shop: 'Pip’s Bakehouse', reward: 'Collect 8 stamps, a loaf on us', tone: 'jade' },
 ]
 
 const STAMPS_TOTAL = 10
@@ -47,13 +49,25 @@ const STAMPS_FILLED = 7
 
 export function Landing() {
   usePageMeta({ title: 'The Loyalty Loop: keep coming back to local', description: 'Digital loyalty cards for independent shops. Earn rewards with every visit, keep track of them, and give your regular places another visit.', path: '/' })
+  const page = useRef<HTMLDivElement>(null)
+  const hero = useRef<HTMLElement>(null)
+  const how = useRef<HTMLElement>(null)
+  useReveal(page)
+  useMagnetic(page)
+  const heroP = useScrollProgress(hero)
+  const howP = useScrollProgress(how)
+  const egg = useEasterEgg()
+
   return (
-    <div className="lp">
+    <div className="lp" ref={page}>
+      <Preloader />
+      <ContextCursor />
+      {egg.node}
       <a className="lp-skip" href="#main-content">Skip to content</a>
 
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-row">
-          <Link to="/" className="lp-brand" aria-label="The Loyalty Loop home">
+          <Link to="/" className="lp-brand" aria-label="The Loyalty Loop home" onClick={egg.onClick}>
             <LoopMark className="h-8 w-8" />
             <span>The Loyalty Loop</span>
           </Link>
@@ -61,7 +75,7 @@ export function Landing() {
             {NAV_LINKS.map((link) => <a key={link.href} href={link.href} onClick={scrollToSection}>{link.label}</a>)}
             <Link to="/help">Help</Link>
           </nav>
-          <Link to="/login" className="lp-btn lp-btn-quiet">
+          <Link to="/login" className="lp-btn lp-btn-quiet" data-magnetic>
             <span className="hidden sm:inline">Sign up or log in</span>
             <span className="sm:hidden">Sign in</span>
           </Link>
@@ -69,69 +83,90 @@ export function Landing() {
       </header>
 
       <main id="main-content">
-        <section className="lp-wrap lp-hero">
-          <div className="lp-hero-copy">
-            <h1>Your high street, in your pocket.</h1>
-            <p className="lp-lead">Keep the loyalty cards from your favourite local shops in one place, and get rewarded every time you visit.</p>
-            <div className="lp-actions">
-              <Link className="lp-btn lp-btn-primary" to="/signup">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
+        <section ref={hero} className="lp-hero fx-grain">
+          <div className="lp-frame" aria-hidden="true"><span>++++++</span><span>Local loyalty</span><span>2026</span></div>
+          <span className="lp-hero-ghost" aria-hidden="true" style={{ transform: `translateY(${heroP * 160}px)` }}>LOOP</span>
+          <div className="lp-wrap lp-hero-grid">
+            <div className="lp-hero-copy">
+              <p className="lp-kicker" data-reveal>Digital loyalty cards for independent shops</p>
+              <h1 data-reveal style={{ '--d': 1 } as CSSProperties}>Your high street, <em>in your pocket.</em></h1>
+              <p className="lp-lead" data-reveal style={{ '--d': 2 } as CSSProperties}>Keep the loyalty cards from your favourite local shops in one place, and get rewarded every time you visit.</p>
+              <div className="lp-actions" data-reveal style={{ '--d': 3 } as CSSProperties}>
+                <Link className="lp-btn lp-btn-primary" to="/signup" data-magnetic data-cursor="Join free">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
+              </div>
+              <div data-reveal style={{ '--d': 4 } as CSSProperties}><StoreBadges className="lp-badges" /></div>
             </div>
-            <StoreBadges className="lp-badges" />
-          </div>
 
-          <div className="lp-stack" role="img" aria-label="Example loyalty card: 6 of 8 stamps at a neighbourhood café, with two more shop cards behind it">
-            {BACK_CARDS.map((card, i) => (
-              <div key={card.shop} className={`lp-card lp-card-back lp-card-${card.tone}`} style={{ '--i': i } as React.CSSProperties} aria-hidden="true">
-                <span className="lp-card-shop">{card.shop}</span>
-                <span className="lp-card-reward">{card.reward}</span>
+            <div className="lp-stack" role="img" aria-label="Example loyalty card: 7 of 10 stamps at a neighbourhood café, with two more shop cards behind it" style={{ transform: `translateY(${heroP * -70}px)` }}>
+              {BACK_CARDS.map((card, i) => (
+                <div key={card.shop} className={`lp-card lp-card-back lp-card-${card.tone}`} style={{ '--i': i } as CSSProperties} aria-hidden="true">
+                  <span className="lp-card-shop">{card.shop}</span>
+                  <span className="lp-card-reward">{card.reward}</span>
+                </div>
+              ))}
+              <div className="lp-card lp-card-front" aria-hidden="true">
+                <div className="lp-card-top">
+                  <span className="lp-card-shop">Marlow Street Coffee</span>
+                  <LoopMark className="h-7 w-7" />
+                </div>
+                <p className="lp-card-title">The usual, please.</p>
+                <p className="lp-card-sub">Collect 10 stamps. One coffee on the house.</p>
+                <div className="lp-stamps">
+                  {Array.from({ length: STAMPS_TOTAL }, (_, i) => (
+                    <span key={i} className={i < STAMPS_FILLED ? 'lp-stamp is-filled' : 'lp-stamp'} style={{ '--s': i } as CSSProperties}>
+                      {i < STAMPS_FILLED ? <Check size={18} strokeWidth={2.5} /> : null}
+                    </span>
+                  ))}
+                </div>
+                <div className="lp-card-foot"><span>7 stamps</span><span>3 to your next coffee</span></div>
               </div>
-            ))}
-            <div className="lp-card lp-card-front" aria-hidden="true">
-              <div className="lp-card-top">
-                <span className="lp-card-shop">Marlow Street Coffee</span>
-                <LoopMark className="h-7 w-7" />
-              </div>
-              <p className="lp-card-title">The usual, please.</p>
-              <p className="lp-card-sub">Collect 8 stamps. One coffee on the house.</p>
-              <div className="lp-stamps">
-                {Array.from({ length: STAMPS_TOTAL }, (_, i) => (
-                  <span key={i} className={i < STAMPS_FILLED ? 'lp-stamp is-filled' : 'lp-stamp'} style={{ '--s': i } as React.CSSProperties}>
-                    {i < STAMPS_FILLED ? <Check size={18} strokeWidth={2.25} /> : null}
-                  </span>
-                ))}
-              </div>
-              <div className="lp-card-foot"><span>6 stamps</span><span>2 to your next coffee</span></div>
             </div>
           </div>
+          <a href="#film" className="lp-scroll" onClick={scrollToSection}>Proceed scrolling ↓</a>
         </section>
 
-        <section className="lp-wrap lp-reveal" aria-labelledby="lp-film-title">
-          <div className="lp-film">
-            <h2 id="lp-film-title">From the till to a free coffee.</h2>
+        <section id="film" className="lp-wrap lp-film-wrap" aria-labelledby="lp-film-title">
+          <div className="lp-film fx-grain" data-reveal>
+            <h2 id="lp-film-title">From the till <em>to a free coffee.</em></h2>
             <p>Twenty seconds on how a shop records a purchase and a card fills up.</p>
-            <video className="lp-film-video" controls playsInline preload="none" poster="/video/loyalty-loop-poster.jpg" aria-label="The Loyalty Loop in 21 seconds: a shop records three purchases and the customer unlocks a free coffee">
-              <source src="/video/loyalty-loop.mp4" type="video/mp4" />
-            </video>
+            <div data-cursor="Play">
+              <video className="lp-film-video" controls playsInline preload="none" poster="/video/loyalty-loop-poster.jpg" aria-label="The Loyalty Loop in 21 seconds: a shop records three purchases and the customer unlocks a free coffee">
+                <source src="/video/loyalty-loop.mp4" type="video/mp4" />
+              </video>
+            </div>
           </div>
         </section>
 
-        <section id="how-it-works" className="lp-wrap lp-how lp-reveal">
-          <h2>Same favourite places. One less thing to remember.</h2>
-          <ol className="lp-steps">
-            {STEPS.map(({ icon: Icon, tone, title, body }) => (
-              <li key={title}>
-                <span className={`lp-step-icon lp-tone-${tone}`}><Icon size={22} strokeWidth={1.75} aria-hidden="true" /></span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </li>
-            ))}
-          </ol>
-          <Link className="lp-link" to="/dashboard/discover">Find participating shops</Link>
+        <section id="how-it-works" ref={how} className="lp-how" aria-labelledby="lp-how-title">
+          <div className="lp-how-pin">
+            <h2 id="lp-how-title" className="lp-wrap">Same favourite places. <em>One less thing to remember.</em></h2>
+            <ol className="lp-steps" style={{ '--x': howP } as CSSProperties}>
+              {STEPS.map((step) => (
+                <li key={step.n} className={`lp-step lp-step-${step.tone} fx-grain`}>
+                  <span className="lp-step-n" aria-hidden="true">{step.n}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
+                </li>
+              ))}
+            </ol>
+            <div className="lp-wrap"><Link className="lp-link" to="/dashboard/discover" data-cursor="Explore">Find participating shops</Link></div>
+          </div>
         </section>
 
-        <section id="business" className="lp-wrap lp-reveal">
-          <div className="lp-biz">
-            <div className="lp-biz-preview" aria-hidden="true">
+        <section id="business" className="lp-wrap">
+          <div className="lp-biz fx-grain">
+            <div className="lp-biz-copy" data-reveal>
+              <p className="lp-kicker">For shop owners</p>
+              <h2>Give your regulars <em>a reason to return.</em></h2>
+              <p>You know their order. We help you reward their loyalty. Choose rewards, record visits from your phone, and see how your loyalty programme is doing.</p>
+              <p className="lp-biz-note">No paper cards to print or extra scanner to buy.</p>
+              <div className="lp-actions">
+                <Link className="lp-btn lp-btn-primary" to="/signup/owner" data-magnetic data-cursor="Start">Set up your business</Link>
+                <Link className="lp-link" to="/login">Log in to your business</Link>
+              </div>
+              <StoreBadges app="business" className="lp-badges" />
+            </div>
+            <div className="lp-biz-preview" aria-hidden="true" data-reveal style={{ '--d': 2 } as CSSProperties}>
               <div className="lp-record">
                 <p className="lp-record-label">Record a visit</p>
                 <div className="lp-record-code"><span>Customer code</span><strong>K7P 2QD</strong></div>
@@ -140,17 +175,7 @@ export function Landing() {
               </div>
               <div className="lp-record-toast"><Check size={16} strokeWidth={2.5} /> Stamp added. 3 more to their reward.</div>
             </div>
-            <div className="lp-biz-copy">
-              <h2>Give your regulars a reason to return.</h2>
-              <p>You know their order. We help you reward their loyalty. Choose rewards, record visits from your phone, and see how your loyalty programme is doing.</p>
-              <p className="lp-biz-note">No paper cards to print or extra scanner to buy.</p>
-              <div className="lp-actions">
-                <Link className="lp-btn lp-btn-primary" to="/signup/owner">Set up your business</Link>
-                <Link className="lp-link" to="/login">Log in to your business</Link>
-              </div>
-              <StoreBadges app="business" className="lp-badges" />
-            </div>
-            <div className="lp-biz-film">
+            <div className="lp-biz-film" data-reveal data-cursor="Play">
               <video className="lp-biz-video" controls playsInline preload="none" poster="/video/loyalty-loop-business-poster.jpg" aria-label="The Loyalty Loop for Business in 21 seconds: scan a customer's QR code, enter the amount, and they earn a reward">
                 <source src="/video/loyalty-loop-business.mp4" type="video/mp4" />
               </video>
@@ -158,11 +183,12 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="faq" className="lp-wrap lp-faq lp-reveal">
-          <h2>Before your next visit.</h2>
+        <section id="faq" className="lp-wrap lp-faq">
+          <h2 data-reveal>Before your <em>next visit.</em></h2>
           <dl className="lp-qa">
-            {QUESTIONS.map(([question, answer]) => (
-              <div key={question}>
+            {QUESTIONS.map(([question, answer], i) => (
+              <div key={question} data-reveal style={{ '--d': i } as CSSProperties}>
+                <span className="lp-qa-n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
                 <dt>{question}</dt>
                 <dd>{answer}</dd>
               </div>
@@ -170,16 +196,27 @@ export function Landing() {
           </dl>
           <Link className="lp-link" to="/help">Visit the help centre</Link>
         </section>
+
+        <section className="lp-save fx-grain" aria-label="Start collecting">
+          <p className="lp-save-word" data-reveal>Save<br />for<br />later<span className="lp-save-tab" aria-hidden="true" /></p>
+          <div className="lp-wrap lp-save-row" data-reveal style={{ '--d': 2 } as CSSProperties}>
+            <p>Every visit to your favourite shop, counted. Free for shoppers.</p>
+            <Link className="lp-btn lp-btn-primary" to="/signup" data-magnetic data-cursor="Join free">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
+          </div>
+        </section>
       </main>
 
-      <footer className="lp-wrap lp-footer">
-        <div className="lp-footer-top">
-          <Link to="/" className="lp-brand"><LoopMark className="h-7 w-7" />The Loyalty Loop</Link>
-          <p>A little loyalty goes a long way.</p>
-        </div>
-        <div className="lp-footer-bottom">
-          <p>© {new Date().getFullYear()} The Loyalty Loop</p>
-          <LegalFooterLinks />
+      <footer className="lp-footer">
+        <div className="lp-wrap">
+          <div className="lp-footer-top">
+            <Link to="/" className="lp-brand"><LoopMark className="h-7 w-7" />The Loyalty Loop</Link>
+            <p>A little loyalty goes a long way.</p>
+          </div>
+          <div className="lp-footer-bottom">
+            <p>© {new Date().getFullYear()} The Loyalty Loop</p>
+            <LegalFooterLinks />
+          </div>
+          <div className="lp-frame lp-frame-foot" aria-hidden="true"><span>The Loyalty Loop</span><span>Independent shops</span><span>Follow for more</span></div>
         </div>
       </footer>
     </div>
