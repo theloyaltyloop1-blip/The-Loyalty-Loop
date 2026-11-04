@@ -49,7 +49,7 @@ import type { NativeOwnerPage } from "./owner-pages";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 const { foreground: green, primary: orange } = colors;
-const ink = "#0F1C33";
+const ink = "#111111";
 
 export type ShopBusiness = {
   id: string;
@@ -95,12 +95,12 @@ function poundsWhole(pence: number): string {
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const SETTINGS_TILES = {
-  blue: { bg: "#DBE7FF", fg: "#062B6B" },
+  blue: { bg: "#DBE7FF", fg: "#0E0E0F" },
   purple: { bg: "#F3E3D3", fg: "#8A4A2B" },
   amber: { bg: "#FBE7BF", fg: "#8A5A00" },
   green: { bg: "#DCEBD9", fg: "#2F7A3F" },
   teal: { bg: "#D7E6E0", fg: "#2E6656" },
-  slate: { bg: "#E4ECF6", fg: "#50627C" },
+  slate: { bg: "#EFEBE3", fg: "#6F6B64" },
   orange: { bg: "#FDE2D2", fg: "#C4531F" },
   red: { bg: "#F8DCD8", fg: "#B73B32" },
 } as const;
@@ -1260,7 +1260,7 @@ const styles = StyleSheet.create({
   segment: {
     flexDirection: "row",
     borderRadius: 16,
-    backgroundColor: "#E4ECF6",
+    backgroundColor: "#EFEBE3",
     padding: 4,
     gap: 4,
   },

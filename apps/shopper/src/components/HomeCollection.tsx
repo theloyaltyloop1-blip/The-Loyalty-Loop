@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { colors as c, fonts } from '../theme'
-import { Grain, POSTER_FONT, YELLOW } from './Poster'
+import { INK, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, STONE } from './Poster'
 import { homeProgress, type HomeShop, type HomeMember, type HomeTier } from '../home-progress'
 import { shopMoney } from '../money'
 import { ratingLabel } from '../ratings'
@@ -104,14 +104,28 @@ function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { sho
 }
 
 // Your loyalty cards as a swipeable row, the one closest to a reward first.
+// Chunky tiles in the quiet palette: shop name, then the count, big.
+const TILE_TONES = [
+  { bg: NIGHT, ink: PAPER, sub: 'rgba(244,241,234,0.55)' },
+  { bg: STONE, ink: INK, sub: 'rgba(17,17,17,0.5)' },
+  { bg: SAPPHIRE, ink: '#FFFFFF', sub: 'rgba(255,255,255,0.6)' },
+  { bg: '#FFFFFF', ink: INK, sub: 'rgba(17,17,17,0.5)' },
+]
 function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
-  const { width } = useWindowDimensions()
-  const cardWidth = Math.min(280, Math.round((width - 40) * 0.78))
   const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
     .sort((a, b) => b.progress.fraction - a.progress.fraction)
-  return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={cardWidth + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
-    {cards.map(({ shop, progress }) => {
-      return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={{ width: cardWidth }}><LoyaltyCard shop={shop} value={progress.value} target={progress.threshold ?? 1} showProgress={progress.threshold !== null} label={progress.label} reward={progress.title || "Your loyalty card"} stamps={shop.reward_model !== "spend_threshold" && !["points", "tiered"].includes(shop.loyalty_type || "")} compact /></Pressable>;
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={156 + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
+    {cards.map(({ shop, progress }, i) => {
+      const tone = TILE_TONES[i % TILE_TONES.length]
+      const money = (v: number) => shopMoney(shop.country_code)(v).replace(/\.00$/, '')
+      const value = progress.threshold === null ? null : progress.spend ? money(progress.value) : String(progress.value)
+      const of = progress.threshold === null ? null : progress.spend ? `/${money(progress.threshold)}` : `/${progress.threshold}`
+      return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.cardTile, { backgroundColor: tone.bg }, tone.bg === '#FFFFFF' && s.cardTileLine, pressed && s.pressed]}>
+        <Text style={[s.cardTileName, { color: tone.ink }]} numberOfLines={2}>{shop.name}</Text>
+        {value !== null
+          ? <Text style={[s.cardTileCount, { color: tone.ink }]} numberOfLines={1} adjustsFontSizeToFit>{value}<Text style={[s.cardTileOf, { color: tone.sub }]}>{of}</Text></Text>
+          : <Text style={[s.cardTileOf, { color: tone.sub }]} numberOfLines={2}>{progress.label}</Text>}
+      </Pressable>
     })}
   </ScrollView>
 }
@@ -137,9 +151,6 @@ export function NextRewardHero<T extends RailShop>({ shops, memberships, catalog
   const line = ready ? `${progress.title || 'Your reward'} is waiting.` : progress.spend ? `to go for ${reward}.` : `for ${reward}.`
   const dots = !progress.spend && progress.unit !== 'points' && threshold <= 12
   return <View style={s.nextCard}>
-    <View style={s.nextGlow} />
-    <View style={s.nextStreak} />
-    <Grain />
     <View style={s.nextShop}>
       <View style={s.nextLogo}>{shop.logo_url ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : <Text style={s.nextLogoText}>{shop.name.trim().charAt(0).toUpperCase()}</Text>}</View>
       <Text style={s.nextShopName} numberOfLines={1}>{shop.name}</Text>
@@ -152,7 +163,7 @@ export function NextRewardHero<T extends RailShop>({ shops, memberships, catalog
       ? <View style={s.nextDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{Array.from({ length: threshold }, (_, i) => <View key={i} style={[s.nextDot, i < progress.value && s.nextDotOn]} />)}</View>
       : <View style={s.nextTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={[s.nextFill, { width: `${Math.round(Math.min(1, progress.fraction) * 100)}%` }]} /></View>}
     <Pressable accessibilityRole="button" accessibilityLabel={`Show my ${shop.name} card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.nextButton, pressed && s.pressed]}>
-      <Text style={s.nextButtonText}>{ready ? 'Use it now' : 'Show my card'}</Text><Arrow color="#0F1C33" />
+      <Text style={s.nextButtonText}>{ready ? 'Use it now' : 'Show my card'}</Text><Arrow color={NIGHT} />
     </Pressable>
   </View>
 }
@@ -258,27 +269,29 @@ export function HomeCollection<T extends RailShop>({ shops, featured, membership
 }
 
 export const homeStyles = StyleSheet.create({
-  dateLine: { fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: c.muted, marginTop: 8 },
-  title: { fontFamily: POSTER_FONT, fontSize: 52, lineHeight: 50, letterSpacing: -2, textTransform: 'uppercase', color: c.foreground, marginTop: 14, marginBottom: 20 },
+  title: { fontFamily: SANS_HEAVY, fontSize: 46, lineHeight: 46, letterSpacing: -2.4, color: c.foreground, marginTop: 22, marginBottom: 24 },
   sectionHeading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 23, color: c.foreground, marginTop: 32, marginBottom: 16 },
 })
 const s = StyleSheet.create({
-  nextCard: { backgroundColor: '#0042AC', borderRadius: 30, padding: 22, gap: 16, overflow: 'hidden', marginBottom: 22 },
-  nextGlow: { position: 'absolute', right: -60, top: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: '#00D3FB', opacity: 0.22 },
+  nextCard: { backgroundColor: NIGHT, borderRadius: 28, padding: 24, gap: 18, marginBottom: 24, overflow: 'hidden' },
   nextShop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  nextLogo: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  nextLogoText: { color: '#0042AC', fontSize: 14, fontWeight: '900' },
-  nextShopName: { flex: 1, color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  nextBig: { color: YELLOW, fontFamily: POSTER_FONT, fontSize: 80, lineHeight: 78, letterSpacing: -3, textTransform: 'uppercase', includeFontPadding: false },
-  nextStreak: { position: 'absolute', left: -40, top: 40, width: 520, height: 70, backgroundColor: '#FFFFFF', opacity: 0.07, transform: [{ rotate: '-24deg' }] },
-  nextLine: { color: '#FFFFFF', fontSize: 21, lineHeight: 25, fontWeight: '600', letterSpacing: -0.3, textTransform: 'uppercase', marginTop: 6 },
+  nextLogo: { width: 30, height: 30, borderRadius: 15, backgroundColor: PAPER, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  nextLogoText: { color: NIGHT, fontSize: 13, fontWeight: '700' },
+  nextShopName: { flex: 1, color: 'rgba(244,241,234,0.62)', fontSize: 11, fontWeight: '500', letterSpacing: 1.6, textTransform: 'uppercase' },
+  nextBig: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 76, lineHeight: 76, letterSpacing: -4.5, includeFontPadding: false },
+  nextLine: { color: PAPER, fontFamily: 'Inter_600SemiBold', fontSize: 22, lineHeight: 27, letterSpacing: -0.6, marginTop: 6 },
+  cardTile: { width: 156, height: 116, borderRadius: 22, padding: 14, justifyContent: 'space-between' },
+  cardTileLine: { borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(17,17,17,0.18)' },
+  cardTileName: { fontFamily: SANS_MEDIUM, fontSize: 14, lineHeight: 17, letterSpacing: -0.2 },
+  cardTileCount: { fontFamily: SANS_HEAVY, fontSize: 36, letterSpacing: -2 },
+  cardTileOf: { fontFamily: SANS_MEDIUM, fontSize: 16, letterSpacing: -0.4 },
   nextDots: { flexDirection: 'row', gap: 6 },
-  nextDot: { flex: 1, aspectRatio: 1, maxWidth: 28, borderRadius: 999, borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
-  nextDotOn: { backgroundColor: YELLOW, borderColor: YELLOW },
-  nextTrack: { height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.22)', overflow: 'hidden' },
-  nextFill: { height: '100%', borderRadius: 6, backgroundColor: YELLOW },
-  nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, paddingHorizontal: 20, borderRadius: 999, backgroundColor: '#FFFFFF' },
-  nextButtonText: { color: '#0F1C33', fontSize: 15, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  nextDot: { flex: 1, aspectRatio: 1, maxWidth: 26, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(244,241,234,0.3)' },
+  nextDotOn: { backgroundColor: PAPER, borderColor: PAPER },
+  nextTrack: { height: 2, borderRadius: 1, backgroundColor: 'rgba(244,241,234,0.2)', overflow: 'hidden' },
+  nextFill: { height: '100%', backgroundColor: PAPER },
+  nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 20, borderRadius: 999, backgroundColor: PAPER },
+  nextButtonText: { color: NIGHT, fontFamily: SANS_MEDIUM, fontSize: 14 },
   pressed: { opacity: 0.78 },
   hero: { borderRadius: 22, overflow: 'hidden', backgroundColor: c.olive },
   photo: { height: 128, backgroundColor: c.sage, overflow: 'hidden' },

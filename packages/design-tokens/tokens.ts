@@ -3,7 +3,9 @@
  * Single source of truth for colours/fonts/shape language across
  * apps/web (Tailwind, mirrored in apps/web/src/index.css), apps/retailer, apps/shopper.
  *
- * 2026-11-03 Sapphire look, from the owner's reference videos: Sapphire Blue
+ * 2026-11-04 premium pass: warm paper (#F4F1EA) and near-black (#0E0E0F)
+ * surfaces with ink type; Sapphire #0042AC stays the one call-to-action colour.
+ * Earlier (2026-11-03) Sapphire look, from the owner's reference videos: Sapphire Blue
  * #0042AC is the call-to-action colour, Ocean Blue #00D3FB the bright accent,
  * Neon Jade #83FD80 the highlight, on cool cloudy-white surfaces with navy ink.
  * One clean grotesk (Inter) for display and body. The field names (olive, sage,
@@ -12,27 +14,27 @@
  */
 
 export const colors = {
-  background: '#F3F7FC',
-  foreground: '#0F1C33',
-  card: '#FDFDFE',
+  background: '#F4F1EA',
+  foreground: '#111111',
+  card: '#FFFFFF',
   primary: '#0042AC',
   primaryHover: '#00358A',
-  accent: '#00D3FB',
+  accent: '#8FB4FA',
   funGreen: '#178816',
-  ink: '#0F1C33',
-  muted: '#50627C',
+  ink: '#111111',
+  muted: '#6F6B64',
   destructive: '#DC2626',
-  border: '#DCE5F0',
+  border: '#E2DDD3',
 
-  olive: '#062B6B',
-  oliveInk: '#EEF4FF',
-  sage: '#CCF8FF',
-  sageInk: '#032F42',
-  peach: '#DCFFDB',
-  peachInk: '#053107',
+  olive: '#0E0E0F',
+  oliveInk: '#F4F1EA',
+  sage: '#E7E2D8',
+  sageInk: '#111111',
+  peach: '#DBE7FF',
+  peachInk: '#04183D',
   amber: '#F2B544',
   amberInk: '#2A2410',
-  orange: '#00D3FB',
+  orange: '#8FB4FA',
   orangeInk: '#04183D',
 } as const;
 

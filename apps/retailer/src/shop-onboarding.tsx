@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: cream },
   content: { flexGrow: 1, padding: 24, paddingBottom: 48 },
   dots: { flexDirection: "row", gap: 8, marginTop: 6, marginBottom: 26 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#CDD9E8" },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#DCD6CB" },
   dotActive: { width: 26, backgroundColor: orange },
   hero: { color: "#000000", fontSize: 36, lineHeight: 42, letterSpacing: -1, fontFamily: fonts.nativeDisplay },
   copy: { color: "#000000", fontSize: 16, lineHeight: 24, marginTop: 8 },

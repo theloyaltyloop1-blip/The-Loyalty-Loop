@@ -48,7 +48,7 @@ import { fonts } from "@loyalty-loop/design-tokens";
 const FONT_DISPLAY = fonts.nativeDisplay;
 
 const orange = "#0042AC";
-const ink = "#0F1C33";
+const ink = "#111111";
 const muted = "#000000";
 const cream = "#F8EAD8";
 const card = "#FCFCFA";
@@ -2051,7 +2051,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: "#3B4B63",
+    borderColor: "#3A3A3A",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: card,
@@ -2066,7 +2066,7 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "#3B4B63",
+    borderColor: "#3A3A3A",
     borderRadius: 24,
     padding: 18,
     marginBottom: 16,
@@ -2162,7 +2162,7 @@ const styles = StyleSheet.create({
     width: "48%",
     minHeight: 118,
     borderWidth: 1.5,
-    borderColor: "#3B4B63",
+    borderColor: "#3A3A3A",
     borderRadius: 19,
     backgroundColor: card,
     padding: 14,
@@ -2236,7 +2236,7 @@ const styles = StyleSheet.create({
     gap: 11,
     backgroundColor: card,
     borderWidth: 1.5,
-    borderColor: "#3B4B63",
+    borderColor: "#3A3A3A",
     borderRadius: 20,
     padding: 15,
     marginBottom: 11,

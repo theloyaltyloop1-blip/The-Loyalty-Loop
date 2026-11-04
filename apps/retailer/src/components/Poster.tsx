@@ -1,28 +1,31 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
+import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
 
-// Poster look (2026-11-03): heavy rounded caps (Rubik Black), neon yellow,
-// film grain, a branded intro. Kept identical in both apps.
-export const POSTER_FONT = 'Rubik_900Black'
-export const POSTER_FONT_HEAVY = 'Rubik_800ExtraBold'
-export const YELLOW = '#FFFF00'
+// Premium look (2026-11-04): warm paper and near-black, Inter at quiet weights
+// with an italic serif accent, hairlines, slow eased motion. Sapphire is only
+// for the main action. Kept identical in both apps.
+export const PAPER = '#F4F1EA'
+export const STONE = '#E7E2D8'
+export const NIGHT = '#0E0E0F'
+export const INK = '#111111'
+export const MUTED = '#6F6B64'
+export const HAIRLINE = 'rgba(17,17,17,0.12)'
+export const SAPPHIRE = '#0042AC'
+export const SERIF = 'InstrumentSerif_400Regular_Italic'
+export const SANS_MEDIUM = 'Inter_500Medium'
+/** Big numbers and headlines: heavy and tight, like the approved mockups. */
+export const SANS_HEAVY = 'Inter_800ExtraBold'
 
-const grain = require('../../assets/grain.png')
-
-/** Film grain over a colour block. Put it first inside a View with overflow hidden. */
-export function Grain({ opacity = 0.22 }: { opacity?: number }) {
-  return <View pointerEvents="none" style={StyleSheet.absoluteFill} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-    <Image source={grain} resizeMode="repeat" style={{ width: '100%', height: '100%', opacity }} />
-  </View>
-}
+const EASE = Easing.bezier(0.22, 1, 0.36, 1)
 
 let introShown = false
 
-/** Black screen with LOOP and a 000→100 count, then it lifts away. Once per launch. */
+/** Paper screen with the name and a hairline that fills, then it lifts away. Once per launch. */
 export function AppIntro() {
-  const { height } = useWindowDimensions()
+  const { height, width } = useWindowDimensions()
   const [visible, setVisible] = useState(!introShown)
   const [count, setCount] = useState(0)
+  const progress = useRef(new Animated.Value(0)).current
   const lift = useRef(new Animated.Value(0)).current
   useEffect(() => {
     if (!visible) return
@@ -32,24 +35,29 @@ export function AppIntro() {
     void AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
       if (cancelled) return
       if (reduce) { setVisible(false); return }
+      Animated.timing(progress, { toValue: 1, duration: 1200, easing: EASE, useNativeDriver: true }).start()
       const start = Date.now()
       timer = setInterval(() => {
-        const t = Math.min(1, (Date.now() - start) / 900)
+        const t = Math.min(1, (Date.now() - start) / 1200)
         setCount(Math.round((1 - Math.pow(1 - t, 3)) * 100))
         if (t >= 1) {
           if (timer) clearInterval(timer)
-          Animated.timing(lift, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => setVisible(false))
+          Animated.timing(lift, { toValue: 1, duration: 900, easing: EASE, useNativeDriver: true }).start(() => setVisible(false))
         }
-      }, 30)
+      }, 40)
     }).catch(() => setVisible(false))
     return () => { cancelled = true; if (timer) clearInterval(timer) }
-  }, [visible, lift])
+  }, [visible, progress, lift])
   if (!visible) return null
+  const line = width - 48
   return (
     <Animated.View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[s.intro, { transform: [{ translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -height] }) }] }]}>
-      <Text style={s.introWord}>LOOP</Text>
+      <Text style={s.introWord}>The Loyalty <Text style={s.introSerif}>Loop</Text></Text>
+      <View style={[s.introTrack, { width: line }]}>
+        <Animated.View style={[s.introFill, { width: line, transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-line, 0] }) }] }]} />
+      </View>
+      <Text style={s.introTag}>LOCAL LOYALTY</Text>
       <Text style={s.introCount}>{String(count).padStart(3, '0')}</Text>
-      <Text style={s.introTag}>THE LOYALTY LOOP · 2026</Text>
     </Animated.View>
   )
 }
@@ -58,21 +66,24 @@ export function AppIntro() {
 export function FadeUp({ delay = 0, children, style }: { delay?: number; children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const v = useRef(new Animated.Value(0)).current
   useEffect(() => {
-    Animated.timing(v, { toValue: 1, duration: 650, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
+    Animated.timing(v, { toValue: 1, duration: 1000, delay, easing: EASE, useNativeDriver: true }).start()
   }, [v, delay])
-  return <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }) }] }]}>{children}</Animated.View>
+  return <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>{children}</Animated.View>
 }
 
-/** Small caps label row, like the posters' corner text. */
-export function CornerLabels({ left, right, color = '#50627C' }: { left: string; right: string; color?: string }) {
+/** Small caps label row over a hairline, like gallery wall text. */
+export function CornerLabels({ left, right, color = MUTED }: { left: string; right: string; color?: string }) {
   return <View style={s.corners} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Text style={[s.corner, { color }]}>{left}</Text><Text style={[s.corner, { color }]}>{right}</Text></View>
 }
 
 const s = StyleSheet.create({
-  intro: { ...StyleSheet.absoluteFillObject, zIndex: 1000, elevation: 1000, backgroundColor: '#000000', alignItems: 'center', justifyContent: 'center' },
-  introWord: { color: YELLOW, fontFamily: POSTER_FONT, fontSize: 96, letterSpacing: -4 },
-  introCount: { position: 'absolute', left: 24, bottom: 48, color: '#FFFFFF', fontSize: 34, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  introTag: { position: 'absolute', right: 24, bottom: 56, color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '800', letterSpacing: 1.6 },
-  corners: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(15,28,51,0.25)' },
-  corner: { fontSize: 11, fontWeight: '800', letterSpacing: 1.6 },
+  intro: { ...StyleSheet.absoluteFillObject, zIndex: 1000, elevation: 1000, backgroundColor: PAPER, alignItems: 'center', justifyContent: 'center' },
+  introWord: { color: INK, fontFamily: SANS_MEDIUM, fontSize: 30, letterSpacing: -1.2 },
+  introSerif: { fontFamily: SERIF, fontSize: 33, letterSpacing: -0.3 },
+  introTrack: { position: 'absolute', left: 24, bottom: 76, height: StyleSheet.hairlineWidth * 2, backgroundColor: HAIRLINE, overflow: 'hidden' },
+  introFill: { height: '100%', backgroundColor: INK },
+  introTag: { position: 'absolute', left: 24, bottom: 44, color: MUTED, fontSize: 10, fontWeight: '500', letterSpacing: 1.8 },
+  introCount: { position: 'absolute', right: 24, bottom: 44, color: INK, fontSize: 12, fontWeight: '500', letterSpacing: 1, fontVariant: ['tabular-nums'] },
+  corners: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: HAIRLINE },
+  corner: { fontSize: 10, fontWeight: '500', letterSpacing: 1.8 },
 })

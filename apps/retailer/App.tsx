@@ -56,9 +56,9 @@ import {
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
-import { Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
-import { Rubik_800ExtraBold, Rubik_900Black } from "@expo-google-fonts/rubik";
-import { AppIntro, Grain, POSTER_FONT, YELLOW } from "./src/components/Poster";
+import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from "@expo-google-fonts/inter";
+import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument-serif";
+import { AppIntro, INK, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, STONE } from "./src/components/Poster";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
@@ -1511,7 +1511,7 @@ function DashboardHome({
         {business.logo_url ? (
           <Image source={{ uri: business.logo_url }} style={styles.homeHeaderLogo} />
         ) : (
-          <View style={[styles.homeHeaderLogo, { backgroundColor: "#00D3FB", alignItems: "center", justifyContent: "center" }]}>
+          <View style={[styles.homeHeaderLogo, { backgroundColor: NIGHT, alignItems: "center", justifyContent: "center" }]}>
             <Text style={styles.homeHeaderLetter}>{business.name.charAt(0).toUpperCase()}</Text>
           </View>
         )}
@@ -1519,8 +1519,6 @@ function DashboardHome({
       </View>
 
       <View style={styles.homePanel}>
-        <View style={styles.homeStreak} />
-        <Grain />
         <Text style={styles.homePanelLabel}>Last 30 days</Text>
         <View style={styles.homeBigRow}>
           <Text style={styles.homeBig} numberOfLines={1} adjustsFontSizeToFit>{stats.activeMembers}</Text>
@@ -1533,7 +1531,7 @@ function DashboardHome({
           <View accessible accessibilityLabel={`${weekTotal} ${spendShop ? "purchases" : "stamps"} in the last 7 days`} style={styles.homeBars}>
             {days.map((d, i) => (
               <View key={i} style={styles.homeBarCol}>
-                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? YELLOW : "#2C66E0" }]} />
+                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? PAPER : "#3A3A3A" }]} />
                 <Text style={styles.homeBarDay}>{d.day}</Text>
               </View>
             ))}
@@ -1552,32 +1550,32 @@ function DashboardHome({
           <Text style={styles.homeScanTitle}>Scan a customer</Text>
           <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : "Stamp, spend or reward"}</Text>
         </View>
-        <View style={styles.homeScanIcon}><ScanLine size={30} strokeWidth={2.2} color={YELLOW} /></View>
+        <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={SAPPHIRE} /></View>
       </Pressable>
 
       <View style={styles.homePills}>
-        <Pressable accessibilityRole="button" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, { backgroundColor: "#83FD80" }, pressed && styles.pressed]}>
-          <Gift size={20} strokeWidth={2.2} color="#053107" />
-          <Text style={[styles.homePillText, { color: "#053107" }]}>Redeem</Text>
+        <Pressable accessibilityRole="button" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, { backgroundColor: STONE }, pressed && styles.pressed]}>
+          <Gift size={19} strokeWidth={1.8} color={INK} />
+          <Text style={[styles.homePillText, { color: INK }]}>Redeem</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.homePill, { backgroundColor: "#0042AC" }, pressed && styles.pressed]}>
-          <Sparkles size={20} strokeWidth={2.2} color="#FFFFFF" />
-          <Text style={[styles.homePillText, { color: "#FFFFFF" }]}>Report</Text>
+        <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.homePill, { backgroundColor: "#FFFFFF" }, pressed && styles.pressed]}>
+          <Sparkles size={19} strokeWidth={1.8} color={INK} />
+          <Text style={[styles.homePillText, { color: INK }]}>Report</Text>
         </Pressable>
       </View>
 
       <View style={styles.homeTiles}>
-        <View style={[styles.homeTile, { backgroundColor: "#CCF8FF" }]}>
-          <Text style={[styles.homeTileValue, { color: "#032F42" }]} numberOfLines={1} adjustsFontSizeToFit>{stats.members}</Text>
-          <Text style={[styles.homeTileLabel, { color: "#032F42" }]}>Customers</Text>
+        <View style={styles.homeTile}>
+          <Text style={styles.homeTileValue} numberOfLines={1} adjustsFontSizeToFit>{stats.members}</Text>
+          <Text style={styles.homeTileLabel}>Customers</Text>
         </View>
-        <View style={[styles.homeTile, { backgroundColor: "#DBE7FF" }]}>
-          <Text style={[styles.homeTileValue, { color: "#04183D" }]} numberOfLines={1} adjustsFontSizeToFit>{stats.stamps}</Text>
-          <Text style={[styles.homeTileLabel, { color: "#04183D" }]}>{spendShop ? "Purchases" : "Stamps"}</Text>
+        <View style={styles.homeTile}>
+          <Text style={styles.homeTileValue} numberOfLines={1} adjustsFontSizeToFit>{stats.stamps}</Text>
+          <Text style={styles.homeTileLabel}>{spendShop ? "Purchases" : "Stamps"}</Text>
         </View>
-        <View style={[styles.homeTile, { backgroundColor: "#DCFFDB" }]}>
-          <Text style={[styles.homeTileValue, { color: "#053107" }]} numberOfLines={1} adjustsFontSizeToFit>{stats.rewards}</Text>
-          <Text style={[styles.homeTileLabel, { color: "#053107" }]}>Rewards</Text>
+        <View style={styles.homeTile}>
+          <Text style={styles.homeTileValue} numberOfLines={1} adjustsFontSizeToFit>{stats.rewards}</Text>
+          <Text style={styles.homeTileLabel}>Rewards</Text>
         </View>
       </View>
 
@@ -1600,7 +1598,7 @@ function DashboardHome({
       ) : (
         <Pressable accessibilityRole="button" onPress={onOpenGuide} style={({ pressed }) => [styles.homeGuideLink, pressed && styles.pressed]}>
           <Text style={styles.homeGuideLinkText}>Setup guide</Text>
-          <ChevronRight size={18} color="#0042AC" />
+          <ChevronRight size={18} color={INK} />
         </Pressable>
       )}
     </View>
@@ -1720,7 +1718,7 @@ function CustomersHome({ business }: { business: Business }) {
               onPress={() => setAudience(value)}
               style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : "#EFE9DF" }}
             >
-              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#50627C" }}>{label}</Text>
+              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#6F6B64" }}>{label}</Text>
             </Pressable>
           ))}
         </View>
@@ -1997,7 +1995,7 @@ function AnalyticsPage({
           aLabel="Purchases"
           bLabel="Visitors"
           aColor={orange}
-          bColor="#062B6B"
+          bColor="#0E0E0F"
         />
       </View>
       <View style={styles.chartCard}>
@@ -2009,7 +2007,7 @@ function AnalyticsPage({
           aLabel="New"
           bLabel="Returning"
           aColor="#3FA34D"
-          bColor="#0F1C33"
+          bColor="#111111"
         />
       </View>
       <View style={styles.insightCard}>
@@ -2527,7 +2525,7 @@ function Dashboard({
                         backgroundColor: tab === sub.id ? orange : "#EFE9DF",
                       }}
                     >
-                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#50627C" }}>{sub.label}</Text>
+                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#6F6B64" }}>{sub.label}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -2611,7 +2609,7 @@ function Dashboard({
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_600SemiBold, Inter_700Bold, Rubik_800ExtraBold, Rubik_900Black });
+  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, InstrumentSerif_400Regular_Italic });
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -2767,7 +2765,7 @@ const styles = StyleSheet.create({
   onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: green, alignItems: "center", justifyContent: "center", marginBottom: 42 },
   onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#CDD9E8" },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#DCD6CB" },
   onboardingDotActive: { width: 26, backgroundColor: orange },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: "center", padding: 16 },
@@ -2848,7 +2846,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     gap: 12,
     elevation: 2,
-    shadowColor: "#062B6B",
+    shadowColor: "#0E0E0F",
     shadowOpacity: 0.08,
     shadowRadius: 15,
   },
@@ -2954,7 +2952,7 @@ const styles = StyleSheet.create({
     width: "31%",
     minHeight: 132,
     borderWidth: 2,
-    borderColor: "#26344A",
+    borderColor: "#2A2A2A",
     borderRadius: 20,
     padding: 14,
     backgroundColor: "rgba(255,255,255,.52)",
@@ -2975,36 +2973,35 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "700",
   },
-  homeHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  homeHeaderLogo: { width: 38, height: 38, borderRadius: 19 },
-  homeHeaderLetter: { color: "#04183D", fontSize: 16, fontWeight: "900" },
-  homeHeaderName: { flex: 1, fontSize: 17, fontWeight: "800", color: "#0F1C33" },
-  homePanel: { backgroundColor: "#04183D", borderRadius: 32, padding: 22, gap: 6, overflow: "hidden" },
-  homeStreak: { position: "absolute", left: -60, top: 30, width: 700, height: 90, backgroundColor: "#0042AC", opacity: 0.55, transform: [{ rotate: "-24deg" }] },
-  homePanelLabel: { color: "#9DAEC4", fontSize: 13, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
-  homeBigRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 },
-  homeBig: { color: YELLOW, fontFamily: POSTER_FONT, fontSize: 104, lineHeight: 100, letterSpacing: -4, includeFontPadding: false, flexShrink: 1 },
-  homeBadge: { height: 30, paddingHorizontal: 12, borderRadius: 999, backgroundColor: "#26344A", justifyContent: "center" },
-  homeBadgeText: { color: "#CDD9E8", fontSize: 14, fontWeight: "800" },
-  homeBigLabel: { color: "#FFFFFF", fontSize: 19, fontWeight: "700", letterSpacing: -0.2, textTransform: "uppercase" },
-  homeBars: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 96, marginTop: 14 },
+  homeHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(17,17,17,0.14)" },
+  homeHeaderLogo: { width: 34, height: 34, borderRadius: 17 },
+  homeHeaderLetter: { color: PAPER, fontSize: 14, fontWeight: "700" },
+  homeHeaderName: { flex: 1, fontSize: 15, fontFamily: SANS_MEDIUM, color: INK, letterSpacing: -0.2 },
+  homePanel: { backgroundColor: NIGHT, borderRadius: 28, padding: 24, gap: 6, overflow: "hidden" },
+  homePanelLabel: { color: "rgba(244,241,234,0.6)", fontSize: 11, fontWeight: "500", letterSpacing: 1.6, textTransform: "uppercase" },
+  homeBigRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6 },
+  homeBig: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 92, lineHeight: 94, letterSpacing: -5, includeFontPadding: false, flexShrink: 1 },
+  homeBadge: { height: 28, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: "rgba(244,241,234,0.25)", justifyContent: "center" },
+  homeBadgeText: { color: "rgba(244,241,234,0.75)", fontSize: 12, fontWeight: "500" },
+  homeBigLabel: { color: PAPER, fontFamily: "Inter_600SemiBold", fontSize: 20, lineHeight: 25, letterSpacing: -0.4 },
+  homeBars: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 96, marginTop: 18 },
   homeBarCol: { flex: 1, alignItems: "center", gap: 6 },
-  homeBar: { width: "100%", borderRadius: 8 },
-  homeBarDay: { color: "#9DAEC4", fontSize: 12, fontWeight: "700" },
-  homeWeek: { color: YELLOW, fontSize: 13, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase", marginTop: 8 },
-  homeScan: { minHeight: 120, borderRadius: 32, backgroundColor: YELLOW, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
-  homeScanTitle: { color: "#04183D", fontFamily: POSTER_FONT, fontSize: 34, lineHeight: 33, letterSpacing: -1.2, textTransform: "uppercase" },
-  homeScanSub: { color: "#04183D", fontSize: 15, fontWeight: "700", opacity: 0.75 },
-  homeScanIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#04183D", alignItems: "center", justifyContent: "center" },
+  homeBar: { width: "100%", borderRadius: 4 },
+  homeBarDay: { color: "rgba(244,241,234,0.5)", fontSize: 11, fontWeight: "500" },
+  homeWeek: { color: "rgba(244,241,234,0.6)", fontSize: 11, fontWeight: "500", letterSpacing: 1.6, textTransform: "uppercase", marginTop: 10 },
+  homeScan: { minHeight: 104, borderRadius: 28, backgroundColor: SAPPHIRE, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
+  homeScanTitle: { color: "#FFFFFF", fontFamily: SANS_HEAVY, fontSize: 28, lineHeight: 32, letterSpacing: -1.2 },
+  homeScanSub: { color: "rgba(255,255,255,0.7)", fontSize: 14 },
+  homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
   homePills: { flexDirection: "row", gap: 10 },
-  homePill: { flex: 1, height: 56, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  homePillText: { fontSize: 16, fontWeight: "800" },
-  homeTiles: { flexDirection: "row", gap: 10 },
-  homeTile: { flex: 1, borderRadius: 22, padding: 14, gap: 2 },
-  homeTileValue: { fontFamily: POSTER_FONT, fontSize: 32, letterSpacing: -1 },
-  homeTileLabel: { fontSize: 13, fontWeight: "700" },
+  homePill: { flex: 1, height: 54, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM },
+  homeTiles: { flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: "rgba(17,17,17,0.14)" },
+  homeTile: { flex: 1, paddingVertical: 18, gap: 4 },
+  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 30, letterSpacing: -1.2, color: INK },
+  homeTileLabel: { fontSize: 11, fontWeight: "500", letterSpacing: 1.4, textTransform: "uppercase", color: MUTED },
   homeGuideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 48 },
-  homeGuideLinkText: { color: "#0042AC", fontSize: 15, fontWeight: "800" },
+  homeGuideLinkText: { color: INK, fontFamily: SANS_MEDIUM, fontSize: 15 },
   welcomeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -3035,7 +3032,7 @@ const styles = StyleSheet.create({
   homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
   setupCard: {
     borderWidth: 2,
-    borderColor: "#26344A",
+    borderColor: "#2A2A2A",
     borderRadius: 22,
     padding: 18,
     backgroundColor: "rgba(255,255,255,.55)",
@@ -3066,7 +3063,7 @@ const styles = StyleSheet.create({
   checkMark: { fontSize: 13, fontWeight: "900", color: "#0042AC" },
   checkText: { fontSize: 14, fontWeight: "700", color: "#000000" },
   checkTextDone: { color: "#000000", textDecorationLine: "line-through" },
-  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#0F1C33", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#111111", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
   setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
   setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
@@ -3081,7 +3078,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#062B6B",
+    backgroundColor: "#0E0E0F",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3091,7 +3088,7 @@ const styles = StyleSheet.create({
   reportButtonBlack: {
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#0F1C33",
+    backgroundColor: "#111111",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3102,7 +3099,7 @@ const styles = StyleSheet.create({
   cameraStartButton: {
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#0F1C33",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
@@ -3117,7 +3114,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(20,20,18,.07)",
   },
   memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#000000", flexShrink: 0, marginRight: 12 },
-  memberInfoValue: { flex: 1, fontSize: 13, color: "#0F1C33", fontWeight: "700", textAlign: "right" },
+  memberInfoValue: { flex: 1, fontSize: 13, color: "#111111", fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
     borderRadius: 32,
@@ -3180,12 +3177,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  memberName: { fontSize: 16, fontWeight: "900", color: "#0F1C33" },
+  memberName: { fontSize: 16, fontWeight: "900", color: "#111111" },
   memberMeta: { fontSize: 12, color: "#000000", marginTop: 3 },
   memberProgress: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#0F1C33",
+    color: "#111111",
     textAlign: "right",
   },
   memberUnit: { fontSize: 10, color: "#000000", textAlign: "right" },
@@ -3210,7 +3207,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  periodActive: { backgroundColor: "#0F1C33" },
+  periodActive: { backgroundColor: "#111111" },
   periodText: { fontSize: 12, fontWeight: "800", color: "#000000" },
   periodTextActive: { color: "#fff" },
   analyticsHeading: {
@@ -3230,7 +3227,7 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     borderWidth: 2,
-    borderColor: "#26344A",
+    borderColor: "#2A2A2A",
     borderRadius: 20,
     padding: 16,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3239,7 +3236,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#0F1C33",
+    color: "#111111",
     marginBottom: 10,
   },
   chartWrap: { height: 80, width: "100%" },
@@ -3249,7 +3246,7 @@ const styles = StyleSheet.create({
   legendLabel: { fontSize: 11, fontWeight: "800", color: "#000000" },
   insightCard: {
     borderRadius: 22,
-    backgroundColor: "#0F1C33",
+    backgroundColor: "#111111",
     padding: 20,
     marginTop: 10,
     marginBottom: 15,
@@ -3270,17 +3267,17 @@ const styles = StyleSheet.create({
   insightCopy: { fontSize: 14, lineHeight: 21, color: "#000000", marginTop: 9 },
   totalCard: {
     borderWidth: 2,
-    borderColor: "#26344A",
+    borderColor: "#2A2A2A",
     borderRadius: 20,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.55)",
     marginBottom: 16,
   },
-  totalTitle: { fontSize: 16, fontWeight: "900", color: "#0F1C33" },
+  totalTitle: { fontSize: 16, fontWeight: "900", color: "#111111" },
   totalLine: { fontSize: 13, color: "#000000", marginTop: 7 },
   composeCard: {
     borderWidth: 2,
-    borderColor: "#26344A",
+    borderColor: "#2A2A2A",
     borderRadius: 22,
     padding: 17,
     backgroundColor: "rgba(255,255,255,.6)",
@@ -3334,7 +3331,7 @@ const styles = StyleSheet.create({
     fontSize: 29,
     lineHeight: 34,
     fontFamily: FONT_DISPLAY,
-    color: "#0F1C33",
+    color: "#111111",
     letterSpacing: -0.7,
     maxWidth: 250,
   },
@@ -3391,7 +3388,7 @@ const styles = StyleSheet.create({
   settingsInput: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#E4ECF6",
+    backgroundColor: "#EFEBE3",
     borderWidth: 1,
     borderColor: "rgba(20,20,18,.08)",
     paddingHorizontal: 14,
@@ -3415,7 +3412,7 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#E4ECF6",
+    backgroundColor: "#EFEBE3",
     borderWidth: 1,
     borderColor: "rgba(20,20,18,.08)",
     paddingHorizontal: 14,
@@ -3451,7 +3448,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: "#0F1C33" },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: "#111111" },
   tierMeta: { fontSize: 12, color: "#000000", marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
@@ -3468,7 +3465,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#0F1C33" },
+  segmentActive: { backgroundColor: "#111111" },
   segmentText: { fontSize: 13, fontWeight: "800", color: "#000000" },
   segmentTextActive: { color: "#fff" },
   stepper: {
@@ -3486,7 +3483,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#EEE8DC",
   },
-  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#0F1C33" },
+  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#111111" },
   stepperInput: {
     flex: 1,
     textAlign: "center",
@@ -3509,7 +3506,7 @@ const styles = StyleSheet.create({
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#0F1C33",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -3533,7 +3530,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#0F1C33" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#111111" },
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,
@@ -3580,6 +3577,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tabActivePill: { flex: 1.7, paddingHorizontal: 12, backgroundColor: orange },
-  tabText: { color: "#50627C", fontWeight: "700", fontSize: 12.5 },
+  tabText: { color: "#6F6B64", fontWeight: "700", fontSize: 12.5 },
   tabActive: { color: "#fff", fontWeight: "800" },
 });
