@@ -2981,7 +2981,7 @@ Review branch claude/loyalty-b-screens-07db09 (commits 4e23167 and 73e309a, from
 **OTAs** (all `--environment production`, each bundle checked for project ref and Instrument Serif): shopper 1.0.2 android b3755cd8 / ios 1864ab21; shopper 1.0.1 android c43d20e5 / ios ad97ca23; Business 1.0.1 android 2975fca8 / ios d0991593. Undo: republish the poster-look groups (shopper aca52142/ef0b1e01, 7e466885/4da7ebf0; Business f7736063/39de4cd2).
 **Open:** not seen on a device; demo video still old colours; remaining app screens (map, news, settings, Business analytics/scan/shop) only got the token colour change, not the new layouts.
 
-## Palette 1 + shopper home rebuilt (2026-11-04) - Claude, committed on `sapphire-theme`, NOT pushed or OTA'd (waiting for owner)
+## Palette 1 + shopper home rebuilt (2026-11-04) - Claude, e8f645d on main, SHIPPED by OTA (owner: "Send this to phones now")
 **Why:** owner liked a Coolors palette (Twilight Indigo #2B3A67, Blue Slate #496A81, Pacific Blue #66999B, Dry Sage #B3AF8F) and said the shopper home "looks the ugliest": different sized boxes, multiple filters, lots of titles. (Their screenshots were still the poster OTA: update not yet applied on their phone.)
 **Changed**
 - Palette 1 in both apps: tokens primary/brand Twilight Indigo, ink #1A2138, quiet fields slate/pacific/sage on warm paper; `Poster.tsx` constants (NIGHT and SAPPHIRE now indigo, + SLATE/PACIFIC/SAGE); typed-in near-black/sapphire remapped. Business Scan button Pacific Blue with ink, week bars slate with the best day sage.
@@ -2989,4 +2989,5 @@ Review branch claude/loyalty-b-screens-07db09 (commits 4e23167 and 73e309a, from
 - Mockup canvas v8 shows palette 1 and the new home.
 **Checks:** tsc clean both apps, tests 18/18 + 21/21, android bundles export. Not run on a device.
 **Note:** admin "Trending" picks no longer appear on the home screen (they still drive search results ordering only via HomeCollection featured).
-**Next:** owner OK → push, `eas update --environment production` shopper 1.0.2 + 1.0.1 and Business 1.0.1, verify bundles. Website still uses sapphire #0042AC buttons — switch to palette 1 if wanted.
+**OTAs** (all `--environment production`; each bundle checked for project ref and a new-screen marker): shopper 1.0.2 android 2eb67205 / ios 6b93c894; shopper 1.0.1 android 45c912d0 / ios 7f299965; Business 1.0.1 android 91ba757c / ios 49592e20. Undo: republish the premium groups (shopper b3755cd8/1864ab21, c43d20e5/ad97ca23; Business 2975fca8/d0991593).
+**Open:** not seen on a device; website still uses sapphire #0042AC buttons (switch to palette 1 if wanted); other app screens only got the colour change.
