@@ -49,7 +49,7 @@ import type { NativeOwnerPage } from "./owner-pages";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 const { foreground: green, primary: orange } = colors;
-const ink = "#111111";
+const ink = "#1A2138";
 
 export type ShopBusiness = {
   id: string;
@@ -95,7 +95,7 @@ function poundsWhole(pence: number): string {
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const SETTINGS_TILES = {
-  blue: { bg: "#DBE7FF", fg: "#0E0E0F" },
+  blue: { bg: "#DBE7FF", fg: "#2B3A67" },
   purple: { bg: "#F3E3D3", fg: "#8A4A2B" },
   amber: { bg: "#FBE7BF", fg: "#8A5A00" },
   green: { bg: "#DCEBD9", fg: "#2F7A3F" },

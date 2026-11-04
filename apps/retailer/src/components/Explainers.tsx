@@ -36,7 +36,7 @@ export const EXPLAINER_CAPTIONS: Record<ExplainerKind, string> = {
 
 const LOOP_MS = 5600
 const INK = '#1B1B1B'
-const ORANGE = '#0042AC'
+const ORANGE = '#2B3A67'
 const GREEN = '#2F6B3F'
 const GOLD = '#E0A82E'
 const PAPER = '#FFFFFF'

@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
 
-// Premium look (2026-11-04): warm paper and near-black, Inter at quiet weights
-// with an italic serif accent, hairlines, slow eased motion. Sapphire is only
-// for the main action. Kept identical in both apps.
+// Premium look, palette 1 (2026-11-04): warm paper with Twilight Indigo as the
+// brand colour, Blue Slate, Pacific Blue and Dry Sage as quiet fields, deep
+// indigo ink, hairlines, slow eased motion. Kept identical in both apps.
 export const PAPER = '#F4F1EA'
 export const STONE = '#E7E2D8'
-export const NIGHT = '#0E0E0F'
-export const INK = '#111111'
+export const NIGHT = '#2B3A67'
+export const INK = '#1A2138'
 export const MUTED = '#6F6B64'
-export const HAIRLINE = 'rgba(17,17,17,0.12)'
-export const SAPPHIRE = '#0042AC'
+export const HAIRLINE = 'rgba(26,33,56,0.12)'
+/** The brand / call-to-action colour (Twilight Indigo; the name is kept from the sapphire days). */
+export const SAPPHIRE = '#2B3A67'
+export const SLATE = '#496A81'
+export const PACIFIC = '#66999B'
+export const SAGE = '#B3AF8F'
 export const SERIF = 'InstrumentSerif_400Regular_Italic'
 export const SANS_MEDIUM = 'Inter_500Medium'
 /** Big numbers and headlines: heavy and tight, like the approved mockups. */

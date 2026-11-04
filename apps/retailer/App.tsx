@@ -58,7 +58,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
 import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from "@expo-google-fonts/inter";
 import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument-serif";
-import { AppIntro, INK, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, STONE } from "./src/components/Poster";
+import { AppIntro, INK, MUTED, NIGHT, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SLATE, STONE } from "./src/components/Poster";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
@@ -215,7 +215,7 @@ const PREVIEW_BUSINESS: Business = {
   address: "12 Market Street",
   postcode: "M1 1AA",
   phone: "0161 555 0102",
-  brand_color: "#0042AC",
+  brand_color: "#2B3A67",
   is_active: true,
   loyalty_type: "stamp_card",
   loyalty_config: {
@@ -1278,7 +1278,7 @@ function StampsScreen({
               value={code}
               onChangeText={setCode}
               placeholder={mode === "reward" ? "Reward or customer short code" : "Customer short code"}
-              selectionColor="#111111"
+              selectionColor="#1A2138"
               autoCapitalize="characters"
             />
             <Button
@@ -1531,7 +1531,7 @@ function DashboardHome({
           <View accessible accessibilityLabel={`${weekTotal} ${spendShop ? "purchases" : "stamps"} in the last 7 days`} style={styles.homeBars}>
             {days.map((d, i) => (
               <View key={i} style={styles.homeBarCol}>
-                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? PAPER : "#3A3A3A" }]} />
+                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? SAGE : SLATE }]} />
                 <Text style={styles.homeBarDay}>{d.day}</Text>
               </View>
             ))}
@@ -1550,7 +1550,7 @@ function DashboardHome({
           <Text style={styles.homeScanTitle}>Scan a customer</Text>
           <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : "Stamp, spend or reward"}</Text>
         </View>
-        <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={SAPPHIRE} /></View>
+        <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={PAPER} /></View>
       </Pressable>
 
       <View style={styles.homePills}>
@@ -1995,7 +1995,7 @@ function AnalyticsPage({
           aLabel="Purchases"
           bLabel="Visitors"
           aColor={orange}
-          bColor="#0E0E0F"
+          bColor="#2B3A67"
         />
       </View>
       <View style={styles.chartCard}>
@@ -2007,7 +2007,7 @@ function AnalyticsPage({
           aLabel="New"
           bLabel="Returning"
           aColor="#3FA34D"
-          bColor="#111111"
+          bColor="#1A2138"
         />
       </View>
       <View style={styles.insightCard}>
@@ -2846,7 +2846,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     gap: 12,
     elevation: 2,
-    shadowColor: "#0E0E0F",
+    shadowColor: "#2B3A67",
     shadowOpacity: 0.08,
     shadowRadius: 15,
   },
@@ -2858,7 +2858,7 @@ const styles = StyleSheet.create({
     color: "#243021",
     fontSize: 16,
   },
-  customerCodeInput: { color: "#111111" },
+  customerCodeInput: { color: "#1A2138" },
   button: {
     backgroundColor: green,
     borderRadius: 999,
@@ -2989,10 +2989,10 @@ const styles = StyleSheet.create({
   homeBar: { width: "100%", borderRadius: 4 },
   homeBarDay: { color: "rgba(244,241,234,0.5)", fontSize: 11, fontWeight: "500" },
   homeWeek: { color: "rgba(244,241,234,0.6)", fontSize: 11, fontWeight: "500", letterSpacing: 1.6, textTransform: "uppercase", marginTop: 10 },
-  homeScan: { minHeight: 104, borderRadius: 28, backgroundColor: SAPPHIRE, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
-  homeScanTitle: { color: "#FFFFFF", fontFamily: SANS_HEAVY, fontSize: 28, lineHeight: 32, letterSpacing: -1.2 },
-  homeScanSub: { color: "rgba(255,255,255,0.7)", fontSize: 14 },
-  homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  homeScan: { minHeight: 104, borderRadius: 28, backgroundColor: PACIFIC, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
+  homeScanTitle: { color: INK, fontFamily: SANS_HEAVY, fontSize: 28, lineHeight: 32, letterSpacing: -1.2 },
+  homeScanSub: { color: "rgba(26,33,56,0.72)", fontSize: 14 },
+  homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: INK, alignItems: "center", justifyContent: "center" },
   homePills: { flexDirection: "row", gap: 10 },
   homePill: { flex: 1, height: 54, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM },
@@ -3060,10 +3060,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkDone: { borderColor: orange, backgroundColor: "#F8C9B6" },
-  checkMark: { fontSize: 13, fontWeight: "900", color: "#0042AC" },
+  checkMark: { fontSize: 13, fontWeight: "900", color: "#2B3A67" },
   checkText: { fontSize: 14, fontWeight: "700", color: "#000000" },
   checkTextDone: { color: "#000000", textDecorationLine: "line-through" },
-  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#111111", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#1A2138", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
   setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
   setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
@@ -3078,7 +3078,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#0E0E0F",
+    backgroundColor: "#2B3A67",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3088,7 +3088,7 @@ const styles = StyleSheet.create({
   reportButtonBlack: {
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#111111",
+    backgroundColor: "#1A2138",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3099,7 +3099,7 @@ const styles = StyleSheet.create({
   cameraStartButton: {
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#111111",
+    backgroundColor: "#1A2138",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
@@ -3114,7 +3114,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(20,20,18,.07)",
   },
   memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#000000", flexShrink: 0, marginRight: 12 },
-  memberInfoValue: { flex: 1, fontSize: 13, color: "#111111", fontWeight: "700", textAlign: "right" },
+  memberInfoValue: { flex: 1, fontSize: 13, color: "#1A2138", fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
     borderRadius: 32,
@@ -3177,12 +3177,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  memberName: { fontSize: 16, fontWeight: "900", color: "#111111" },
+  memberName: { fontSize: 16, fontWeight: "900", color: "#1A2138" },
   memberMeta: { fontSize: 12, color: "#000000", marginTop: 3 },
   memberProgress: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#111111",
+    color: "#1A2138",
     textAlign: "right",
   },
   memberUnit: { fontSize: 10, color: "#000000", textAlign: "right" },
@@ -3207,7 +3207,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  periodActive: { backgroundColor: "#111111" },
+  periodActive: { backgroundColor: "#1A2138" },
   periodText: { fontSize: 12, fontWeight: "800", color: "#000000" },
   periodTextActive: { color: "#fff" },
   analyticsHeading: {
@@ -3236,7 +3236,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#111111",
+    color: "#1A2138",
     marginBottom: 10,
   },
   chartWrap: { height: 80, width: "100%" },
@@ -3246,7 +3246,7 @@ const styles = StyleSheet.create({
   legendLabel: { fontSize: 11, fontWeight: "800", color: "#000000" },
   insightCard: {
     borderRadius: 22,
-    backgroundColor: "#111111",
+    backgroundColor: "#1A2138",
     padding: 20,
     marginTop: 10,
     marginBottom: 15,
@@ -3273,7 +3273,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,.55)",
     marginBottom: 16,
   },
-  totalTitle: { fontSize: 16, fontWeight: "900", color: "#111111" },
+  totalTitle: { fontSize: 16, fontWeight: "900", color: "#1A2138" },
   totalLine: { fontSize: 13, color: "#000000", marginTop: 7 },
   composeCard: {
     borderWidth: 2,
@@ -3331,7 +3331,7 @@ const styles = StyleSheet.create({
     fontSize: 29,
     lineHeight: 34,
     fontFamily: FONT_DISPLAY,
-    color: "#111111",
+    color: "#1A2138",
     letterSpacing: -0.7,
     maxWidth: 250,
   },
@@ -3448,7 +3448,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: "#111111" },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: "#1A2138" },
   tierMeta: { fontSize: 12, color: "#000000", marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
@@ -3465,7 +3465,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#111111" },
+  segmentActive: { backgroundColor: "#1A2138" },
   segmentText: { fontSize: 13, fontWeight: "800", color: "#000000" },
   segmentTextActive: { color: "#fff" },
   stepper: {
@@ -3483,7 +3483,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#EEE8DC",
   },
-  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#111111" },
+  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#1A2138" },
   stepperInput: {
     flex: 1,
     textAlign: "center",
@@ -3506,7 +3506,7 @@ const styles = StyleSheet.create({
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#111111",
+    backgroundColor: "#1A2138",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
@@ -3530,7 +3530,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#111111" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#1A2138" },
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,

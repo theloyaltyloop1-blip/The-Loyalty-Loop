@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { colors as c, fonts } from '../theme'
-import { INK, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, STONE } from './Poster'
+import { INK, NIGHT, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SLATE } from './Poster'
 import { homeProgress, type HomeShop, type HomeMember, type HomeTier } from '../home-progress'
 import { shopMoney } from '../money'
 import { ratingLabel } from '../ratings'
@@ -106,12 +106,12 @@ function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { sho
 // Your loyalty cards as a swipeable row, the one closest to a reward first.
 // Chunky tiles in the quiet palette: shop name, then the count, big.
 const TILE_TONES = [
-  { bg: NIGHT, ink: PAPER, sub: 'rgba(244,241,234,0.55)' },
-  { bg: STONE, ink: INK, sub: 'rgba(17,17,17,0.5)' },
-  { bg: SAPPHIRE, ink: '#FFFFFF', sub: 'rgba(255,255,255,0.6)' },
-  { bg: '#FFFFFF', ink: INK, sub: 'rgba(17,17,17,0.5)' },
+  { bg: SLATE, ink: '#FFFFFF', sub: 'rgba(255,255,255,0.65)' },
+  { bg: PACIFIC, ink: INK, sub: 'rgba(26,33,56,0.6)' },
+  { bg: SAGE, ink: INK, sub: 'rgba(26,33,56,0.6)' },
+  { bg: '#FFFFFF', ink: INK, sub: 'rgba(26,33,56,0.5)' },
 ]
-function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
+export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
   const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
     .sort((a, b) => b.progress.fraction - a.progress.fraction)
   return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={156 + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
@@ -270,6 +270,9 @@ export function HomeCollection<T extends RailShop>({ shops, featured, membership
 
 export const homeStyles = StyleSheet.create({
   title: { fontFamily: SANS_HEAVY, fontSize: 46, lineHeight: 46, letterSpacing: -2.4, color: c.foreground, marginTop: 22, marginBottom: 24 },
+  searchTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 16 },
+  searchTitle: { fontFamily: SANS_HEAVY, fontSize: 32, letterSpacing: -1.4, color: c.foreground },
+  searchDone: { fontSize: 16, fontFamily: SANS_MEDIUM, color: c.primary },
   sectionHeading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 23, color: c.foreground, marginTop: 32, marginBottom: 16 },
 })
 const s = StyleSheet.create({

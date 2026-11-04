@@ -47,8 +47,8 @@ import { fonts } from "@loyalty-loop/design-tokens";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 
-const orange = "#0042AC";
-const ink = "#111111";
+const orange = "#2B3A67";
+const ink = "#1A2138";
 const muted = "#000000";
 const cream = "#F8EAD8";
 const card = "#FCFCFA";
@@ -2087,7 +2087,7 @@ const styles = StyleSheet.create({
   },
   tutorialRow: { flexDirection: "row", gap: 13, alignItems: "flex-start" },
   tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#F7D9CB", alignItems: "center", justifyContent: "center" },
-  tutorialNumberText: { color: "#0042AC", fontWeight: "900" },
+  tutorialNumberText: { color: "#2B3A67", fontWeight: "900" },
   tutorialAction: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44, borderRadius: 13, backgroundColor: cream, paddingHorizontal: 12, marginTop: 13 },
   tutorialActionText: { color: ink, fontSize: 13, fontWeight: "900" },
   body: { color: "#000000", lineHeight: 21, fontSize: 14 },
@@ -2289,7 +2289,7 @@ const styles = StyleSheet.create({
   status: {
     borderRadius: 999,
     backgroundColor: "#F2D8C8",
-    color: "#00358A",
+    color: "#1F2A4D",
     paddingHorizontal: 8,
     paddingVertical: 5,
     overflow: "hidden",

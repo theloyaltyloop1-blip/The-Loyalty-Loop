@@ -22,8 +22,9 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { CategoryCircles, HomeCollection, NextRewardHero, homeStyles } from './src/components/HomeCollection'
+import { CategoryCircles, HomeCollection, homeStyles } from './src/components/HomeCollection'
 import { RewardCelebration, markRewardsSeen, unseenReward } from './src/components/RewardCelebration'
+import { HomeFeed } from './src/components/HomeFeed'
 import { categoryCounts } from './src/home-rails'
 import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
 import { formatAddress } from './src/format-address'
@@ -48,7 +49,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
 import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter'
 import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif'
-import { AppIntro, CornerLabels, FadeUp } from './src/components/Poster'
+import { AppIntro } from './src/components/Poster'
 import { colors, fonts } from './src/theme'
 import { encodeRewardQr } from './src/reward-qr'
 import { hasSupabaseConfig, supabase } from './src/supabase'
@@ -157,11 +158,11 @@ function SearchIcon({ color = foreground, size = 20 }: IconProps) {
 }
 
 // White, outlined search field so it stands out from the cream page background.
-function SearchBar({ value, onChangeText, accessibilityLabel }: { value: string; onChangeText: (v: string) => void; accessibilityLabel: string }) {
+function SearchBar({ value, onChangeText, accessibilityLabel, autoFocus }: { value: string; onChangeText: (v: string) => void; accessibilityLabel: string; autoFocus?: boolean }) {
   return (
     <View style={styles.searchBar}>
       <SearchIcon color={foreground} size={20} />
-      <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#000000" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />
+      <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#000000" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} autoFocus={autoFocus} />
       {value.length > 0 && (
         <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
           <CloseIcon color="#8A857C" size={16} />
@@ -663,7 +664,7 @@ const openUrl = (url: string) => void Linking.openURL(url)
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
 const TILES = {
-  blue: { bg: '#DBE7FF', fg: '#0E0E0F' },
+  blue: { bg: '#DBE7FF', fg: '#2B3A67' },
   purple: { bg: '#F3E3D3', fg: '#8A4A2B' },
   rose: { bg: '#F8DCCB', fg: '#B5431C' },
   amber: { bg: '#FBE7BF', fg: '#8A5A00' },
@@ -795,7 +796,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
         <KeyboardAwareScrollView pad={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
           {view === 'root' && (
             <>
-              <LinearGradient colors={[primary, '#00358A']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
+              <LinearGradient colors={[primary, '#1F2A4D']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
                 <Pressable onPress={() => setView('name')} style={styles.settingsHeroRow}>
                   <View style={styles.settingsHeroAvatar}><Text style={styles.settingsHeroAvatarText}>{initialsOf(firstName)}</Text></View>
                   <View style={styles.settingsRowBody}>
@@ -1636,23 +1637,6 @@ function ShopDetail({
 // Home tab
 // ---------------------------------------------------------------------
 
-function AnnouncementCard({ announcement }: { announcement: Announcement }) {
-  return (
-    <View style={styles.announcementCard}>
-      <View style={styles.announcementBadge}>
-        <MegaphoneIcon color={primary} size={16} />
-      </View>
-      <Text style={styles.announcementFrom}>{announcement.business?.name || 'The Loyalty Loop team'}</Text>
-      <Text style={styles.announcementTitle}>{announcement.title}</Text>
-      {!!announcement.body && (
-        <Text style={styles.announcementBody} numberOfLines={3}>
-          {announcement.body}
-        </Text>
-      )}
-    </View>
-  )
-}
-
 function TrendingCard({ business, onPress }: { business: Business; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.trendingCard, pressed && styles.pressed]}>
@@ -1720,39 +1704,34 @@ const featureStyles = StyleSheet.create({
   badgeText: { color: '#000000', fontSize: 12, fontWeight: '700' },
 })
 
-function greeting(firstName: string | undefined, now = new Date()) {
-  const hour = now.getHours()
-  const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'
-  const name = firstName?.trim().split(/\s+/)[0]
-  return name ? { lead: `${part},\n`, accent: `${name}.` } : { lead: 'Good\n', accent: `${part.toLowerCase()}.` }
-}
-
-function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk, firstName }: {
-  firstName?: string;
+function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk, firstName, onOpenProfile, onSeeNews }: {
+  firstName?: string; onOpenProfile: () => void; onSeeNews: () => void;
   businesses: Business[]; memberships: Membership[]; catalog: HomeTier[];
   announcements: Announcement[]; loading: boolean; onSelect: (business: Business) => void; onAsk: (query: string) => void;
 }) {
+  const [searching, setSearching] = useState(false)
   const [category, setCategory] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [features, setFeatures] = useState<string[]>([])
   const filtered = businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
-  const greet = greeting(firstName)
+  if (!searching) {
+    if (loading && businesses.length === 0) return <View accessibilityState={{ busy: true }} style={{ paddingVertical: 80, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View>
+    return <HomeFeed firstName={firstName} shops={businesses} memberships={memberships} catalog={catalog} news={announcements}
+      location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }}
+      onSelect={onSelect} onSearch={() => setSearching(true)} onSeeNews={onSeeNews} onAsk={() => onAsk('')} onOpenProfile={onOpenProfile} />
+  }
+  const closeSearch = () => { setSearching(false); setQuery(''); setCategory(null); setFeatures([]) }
   return <>
-    <FadeUp style={{ marginTop: 6 }}><CornerLabels left={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()} right="LOCAL LOYALTY" /></FadeUp>
-    <FadeUp delay={80}><Text style={homeStyles.title}>{greet.lead}{greet.accent}</Text></FadeUp>
-    <FadeUp delay={180}><NextRewardHero shops={businesses} memberships={memberships} catalog={catalog} onSelect={onSelect} /></FadeUp>
-    <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
+    <View style={homeStyles.searchTop}>
+      <Text accessibilityRole="header" style={homeStyles.searchTitle}>Find a shop</Text>
+      <Pressable accessibilityRole="button" onPress={closeSearch} hitSlop={10}><Text style={homeStyles.searchDone}>Done</Text></Pressable>
+    </View>
+    <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} autoFocus />
     <CategoryCircles categories={categoryCounts(businesses)} selected={category} onSelect={setCategory} />
     <FeatureFilter selected={features} onChange={setFeatures} />
-    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || features.length > 0 || !!query.trim()} onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
-    {announcements.length > 0 && <>
-      <Text style={homeStyles.sectionHeading}>From your local shops</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.announcementRow}>
-        {announcements.map(a => <AnnouncementCard key={a.id} announcement={a} />)}
-      </ScrollView>
-    </>}
+    <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />
     <Pressable accessibilityRole="button" onPress={() => onAsk(query)} style={({ pressed }) => [styles.askShopCard, pressed && { opacity: 0.85 }]}>
       <View style={styles.askShopIcon}><MegaphoneIcon color="#fff" size={18} /></View>
       <View style={styles.settingsRowBody}>
@@ -2198,9 +2177,9 @@ function FavouritesTab({
 // Discover tab back in the bottom bar; everything behind it is untouched.
 const SHOW_DISCOVER_TAB = false
 
-// Floating near-black pill: the open tab is a paper pill with its name, the rest are icons.
-const TAB_ON = '#111111'
-const TAB_OFF = '#8A857C'
+// Floating indigo pill: the open tab is a paper pill with its name, the rest are icons.
+const TAB_ON = '#1A2138'
+const TAB_OFF = '#B3AF8F'
 const TABS: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
   { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? TAB_ON : TAB_OFF} /> },
   { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? TAB_ON : TAB_OFF} filled={active} /> },
@@ -2510,7 +2489,7 @@ function AppHome({ session }: { session: Session }) {
   return (
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
       <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
-      {!discovering && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
+      {!discovering && tab !== 'home' && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
       {!discovering && (
         <PlatformBanner
           notices={platformNotices}
@@ -2527,7 +2506,7 @@ function AppHome({ session }: { session: Session }) {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
-          {tab === 'home' && <HomeTab firstName={session.user.user_metadata?.first_name} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
+          {tab === 'home' && <HomeTab firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
           {tab === 'map' && <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
@@ -2693,7 +2672,7 @@ const styles = StyleSheet.create({
   landingTitle: { color: foreground, fontSize: 16, fontWeight: '800', marginTop: 3 },
   landingCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginBottom: 8 },
 
-  card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#111111', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
+  card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#1A2138', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
   input: { backgroundColor: '#EFEBE3', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.14)', paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   searchInput: { flex: 1, paddingVertical: 16, color: foreground, fontSize: 16 },
@@ -2809,7 +2788,7 @@ const styles = StyleSheet.create({
   securityButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
   lockScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
   lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 24 },
-  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#111111', borderRadius: 999, height: 46, marginTop: 20 },
+  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1A2138', borderRadius: 999, height: 46, marginTop: 20 },
   walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Visit and contact details
@@ -2946,10 +2925,10 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 13, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // Bottom tab bar
-  tabs: { position: 'absolute', left: 16, right: 16, bottom: 10, height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0E0E0F', borderRadius: 999, paddingHorizontal: 8, shadowColor: '#000000', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
+  tabs: { position: 'absolute', left: 16, right: 16, bottom: 10, height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2B3A67', borderRadius: 999, paddingHorizontal: 8, shadowColor: '#000000', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
   tab: { height: 52, minWidth: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, paddingHorizontal: 12 },
   tabActive: { backgroundColor: '#F4F1EA', paddingHorizontal: 16 },
-  tabTextActive: { color: '#111111', fontFamily: 'Inter_500Medium', fontSize: 14 },
+  tabTextActive: { color: '#1A2138', fontFamily: 'Inter_500Medium', fontSize: 14 },
 
   // Discover feed
   discoverGradient: { ...StyleSheet.absoluteFillObject },

@@ -3,7 +3,9 @@
  * Single source of truth for colours/fonts/shape language across
  * apps/web (Tailwind, mirrored in apps/web/src/index.css), apps/retailer, apps/shopper.
  *
- * 2026-11-04 premium pass: warm paper (#F4F1EA) and near-black (#0E0E0F)
+ * 2026-11-04 palette 1 (owner's pick): Twilight Indigo #2B3A67 brand and CTA,
+ * Blue Slate #496A81, Pacific Blue #66999B, Dry Sage #B3AF8F as quiet fields,
+ * deep indigo ink on warm paper. Before that, the premium pass: warm paper (#F4F1EA) and near-black (#0E0E0F)
  * surfaces with ink type; Sapphire #0042AC stays the one call-to-action colour.
  * Earlier (2026-11-03) Sapphire look, from the owner's reference videos: Sapphire Blue
  * #0042AC is the call-to-action colour, Ocean Blue #00D3FB the bright accent,
@@ -15,27 +17,27 @@
 
 export const colors = {
   background: '#F4F1EA',
-  foreground: '#111111',
+  foreground: '#1A2138',
   card: '#FFFFFF',
-  primary: '#0042AC',
-  primaryHover: '#00358A',
-  accent: '#8FB4FA',
+  primary: '#2B3A67',
+  primaryHover: '#1F2A4D',
+  accent: '#66999B',
   funGreen: '#178816',
-  ink: '#111111',
+  ink: '#1A2138',
   muted: '#6F6B64',
   destructive: '#DC2626',
   border: '#E2DDD3',
 
-  olive: '#0E0E0F',
+  olive: '#2B3A67',
   oliveInk: '#F4F1EA',
-  sage: '#E7E2D8',
-  sageInk: '#111111',
-  peach: '#DBE7FF',
-  peachInk: '#04183D',
+  sage: '#E3E1D2',
+  sageInk: '#1A2138',
+  peach: '#DCE7E7',
+  peachInk: '#1A2138',
   amber: '#F2B544',
   amberInk: '#2A2410',
-  orange: '#8FB4FA',
-  orangeInk: '#04183D',
+  orange: '#66999B',
+  orangeInk: '#1A2138',
 } as const;
 
 export const fonts = {

@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     minHeight: 46,
     paddingHorizontal: 28,
     borderRadius: 999,
-    backgroundColor: '#0042AC',
+    backgroundColor: '#2B3A67',
     alignItems: 'center',
     justifyContent: 'center',
   },
