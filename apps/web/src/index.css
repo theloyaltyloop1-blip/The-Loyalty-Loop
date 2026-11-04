@@ -1,5 +1,7 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/rubik';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
 @import 'tailwindcss';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -10,7 +12,7 @@
 @theme {
   /* 2026-11-03 Sapphire look: one clean grotesk (Inter) for everything; headlines
      get weight and tight tracking rather than a second typeface. */
-  --font-display: 'Rubik Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-display: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   /* Heavy rounded caps for poster headlines (2026-11-03 poster look). */
   --font-poster: 'Rubik Variable', 'Inter Variable', system-ui, sans-serif;
   --font-body: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;

@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useLocation } from 'react-router-dom'
 import './poster-fx.css'
 
-// Poster-look interactions for the public pages: a branded preloader, a wipe
-// between pages, sections that stagger in, magnetic buttons, a cursor that says
-// what a thing does, and a hidden confetti burst. Each one checks reduced motion
-// and, where it needs a mouse, a fine pointer.
+// Premium interactions for the public pages (2026-11-04, quiet version): a
+// paper preloader with a hairline progress, a dark curtain between pages, lines
+// that rise in, gently magnetic buttons, a cursor that names what a thing does,
+// and a hidden spin of the logo. Each one checks reduced motion and, where it
+// needs a mouse, a fine pointer.
 
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const finePointer = () => typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches
@@ -32,7 +33,7 @@ export function Preloader() {
     const start = performance.now()
     let frame = 0
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / 1000)
+      const t = Math.min(1, (now - start) / 1300)
       setN(Math.round((1 - Math.pow(1 - t, 3)) * 100))
       if (t < 1) frame = requestAnimationFrame(tick)
       else setState('lift')
@@ -42,15 +43,16 @@ export function Preloader() {
   }, [state])
   useEffect(() => {
     if (state !== 'lift') return
-    const t = window.setTimeout(() => setState('off'), 750)
+    const t = window.setTimeout(() => setState('off'), 1100)
     return () => window.clearTimeout(t)
   }, [state])
   if (state === 'off') return null
   return (
     <div className={`fx-preloader${state === 'lift' ? ' is-lifting' : ''}`} aria-hidden="true">
-      <span className="fx-preloader-word">LOOP</span>
+      <span className="fx-preloader-word">The Loyalty <em>Loop</em></span>
+      <span className="fx-preloader-line"><i style={{ transform: `scaleX(${n / 100})` }} /></span>
       <span className="fx-preloader-count">{String(n).padStart(3, '0')}</span>
-      <span className="fx-preloader-tag">The Loyalty Loop · 2026</span>
+      <span className="fx-preloader-tag">Local loyalty, London</span>
     </div>
   )
 }
@@ -69,7 +71,7 @@ export function PageWipe() {
     window.scrollTo(0, 0)
   }, [pathname])
   if (!key) return null
-  return <div key={key} className="fx-wipe" aria-hidden="true" />
+  return <div key={key} className="fx-wipe" aria-hidden="true"><span>The Loyalty <em>Loop</em></span></div>
 }
 
 /** Adds `is-in` to every `[data-reveal]` inside the ref once it scrolls into view. */
@@ -109,7 +111,7 @@ export function useMagnetic(root: RefObject<HTMLElement | null>) {
         const r = button.getBoundingClientRect()
         const x = event.clientX - (r.left + r.width / 2)
         const y = event.clientY - (r.top + r.height / 2)
-        button.style.transform = `translate(${x * 0.28}px, ${y * 0.38}px)`
+        button.style.transform = `translate(${x * 0.16}px, ${y * 0.22}px)`
       }
       const leave = () => { button.style.transform = '' }
       button.addEventListener('pointermove', move)
@@ -134,7 +136,7 @@ export function ContextCursor() {
       setLabel(target?.dataset.cursor ?? null)
     }
     const loop = () => {
-      cx += (x - cx) * 0.22; cy += (y - cy) * 0.22
+      cx += (x - cx) * 0.16; cy += (y - cy) * 0.16
       if (dot.current) dot.current.style.transform = `translate(${cx}px, ${cy}px)`
       frame = requestAnimationFrame(loop)
     }
@@ -150,42 +152,26 @@ export function ContextCursor() {
   )
 }
 
-const CONFETTI = ['#FFFF00', '#00D3FB', '#83FD80', '#FFFFFF', '#0042AC']
-
-/** Click the target five times quickly: confetti and a note. Returns a click handler. */
+/** Click the target five times quickly: the logo turns once and a small note
+ *  appears. Returns a click handler, whether it is turning, and the note. */
 export function useEasterEgg() {
   const clicks = useRef<number[]>([])
-  const [burst, setBurst] = useState(0)
+  const [found, setFound] = useState(0)
   const onClick = () => {
     const now = Date.now()
     clicks.current = [...clicks.current.filter((t) => now - t < 1600), now]
     if (clicks.current.length >= 5) {
       clicks.current = []
-      setBurst((b) => b + 1)
+      setFound((f) => f + 1)
     }
   }
   useEffect(() => {
-    if (!burst) return
-    const t = window.setTimeout(() => setBurst(0), 2600)
+    if (!found) return
+    const t = window.setTimeout(() => setFound(0), 2800)
     return () => window.clearTimeout(t)
-  }, [burst])
-  const node = burst ? (
-    <div key={burst} className="fx-confetti" role="status">
-      {Array.from({ length: reducedMotion() ? 0 : 60 }, (_, i) => (
-        <i key={i} style={{
-          left: `${(i * 37) % 100}%`,
-          background: CONFETTI[i % CONFETTI.length],
-          animationDelay: `${(i % 12) * 40}ms`,
-          animationDuration: `${1400 + ((i * 53) % 900)}ms`,
-          width: i % 3 ? 10 : 14,
-          height: i % 3 ? 5 : 14,
-          borderRadius: i % 3 ? 2 : 999,
-        }} />
-      ))}
-      <span className="fx-confetti-note">You found the loop.</span>
-    </div>
-  ) : null
-  return { onClick, node }
+  }, [found])
+  const node = found ? <div key={found} className="fx-note" role="status">You found the <em>loop.</em></div> : null
+  return { onClick, spinning: found > 0, node }
 }
 
 /** 0 → 1 as the element scrolls through the viewport; for parallax and the sideways steps. */

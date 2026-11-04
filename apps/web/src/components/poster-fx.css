@@ -1,47 +1,50 @@
-/* Poster-look effects. Grain is an SVG noise tile; yellow is #FFFF00 and only
-   ever sits on dark or blue grounds, where it reads. */
+/* Premium interactions, quiet version (2026-11-04): paper and near-black,
+   hairlines, an italic serif accent, slow eased motion. Sapphire is reserved
+   for the one main action; nothing neon. */
 :root {
-  --fx-yellow: #FFFF00;
-  --fx-navy: #04183D;
-  --fx-ink: #071122;
-  --fx-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --fx-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --fx-paper: #F4F1EA;
+  --fx-ink: #111111;
+  --fx-night: #0E0E0F;
+  --fx-muted: #6F6B64;
+  --fx-blue: #0042AC;
+  --fx-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fx-serif: 'Instrument Serif', Georgia, serif;
 }
 
-.fx-grain { position: relative; isolation: isolate; }
-.fx-grain::after { content: ''; position: absolute; inset: 0; background-image: var(--fx-grain); background-size: 180px; mix-blend-mode: overlay; opacity: .35; pointer-events: none; z-index: 0; border-radius: inherit; }
-.fx-grain > * { position: relative; z-index: 1; }
+/* Preloader: paper, the name, a hairline that fills, then a curtain lifts */
+.fx-preloader { position: fixed; inset: 0; z-index: 100; background: var(--fx-paper); color: var(--fx-ink); display: grid; place-items: center; clip-path: inset(0 0 0 0); transition: clip-path 1.1s var(--fx-ease); }
+.fx-preloader.is-lifting { clip-path: inset(0 0 100% 0); }
+.fx-preloader-word { font: 500 clamp(28px, 3.4vw, 44px)/1 var(--font-body); letter-spacing: -0.04em; }
+.fx-preloader-word em, .fx-wipe em, .fx-note em { font-family: var(--fx-serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+.fx-preloader-line { position: absolute; left: 32px; right: 32px; bottom: 64px; height: 1px; background: rgba(17, 17, 17, .12); overflow: hidden; }
+.fx-preloader-line i { position: absolute; inset: 0; background: var(--fx-ink); transform-origin: left; }
+.fx-preloader-count { position: absolute; right: 32px; bottom: 28px; font: 500 13px/1 var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+.fx-preloader-tag { position: absolute; left: 32px; bottom: 28px; font: 500 11px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--fx-muted); }
 
-/* Preloader */
-.fx-preloader { position: fixed; inset: 0; z-index: 100; background: #000; color: #fff; display: grid; place-items: center; transition: transform .75s var(--fx-ease); }
-.fx-preloader.is-lifting { transform: translateY(-100%); }
-.fx-preloader-word { font-family: var(--font-poster); font-weight: 900; font-size: clamp(64px, 16vw, 220px); letter-spacing: -0.04em; line-height: 1; color: var(--fx-yellow); }
-.fx-preloader-count { position: absolute; left: 32px; bottom: 28px; font: 600 clamp(28px, 4vw, 56px)/1 var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.fx-preloader-tag { position: absolute; right: 32px; bottom: 34px; font: 700 12px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+/* Page change: a dark curtain carrying the name slides up and away */
+.fx-wipe { position: fixed; inset: 0; z-index: 90; background: var(--fx-night); color: var(--fx-paper); display: grid; place-items: center; pointer-events: none; animation: fx-wipe 1s var(--fx-ease) .15s forwards; }
+.fx-wipe span { font: 500 clamp(24px, 3vw, 38px)/1 var(--font-body); letter-spacing: -0.04em; animation: fx-fade .5s var(--fx-ease) forwards; }
+@keyframes fx-wipe { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
+@keyframes fx-fade { to { opacity: 0; transform: translateY(-12px); } }
 
-/* Page wipe */
-.fx-wipe { position: fixed; inset: 0; z-index: 90; background: var(--fx-yellow); pointer-events: none; animation: fx-wipe .7s var(--fx-ease) forwards; }
-@keyframes fx-wipe { from { transform: translateY(0); } to { transform: translateY(-101%); } }
-
-/* Reveal */
+/* Reveal: a slow rise, staggered */
 @media (prefers-reduced-motion: no-preference) {
-  [data-reveal] { opacity: 0; transform: translateY(40px); transition: opacity .9s var(--fx-ease), transform .9s var(--fx-ease); transition-delay: calc(var(--d, 0) * 90ms); }
+  [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity 1.2s var(--fx-ease), transform 1.2s var(--fx-ease); transition-delay: calc(var(--d, 0) * 110ms); }
   [data-reveal].is-in { opacity: 1; transform: none; }
 }
 
 /* Magnetic */
-[data-magnetic] { transition: transform .35s var(--fx-ease), background-color .2s, color .2s; will-change: transform; }
+[data-magnetic] { transition: transform .6s var(--fx-ease), background-color .3s, color .3s; will-change: transform; }
 
-/* Context cursor */
+/* Context cursor: a small ink dot that opens into a labelled circle */
 .fx-cursor { position: fixed; left: 0; top: 0; z-index: 95; width: 0; height: 0; pointer-events: none; }
-.fx-cursor::before { content: ''; position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 999px; background: var(--fx-yellow); mix-blend-mode: difference; transition: transform .3s var(--fx-ease), opacity .2s; }
-.fx-cursor span { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%) scale(.3); opacity: 0; padding: 12px 18px; border-radius: 999px; background: var(--fx-yellow); color: var(--fx-navy); font: 800 13px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; transition: transform .35s var(--fx-ease), opacity .2s; }
+.fx-cursor::before { content: ''; position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 999px; background: #FFFFFF; mix-blend-mode: difference; transition: transform .5s var(--fx-ease), opacity .3s; }
+.fx-cursor span { position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 84px; height: 84px; transform: translate(-50%, -50%) scale(.2); opacity: 0; border-radius: 999px; background: var(--fx-ink); color: var(--fx-paper); font: 500 11px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; transition: transform .55s var(--fx-ease), opacity .3s; }
 .fx-cursor.has-label::before { opacity: 0; transform: scale(.2); }
 .fx-cursor.has-label span { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-/* Confetti */
-.fx-confetti { position: fixed; inset: 0; z-index: 96; pointer-events: none; overflow: hidden; }
-.fx-confetti i { position: absolute; top: -20px; animation: fx-fall linear forwards; }
-@keyframes fx-fall { to { transform: translateY(110vh) rotate(720deg); } }
-.fx-confetti-note { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 16px 26px; border-radius: 999px; background: var(--fx-navy); color: var(--fx-yellow); font: 900 clamp(22px, 3vw, 34px)/1 var(--font-poster); text-transform: uppercase; letter-spacing: -0.01em; animation: fx-pop .5s var(--fx-ease) both; }
-@keyframes fx-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } }
+/* Easter egg note */
+.fx-note { position: fixed; left: 50%; bottom: 32px; z-index: 96; transform: translateX(-50%); padding: 14px 22px; border-radius: 999px; background: var(--fx-ink); color: var(--fx-paper); font: 500 15px/1 var(--font-body); letter-spacing: -0.01em; animation: fx-note 2.8s var(--fx-ease) both; }
+@keyframes fx-note { 0% { opacity: 0; transform: translate(-50%, 16px); } 12%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 8px); } }
+.fx-spin svg { animation: fx-spin 1.4s var(--fx-ease); }
+@keyframes fx-spin { to { transform: rotate(360deg); } }

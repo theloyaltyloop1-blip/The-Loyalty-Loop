@@ -24,11 +24,11 @@ function scrollToSection(event: MouseEvent<HTMLAnchorElement>) {
   window.history.replaceState(null, '', hash)
 }
 
-// How it works as three posters you scroll sideways through on a big screen.
+// How it works as three panels you scroll sideways through on a big screen.
 const STEPS = [
-  { n: '01', tone: 'blue', title: 'Find your spot.', body: 'Explore participating shops on the map and join their loyalty cards.' },
-  { n: '02', tone: 'yellow', title: 'Show your code.', body: 'At the till, show your QR code or short code. Every visit adds a stamp towards your reward.' },
-  { n: '03', tone: 'ocean', title: 'Enjoy your reward.', body: 'See your progress in the app. When your reward is ready, show the shop your redemption code.' },
+  { n: '01', tone: 'paper', title: 'Find your spot.', body: 'Explore participating shops on the map and join their loyalty cards.' },
+  { n: '02', tone: 'stone', title: 'Show your code.', body: 'At the till, show your QR code or short code. Every visit adds a stamp towards your reward.' },
+  { n: '03', tone: 'night', title: 'Enjoy your reward.', body: 'See your progress in the app. When your reward is ready, show the shop your redemption code.' },
 ]
 
 const QUESTIONS = [
@@ -40,8 +40,8 @@ const QUESTIONS = [
 
 // Example cards for the hero stack. Shop names are illustrative, not real customers.
 const BACK_CARDS = [
-  { shop: 'Fade & Co. Barbers', reward: 'Every sixth trim free', tone: 'ocean' },
-  { shop: 'Pip’s Bakehouse', reward: 'Collect 8 stamps, a loaf on us', tone: 'jade' },
+  { shop: 'Fade & Co. Barbers', reward: 'Every sixth trim free', tone: 'stone' },
+  { shop: 'Pip’s Bakehouse', reward: 'Collect 8 stamps, a loaf on us', tone: 'blue' },
 ]
 
 const STAMPS_TOTAL = 10
@@ -67,7 +67,7 @@ export function Landing() {
 
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-row">
-          <Link to="/" className="lp-brand" aria-label="The Loyalty Loop home" onClick={egg.onClick}>
+          <Link to="/" className={`lp-brand${egg.spinning ? ' fx-spin' : ''}`} aria-label="The Loyalty Loop home" onClick={egg.onClick}>
             <LoopMark className="h-8 w-8" />
             <span>The Loyalty Loop</span>
           </Link>
@@ -83,12 +83,10 @@ export function Landing() {
       </header>
 
       <main id="main-content">
-        <section ref={hero} className="lp-hero fx-grain">
-          <div className="lp-frame" aria-hidden="true"><span>++++++</span><span>Local loyalty</span><span>2026</span></div>
-          <span className="lp-hero-ghost" aria-hidden="true" style={{ transform: `translateY(${heroP * 160}px)` }}>LOOP</span>
+        <section ref={hero} className="lp-hero">
+          <div className="lp-wrap lp-frame" aria-hidden="true"><span>Digital loyalty cards</span><span>For independent shops</span><span>Est. 2026</span></div>
           <div className="lp-wrap lp-hero-grid">
             <div className="lp-hero-copy">
-              <p className="lp-kicker" data-reveal>Digital loyalty cards for independent shops</p>
               <h1 data-reveal style={{ '--d': 1 } as CSSProperties}>Your high street, <em>in your pocket.</em></h1>
               <p className="lp-lead" data-reveal style={{ '--d': 2 } as CSSProperties}>Keep the loyalty cards from your favourite local shops in one place, and get rewarded every time you visit.</p>
               <div className="lp-actions" data-reveal style={{ '--d': 3 } as CSSProperties}>
@@ -97,7 +95,7 @@ export function Landing() {
               <div data-reveal style={{ '--d': 4 } as CSSProperties}><StoreBadges className="lp-badges" /></div>
             </div>
 
-            <div className="lp-stack" role="img" aria-label="Example loyalty card: 7 of 10 stamps at a neighbourhood café, with two more shop cards behind it" style={{ transform: `translateY(${heroP * -70}px)` }}>
+            <div className="lp-stack" role="img" aria-label="Example loyalty card: 7 of 10 stamps at a neighbourhood café, with two more shop cards behind it" style={{ transform: `translateY(${heroP * -60}px)` }}>
               {BACK_CARDS.map((card, i) => (
                 <div key={card.shop} className={`lp-card lp-card-back lp-card-${card.tone}`} style={{ '--i': i } as CSSProperties} aria-hidden="true">
                   <span className="lp-card-shop">{card.shop}</span>
@@ -122,11 +120,11 @@ export function Landing() {
               </div>
             </div>
           </div>
-          <a href="#film" className="lp-scroll" onClick={scrollToSection}>Proceed scrolling ↓</a>
+          <a href="#film" className="lp-scroll" onClick={scrollToSection}><span className="lp-scroll-line" aria-hidden="true" />Scroll</a>
         </section>
 
         <section id="film" className="lp-wrap lp-film-wrap" aria-labelledby="lp-film-title">
-          <div className="lp-film fx-grain" data-reveal>
+          <div className="lp-film" data-reveal>
             <h2 id="lp-film-title">From the till <em>to a free coffee.</em></h2>
             <p>Twenty seconds on how a shop records a purchase and a card fills up.</p>
             <div data-cursor="Play">
@@ -139,10 +137,10 @@ export function Landing() {
 
         <section id="how-it-works" ref={how} className="lp-how" aria-labelledby="lp-how-title">
           <div className="lp-how-pin">
-            <h2 id="lp-how-title" className="lp-wrap">Same favourite places. <em>One less thing to remember.</em></h2>
+            <div className="lp-wrap"><h2 id="lp-how-title">Same favourite places. <em>One less thing to remember.</em></h2></div>
             <ol className="lp-steps" style={{ '--x': howP } as CSSProperties}>
               {STEPS.map((step) => (
-                <li key={step.n} className={`lp-step lp-step-${step.tone} fx-grain`}>
+                <li key={step.n} className={`lp-step lp-step-${step.tone}`}>
                   <span className="lp-step-n" aria-hidden="true">{step.n}</span>
                   <h3>{step.title}</h3>
                   <p>{step.body}</p>
@@ -154,7 +152,7 @@ export function Landing() {
         </section>
 
         <section id="business" className="lp-wrap">
-          <div className="lp-biz fx-grain">
+          <div className="lp-biz">
             <div className="lp-biz-copy" data-reveal>
               <p className="lp-kicker">For shop owners</p>
               <h2>Give your regulars <em>a reason to return.</em></h2>
@@ -197,10 +195,10 @@ export function Landing() {
           <Link className="lp-link" to="/help">Visit the help centre</Link>
         </section>
 
-        <section className="lp-save fx-grain" aria-label="Start collecting">
-          <p className="lp-save-word" data-reveal>Save<br />for<br />later<span className="lp-save-tab" aria-hidden="true" /></p>
+        <section className="lp-save" aria-label="Start collecting">
+          <p className="lp-save-word" data-reveal>Every visit, <em>counted.</em></p>
           <div className="lp-wrap lp-save-row" data-reveal style={{ '--d': 2 } as CSSProperties}>
-            <p>Every visit to your favourite shop, counted. Free for shoppers.</p>
+            <p>Free for shoppers. Your favourite local shops, in one place.</p>
             <Link className="lp-btn lp-btn-primary" to="/signup" data-magnetic data-cursor="Join free">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
           </div>
         </section>
@@ -216,7 +214,7 @@ export function Landing() {
             <p>© {new Date().getFullYear()} The Loyalty Loop</p>
             <LegalFooterLinks />
           </div>
-          <div className="lp-frame lp-frame-foot" aria-hidden="true"><span>The Loyalty Loop</span><span>Independent shops</span><span>Follow for more</span></div>
+          <div className="lp-frame lp-frame-foot" aria-hidden="true"><span>The Loyalty Loop</span><span>Independent shops</span><span>London</span></div>
         </div>
       </footer>
     </div>
