@@ -473,6 +473,14 @@ function spendRefusal(error: { message?: string; details?: string } | null): str
   return manualEntryRefusal(error);
 }
 
+function winbackCouponError(message: string): string {
+  if (message.includes("coupon_already_used")) return "This win-back code has already been used.";
+  if (message.includes("coupon_expired")) return "This win-back code has expired.";
+  if (message.includes("coupon_not_found")) return "That win-back code isn't valid for this shop.";
+  if (message.includes("not_allowed")) return "Your staff account can't redeem codes here.";
+  return "Please try again.";
+}
+
 // The database refuses some manual entries for customers with a linked card
 // (CARD_LINKING_PLAN.md §3.6). Turn its error codes into staff-friendly copy.
 function manualEntryRefusal(error: { message?: string; details?: string } | null): string | null {
@@ -1051,6 +1059,20 @@ function StampsScreen({
     setBusy(true);
     const normalized = code.replace(/\s+/g, "").toUpperCase();
     try {
+      if (normalized.startsWith("COMEBACK")) {
+        const { data, error } = await supabase.rpc("redeem_winback_coupon", {
+          _business_id: business.id,
+          _code: normalized,
+        });
+        if (error) throw new Error(winbackCouponError(error.message));
+        const userId = (data as { user_id: string }).user_id;
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showAlert("Win-back code accepted", "Give the customer their welcome-back extra. The code is now used up.");
+        setMatched({ id: userId });
+        setCode("");
+        void loadMemberDetails(userId);
+        return;
+      }
       if (mode === "reward") {
         const { data: reward, error: rewardError } = await supabase
           .from("rewards")
