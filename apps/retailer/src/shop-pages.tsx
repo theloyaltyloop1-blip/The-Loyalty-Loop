@@ -433,6 +433,16 @@ function ShopHome({
           onPress={() => onOpenPage("reviews")}
           wide={!isOwner}
         />
+        {isOwner ? (
+          <BigTile
+            icon={MapPin}
+            tile="orange"
+            title="Walk-past offer"
+            detail="Win new customers who walk by"
+            onPress={() => onOpenPage("walkpast")}
+            wide
+          />
+        ) : null}
       </View>
 
       {isOwner ? (

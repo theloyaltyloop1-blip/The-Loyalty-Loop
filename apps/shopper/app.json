@@ -2,7 +2,7 @@
   "expo": {
     "name": "The Loyalty Loop",
     "slug": "localoop-rewards",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "scheme": "loyaltyloop",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -57,7 +57,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow The Loyalty Loop to use your location to show the closest shops first. Your location stays on your phone."
+          "locationWhenInUsePermission": "Allow The Loyalty Loop to use your location to show the closest shops first. Your location stays on your phone.",
+          "locationAlwaysAndWhenInUsePermission": "If you turn on walk-past alerts, The Loyalty Loop uses your location in the background to tell you about offers from shops you walk past. Your location stays on your phone; only the shop you passed is checked.",
+          "isAndroidBackgroundLocationEnabled": true
         }
       ]
     ],

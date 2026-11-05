@@ -68,6 +68,7 @@ import { pushPermission, registerPushToken } from './src/push'
 import * as SecureStore from 'expo-secure-store'
 import { GuestHome, type GuestShop } from './src/components/GuestHome'
 import { Tip } from './src/components/Tip'
+import { disableWalkPast, enableWalkPast, refreshWalkPast, walkPastEnabled, walkPastSupported } from './src/walk-past'
 import { addPassFromBase64 } from './modules/expo-wallet-pass'
 import { signInWithGoogle } from './src/google-auth'
 import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
@@ -690,6 +691,8 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   const [showRequests, setShowRequests] = useState(false)
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
+  const [walkPast, setWalkPast] = useState(false)
+  const [walkPastBusy, setWalkPastBusy] = useState(false)
   const [blocks, setBlocks] = useState<{ blocked_id: string; created_at: string }[]>([])
   const firstName: string = session.user.user_metadata?.first_name || 'Shopper'
   const email = session.user.email || ''
@@ -707,6 +710,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
     setShowRequests(false)
     biometricLockEnabled().then(setBiometricEnabled)
     getUsageAnalyticsConsent().then(setAnalyticsEnabled)
+    void walkPastEnabled().then(setWalkPast)
     void loadBlocks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
@@ -741,6 +745,29 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
     setBiometricEnabled(next)
   }
   async function toggleUsageAnalytics(next: boolean) { await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next) }
+  async function switchWalkPast(next: boolean) {
+    setWalkPastBusy(true)
+    try {
+      if (!next) { await disableWalkPast(); setWalkPast(false); return }
+      const result = await enableWalkPast()
+      setWalkPast(result === 'on')
+      if (result === 'needs_always') showAlert('Location needed all the time', Platform.OS === 'ios'
+        ? 'Walk-past offers only work if location is set to "Always". You can change it in Settings > The Loyalty Loop > Location.'
+        : 'Walk-past offers only work if location is set to "Allow all the time". You can change it in your phone settings.',
+        [{ text: 'Not now', style: 'cancel' }, { text: 'Open settings', onPress: () => void Linking.openSettings() }])
+      else if (result === 'needs_notifications') showAlert('Notifications are off', 'Turn on notifications for The Loyalty Loop to get walk-past offers.',
+        [{ text: 'Not now', style: 'cancel' }, { text: 'Open settings', onPress: () => void Linking.openSettings() }])
+      else if (result === 'failed') showAlert('Could not turn it on', 'Check your connection and try again.')
+    } finally {
+      setWalkPastBusy(false)
+    }
+  }
+  function toggleWalkPast(next: boolean) {
+    if (!next) return switchWalkPast(false)
+    showAlert('Offers from shops you walk past?',
+      "When you pass a shop you haven't joined that has an offer on, we'll send you one notification. At most one a day, never the same shop twice in a month, and only while it's open.\n\nYour phone needs to use your location in the background. Your location stays on your phone; we're only told which shop you passed. Turn it off here any time.",
+      [{ text: 'Not now', style: 'cancel' }, { text: 'Turn on', onPress: () => void switchWalkPast(true) }])
+  }
   async function saveName() {
     const trimmed = name.trim()
     if (!trimmed) return showAlert('Add your name', 'Enter the name you would like shops to see.')
@@ -837,6 +864,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               </SettingsGroup>
 
               <SettingsGroup title="Notifications">
+                {walkPastSupported() && <SettingsRow tile="teal" icon={(c) => <MapPinIcon color={c} size={18} />} title="Walk-past offers" detail="Get an offer when you pass a shop you haven't joined. At most one a day" right={<Switch value={walkPast} disabled={walkPastBusy} onValueChange={(v) => void toggleWalkPast(v)} trackColor={{ true: primary }} />} />}
                 <SettingsRow tile="amber" icon={(c) => <BellIcon color={c} size={18} />} title="Notification settings" detail="Shop news and reward alerts, managed in your phone settings" onPress={() => void Linking.openSettings()} last />
               </SettingsGroup>
 
@@ -2492,6 +2520,7 @@ function AppHome({ session }: { session: Session }) {
   )
 
   useEffect(() => { void trackUsageEvent(userId, 'tab_viewed', tab) }, [tab, userId])
+  useEffect(() => { void refreshWalkPast() }, [])
   useEffect(() => { if (selected) void trackUsageEvent(userId, 'shop_opened') }, [selected?.id, userId])
   const coldStartPushHandled = useRef(false)
   useEffect(() => {

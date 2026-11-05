@@ -70,7 +70,8 @@ export type NativeOwnerPage =
   | "verify"
   | "poster"
   | "help"
-  | "closure";
+  | "closure"
+  | "walkpast";
 
 export type NativeOnboardingDestination =
   | "analytics"
@@ -2472,6 +2473,65 @@ const posterStyles = StyleSheet.create({
   switchRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
 });
 
+// Walk-past offer: shown to opted-in shoppers who walk past and have not joined
+// yet (see supabase/migrations/20261105120000_walk_past_alerts.sql for the limits).
+function WalkPastPage({ business, onBack, preview = false }: PageProps) {
+  const [offer, setOffer] = useState("");
+  const [saved, setSaved] = useState<string | null>(null);
+  const [stats, setStats] = useState<{ alerted: number; joined: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (preview) return;
+    supabase.from("businesses").select("nearby_offer").eq("id", business.id).maybeSingle()
+      .then(({ data }) => {
+        const current = (data as { nearby_offer?: string | null } | null)?.nearby_offer ?? null;
+        setSaved(current);
+        setOffer(current ?? "");
+      });
+    supabase.rpc("nearby_alert_stats", { _business_id: business.id })
+      .then(({ data }) => { if (data) setStats(data as { alerted: number; joined: number }); });
+  }, [business.id, preview]);
+  async function save(next: string | null) {
+    if (preview) return showAlert("Preview mode", "Sign in to your shop to set a walk-past offer.");
+    const clean = next?.trim() || null;
+    if (clean && (clean.length < 3 || clean.length > 80))
+      return showAlert("Check your offer", "Keep it between 3 and 80 characters.");
+    setBusy(true);
+    const { error } = await supabase.rpc("set_nearby_offer", { _business_id: business.id, _offer: clean });
+    setBusy(false);
+    if (error) return showAlert("Could not save", "Please try again.");
+    setSaved(clean);
+    setOffer(clean ?? "");
+    showAlert(clean ? "Walk-past offer on" : "Walk-past offer off",
+      clean ? "Shoppers who opted in will see it when they walk past." : "Nobody will be alerted when they walk past.");
+  }
+  return (
+    <View>
+      <PageHeader title="Walk-past offer" eyebrow="NEW CUSTOMERS" onBack={onBack} />
+      <Section>
+        <Text style={styles.cardTitle}>{saved ? "Your offer is live" : "Turn it on with an offer"}</Text>
+        <Text style={[styles.muted, { marginTop: 8, marginBottom: 14 }]}>
+          Shoppers who have turned on walk-past alerts get one notification when they pass your shop
+          while you're open. Only people who haven't joined your card yet, never more than once a month
+          each.
+        </Text>
+        <Field value={offer} onChangeText={setOffer} placeholder="e.g. Half-price first coffee when you join" />
+        <Text style={[styles.muted, { marginTop: 6, marginBottom: 14 }]}>{offer.trim().length}/80</Text>
+        <PrimaryButton label={saved ? "Update offer" : "Turn on"} busy={busy} onPress={() => void save(offer)} />
+        {saved ? <View style={{ marginTop: 10 }}><PrimaryButton label="Turn off" secondary busy={busy} onPress={() => void save(null)} /></View> : null}
+      </Section>
+      {stats ? (
+        <Section>
+          <Text style={styles.cardTitle}>Last 30 days</Text>
+          <Text style={[styles.muted, { marginTop: 8 }]}>
+            {stats.alerted} {stats.alerted === 1 ? "person" : "people"} alerted · {stats.joined} joined your card
+          </Text>
+        </Section>
+      ) : null}
+    </View>
+  );
+}
+
 export function NativeOwnerPageView({
   page,
   ...props
@@ -2490,6 +2550,7 @@ export function NativeOwnerPageView({
         poster: PosterPage,
         help: HelpPage,
         closure: ShopClosurePage,
+        walkpast: WalkPastPage,
       })[page],
     [page],
   );
