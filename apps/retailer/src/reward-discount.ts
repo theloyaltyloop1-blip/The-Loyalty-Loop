@@ -20,3 +20,15 @@ export function rewardDiscountPence(row: { catalog?: unknown }): number | null {
   const value = (catalog as { discount_pence?: unknown } | null | undefined)?.discount_pence;
   return typeof value === "number" && value > 0 ? value : null;
 }
+
+/** Reads discount_percent (1-100) from a rewards row joined to reward_catalog. */
+export function rewardDiscountPercent(row: { catalog?: unknown }): number | null {
+  const catalog = Array.isArray(row.catalog) ? row.catalog[0] : row.catalog;
+  const value = (catalog as { discount_percent?: unknown } | null | undefined)?.discount_percent;
+  return typeof value === "number" && value >= 1 && value <= 100 ? value : null;
+}
+
+/** "% off" rewards: the discount on a bill, rounded to the nearest penny. */
+export function percentOff(billPence: number, percent: number): number {
+  return Math.round((Math.max(0, billPence) * percent) / 100);
+}

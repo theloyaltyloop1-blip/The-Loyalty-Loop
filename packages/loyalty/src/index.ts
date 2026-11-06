@@ -9,9 +9,9 @@
  * package; they mirror what they need (see supabase/functions/_shared).
  */
 
-export type RewardModel = 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'
+export type RewardModel = 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points' | 'custom'
 export type LoyaltyType = 'stamp_card' | 'points' | 'tiered'
-export type ProgrammeId = 'stamps' | 'spend' | 'tiers' | 'points'
+export type ProgrammeId = 'stamps' | 'spend' | 'tiers' | 'points' | 'custom'
 
 // ---------------------------------------------------------------------------
 // Programme registry
@@ -61,6 +61,14 @@ export const PROGRAMMES: Record<ProgrammeId, Programme> = {
     bestFor: 'Shops where customers choose their own reward',
     recordsSpend: true,
   },
+  custom: {
+    id: 'custom',
+    model: 'custom',
+    name: 'Your own programme',
+    pitch: 'Described in your own words and set up by our AI.',
+    bestFor: 'Shops whose idea does not fit the others',
+    recordsSpend: true,
+  },
 }
 
 type ModelHolder = { reward_model?: string | null } | string | null | undefined
@@ -78,7 +86,25 @@ export function programmeIdFor(value: ModelHolder): ProgrammeId {
   if (model === 'spend_threshold') return 'spend'
   if (model === 'tiers') return 'tiers'
   if (model === 'points') return 'points'
+  if (model === 'custom') return 'custom'
   return 'stamps'
+}
+
+/** Points and custom programmes both keep a wallet balance (memberships.points_balance). */
+export function hasPointsWallet(value: ModelHolder): boolean {
+  const id = programmeIdFor(value)
+  return id === 'points' || id === 'custom'
+}
+
+export interface UnitNames { one: string; many: string }
+
+/** What a shop calls its points: "bean"/"beans" for a custom programme, else "point"/"points". */
+export function unitNames(business: { reward_model?: string | null; programme_rules?: unknown } | null | undefined): UnitNames {
+  const unit = (business?.programme_rules as { unit?: { one?: unknown; many?: unknown } } | null | undefined)?.unit
+  if (business?.reward_model === 'custom' && typeof unit?.one === 'string' && typeof unit?.many === 'string') {
+    return { one: unit.one, many: unit.many }
+  }
+  return { one: 'point', many: 'points' }
 }
 
 /** True when staff record a purchase amount at scan (so no stamps are given). */
@@ -307,13 +333,14 @@ export function pointsStanding(
   business: Pick<LoyaltyBusiness, 'loyalty_config'>,
   balance: number,
   rewards: readonly PointsReward[],
+  units: UnitNames = { one: 'point', many: 'points' },
 ): PointsStanding {
   const points = Math.max(0, balance)
   const sorted = rewards.filter((r) => r.points_cost > 0).slice().sort((a, b) => a.points_cost - b.points_cost)
   const affordable = sorted.filter((r) => r.points_cost <= points)
   const next = sorted.find((r) => r.points_cost > points) ?? null
   const toNext = next ? next.points_cost - points : null
-  const label = `${points} point${points === 1 ? '' : 's'}` +
+  const label = `${points} ${points === 1 ? units.one : units.many}` +
     (next ? ` · ${toNext} to ${next.title}` : affordable.length ? ' · rewards ready' : '')
   return {
     balance: points,
@@ -514,6 +541,15 @@ export interface ProgrammeSnapshot {
   toNextTierPence?: number | null
   pointsBalance?: number | null
   pointsPerPound?: number | null
+  // Custom programmes (programme = 'custom')
+  unitOne?: string | null
+  unitMany?: string | null
+  levelName?: string | null
+  levelPerks?: readonly string[] | null
+  cashPoints?: number | null
+  cashPence?: number | null
+  cashAvailablePoints?: number | null
+  cashAvailablePence?: number | null
 }
 
 export type SnapshotStanding =
@@ -535,6 +571,12 @@ export type SnapshotStanding =
       perPound: number
       /** "240 points · earns 1 point per £1" */
       label: string
+      /** Set for custom programmes; plain points shops use point/points. */
+      units?: UnitNames
+      levelName?: string | null
+      levelPerks?: string[]
+      /** "3 points = £1 off": one step, and what can come off right now. */
+      cash?: { points: number; pence: number; availablePoints: number; availablePence: number } | null
     }
 
 /** Null for stamps and £ spend, which keep their existing display. */
@@ -569,7 +611,38 @@ export function standingFromSnapshot(
       label: `${balance} point${balance === 1 ? '' : 's'} · earns ${perPound} point${perPound === 1 ? '' : 's'} per £1`,
     }
   }
+  if (snapshot.programme === 'custom') {
+    const balance = Math.max(0, snapshot.pointsBalance ?? 0)
+    const units = { one: snapshot.unitOne || 'point', many: snapshot.unitMany || 'points' }
+    const cash = snapshot.cashPoints && snapshot.cashPence
+      ? {
+          points: snapshot.cashPoints,
+          pence: snapshot.cashPence,
+          availablePoints: Math.max(0, snapshot.cashAvailablePoints ?? 0),
+          availablePence: Math.max(0, snapshot.cashAvailablePence ?? 0),
+        }
+      : null
+    const bits = [`${balance} ${balance === 1 ? units.one : units.many}`]
+    if (snapshot.levelName) bits.push(snapshot.levelName)
+    if (cash && cash.availablePence > 0) bits.push(`${money(cash.availablePence)} off available`)
+    return {
+      kind: 'points',
+      balance,
+      perPound: 0,
+      label: bits.join(' · '),
+      units,
+      levelName: snapshot.levelName ?? null,
+      levelPerks: (snapshot.levelPerks ?? []).filter((perk) => perk.trim() !== ''),
+      cash,
+    }
+  }
   return null
+}
+
+/** "Bob now has 12 beans." for points and custom scan results. */
+export function pointsBalanceSentence(name: string, standing: { balance: number; units?: UnitNames }): string {
+  const u = standing.units ?? { one: 'point', many: 'points' }
+  return `${name} now has ${standing.balance} ${standing.balance === 1 ? u.one : u.many}.`
 }
 
 // ---------------------------------------------------------------------------

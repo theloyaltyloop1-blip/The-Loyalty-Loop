@@ -12,7 +12,8 @@
     "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./src/*"],
-      "@loyalty-loop/loyalty": ["../../packages/loyalty/src/index.ts"]
+      "@loyalty-loop/loyalty": ["../../packages/loyalty/src/index.ts"],
+      "@loyalty-loop/loyalty/programme-rules": ["../../packages/loyalty/src/programme-rules.ts"]
     },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,

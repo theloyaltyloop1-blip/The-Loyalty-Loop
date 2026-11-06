@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { rewardWords } from '@/lib/shop-types'
-import { recordsSpend, standingFromSnapshot, type SnapshotStanding } from '@loyalty-loop/loyalty'
+import { pointsBalanceSentence, recordsSpend, standingFromSnapshot, type SnapshotStanding } from '@loyalty-loop/loyalty'
 import { Navigate } from 'react-router-dom'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import { Camera, CameraOff, Check, Gift, ScanLine } from 'lucide-react'
@@ -20,6 +20,8 @@ import {
   fetchScannedMemberDetails,
   redeemReward,
   fetchSpendSummary,
+  redeemPointsForCash,
+  cashRedeemErrorMessage,
   recordManualSpend,
   undoManualSpend,
   fetchMyRecentSpend,
@@ -317,6 +319,9 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
   const [waiting, setWaiting] = React.useState<{ scanId: string; customerId: string; name: string; busy: boolean } | null>(null)
   const [paid, setPaid] = React.useState<{ name: string; amountPence: number } | null>(null)
   const [waitedLong, setWaitedLong] = React.useState(false)
+  // Custom programmes with a cash value: how many steps (e.g. 3 points = £1) to take off.
+  const [cashSteps, setCashSteps] = React.useState(1)
+  const cashRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     isPosConnected(businessId).then(setTillLinked).catch(() => setTillLinked(false))
@@ -391,7 +396,38 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
     setWaiting(null)
     setPaid(null)
     setWaitedLong(false)
+    setCashSteps(1)
     clientRef.current = null
+    cashRef.current = null
+  }
+
+  async function handleCashOff() {
+    const cash = summaryStanding?.kind === 'points' ? summaryStanding.cash : null
+    if (!matchedUserId || !cash || summaryStanding?.kind !== 'points') return
+    const maxSteps = Math.floor(cash.availablePoints / cash.points)
+    const steps = Math.min(Math.max(1, cashSteps), maxSteps)
+    const points = steps * cash.points
+    const units = summaryStanding.units ?? { one: 'point', many: 'points' }
+    const name = match?.first_name || 'this customer'
+    if (!window.confirm(`Use ${points} ${points === 1 ? units.one : units.many} for ${formatPounds(steps * cash.pence)} off ${name}'s bill?`)) return
+    cashRef.current = cashRef.current ?? crypto.randomUUID()
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await redeemPointsForCash(businessId, matchedUserId, points, cashRef.current)
+      cashRef.current = null
+      setSuccess(`Take ${formatPounds(r.discountPence)} off the bill. ${name} has ${r.pointsBalance} ${r.pointsBalance === 1 ? units.one : units.many} left.`)
+      setCashSteps(1)
+      void sendUserPush(businessId, matchedUserId)
+      void updateWalletPass(businessId, matchedUserId)
+      setSummary(await fetchSpendSummary(businessId, matchedUserId))
+    } catch (e) {
+      const raw = (e as { message?: string } | null)?.message ?? ''
+      if (/not_enough_points|above_visit_limit|points_not_a_whole_step|not_allowed|shop_has_no_cash_value|invalid_/.test(raw)) cashRef.current = null
+      setError(cashRedeemErrorMessage(e))
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function finishTillScan() {
@@ -624,6 +660,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
                   ? summaryStanding.label
                   : `${summaryStanding.tierName ?? 'No level yet'}${summaryStanding.label ? ` · ${summaryStanding.label}` : ''}`}
                 {summaryStanding.kind === 'tiers' && summaryStanding.perks.length ? <span className="block text-foreground/60">{summaryStanding.perks.join(' · ')}</span> : null}
+                {summaryStanding.kind === 'points' && summaryStanding.levelPerks?.length ? <span className="block text-foreground/60">{summaryStanding.levelName}: {summaryStanding.levelPerks.join(' · ')}</span> : null}
               </span>
             ) : (
               <span>
@@ -634,6 +671,30 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
               </span>
             )}
           </div>
+          {summaryStanding?.kind === 'points' && summaryStanding.cash && summaryStanding.cash.availablePoints >= summaryStanding.cash.points && (() => {
+            const cash = summaryStanding.cash
+            const maxSteps = Math.floor(cash.availablePoints / cash.points)
+            const steps = Math.min(Math.max(1, cashSteps), maxSteps)
+            const units = summaryStanding.units ?? { one: 'point', many: 'points' }
+            return (
+              <div className="mt-4 rounded-xl bg-card p-3">
+                <p className="text-sm font-semibold text-foreground">Money off with {units.many}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <button data-press-feedback type="button" aria-label="Less" disabled={steps <= 1} onClick={() => setCashSteps(steps - 1)}
+                    className="h-9 w-9 rounded-full ring-1 ring-foreground/15 font-bold disabled:opacity-30">−</button>
+                  <span className="flex-1 text-center text-sm font-bold text-foreground tabular-nums">
+                    {formatPounds(steps * cash.pence)} <span className="font-normal text-foreground/60">for {steps * cash.points} {units.many}</span>
+                  </span>
+                  <button data-press-feedback type="button" aria-label="More" disabled={steps >= maxSteps} onClick={() => setCashSteps(steps + 1)}
+                    className="h-9 w-9 rounded-full ring-1 ring-foreground/15 font-bold disabled:opacity-30">+</button>
+                </div>
+                <button data-press-feedback type="button" onClick={handleTask(handleCashOff)} disabled={busy}
+                  className="mt-2 h-10 w-full rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50">
+                  Take {formatPounds(steps * cash.pence)} off
+                </button>
+              </div>
+            )
+          })()}
         </aside>
       )}
 
@@ -987,6 +1048,6 @@ export function OwnerScan() {
 
 // Scan result sentence for membership tiers and points shops (see standingFromSnapshot).
 function standingSentence(name: string, standing: SnapshotStanding): string {
-  if (standing.kind === 'points') return `${name} now has ${standing.balance} point${standing.balance === 1 ? '' : 's'}.`
+  if (standing.kind === 'points') return pointsBalanceSentence(name, standing)
   return `${name} is ${standing.tierName ? `at ${standing.tierName}` : 'not yet at a level'}${standing.label ? `, ${standing.label}` : ''}.`
 }

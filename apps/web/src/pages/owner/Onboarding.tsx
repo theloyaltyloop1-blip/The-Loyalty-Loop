@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Coffee, Gem, Plus, QrCode, ScanLine, Star, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Coffee, Gem, Plus, QrCode, ScanLine, Sparkles, Star, Trash2 } from 'lucide-react'
 import {
   PROGRAMMES,
   SHOP_KINDS,
@@ -14,7 +14,9 @@ import {
 } from '@loyalty-loop/loyalty'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
-import { addProgrammeContent, createShopWithProgramme } from '@/lib/businesses'
+import type { ProgrammeRules } from '@loyalty-loop/loyalty/programme-rules'
+import { addProgrammeContent, createShopWithCustomProgramme, createShopWithProgramme } from '@/lib/businesses'
+import { ProgrammeBuilder, RulesPreview } from '@/components/programme-builder'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { OwnerLoadError } from '@/components/owner-load-error'
@@ -143,6 +145,9 @@ export function OwnerOnboarding() {
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [liveId, setLiveId] = React.useState<string | null>(null)
+  // "None of these fit": the owner describes their own programme to the AI builder.
+  const [custom, setCustom] = React.useState(false)
+  const [rules, setRules] = React.useState<ProgrammeRules | null>(null)
 
   const country = COUNTRIES.find((c) => c.code === countryCode) ?? COUNTRIES[0]
 
@@ -172,19 +177,30 @@ export function OwnerOnboarding() {
 
   const lastEditable = 2
   const result = draft ? buildShopArgs(activeProgramme, draft) : null
+  const isCustom = custom && !resumeBusiness
   const canContinue =
-    step === 0 ? kind !== null : step === 1 ? name.trim().length > 0 : step === 2 ? Boolean(result?.ok) : true
+    step === 0 ? kind !== null || custom
+      : step === 1 ? name.trim().length > 0
+      : step === 2 ? (isCustom ? rules !== null : Boolean(result?.ok))
+      : true
 
   function pickKind(k: ShopKind) {
     setKind(k)
     setProgramme(k.programme)
     setDraft(null)
+    setCustom(false)
     setPickingProgramme(false)
   }
 
   function pickProgramme(id: ProgrammeId) {
     setProgramme(id)
     setDraft(null)
+    setCustom(false)
+    setPickingProgramme(false)
+  }
+
+  function pickCustom() {
+    setCustom(true)
     setPickingProgramme(false)
   }
 
@@ -196,12 +212,19 @@ export function OwnerOnboarding() {
   }
 
   async function handleCreate() {
-    if (!draft || !result || !result.ok) return
+    if (isCustom ? !rules : !draft || !result || !result.ok) return
     setCreating(true)
     setError(null)
     try {
       let id: string
-      if (resumeBusiness) {
+      if (isCustom && rules) {
+        id = await createShopWithCustomProgramme(
+          { name: name.trim(), category: kind?.category ?? 'Other', country_code: country.code, brand_color: BRAND_COLOR },
+          rules
+        )
+      } else if (!draft || !result || !result.ok) {
+        return
+      } else if (resumeBusiness) {
         await addProgrammeContent(resumeBusiness.id, result.args)
         id = resumeBusiness.id
         markRewardsReady(id)
@@ -272,8 +295,36 @@ export function OwnerOnboarding() {
                     </button>
                   )
                 })}
+                <button
+                  data-press-feedback
+                  type="button"
+                  onClick={() => { setKind(null); pickCustom() }}
+                  className={cardClass + (custom && !kind ? 'border-primary bg-card' : 'border-dashed border-border bg-white/40')}
+                >
+                  <span className="flex items-center gap-3">
+                    <Sparkles className="h-6 w-6 text-primary shrink-0" />
+                    <span>
+                      <span className="block font-bold text-foreground">Something different</span>
+                      <span className="block text-sm text-foreground/70">Describe your own programme and our AI sets it up</span>
+                    </span>
+                  </span>
+                </button>
               </div>
-              {kind && (
+              {custom && (
+                <div className="rounded-2xl bg-sage p-4 text-sage-ink">
+                  <p className="text-sm font-semibold text-foreground">Design your own with AI</p>
+                  <p className="text-sm text-foreground/80">
+                    In two steps you'll tell our AI how you want rewards to work, in your own words, like "3 points is £1 off".
+                    It builds it and shows you exactly what customers will see before anything goes live.
+                  </p>
+                  {kind && (
+                    <button data-press-feedback type="button" onClick={() => setCustom(false)} className="mt-2 text-sm font-semibold text-primary underline">
+                      Use the suggestion instead
+                    </button>
+                  )}
+                </div>
+              )}
+              {kind && !custom && (
                 <div className="rounded-2xl bg-sage p-4 text-sage-ink">
                   <p className="text-sm font-semibold text-foreground">
                     We suggest: {PROGRAMMES[programme].name}
@@ -296,6 +347,15 @@ export function OwnerOnboarding() {
                           <span className="block text-xs text-foreground/70">{PROGRAMMES[id].pitch}</span>
                         </button>
                       ))}
+                      <button
+                        data-press-feedback
+                        type="button"
+                        onClick={pickCustom}
+                        className="rounded-xl border-2 border-dashed border-border bg-white/60 p-3 text-left"
+                      >
+                        <span className="flex items-center gap-1.5 font-bold text-sm text-foreground"><Sparkles className="h-4 w-4 text-primary" /> Design my own with AI</span>
+                        <span className="block text-xs text-foreground/70">None of these fit? Describe it and our AI builds it.</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -324,11 +384,33 @@ export function OwnerOnboarding() {
                   </button>
                 ))}
               </div>}
-              <CardPreview programme={programme} name={name} draft={onboardingDefaults(programme, kind?.key ?? 'everyday', country.currency)} currency={country.currency} />
+              {custom ? (
+                <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: BRAND_COLOR }}>
+                  <p className="text-[11px] font-bold tracking-wide text-white/80 mb-1">WHAT YOUR CUSTOMERS WILL SEE</p>
+                  <p className="text-lg font-display font-bold text-white mb-1">{name.trim() || 'Your shop'}</p>
+                  <p className="text-sm font-semibold text-white">Your own programme, designed on the next step</p>
+                </div>
+              ) : (
+                <CardPreview programme={programme} name={name} draft={onboardingDefaults(programme, kind?.key ?? 'everyday', country.currency)} currency={country.currency} />
+              )}
             </>
           )}
 
-          {step === 2 && draft && (
+          {step === 2 && isCustom && (
+            <>
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">Design your programme</h1>
+              <p className="text-foreground/70 mb-5">
+                Describe it like you'd explain it to a customer. You can keep changing it until it's right.
+              </p>
+              <ProgrammeBuilder
+                shop={{ name: name.trim(), category: kind?.category ?? undefined, currencySymbol: country.currency.symbol }}
+                onRules={setRules}
+                brandColor={BRAND_COLOR}
+              />
+            </>
+          )}
+
+          {step === 2 && !isCustom && draft && (
             <>
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">
                 {activeProgramme === 'tiers' ? 'Your membership levels' : 'Your rewards'}
@@ -421,7 +503,9 @@ export function OwnerOnboarding() {
               </div>
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground text-center mb-2">You're live!</h1>
               <p className="text-foreground/70 text-center mb-6">Customers can join {activeName} now. This is their card:</p>
-              {draft && <div className="mb-6"><CardPreview programme={activeProgramme} name={activeName} draft={draft} currency={activeCountry.currency} /></div>}
+              {isCustom && rules ? (
+                <div className="mb-6"><RulesPreview rules={rules} currencySymbol={activeCountry.currency.symbol} brandColor={BRAND_COLOR} /></div>
+              ) : draft && <div className="mb-6"><CardPreview programme={activeProgramme} name={activeName} draft={draft} currency={activeCountry.currency} /></div>}
               <div className="grid gap-3">
                 <button data-press-feedback type="button" onClick={() => void finish('/owner/tools')} className="flex items-center justify-center gap-2 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground font-semibold h-12">
                   <QrCode className="h-4 w-4" /> Print your QR poster

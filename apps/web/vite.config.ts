@@ -19,6 +19,7 @@ const config: UserConfig = {
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@loyalty-loop/loyalty/programme-rules': fileURLToPath(new URL('../../packages/loyalty/src/programme-rules.ts', import.meta.url)),
       '@loyalty-loop/loyalty': fileURLToPath(new URL('../../packages/loyalty/src/index.ts', import.meta.url)),
     },
   },

@@ -107,7 +107,7 @@ export function walletProgress(
       tiers,
     }), shopName, "a level");
   }
-  if (business.reward_model === "points") {
+  if (business.reward_model === "points" || business.reward_model === "custom") {
     return fromStanding(walletStandingLines("points", {
       pointsBalance: membership.points_balance ?? 0,
       rewards: tiers.map((t) => ({ title: t.title, points_cost: t.points_cost ?? null })),
@@ -132,7 +132,7 @@ type Admin = { from: (table: string) => any };
 export async function loadWalletTiers(admin: Admin, businessId: string, rewardModel?: string | null): Promise<WalletTier[]> {
   // points_cost only exists once the programme migration is applied, so it is
   // requested for points shops only; stamps and £ spend shops query as before.
-  const columns = rewardModel === "points" ? "title,spend_threshold_pence,points_cost" : "title,spend_threshold_pence";
+  const columns = rewardModel === "points" || rewardModel === "custom" ? "title,spend_threshold_pence,points_cost" : "title,spend_threshold_pence";
   const { data, error } = await admin
     .from("reward_catalog")
     .select(columns)

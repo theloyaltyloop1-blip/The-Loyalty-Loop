@@ -65,7 +65,7 @@ import { Sheet } from './src/components/Sheet'
 import { AppAlertHost, showAlert } from './src/components/AppAlert'
 import { SuccessCheck } from './src/components/SuccessCheck'
 import { HowItWorks, OpeningHoursList, openStatus, type OpeningHours, type TierRow } from './src/shop-profile'
-import { pointsStanding, programmeIdFor, tierStanding } from '@loyalty-loop/loyalty'
+import { pointsStanding, programmeIdFor, tierStanding, unitNames } from '@loyalty-loop/loyalty'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
 import { trendingShops } from './src/trending'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
@@ -1058,9 +1058,12 @@ function ShopDetail({
   // Negative progress (after a refund or a corrected entry) displays as £0.00.
   const spendShop = business.reward_model === 'spend_threshold'
   const programmeId = programmeIdFor(business)
+  // Custom (AI-designed) programmes keep a points wallet like Points shops.
+  const pointsLike = programmeId === 'points' || programmeId === 'custom'
+  const pointUnits = unitNames(business)
   const value = spendShop
     ? Math.max(0, membership?.reward_progress_pence ?? 0)
-    : programmeId === 'points' || business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
+    : pointsLike || business.loyalty_type === 'points' ? membership?.points_balance || 0 : membership?.stamp_count || 0
   const [tiers, setTiers] = useState<TierRow[]>([])
   const [rollingSpend, setRollingSpend] = useState<number | null>(null)
   const scrollRef = useRef<ScrollView>(null)
@@ -1349,6 +1352,7 @@ function ShopDetail({
     business,
     value,
     catalog.filter((r) => (r.points_cost ?? 0) > 0).map((r) => ({ id: r.id, title: r.title, points_cost: r.points_cost as number })),
+    pointUnits,
   )
 
   async function join() {
@@ -1413,12 +1417,12 @@ function ShopDetail({
 
   const skin = useMemo(() => shopSkin(business), [business.card_design, business.category, business.brand_color])
   const passStamps = !spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '') && threshold > 0 && threshold <= 12
-  const passProgress = programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? tierStanding(tiers, rollingSpend).fraction : 0) : programmeId === 'points' ? (pointsView.next ? pointsView.fraction : 1) : threshold > 0 ? value / threshold : 0
+  const passProgress = programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? tierStanding(tiers, rollingSpend).fraction : 0) : pointsLike ? (pointsView.next ? pointsView.fraction : 1) : threshold > 0 ? value / threshold : 0
   const reward = nextTier?.title ?? 'your next reward'
   const passLabel = !membership
     ? `Join to start collecting for ${reward}`
     : programmeId === 'tiers' ? membership.current_tier || 'Getting started'
-    : programmeId === 'points' ? (pointsView.next ? pointsView.label : `${value} ${value === 1 ? 'point' : 'points'}`)
+    : pointsLike ? (pointsView.next ? pointsView.label : `${value} ${value === 1 ? pointUnits.one : pointUnits.many}`)
     : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)} · ${reward}`
     : value >= threshold ? `${reward} is ready` : `${threshold - value} more for ${reward}`
   // The whole page wears the shop's design; the QR tile stays black on white so it scans.
@@ -1439,7 +1443,7 @@ function ShopDetail({
             eyebrow={[business.category || 'Local business', openStatus(business.opening_hours)?.label].filter(Boolean).join(' · ')}
             stamps={membership && passStamps ? { filled: Math.min(value, threshold), total: threshold } : null}
             count={!membership || programmeId === 'tiers' ? null
-              : programmeId === 'points' ? { value: String(value), of: ' pts' }
+              : pointsLike ? { value: String(value), of: pointsLike && programmeId === 'custom' ? ` ${pointUnits.many}` : ' pts' }
               : spendShop ? (threshold > 0 ? { value: pounds(Math.min(value, threshold), business.country_code).replace(/\.00$/, ''), of: `/${pounds(threshold, business.country_code).replace(/\.00$/, '')}` } : null)
               : passStamps ? { value: String(Math.min(value, threshold)), of: `/${threshold}` } : null}
             progress={membership && !passStamps ? passProgress : null}

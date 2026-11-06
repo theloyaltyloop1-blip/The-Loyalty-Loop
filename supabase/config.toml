@@ -43,3 +43,7 @@ verify_jwt = false
 # that they may record spend at the shop.
 [functions.sumup-check]
 verify_jwt = true
+
+# AI programme builder. Owner-only; the handler also validates the JWT user.
+[functions.design-programme]
+verify_jwt = true
