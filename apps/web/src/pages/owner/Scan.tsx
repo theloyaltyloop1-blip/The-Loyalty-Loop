@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { Camera, CameraOff, Check, Gift, ScanLine, X } from 'lucide-react'
+import jsQR from 'jsqr'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { useOwner } from '@/lib/owner-context'
@@ -23,32 +24,63 @@ const UNIT_LABEL: Record<string, string> = {
 
 type ScanMode = 'award' | 'redeem'
 
-// Native browser barcode/QR detection — Chrome/Edge only, no extra
-// dependency. Camera scanning degrades to "unavailable, use manual entry
-// below" everywhere else; manual entry always works regardless.
-function useBarcodeDetector() {
+type Detector = { detect: (v: HTMLVideoElement) => Promise<string | null> }
+
+// Native BarcodeDetector where available (Chrome/Edge/Android); otherwise
+// (iOS Safari, Firefox) decode frames with jsQR via a canvas.
+function useQrDetector(): Detector {
   return React.useMemo(() => {
     const w = window as unknown as { BarcodeDetector?: new (opts: { formats: string[] }) => { detect: (v: CanvasImageSource) => Promise<Array<{ rawValue: string }>> } }
-    if (!w.BarcodeDetector) return null
-    return new w.BarcodeDetector({ formats: ['qr_code'] })
+    if (w.BarcodeDetector) {
+      try {
+        const native = new w.BarcodeDetector({ formats: ['qr_code'] })
+        return {
+          detect: async (v) => {
+            const codes = await native.detect(v)
+            return codes.length > 0 ? codes[0].rawValue : null
+          },
+        }
+      } catch {
+        // fall through to jsQR
+      }
+    }
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    return {
+      detect: async (v) => {
+        if (!ctx || v.readyState < 2 || !v.videoWidth) return null
+        // Downscale for speed on older iPhones.
+        const scale = Math.min(1, 640 / Math.max(v.videoWidth, v.videoHeight))
+        canvas.width = Math.round(v.videoWidth * scale)
+        canvas.height = Math.round(v.videoHeight * scale)
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height)
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const result = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })
+        return result?.data || null
+      },
+    }
   }, [])
 }
 
 function CameraScanner({ onResult, active }: { onResult: (value: string) => void; active: boolean }) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
-  const detector = useBarcodeDetector()
+  const detector = useQrDetector()
   const [error, setError] = React.useState<string | null>(null)
   const [running, setRunning] = React.useState(false)
 
   React.useEffect(() => {
-    if (!active || !detector) return
+    if (!active) return
     let cancelled = false
     let raf = 0
 
     async function start() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setError('Camera needs a secure (https) connection — use manual entry below.')
+          return
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop())
           return
@@ -63,9 +95,9 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
         const tick = async () => {
           if (cancelled || !videoRef.current) return
           try {
-            const codes = await detector!.detect(videoRef.current)
-            if (codes.length > 0) {
-              onResult(codes[0].rawValue)
+            const value = await detector.detect(videoRef.current)
+            if (value) {
+              onResult(value)
               return
             }
           } catch {
@@ -92,18 +124,9 @@ function CameraScanner({ onResult, active }: { onResult: (value: string) => void
 
   if (!active) return null
 
-  if (!detector) {
-    return (
-      <div className="rounded-xl bg-black/5 p-4 text-sm text-[#1a1a1a]/50 flex items-center gap-2 mb-4">
-        <CameraOff className="h-4 w-4 shrink-0" /> Camera scanning isn't supported in this browser — use the code
-        entry below.
-      </div>
-    )
-  }
-
   return (
     <div className="rounded-xl overflow-hidden bg-black relative mb-4 aspect-square max-w-xs mx-auto">
-      <video ref={videoRef} muted playsInline className="w-full h-full object-cover" />
+      <video ref={videoRef} muted playsInline autoPlay className="w-full h-full object-cover" />
       {!running && !error && (
         <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black/40">
           Starting camera…
