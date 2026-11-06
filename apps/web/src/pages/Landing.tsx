@@ -4,6 +4,7 @@ import { ArrowRight, Check } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { StoreBadges } from '@/components/store-badges'
+import { LandingDemo } from '@/components/landing-demo'
 import { ContextCursor, Preloader, useEasterEgg, useMagnetic, useReveal, useScrollProgress } from '@/components/poster-fx'
 import { usePageMeta } from '@/lib/use-page-meta'
 import './landing.css'
@@ -194,6 +195,8 @@ export function Landing() {
           </dl>
           <Link className="lp-link" to="/help">Visit the help centre</Link>
         </section>
+
+        <LandingDemo />
 
         <section className="lp-save" aria-label="Start collecting">
           <p className="lp-save-word" data-reveal>Every visit, <em>counted.</em></p>
