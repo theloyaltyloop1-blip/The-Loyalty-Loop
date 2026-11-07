@@ -11,6 +11,23 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Shopper: live stamp/points balances (2026-11-07) - Claude
+
+**Why.** The owner noticed a stamp only appeared on the shopper's phone after reloading. The shopper app had no realtime feed for balances (only `businesses` was in `supabase_realtime`, for card designs).
+
+**What changed (main 19a9e80).**
+- `supabase/migrations/20261107120000_realtime_memberships_rewards.sql`: adds `memberships` and `rewards` to `supabase_realtime`. Realtime applies each table's SELECT policy per subscriber, so shoppers only receive their own rows. **Applied to production** and verified: the publication now lists businesses, memberships, rewards.
+- `apps/shopper/App.tsx`: a `loyalty-<userId>` channel listens to the shopper's own memberships/rewards rows (`user_id=eq.<id>` filter) and also refreshes when the app returns to the front. Bursts are batched into one quiet refetch 250ms later (memberships, rewards, 12-month spend), with no spinner or error pop-up. The open shop page's existing increase detector then prints the receipt and lands the stamp live. A new reward also triggers the existing reward celebration.
+- Business app and till path untouched.
+
+**Shipped by OTA** (`--environment production`, branch production; each bundle checked for project ref and the `user_id=eq.` marker): shopper 1.0.2 Android 01a1b754 / iOS 01a1b756 (groups 19a20267 / 617a4ead); shopper 1.0.1 Android 01a1b757 / iOS 01a1b758 (groups 42da6da6 / cc053605). Undo: republish the motion-components groups f2748b83 / b6fb2bd7 (1.0.2) and c27fd5a0 / 565592f3 (1.0.1); the publication change is harmless to leave.
+
+**Checks run.** Shopper tsc clean; 32/32 shopper and Business unit tests. **Not checked on a device**: a real award with the shopper's phone open on the shop page.
+
+**Next.** Owner: open the shopper app twice so the update applies, open a shop, have a stamp awarded, and confirm the receipt appears within about a second without reloading.
+
+---
+
 ## Motion components from the owner's reference video (2026-11-07) - Claude
 
 **Shipped 2026-11-07** (owner asked). On main as 6168c90, merged with main's AI programme builder in f52fdf4. One conflict: the redeem button. The hold button was kept, and main's new `discount_percent` rewards were added to its labels. After the merge: tsc clean for all three apps, 52/52 unit tests. Website: Vercel success for f52fdf4.
