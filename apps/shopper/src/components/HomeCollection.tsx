@@ -132,39 +132,88 @@ export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSe
 
 const lowerFirst = (text: string) => /^[A-Z][a-z]/.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text
 
-// The one thing that matters on home: how close you are to your next reward,
-// for the joined card nearest to one. Hidden until you've joined a shop.
-export function NextRewardHero<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
-  const cards = shops.flatMap(shop => {
-    const member = memberships.find(m => m.business_id === shop.id)
-    if (!member) return []
-    const progress = homeProgress(shop, member, catalog, shopMoney(shop.country_code))
-    return progress.threshold ? [{ shop, progress, threshold: progress.threshold }] : []
-  }).sort((a, b) => b.progress.fraction - a.progress.fraction)
-  if (!cards.length) return null
-  const { shop, progress, threshold } = cards[0]
+type HeroCard<T> = { shop: T; progress: ReturnType<typeof homeProgress> }
+
+function EditGlyph({ pinned }: { pinned: boolean }) {
+  return <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+    {pinned
+      ? <Path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" stroke={PAPER} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      : <Path d="M12 5v14M5 12h14" stroke={PAPER} strokeWidth={2.2} strokeLinecap="round" />}
+  </Svg>
+}
+
+function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, width }: { card: HeroCard<T>; onSelect: (shop: T) => void; onEdit?: () => void; pinned: boolean; width?: number }) {
+  const { shop, progress } = card
+  const threshold = progress.threshold
   const money = (value: number) => shopMoney(shop.country_code)(value).replace(/\.00$/, '')
-  const ready = progress.fraction >= 1
-  const left = Math.max(0, threshold - progress.value)
+  const ready = threshold != null && progress.fraction >= 1
+  const left = threshold != null ? Math.max(0, threshold - progress.value) : 0
   const reward = progress.title ? lowerFirst(progress.title) : 'your next reward'
-  const big = ready ? 'Ready!' : progress.spend ? money(left) : progress.unit === 'points' ? `${left} pts` : `${left} more`
-  const line = ready ? `${progress.title || 'Your reward'} is waiting.` : progress.spend ? `to go for ${reward}.` : `for ${reward}.`
-  const dots = !progress.spend && progress.unit !== 'points' && threshold <= 12
-  return <View style={s.nextCard}>
+  // A chosen card can belong to a shop with no reward target to count down to.
+  const big = threshold == null ? 'Your card' : ready ? 'Ready!' : progress.spend ? money(left) : progress.unit === 'points' ? `${left} pts` : `${left} more`
+  const line = threshold == null ? `${progress.offer || progress.label}.`.replace(/\.\.$/, '.') : ready ? `${progress.title || 'Your reward'} is waiting.` : progress.spend ? `to go for ${reward}.` : `for ${reward}.`
+  const dots = threshold != null && !progress.spend && progress.unit !== 'points' && threshold <= 12
+  return <View style={[s.nextCard, width != null && { width, marginBottom: 0 }]}>
     <View style={s.nextShop}>
       <View style={s.nextLogo}>{shop.logo_url ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : <Text style={s.nextLogoText}>{shop.name.trim().charAt(0).toUpperCase()}</Text>}</View>
       <Text style={s.nextShopName} numberOfLines={1}>{shop.name}</Text>
+      {onEdit && <Pressable accessibilityRole="button" accessibilityLabel={pinned ? 'Edit quick cards' : 'Choose quick cards for the top of home'} onPress={onEdit} hitSlop={8} style={({ pressed }) => [s.nextEdit, pressed && s.pressed]}>
+        <EditGlyph pinned={pinned} />
+      </Pressable>}
     </View>
     <View accessible accessibilityLabel={`${shop.name}: ${big} ${line}`}>
       <Text style={s.nextBig} numberOfLines={1} adjustsFontSizeToFit>{big}</Text>
       <Text style={s.nextLine} numberOfLines={2}>{line}</Text>
     </View>
-    {dots
+    {threshold == null ? null : dots
       ? <View style={s.nextDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{Array.from({ length: threshold }, (_, i) => <View key={i} style={[s.nextDot, i < progress.value && s.nextDotOn]} />)}</View>
       : <View style={s.nextTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={[s.nextFill, { width: `${Math.round(Math.min(1, progress.fraction) * 100)}%` }]} /></View>}
     <Pressable accessibilityRole="button" accessibilityLabel={`Show my ${shop.name} card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.nextButton, pressed && s.pressed]}>
       <Text style={s.nextButtonText}>{ready ? 'Use it now' : 'Show my card'}</Text><Arrow color={NIGHT} />
     </Pressable>
+  </View>
+}
+
+// The one thing that matters on home. Shoppers can pick "quick cards" to keep
+// here (swipe between them); with none picked it's the joined card closest to
+// its next reward. Hidden until you've joined a shop.
+export function NextRewardHero<T extends RailShop>({ shops, memberships, catalog, onSelect, quickIds = [], onEditQuick }: {
+  shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void
+  /** Shop ids the shopper picked, in order. Empty = automatic. */
+  quickIds?: string[]
+  onEditQuick?: () => void
+}) {
+  const [width, setWidth] = useState(0)
+  const [page, setPage] = useState(0)
+  const joined: HeroCard<T>[] = shops.flatMap(shop => {
+    const member = memberships.find(m => m.business_id === shop.id)
+    return member ? [{ shop, progress: homeProgress(shop, member, catalog, shopMoney(shop.country_code)) }] : []
+  })
+  if (!joined.length) return null
+  // Picks for shops since left are skipped, so a stale choice never blanks the card.
+  const picked = quickIds.flatMap(id => joined.filter(card => card.shop.id === id))
+  const pinned = picked.length > 0
+  const auto = joined.filter(card => card.progress.threshold).sort((a, b) => b.progress.fraction - a.progress.fraction).slice(0, 1)
+  const cards = pinned ? picked : auto
+  if (!cards.length) {
+    // Joined, but nothing has a target yet: still offer the choice.
+    return onEditQuick ? <Pressable accessibilityRole="button" onPress={onEditQuick} style={({ pressed }) => [s.quickEmpty, pressed && s.pressed]}>
+      <Text style={s.quickEmptyText}>+ Choose quick cards for the top of home</Text>
+    </Pressable> : null
+  }
+  if (cards.length === 1) return <RewardHeroCard card={cards[0]} onSelect={onSelect} onEdit={onEditQuick} pinned={pinned} />
+  return <View style={s.quickWrap} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
+    {width > 0 && <ScrollView
+      horizontal
+      pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      onMomentumScrollEnd={e => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
+    >
+      {cards.map(card => <RewardHeroCard key={card.shop.id} card={card} onSelect={onSelect} onEdit={onEditQuick} pinned width={width} />)}
+    </ScrollView>}
+    <View style={s.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {cards.map((card, i) => <View key={card.shop.id} style={[s.dot, i === Math.min(page, cards.length - 1) && s.dotActive]} />)}
+    </View>
   </View>
 }
 
@@ -281,6 +330,10 @@ const s = StyleSheet.create({
   nextLogo: { width: 30, height: 30, borderRadius: 15, backgroundColor: PAPER, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   nextLogoText: { color: NIGHT, fontSize: 13, fontWeight: '700' },
   nextShopName: { flex: 1, color: 'rgba(244,241,234,0.62)', fontSize: 11, fontWeight: '500', letterSpacing: 1.6, textTransform: 'uppercase' },
+  nextEdit: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(244,241,234,0.14)', alignItems: 'center', justifyContent: 'center' },
+  quickWrap: { marginBottom: 24 },
+  quickEmpty: { marginBottom: 24, borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(43,58,103,0.35)', paddingVertical: 18, alignItems: 'center' },
+  quickEmptyText: { color: NIGHT, fontFamily: SANS_MEDIUM, fontSize: 15 },
   nextBig: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 76, lineHeight: 76, letterSpacing: -4.5, includeFontPadding: false },
   nextLine: { color: PAPER, fontFamily: 'Inter_600SemiBold', fontSize: 22, lineHeight: 27, letterSpacing: -0.6, marginTop: 6 },
   cardTile: { width: 156, height: 116, borderRadius: 22, padding: 14, justifyContent: 'space-between' },

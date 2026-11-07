@@ -11,6 +11,28 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Shopper: quick cards at the top of home (2026-11-07) - Claude
+
+**Why.** The owner asked for shoppers to choose which cards sit at the top of home, keeping the automatic pick when they don't choose.
+
+**What changed (committed on branch `motion-components`, NOT on main, NOT shipped).**
+- `apps/shopper/src/quick-cards.ts`: `useQuickCards(userId)` stores up to 4 picked shop ids, in pick order, in SecureStore (`quick_cards_<userId>`), on this device only. Includes the pure helpers `toggleQuickCard` and `parseQuickCards`.
+- `apps/shopper/src/components/QuickCardsSheet.tsx`: a pop-up sheet listing joined shops. Tapping a shop toggles it, and a numbered circle shows its order. It offers "Use automatic" to clear the picks.
+- `apps/shopper/src/components/HomeCollection.tsx` (`NextRewardHero`):
+  - The top card has a round button: "+" when the pick is automatic, a pencil when cards are picked.
+  - Picked cards show in pick order, and you swipe between them with dots underneath.
+  - With no picks, the automatic choice is unchanged: the joined card closest to its next reward.
+  - Picks for shops the shopper has left are ignored.
+  - A picked shop with no reward target shows "Your card" and its offer.
+  - If the shopper has joined shops but none has a target, a dashed "Choose quick cards" button shows instead of nothing.
+- `HomeFeed.tsx` and `App.tsx` (HomeTab gets `userId`) wire it together. Business app untouched.
+
+**Checks run.** Shopper tsc clean; 35/35 shopper and Business unit tests (3 new in `quick-cards.test.cjs`); `expo export --platform android` bundles. **Not seen on a device or simulator.**
+
+**Next.** Owner: decide whether to ship. To release: merge to main, then publish shopper OTAs for runtime 1.0.2 and 1.0.1 (`--environment production`, per platform). Later option: sync picks across devices (would need a table).
+
+---
+
 ## Shopper: live stamp/points balances (2026-11-07) - Claude
 
 **Why.** The owner noticed a stamp only appeared on the shopper's phone after reloading. The shopper app had no realtime feed for balances (only `businesses` was in `supabase_realtime`, for card designs).

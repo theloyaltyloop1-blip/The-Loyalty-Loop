@@ -31,6 +31,7 @@ import { formatAddress } from './src/format-address'
 import { useLaunchUpdate } from './src/launch-update'
 import { useUserLocation } from './src/use-user-location'
 import type { HomeTier } from './src/home-progress'
+import { useQuickCards } from './src/quick-cards'
 import { shopMoney } from './src/money'
 import { useCountry } from './src/use-country'
 import { ratingLabel, ratingStats } from './src/ratings'
@@ -1773,8 +1774,8 @@ const featureStyles = StyleSheet.create({
   badgeText: { color: '#000000', fontSize: 12, fontWeight: '700' },
 })
 
-function HomeTab({ businesses, memberships, catalog, announcements, loading, onSelect, onAsk, firstName, onOpenProfile, onSeeNews }: {
-  firstName?: string; onOpenProfile: () => void; onSeeNews: () => void;
+function HomeTab({ userId, businesses, memberships, catalog, announcements, loading, onSelect, onAsk, firstName, onOpenProfile, onSeeNews }: {
+  userId: string; firstName?: string; onOpenProfile: () => void; onSeeNews: () => void;
   businesses: Business[]; memberships: Membership[]; catalog: HomeTier[];
   announcements: Announcement[]; loading: boolean; onSelect: (business: Business) => void; onAsk: (query: string) => void;
 }) {
@@ -1782,6 +1783,7 @@ function HomeTab({ businesses, memberships, catalog, announcements, loading, onS
   const [category, setCategory] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [features, setFeatures] = useState<string[]>([])
+  const quickCards = useQuickCards(userId)
   const filtered = businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
@@ -1789,7 +1791,8 @@ function HomeTab({ businesses, memberships, catalog, announcements, loading, onS
     if (loading && businesses.length === 0) return <View accessibilityState={{ busy: true }} style={{ paddingVertical: 80, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View>
     return <HomeFeed firstName={firstName} shops={businesses} memberships={memberships} catalog={catalog} news={announcements}
       location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }}
-      onSelect={onSelect} onSearch={() => setSearching(true)} onSeeNews={onSeeNews} onAsk={() => onAsk('')} onOpenProfile={onOpenProfile} />
+      onSelect={onSelect} onSearch={() => setSearching(true)} onSeeNews={onSeeNews} onAsk={() => onAsk('')} onOpenProfile={onOpenProfile}
+      quickIds={quickCards.ids} onQuickChange={quickCards.save} />
   }
   const closeSearch = () => { setSearching(false); setQuery(''); setCategory(null); setFeatures([]) }
   return <>
@@ -2664,7 +2667,7 @@ function AppHome({ session }: { session: Session }) {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
-          {tab === 'home' && <HomeTab firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
+          {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
           {tab === 'map' && <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}

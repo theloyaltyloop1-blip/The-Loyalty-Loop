@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { CardRail, NextRewardHero } from './HomeCollection'
+import { QuickCardsSheet } from './QuickCardsSheet'
 import { FadeUp, INK, MUTED, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, SLATE } from './Poster'
 import { formatMiles, nearestFirst, type Coords } from '../distance'
 import type { HomeMember, HomeShop, HomeTier } from '../home-progress'
@@ -50,13 +51,16 @@ function ShopMark({ shop, index }: { shop: FeedShop; index: number }) {
 
 export function HomeFeed<T extends FeedShop>({
   firstName, shops, memberships, catalog, news, location, locationStatus, onUseLocation,
-  onSelect, onSearch, onSeeNews, onAsk, onOpenProfile,
+  onSelect, onSearch, onSeeNews, onAsk, onOpenProfile, quickIds = [], onQuickChange,
 }: {
   firstName?: string
   shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; news: FeedNews[]
   location: Coords | null; locationStatus: LocationStatus; onUseLocation: () => void
   onSelect: (shop: T) => void; onSearch: () => void; onSeeNews: () => void; onAsk: () => void; onOpenProfile: () => void
+  /** Shopper-picked cards for the top of home; empty means automatic. */
+  quickIds?: string[]; onQuickChange?: (ids: string[]) => void
 }) {
+  const [editingQuick, setEditingQuick] = useState(false)
   const hour = new Date().getHours()
   const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'
   const name = firstName?.trim().split(/\s+/)[0]
@@ -78,7 +82,7 @@ export function HomeFeed<T extends FeedShop>({
       <Text accessibilityRole="header" style={s.title}>{name ? `${part},\n${name}.` : `Good\n${part.toLowerCase()}.`}</Text>
     </FadeUp>
 
-    <FadeUp delay={100}><NextRewardHero shops={shops} memberships={memberships} catalog={catalog} onSelect={onSelect} /></FadeUp>
+    <FadeUp delay={100}><NextRewardHero shops={shops} memberships={memberships} catalog={catalog} onSelect={onSelect} quickIds={quickIds} onEditQuick={onQuickChange ? () => setEditingQuick(true) : undefined} /></FadeUp>
 
     {joined.length > 0 && <FadeUp delay={180} style={s.section}>
       <Heading title="Your cards" />
@@ -125,6 +129,8 @@ export function HomeFeed<T extends FeedShop>({
     <Pressable accessibilityRole="button" onPress={onAsk} style={({ pressed }) => [s.ask, pressed && s.pressed]}>
       <Text style={s.askText}>Can’t find your favourite shop? <Text style={s.askLink}>Ask them to join</Text></Text>
     </Pressable>
+
+    {onQuickChange && <QuickCardsSheet visible={editingQuick} onClose={() => setEditingQuick(false)} shops={joined} memberships={memberships} catalog={catalog} selected={quickIds} onChange={onQuickChange} />}
   </View>
 }
 
