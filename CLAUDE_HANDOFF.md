@@ -18,7 +18,23 @@ need Claude's sign-off before the next one starts.
 - **One colour means "tap":** sapphire marks things you can tap; everything else is ink and paper.
 - **Huge or tiny type:** nothing in between.
 
-**What changed (committed on branch `motion-components`, NOT on main, NOT shipped).**
+**Shipped 2026-11-07** (owner asked). On main as 71d15ba, rebased on another session's "20 details" commit 4320964.
+- **Merge conflicts:** two style lines conflicted, `homeTileValue` and `metricValue`/`metricLabel`. Both sides were kept: the other session's tabular numbers plus the bigger sizes.
+- **OTAs** (`--environment production`, branch production). Each bundle was checked for the project ref, the new style marker and the other session's smooth-corners code (`continuous`):
+
+| App | Runtime | Android | iOS | Groups |
+|---|---|---|---|---|
+| Shopper | 1.0.2 | 01a1b7ab | 01a1b7ad | a497488c / c3c7b7e5 |
+| Shopper | 1.0.1 | 01a1b7ae | 01a1b7af | 6094d000 / 45dddcfd |
+| Business | 1.0.1 | 01a1b7b0 | 01a1b7b1 | 10178c4a / be99a829 |
+
+- **Newest on both apps:** these were checked to be the latest updates, published after the other session's Polish OTAs.
+- **Undo:** republish the Polish groups:
+  - Shopper 1.0.1: e56de507 / 28b11ece.
+  - Shopper 1.0.2: b7fcfd94 for iOS, and the Polish Android group just before it.
+  - Business: 0e10c32e / 11b071cd.
+
+**What changed.**
 - **Shopper shop page** (`packages/card-design/ShopPass.tsx`, only the shopper app uses it):
   - The shop name is poster-sized and uppercase at the back (76px, shrinks to fit).
   - The logo overlaps its lower edge as the middle layer, with a ring in the page colour and a shadow.
@@ -43,7 +59,7 @@ need Claude's sign-off before the next one starts.
 
 **Checks run.** tsc clean for both apps; 35/35 unit tests; `expo export --platform android` bundles for both apps. **Not seen rendered anywhere.** The risk to look at: on the shop page, the logo overlaps the bottom of the shop name, which needs a look with long names, two-line names and dark shop skins.
 
-**Next.** Owner: decide whether to ship. To release: merge to main, then OTA the shopper app (1.0.2 and 1.0.1) and the Business app (1.0.1), with `--environment production`, per platform.
+**Next.** Owner: open each app twice so the update applies. Check the shop page with long and two-line shop names and with dark shop designs (the logo overlap), then check Business home (the Scan button over the stats card).
 
 ---
 
