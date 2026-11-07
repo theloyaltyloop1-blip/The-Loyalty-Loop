@@ -64,6 +64,7 @@ import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
+import { SkeletonScreen } from "./src/components/Skeleton";
 import { OutageBanner, simulatedOutage, useServiceStatus } from "./src/service-status";
 import Storage from "expo-sqlite/kv-store";
 import { HoldButton } from "./src/components/HoldButton";
@@ -782,6 +783,9 @@ function StampsScreen({
   const [recentSpend, setRecentSpend] = useState<RecentSpend[]>([]);
   const [lastSpendMessage, setLastSpendMessage] = useState<string | null>(null);
   const spendRef = useRef<string | null>(null);
+  // One-time reference for a stamp award: a retry after a dropped connection
+  // reuses it, so the database refuses the second copy (transactions_client_ref_key).
+  const stampRef = useRef<{ ref: string; value: number } | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
   useEffect(() => {
     if (!spendShop) return;
@@ -845,6 +849,7 @@ function StampsScreen({
     setAmountPence(0);
     setSpendSummary(null);
     spendRef.current = null;
+    stampRef.current = null;
   }
 
   async function loadSpendSummary(userId: string) {
@@ -1147,15 +1152,20 @@ function StampsScreen({
     }
     setAskPayment(false);
     const value = Math.max(1, amount);
+    if (!stampRef.current || stampRef.current.value !== value) stampRef.current = { ref: newClientRef(), value };
     setBusy(true);
     try {
-      const { error } = await supabase.from("transactions").insert({
+      const inserted = await supabase.from("transactions").insert({
         user_id: matched.id,
         business_id: business.id,
         type: "stamp",
         value,
+        client_ref: stampRef.current.ref,
         ...(paymentMethod ? { manual_payment_method: paymentMethod } : {}),
       });
+      // Same reference already saved: the first tap got through, so this is a success.
+      const alreadySaved = inserted.error?.code === "23505" && `${inserted.error.message}${inserted.error.details ?? ""}`.includes("client_ref");
+      const error = alreadySaved ? null : inserted.error;
       const refusal = manualEntryRefusal(error);
       if (refusal) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -1164,10 +1174,12 @@ function StampsScreen({
           setLinkStatus((current) => ({ manualToday: 0, nextAllowedAt: null, ...current, linked: true }));
           setAskPayment(true);
         }
+        stampRef.current = null;
         void loadLinkStatus(matched.id);
         return;
       }
       if (error) throw error;
+      stampRef.current = null;
       void supabase.functions.invoke("send-visit-thank-you", {
         body: { business_id: business.id, user_id: matched.id, amount: value },
       });
@@ -1200,7 +1212,8 @@ function StampsScreen({
       const { error } = await supabase
         .from("rewards")
         .update({ redeemed_at: new Date().toISOString() })
-        .eq("id", activeReward.id);
+        .eq("id", activeReward.id)
+        .is("redeemed_at", null);
       if (error) throw error;
       void supabase.functions.invoke("send-user-push", {
         body: { business_id: business.id, user_id: matched.id },
@@ -2572,7 +2585,7 @@ function Dashboard({
           />
         )}
         {loading ? (
-          <ActivityIndicator color={green} style={{ marginTop: 40 }} />
+          <SkeletonScreen cards={4} cardHeight={96} label="Loading your shop" />
         ) : (
           selected &&
           (ownerPage ? (
@@ -3014,13 +3027,13 @@ const styles = StyleSheet.create({
   spendBanner: { backgroundColor: "#e0f2e4", borderRadius: 18, padding: 14, marginTop: 16 },
   spendBannerText: { color: "#1f5c33", fontSize: 15, fontWeight: "800", textAlign: "center" },
   spendProgress: { color: "#000000", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
-  spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: green, textAlign: "center", marginTop: 4 },
+  spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: green, textAlign: "center", marginTop: 4, fontVariant: ["tabular-nums"] },
   spendCap: { color: "#000000", fontSize: 13, textAlign: "center", marginBottom: 12 },
   keypad: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginBottom: 14 },
   keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center" },
   keypadKeyText: { fontSize: 24, fontFamily: FONT_DISPLAY, color: green },
   recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.12)" },
-  recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80 },
+  recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80, fontVariant: ["tabular-nums"] },
   recentTime: { flex: 1, color: "#000000", fontSize: 14 },
   recentUndo: { color: orange, fontSize: 14, fontWeight: "800" },
   paySheet: { backgroundColor: cream, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
@@ -3088,7 +3101,7 @@ const styles = StyleSheet.create({
   homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM },
   homeTiles: { flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: "rgba(17,17,17,0.14)" },
   homeTile: { flex: 1, paddingVertical: 18, gap: 4 },
-  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 30, letterSpacing: -1.2, color: INK },
+  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 30, letterSpacing: -1.2, color: INK, fontVariant: ['tabular-nums'] },
   homeTileLabel: { fontSize: 11, fontWeight: "500", letterSpacing: 1.4, textTransform: "uppercase", color: MUTED },
   homeGuideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 48 },
   homeGuideLinkText: { color: INK, fontFamily: SANS_MEDIUM, fontSize: 15 },

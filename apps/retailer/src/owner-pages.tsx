@@ -2250,7 +2250,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
-  metricValue: { fontSize: 29, fontFamily: FONT_DISPLAY, color: ink },
+  metricValue: { fontSize: 29, fontFamily: FONT_DISPLAY, color: ink, fontVariant: ['tabular-nums'] },
   metricLabel: { color: muted, fontWeight: "700", fontSize: 12, marginTop: 3 },
   metricChange: {
     color: "#2D7A43",

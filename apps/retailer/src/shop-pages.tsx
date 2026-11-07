@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
   },
   meterTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   meterTitle: { fontSize: 15, fontWeight: "900", color: "#000000" },
-  meterCount: { fontSize: 13, fontWeight: "800", color: "#000000" },
+  meterCount: { fontSize: 13, fontWeight: "800", color: "#000000", fontVariant: ["tabular-nums"] },
   meterTrack: {
     height: 8,
     borderRadius: 4,

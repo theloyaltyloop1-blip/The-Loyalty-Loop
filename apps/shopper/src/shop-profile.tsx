@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   perkList: { marginTop: 8, gap: 4 },
   perk: { fontSize: 14, lineHeight: 20, color: '#000000' },
   pointsBox: { backgroundColor: '#FBE7BF', borderRadius: 20, paddingVertical: 18, alignItems: 'center' },
-  pointsBalance: { fontSize: 44, lineHeight: 48, fontWeight: '900', color: '#000000', letterSpacing: -1 },
+  pointsBalance: { fontSize: 44, lineHeight: 48, fontWeight: '900', color: '#000000', letterSpacing: -1, fontVariant: ['tabular-nums'] },
   pointsLabel: { fontSize: 14, fontWeight: '700', color: '#000000', marginTop: 2 },
 
   hoursList: { marginTop: 8 },

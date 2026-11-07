@@ -1,3 +1,5 @@
+// Must stay first: patches StyleSheet.create before any screen defines styles.
+import './src/smooth-corners';
 import { registerRootComponent } from 'expo';
 import { Platform } from 'react-native'
 

@@ -630,7 +630,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  count: { fontSize: 18, lineHeight: 25, marginTop: 12 },
+  count: { fontSize: 18, lineHeight: 25, marginTop: 12, fontVariant: ['tabular-nums'] },
   reward: { fontSize: 14, lineHeight: 20 },
   graphic: { alignItems: "center", flexDirection: "row", gap: 18 },
   ringIcon: {
@@ -642,7 +642,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  ringNumber: { fontSize: 21 },
+  ringNumber: { fontSize: 21, fontVariant: ['tabular-nums'] },
   ringLabel: { flex: 1, fontSize: 20, lineHeight: 28 },
   bar: { height: 14, borderRadius: 7, overflow: "hidden", marginTop: 14 },
   barTrack: { ...StyleSheet.absoluteFillObject },

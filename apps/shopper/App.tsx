@@ -36,6 +36,7 @@ import { shopMoney } from './src/money'
 import { useCountry } from './src/use-country'
 import { ratingLabel, ratingStats } from './src/ratings'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
+import { SkeletonScreen } from './src/components/Skeleton'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated'
@@ -1788,7 +1789,7 @@ function HomeTab({ userId, businesses, memberships, catalog, announcements, load
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
   if (!searching) {
-    if (loading && businesses.length === 0) return <View accessibilityState={{ busy: true }} style={{ paddingVertical: 80, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View>
+    if (loading && businesses.length === 0) return <SkeletonScreen cards={3} cardHeight={150} label="Finding your local favourites" />
     return <HomeFeed firstName={firstName} shops={businesses} memberships={memberships} catalog={catalog} news={announcements}
       location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }}
       onSelect={onSelect} onSearch={() => setSearching(true)} onSeeNews={onSeeNews} onAsk={() => onAsk('')} onOpenProfile={onOpenProfile}
@@ -2575,23 +2576,25 @@ function AppHome({ session }: { session: Session }) {
 
   async function toggleFavourite(business: Business) {
     const isFav = favouriteIds.has(business.id)
+    // Optimistic: the heart changes straight away, and goes back if saving fails.
+    const apply = (favourite: boolean) =>
+      setFavouriteIds((prev) => {
+        const next = new Set(prev)
+        if (favourite) next.add(business.id)
+        else next.delete(business.id)
+        return next
+      })
+    apply(!isFav)
     try {
-      if (isFav) {
-        const { error } = await supabase.from('favourites').delete().eq('user_id', userId).eq('business_id', business.id)
-        if (error) throw error
-        setFavouriteIds((prev) => {
-          const next = new Set(prev)
-          next.delete(business.id)
-          return next
-        })
-      } else {
-        const { error } = await supabase.from('favourites').insert({ user_id: userId, business_id: business.id })
-        if (error) throw error
-        setFavouriteIds((prev) => new Set(prev).add(business.id))
-      }
+      const { error } = isFav
+        ? await supabase.from('favourites').delete().eq('user_id', userId).eq('business_id', business.id)
+        : await supabase.from('favourites').insert({ user_id: userId, business_id: business.id })
+      // Already saved (a double tap, or saved on another phone): that's the result we wanted.
+      if (error && error.code !== '23505') throw error
       void trackUsageEvent(userId, isFav ? 'favourite_removed' : 'favourite_added')
-    } catch (e) {
-      showAlert('Could not update favourites', e instanceof Error ? e.message : 'Please try again.')
+    } catch {
+      apply(isFav)
+      showAlert('Could not update favourites', 'Check your connection and try again.')
     }
   }
 
@@ -2939,7 +2942,7 @@ const styles = StyleSheet.create({
   designedCardWrap: { marginTop: 20 },
   loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#000000' },
+  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#000000', fontVariant: ['tabular-nums'] },
   bar: { height: 9, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.07)', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },

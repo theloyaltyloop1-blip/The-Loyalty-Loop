@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
   step: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
   stepText: { color: "#000", fontSize: 22, fontWeight: "800" },
-  value: { flex: 1, textAlign: "center", color: "#000", fontSize: 18, fontWeight: "800" },
+  value: { flex: 1, textAlign: "center", color: "#000", fontSize: 18, fontWeight: "800", fontVariant: ["tabular-nums"] },
   sub: { fontSize: 13, fontWeight: "500" },
   button: { backgroundColor: orange, borderRadius: 999, minHeight: 46, alignItems: "center", justifyContent: "center", marginTop: 10 },
   buttonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
