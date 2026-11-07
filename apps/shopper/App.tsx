@@ -1087,9 +1087,9 @@ function ShopDetail({
   // After the receipt closes, the new stamps land on the card one by one.
   const [thump, setThump] = useState<{ count: number; key: number } | null>(null)
 
-  // Celebrate a stamp/points increase picked up on mount or refresh — the
-  // shopper app has no realtime subscription, so this is the only "it
-  // worked" beat they get after a scan at the counter. Skipped on the very
+  // Celebrate a stamp/points increase — arriving live from the realtime
+  // membership feed while this page is open, or picked up on mount/refresh
+  // if it landed while they were elsewhere. Skipped on the very
   // first load of a shop (no prior value yet, which would false-positive
   // on every fresh visit).
   useEffect(() => {
@@ -2498,6 +2498,59 @@ function AppHome({ session }: { session: Session }) {
     const channel = supabase.channel('shop-card-designs').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses' }, () => { void refreshDesigns(); }).subscribe(status => { if (status === 'SUBSCRIBED') void refreshDesigns(); });
     const foreground = AppState.addEventListener('change', state => { if (state === 'active') void refreshDesigns(); });
     return () => { active = false; foreground.remove(); void supabase.removeChannel(channel); };
+  }, [userId])
+
+  // Live balances: when staff award a stamp, points or spend at the counter,
+  // the database pushes this shopper's own membership/reward rows here and the
+  // card updates while they watch (the open shop page then prints the receipt
+  // and lands the stamp). One award can touch several rows in a burst, so
+  // changes are batched into a single quiet refetch. Also refreshes when the
+  // app comes back to the front, in case the socket slept in the background.
+  useEffect(() => {
+    let active = true
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const refreshLoyalty = async () => {
+      const twelveMonthsAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
+      const [memberRows, earned, spendRows] = await Promise.all([
+        supabase.from('memberships').select('*').eq('user_id', userId),
+        supabase
+          .from('rewards')
+          .select('id,user_id,business_id,title,qr_token,short_code,expires_at,redeemed_at,created_at,business:businesses(name,brand_color,logo_url)')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
+        supabase.from('transactions').select('business_id,value').eq('user_id', userId).eq('type', 'spend').is('voided_at', null).gte('created_at', twelveMonthsAgo),
+      ])
+      if (!active) return
+      if (!memberRows.error) {
+        const rollingByShop = new Map<string, number>()
+        for (const row of (spendRows.data || []) as { business_id: string; value: number }[]) {
+          rollingByShop.set(row.business_id, (rollingByShop.get(row.business_id) ?? 0) + (row.value || 0))
+        }
+        setMemberships((memberRows.data || []).map((m: any) => ({ ...m, rolling_spend_pence: spendRows.error ? null : rollingByShop.get(m.business_id) ?? 0 })))
+      }
+      if (!earned.error) {
+        const rewardList: Reward[] = (earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business }))
+        setRewards(rewardList)
+        void unseenReward(rewardList).then(fresh => { if (active && fresh) setCelebrate(fresh) })
+      }
+    }
+    const schedule = () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => { timer = null; void refreshLoyalty() }, 250)
+    }
+    const filter = `user_id=eq.${userId}`
+    const channel = supabase
+      .channel(`loyalty-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'memberships', filter }, schedule)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rewards', filter }, schedule)
+      .subscribe()
+    const foreground = AppState.addEventListener('change', state => { if (state === 'active') schedule() })
+    return () => {
+      active = false
+      if (timer) clearTimeout(timer)
+      foreground.remove()
+      void supabase.removeChannel(channel)
+    }
   }, [userId])
 
   useEffect(() => {
