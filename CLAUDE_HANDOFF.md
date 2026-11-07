@@ -13,7 +13,11 @@ need Claude's sign-off before the next one starts.
 
 ## Motion components from the owner's reference video (2026-11-07) - Claude
 
-Branch `motion-components` (worktree `.claude/worktrees/motion-components`, from origin/main 1390c0e). **Not committed, not shipped.**
+**Shipped 2026-11-07** (owner asked). On main as 6168c90, merged with main's AI programme builder in f52fdf4. One conflict: the redeem button. The hold button was kept, and main's new `discount_percent` rewards were added to its labels. After the merge: tsc clean for all three apps, 52/52 unit tests. Website: Vercel success for f52fdf4.
+
+**OTAs** (all `--environment production`, branch production; each bundle downloaded and checked for project ref `tgukdabfvvoywawmzbdo` and a new-code marker): shopper 1.0.2 android 01a1b705 / ios 01a1b706 (groups f2748b83 / b6fb2bd7); shopper 1.0.1 android 01a1b707 / ios 01a1b708 (groups c27fd5a0 / 565592f3); Business 1.0.1 android 01a1b709 / ios 01a1b70b (groups d61e7fdb / 15765be0). No native modules added since the store builds. **Undo:** republish the palette-1 groups (shopper 2eb67205/6b93c894, 45c912d0/7f299965; Business 91ba757c/49592e20). Note for bundle checks: Hermes stores strings with non-ASCII characters (like "…") as UTF-16, so use ASCII-only markers.
+
+Built on branch `motion-components` (worktree `.claude/worktrees/motion-components`, from origin/main 1390c0e).
 
 Owner rule for this work: **never slow the business down.** So the receipt printer is in the shopper app only. The till keeps its speed.
 
@@ -25,7 +29,7 @@ Owner rule for this work: **never slow the business down.** So the receipt print
 
 Checks: `tsc` clean for shopper, retailer and web (`tsc -b`). Drop zone tested in the browser with a temporary harness (drag-over state, PDF rejected, PNG upload state and preview). `expo export --platform android` bundles cleanly for both apps. **Not checked on a device:** the hold, receipt, stamp thump and ticket animations, haptics, and the timing of the Business app at a real till.
 
-Next (owner): try both apps on a phone and say if the motion feels right. Then Claude commits, merges to main and ships by OTA (`eas update --environment production`, per platform) when the owner says so.
+Next (owner): open each app twice (an OTA applies on the second launch), then check it on a phone: award a stamp at the till (fast tick, quick reset), hold to redeem, open the shop card on the shopper app (receipt, then the stamp thump), the Rewards tab tickets, and the website logo drag-and-drop. Report anything that feels slow or wrong.
 
 ---
 
