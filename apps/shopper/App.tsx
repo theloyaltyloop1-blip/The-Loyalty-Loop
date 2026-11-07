@@ -2666,7 +2666,7 @@ function AppHome({ session }: { session: Session }) {
           onBack={() => setTab('home')}
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
           {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
           {tab === 'map' && <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
@@ -2674,7 +2674,7 @@ function AppHome({ session }: { session: Session }) {
           {tab === 'favourites' && (
             <FavouritesTab favourites={favouriteBusinesses} memberships={memberships} onSelect={setSelected} onQuickJoin={quickJoin} />
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
       {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
       {celebration}

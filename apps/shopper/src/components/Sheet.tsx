@@ -31,6 +31,7 @@ const SPRING = { duration: 300, dampingRatio: 0.8 }
 const CLOSE_TIMING = { duration: 220, easing: Easing.in(Easing.cubic) }
 const DISMISS_VELOCITY = 800 // px/s downward flick — enough alone to dismiss
 const DISMISS_DISTANCE_RATIO = 0.3 // or dragged past 30% of the sheet's height
+const KEYBOARD_TOP_GAP = 56 // room left above a sheet sitting on the keyboard (status bar + a little)
 const RUBBER_BAND = 0.25 // resistance when dragged upward past the open position
 
 export function Sheet({
@@ -123,7 +124,16 @@ export function Sheet({
   if (!mounted) return null
 
   const sheetContent = (
-    <Animated.View style={[sheetStyle, sheetAnimStyle]} onLayout={(e) => handleLayout(e.nativeEvent.layout.height)}>
+    <Animated.View
+      style={[
+        sheetStyle,
+        // With the keyboard up, the sheet sits on top of it; never let it grow
+        // past the top of the screen (its own scroll area takes up the slack).
+        keyboardHeight > 0 ? { maxHeight: screenHeight - keyboardHeight - KEYBOARD_TOP_GAP } : null,
+        sheetAnimStyle,
+      ]}
+      onLayout={(e) => handleLayout(e.nativeEvent.layout.height)}
+    >
       {children}
       {dragArea === 'handle' && (
         <GestureDetector gesture={pan}>
