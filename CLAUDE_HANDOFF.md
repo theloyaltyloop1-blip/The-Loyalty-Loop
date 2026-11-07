@@ -11,6 +11,14 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-07 — Shopper Join button fixed (shipped by OTA)
+
+- **Problem:** after tapping Join, the page kept showing "Join card". Edge logs showed the membership was saved on the first tap (later taps returned "already a member"); the screen waited for the full `load()` reload, which was failing silently on the reporter's phone (no `businesses` reads since ~20:00, likely the hidden "outage test" switch in Settings).
+- **Fix (9aa9c8b, `apps/shopper/App.tsx`):** `join()` upserts on `user_id,business_id`, reads the membership row with `maybeSingle()`, and hands it to the new `onJoined` prop so the card shows at once; `refresh()` still runs in the background.
+- **Checks:** tsc clean, 35/35 tests. OTA groups: 1.0.2 android 18f038d4 / ios dfc98497; 1.0.1 android b65f4f85 / ios 2db02ad5. All four bundles verified (project ref + marker). Not tested on a device.
+- **Next (owner: user):** confirm Join on a phone; check Settings footer for "· outage test" and long-press to turn it off. If it is not on, Claude to investigate why `load()` fails.
+
+
 ## Shopper: programme changes show live (2026-11-07) - Claude
 
 **Bug (owner report).** When a shop changed its AI reward programme, the shopper app kept showing the old one until a restart. There were three causes:
