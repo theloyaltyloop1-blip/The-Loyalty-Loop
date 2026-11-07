@@ -18,8 +18,19 @@ need Claude's sign-off before the next one starts.
 - `reward_catalog` and `membership_tiers` were not in `supabase_realtime`.
 - The open shop page loaded its rewards and levels only once, when it opened.
 
-**Fix (committed on branch `motion-components`, NOT on main, NOT shipped).**
-- `supabase/migrations/20261107210000_realtime_programme_tables.sql` adds `reward_catalog` and `membership_tiers` to `supabase_realtime`. Both are publicly readable for active shops. **Not applied yet.**
+**Shipped 2026-11-07** (owner asked). On main as 74a98c0.
+- **Migration:** applied to production. The publication now lists businesses, membership_tiers, memberships, reward_catalog and rewards.
+- **Shopper OTAs** (`--environment production`). Each bundle was checked for the project ref and the `shop-changes` marker, and still carries the new look and the polish. These are the newest updates.
+
+| Runtime | Android | iOS | Groups |
+|---|---|---|---|
+| 1.0.2 | 01a1b7dc | 01a1b7dd | 62633c93 / c5cbd082 |
+| 1.0.1 | 01a1b7de | 01a1b7df | 73a554b9 / 15f656a6 |
+
+- **Undo:** republish the new-look groups, a497488c / c3c7b7e5 (1.0.2) and 6094d000 / 45dddcfd (1.0.1).
+
+**Fix.**
+- `supabase/migrations/20261107210000_realtime_programme_tables.sql` adds `reward_catalog` and `membership_tiers` to `supabase_realtime`. Both are publicly readable for active shops.
 - `apps/shopper/App.tsx`:
   - The `shop-changes` channel replaces `shop-card-designs`.
   - It listens to business updates and to any change in reward_catalog or membership_tiers, and also runs on foreground. Changes are batched over 300ms.
@@ -28,7 +39,7 @@ need Claude's sign-off before the next one starts.
 
 **Checks run.** Shopper tsc clean; 35/35 unit tests; android bundle builds. **Not tested end to end**: an owner editing a programme while a shopper's app is open.
 
-**Next.** To release: apply the migration to production, merge to main, then publish shopper OTAs for 1.0.2 and 1.0.1. Then test by changing a test shop's programme while the shopper app is open on its page.
+**Next.** Owner: open the shopper app twice so the update applies, open a test shop's page, change that shop's programme from the Business app or website, and confirm the page updates within a couple of seconds.
 
 ---
 
