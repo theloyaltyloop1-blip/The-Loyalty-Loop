@@ -11,6 +11,20 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-07 — AI builder fix deployed, Squeezed fixed, shopper onboarding rebuilt (not shipped)
+
+- **AI builder (d45c39d, deployed):** `design-programme` edge function redeployed. Prompt now says "spend X, get Y" repeats via `points_cost` unless the owner says once; `designProblems()` sends back programmes whose points can never be spent (designer-only; `validateRules` unchanged so saved programmes still display). 10/10 designer tests.
+- **Squeezed Balham:** rules replaced via `set_custom_programme` (as the owner): 2 points per £1, free coffee costs 21 points. Catalog row mirrored (points_cost 21). Existing balances kept as they were.
+- **Shopper onboarding (apps/shopper, not shipped):** following "app first, one question, account when there is something to save, permission when it helps, tips not tours":
+  - Removed the 3-slide tour + analytics consent screen and the landing page. Analytics stays off unless turned on in Settings.
+  - New `src/components/GuestHome.tsx`: one question ("What are you into?", chips, saved in SecureStore `guest_interests`), then a public shop list (anon RLS read of approved active shops) with a shop sheet and a "Sign up" save bar.
+  - Join as a guest → sign-up screen with the shop named → after sign-in the card is joined automatically (`pendingJoin`) and the shop opens.
+  - `registerPushToken` no longer prompts on sign-in; after a first join a sheet asks "Get a ping when you earn a reward?" once (`push_ping_asked`).
+  - One-time tips (`src/components/Tip.tsx`): under the member QR code and under the quick-cards + button.
+  - Checks: tsc clean, 29/29 shopper unit tests. Expo web cannot bundle the shopper app, so not seen on screen; needs a device check.
+- **Next (owner: user):** approve the shopper OTA; then on a fresh install check guest list → Join → sign up → card opens joined → ping sheet.
+
+
 ## 2026-11-07 — Shopper Join button fixed (shipped by OTA)
 
 - **Problem:** after tapping Join, the page kept showing "Join card". Edge logs showed the membership was saved on the first tap (later taps returned "already a member"); the screen waited for the full `load()` reload, which was failing silently on the reporter's phone (no `businesses` reads since ~20:00, likely the hidden "outage test" switch in Settings).

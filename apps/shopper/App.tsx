@@ -58,12 +58,15 @@ import { hasSupabaseConfig, supabase } from './src/supabase'
 import { OutageBanner, setSimulatedOutage, simulatedOutage, useServiceStatus } from './src/service-status'
 import { clearHomeCache, readHomeCache, writeHomeCache } from './src/home-cache'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
-import { registerPushToken } from './src/push'
+import { pushPermission, registerPushToken } from './src/push'
+import * as SecureStore from 'expo-secure-store'
+import { GuestHome, type GuestShop } from './src/components/GuestHome'
+import { Tip } from './src/components/Tip'
 import { addPassFromBase64 } from './modules/expo-wallet-pass'
 import { signInWithGoogle } from './src/google-auth'
 import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
 import * as AppleAuthentication from 'expo-apple-authentication'
-import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
+import { getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { AppAlertHost, showAlert } from './src/components/AppAlert'
@@ -460,53 +463,12 @@ function AppHeader({ onOpenProfile }: { onOpenProfile: () => void }) {
 // Onboarding / auth
 // ---------------------------------------------------------------------
 
-function ShopperLanding({ onContinue }: { onContinue: () => void }) {
-  return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAwareScrollView contentContainerStyle={styles.auth}>
-        <View style={styles.mark}>
-          <Image source={logo} style={styles.markImage} />
-        </View>
-        <Text style={styles.eyebrow}>THE LOYALTY LOOP</Text>
-        <Text style={styles.hero}>More of the places{'\n'}you already love.</Text>
-        <Text style={styles.copy}>Discover local favourites, collect every visit and keep your rewards in one place.</Text>
-        <View style={styles.card}>
-          <Text style={styles.landingTitle}>01  Join a loyalty card</Text>
-          <Text style={styles.landingCopy}>Find a local business and join in seconds.</Text>
-          <Text style={styles.landingTitle}>02  Collect as you visit</Text>
-          <Text style={styles.landingCopy}>Show your QR code when you pay and earn rewards as you spend.</Text>
-          <Text style={styles.landingTitle}>03  Enjoy your reward</Text>
-          <Text style={styles.landingCopy}>Unlocked rewards are ready in the app.</Text>
-        </View>
-        <Button title="Start collecting" onPress={onContinue} />
-        <Text style={styles.small}>Already collecting? Sign in or create an account on the next screen.</Text>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
-  )
-}
+/** A card the shopper tapped Join on before they had an account. It is joined
+ * as soon as they sign in, so the tap is never lost. */
+let pendingJoin: GuestShop | null = null
 
-function ShopperOnboarding({ onComplete }: { onComplete: (analyticsAllowed: boolean) => void }) {
-  const [step, setStep] = useState(0)
-  const slides = [
-    { eyebrow: 'WELCOME', title: 'Local rewards,\nin your pocket.', copy: 'Discover independent shops nearby and keep every loyalty card together.' },
-    { eyebrow: 'COLLECT', title: 'One code.\nEvery visit.', copy: 'Show your personal QR code when you pay and watch your rewards build up.' },
-    { eyebrow: 'REWARDS', title: 'Never miss\na reward.', copy: 'Your rewards, shop news and loyalty history are ready whenever you are.' },
-  ]
-  const current = slides[step]
-  const finish = async (analyticsAllowed: boolean) => {
-    await completeOnboarding(analyticsAllowed)
-    onComplete(analyticsAllowed)
-  }
-  return <SafeAreaView style={styles.safe}><View style={styles.onboarding}>
-    <Image source={logo} style={styles.onboardingLogo} />
-    <Text style={styles.eyebrow}>{current.eyebrow}</Text><Text style={styles.onboardingTitle}>{current.title}</Text><Text style={styles.copy}>{current.copy}</Text>
-    <View style={styles.onboardingDots}>{slides.map((_, index) => <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />)}</View>
-    {step < slides.length - 1 ? <><Button title="Continue" onPress={() => setStep(step + 1)} /><Pressable onPress={() => setStep(slides.length - 1)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Skip introduction</Text></Pressable></> : <View style={styles.onboardingConsent}><Text style={styles.sectionTitle}>Help improve the app?</Text><Text style={styles.description}>Allow anonymous feature-use analytics. We never record your email, password, QR code or messages.</Text><Button title="Allow anonymous analytics" onPress={() => void finish(true)} /><Pressable onPress={() => void finish(false)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Continue without analytics</Text></Pressable></View>}
-  </View></SafeAreaView>
-}
-
-function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
-  const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn')
+function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onSession: (session: Session) => void; onBack?: () => void; reason?: string; initialMode?: 'signIn' | 'signUp' }) {
+  const [mode, setMode] = useState<'signIn' | 'signUp'>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -580,12 +542,17 @@ function AuthScreen({ onSession }: { onSession: (session: Session) => void }) {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAwareScrollView contentContainerStyle={styles.auth} keyboardShouldPersistTaps="handled">
+        {onBack ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Back to shops" onPress={onBack} hitSlop={12} style={{ alignSelf: 'flex-start', paddingVertical: 8, marginBottom: 8 }}>
+            <ChevronLeftIcon size={26} />
+          </Pressable>
+        ) : null}
         <View style={styles.mark}>
           <Image source={logo} style={styles.markImage} />
         </View>
         <Text style={styles.eyebrow}>THE LOYALTY LOOP</Text>
-        <Text style={styles.hero}>Local rewards,{'\n'}in your pocket.</Text>
-        <Text style={styles.copy}>Collect loyalty rewards from the places you love.</Text>
+        <Text style={styles.hero}>{reason ? 'Save your card' : mode === 'signUp' ? 'Save your cards' : 'Welcome back'}</Text>
+        <Text style={styles.copy}>{reason ?? (mode === 'signUp' ? 'A free account keeps your cards, points and rewards safe.' : 'Sign in to see your cards and rewards.')}</Text>
         <View style={styles.card}>
           {Platform.OS === 'ios' ? (
             <AppleAuthentication.AppleAuthenticationButton
@@ -1542,7 +1509,7 @@ function ShopDetail({
               : passStamps ? { value: String(Math.min(value, threshold)), of: `/${threshold}` } : null}
             progress={membership && !passStamps ? passProgress : null}
             progressLabel={passLabel}
-            code={membership ? <QRCode value={`loyaltyloop:customer:${userId}`} size={190} /> : null}
+            code={membership ? <View style={{ alignItems: 'center' }}><QRCode value={`loyaltyloop:customer:${userId}`} size={190} /><Tip id="member-code" text="Show this code when you pay to collect" /></View> : null}
             action={membership ? null : (
               <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: '#FFFFFF', borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, (busy || pressed) && { opacity: 0.8 }]}>
                 <Text style={{ color: skin.dark ? skin.bg : skin.ink, fontWeight: '800', fontSize: 17 }}>{busy ? 'Joining…' : 'Join card'}</Text>
@@ -2662,10 +2629,69 @@ function AppHome({ session }: { session: Session }) {
       if (error && error.code !== '23505') throw error
       await load()
       void trackUsageEvent(userId, 'loyalty_card_joined')
+      void maybeAskPing()
     } catch (e) {
       showAlert('Could not join', e instanceof Error ? e.message : 'Please try again.')
     }
   }
+
+  // Notifications are asked for once, right after a first join, when a ping
+  // about a reward actually means something. Never on launch.
+  const [askPing, setAskPing] = useState(false)
+  async function maybeAskPing() {
+    try {
+      if ((await pushPermission()) !== 'undetermined') return
+      if ((await SecureStore.getItemAsync('push_ping_asked')) === 'yes') return
+      await SecureStore.setItemAsync('push_ping_asked', 'yes')
+      setTimeout(() => setAskPing(true), 900)
+    } catch { /* never block joining on this */ }
+  }
+  async function turnOnPings() {
+    setAskPing(false)
+    await registerPushToken(userId, { ask: true }).catch(() => undefined)
+  }
+  const pingSheet = (
+    <Sheet visible={askPing} onClose={() => setAskPing(false)} sheetStyle={styles.pingSheet}>
+      <SafeAreaView edges={['bottom']}>
+        <View style={styles.pingHandle} />
+        <View style={styles.pingIcon}><BellIcon color="#F4F1EA" size={22} /></View>
+        <Text accessibilityRole="header" style={styles.pingTitle}>Get a ping when you earn a reward?</Text>
+        <Text style={styles.pingCopy}>We’ll tell you when a reward is ready and when your shops post news. Nothing else.</Text>
+        <View style={styles.pingRow}>
+          <Pressable accessibilityRole="button" onPress={() => setAskPing(false)} style={({ pressed }) => [styles.pingButton, styles.pingNotNow, pressed && { opacity: 0.75 }]}><Text style={styles.pingNotNowText}>Not now</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => void turnOnPings()} style={({ pressed }) => [styles.pingButton, styles.pingOn, pressed && { opacity: 0.75 }]}><Text style={styles.pingOnText}>Turn on</Text></Pressable>
+        </View>
+      </SafeAreaView>
+    </Sheet>
+  )
+
+  // A card tapped Join on before signing up is joined as soon as they're in.
+  const pendingHandled = useRef(false)
+  useEffect(() => {
+    const shop = pendingJoin
+    if (!shop || pendingHandled.current) return
+    pendingHandled.current = true
+    ;(async () => {
+      try {
+        const { error } = await supabase.from('memberships').upsert({ user_id: userId, business_id: shop.id }, { onConflict: 'user_id,business_id' })
+        if (error && error.code !== '23505') throw error
+        const { data: row } = await supabase.from('memberships').select('*').eq('user_id', userId).eq('business_id', shop.id).maybeSingle()
+        if (row) setMemberships(prev => [...prev.filter(x => x.business_id !== shop.id), { ...(row as Membership), rolling_spend_pence: 0 }])
+        void trackUsageEvent(userId, 'loyalty_card_joined', 'after_sign_up')
+        void maybeAskPing()
+      } catch (e) {
+        pendingJoin = null
+        showAlert('Could not join', `${shop.name}: ${e instanceof Error ? e.message : 'Please try again from the shop page.'}`)
+      }
+    })()
+  }, [userId])
+  // …and its card opens once the shop list has it.
+  useEffect(() => {
+    const shop = pendingJoin
+    if (!shop || !pendingHandled.current) return
+    const found = businesses.find(b => b.id === shop.id)
+    if (found) { pendingJoin = null; setSelected(found) }
+  }, [businesses])
 
   const favouriteBusinesses = businesses.filter((b) => favouriteIds.has(b.id))
   // Home and the map show shops in the shopper's country; shops they already
@@ -2698,10 +2724,11 @@ function AppHome({ session }: { session: Session }) {
         onBack={() => setSelected(null)}
         onToggleFavourite={() => toggleFavourite(selected)}
         refresh={load}
-        onJoined={(m) => setMemberships(prev => [...prev.filter(x => x.business_id !== m.business_id), { ...m, rolling_spend_pence: 0 }])}
+        onJoined={(m) => { setMemberships(prev => [...prev.filter(x => x.business_id !== m.business_id), { ...m, rolling_spend_pence: 0 }]); void maybeAskPing() }}
         cardLinking={cardLinking}
         onLinkCard={() => void linkCardFromShop()}
       />
+      {pingSheet}
       </>
     )
   }
@@ -2757,6 +2784,7 @@ function AppHome({ session }: { session: Session }) {
         }}
       />
       {cardLinkedCheck}
+      {pingSheet}
     </SafeAreaView>
   )
 }
@@ -2784,13 +2812,11 @@ function AppRoot() {
   const [session, setSession] = useState<Session | null>(null)
   const [checking, setChecking] = useState(true)
   const [allowed, setAllowed] = useState(false)
-  const [showAuth, setShowAuth] = useState(false)
+  const [auth, setAuth] = useState<{ mode: 'signIn' | 'signUp'; reason?: string } | null>(null)
   const [locked, setLocked] = useState(false)
   const [checkingLock, setCheckingLock] = useState(false)
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null)
   const checkingUpdate = useLaunchUpdate()
 
-  useEffect(() => { getOnboardingComplete().then(setOnboardingComplete) }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -2837,6 +2863,7 @@ function AppRoot() {
     const subscription = AppState.addEventListener('change', (state) => { if (state === 'active' && session) void checkAppLock() })
     return () => subscription.remove()
   }, [session?.user.id])
+  // Saves the token only if notifications are already allowed; the question itself comes after a first join.
   useEffect(() => { if (session) void registerPushToken(session.user.id).catch(() => undefined) }, [session?.user.id])
 
   if (!hasSupabaseConfig) {
@@ -2849,7 +2876,7 @@ function AppRoot() {
       </SafeAreaView>
     )
   }
-  if (checkingUpdate || onboardingComplete === null || checking || (session && (!allowed || checkingLock))) {
+  if (checkingUpdate || checking || (session && (!allowed || checkingLock))) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
@@ -2861,8 +2888,13 @@ function AppRoot() {
   if (session && locked) {
     return <SafeAreaView style={styles.safe}><View style={styles.lockScreen}><Image source={logo} style={styles.lockLogo} /><Text style={styles.title}>App locked</Text><Text style={styles.description}>Use Face ID, Touch ID or your fingerprint to continue.</Text><Button title="Unlock app" onPress={() => void checkAppLock()} /></View></SafeAreaView>
   }
-  if (!onboardingComplete) return <ShopperOnboarding onComplete={() => setOnboardingComplete(true)} />
-  return session ? <AppHome session={session} /> : showAuth ? <AuthScreen onSession={setSession} /> : <ShopperLanding onContinue={() => setShowAuth(true)} />
+  if (session) return <AppHome session={session} />
+  if (auth) return <AuthScreen key={auth.mode + (auth.reason ?? '')} initialMode={auth.mode} reason={auth.reason} onSession={(next) => { setAuth(null); setSession(next) }} onBack={() => { pendingJoin = null; setAuth(null) }} />
+  return <GuestHome
+    onJoin={(shop) => { pendingJoin = shop; setAuth({ mode: 'signUp', reason: `Make a free account to save your ${shop.name} card. We’ll join it for you straight away.` }) }}
+    onSignUp={() => setAuth({ mode: 'signUp' })}
+    onSignIn={() => setAuth({ mode: 'signIn' })}
+  />
 }
 
 // ---------------------------------------------------------------------
@@ -2877,6 +2909,17 @@ const styles = StyleSheet.create({
   auth: { flexGrow: 1, padding: 28, justifyContent: 'center' },
   screen: { padding: 20, paddingBottom: 130 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  pingSheet: { backgroundColor: '#F4F1EA', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 12, paddingBottom: 16 },
+  pingHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 20 },
+  pingIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#2B3A67', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  pingTitle: { color: '#1A2138', fontSize: 28, lineHeight: 32, fontFamily: 'Inter_800ExtraBold', letterSpacing: -0.6 },
+  pingCopy: { color: '#6F6B64', fontSize: 15, lineHeight: 21, marginTop: 10, marginBottom: 22, fontFamily: 'Inter_500Medium' },
+  pingRow: { flexDirection: 'row', gap: 12 },
+  pingButton: { flex: 1, borderRadius: 999, paddingVertical: 16, alignItems: 'center' },
+  pingNotNow: { backgroundColor: '#E7E2D8' },
+  pingNotNowText: { color: '#1A2138', fontSize: 16, fontFamily: 'Inter_700Bold' },
+  pingOn: { backgroundColor: '#2B3A67' },
+  pingOnText: { color: '#F4F1EA', fontSize: 16, fontFamily: 'Inter_700Bold' },
   onboarding: { flex: 1, padding: 28, justifyContent: 'center' },
   onboardingLogo: { width: 66, height: 66, resizeMode: 'contain', marginBottom: 44 },
   onboardingTitle: { color: foreground, fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },

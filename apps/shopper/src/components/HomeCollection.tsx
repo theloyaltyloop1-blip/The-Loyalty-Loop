@@ -10,6 +10,7 @@ import { ratingLabel } from '../ratings'
 import { formatMiles, nearestFirst, pickFeatured, type Coords } from '../distance'
 import { categoryRails, heroSlides, newestShops } from '../home-rails'
 import type { LocationStatus } from '../use-user-location'
+import { Tip } from './Tip'
 
 // Home screen in delivery-app style: a hero carousel, then rows you swipe sideways.
 const ROWS_PER_TAP = 8
@@ -142,7 +143,7 @@ function EditGlyph({ pinned }: { pinned: boolean }) {
   </Svg>
 }
 
-function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, width }: { card: HeroCard<T>; onSelect: (shop: T) => void; onEdit?: () => void; pinned: boolean; width?: number }) {
+function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, width, teach = false }: { card: HeroCard<T>; onSelect: (shop: T) => void; onEdit?: () => void; pinned: boolean; width?: number; teach?: boolean }) {
   const { shop, progress } = card
   const threshold = progress.threshold
   const money = (value: number) => shopMoney(shop.country_code)(value).replace(/\.00$/, '')
@@ -161,6 +162,7 @@ function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, wi
         <EditGlyph pinned={pinned} />
       </Pressable>}
     </View>
+    {teach ? <View style={{ marginTop: -12, marginBottom: -6 }}><Tip id="quick-cards" align="right" text="Tap + to pin the cards you use most" /></View> : null}
     <View accessible accessibilityLabel={`${shop.name}: ${big} ${line}`}>
       <Text style={s.nextBig} numberOfLines={1} adjustsFontSizeToFit>{big}</Text>
       <Text style={s.nextLine} numberOfLines={2}>{line}</Text>
@@ -201,7 +203,9 @@ export function NextRewardHero<T extends RailShop>({ shops, memberships, catalog
       <Text style={s.quickEmptyText}>+ Choose quick cards for the top of home</Text>
     </Pressable> : null
   }
-  if (cards.length === 1) return <RewardHeroCard card={cards[0]} onSelect={onSelect} onEdit={onEditQuick} pinned={pinned} />
+  // Taught the first time there are two cards to choose between, not in a tour.
+  const teach = Boolean(onEditQuick) && joined.length > 1 && !pinned
+  if (cards.length === 1) return <RewardHeroCard card={cards[0]} onSelect={onSelect} onEdit={onEditQuick} pinned={pinned} teach={teach} />
   return <View style={s.quickWrap} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
     {width > 0 && <ScrollView
       horizontal
