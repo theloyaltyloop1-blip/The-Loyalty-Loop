@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cleanMessages, designTurn, parseAnswer, systemPrompt } from "./programme-designer.ts";
+import { cleanMessages, designProblems, designTurn, parseAnswer, systemPrompt } from "./programme-designer.ts";
 
 const good = {
   version: 1, unit: { one: "point", many: "points" },
@@ -72,4 +72,38 @@ test("the prompt names the shop, the currency and the current rules", () => {
   assert.ok(p.includes('"Test Shop"'));
   assert.ok(p.includes("£1 = 100"));
   assert.ok(p.includes("THE SHOP'S CURRENT RULES"));
+});
+
+// The Squeezed Balham programme of 7 Nov 2026: points per £1, but the only
+// reward was a once-only lifetime milestone, so 180 points did nothing.
+const pointsGoNowhere = {
+  version: 1, unit: { one: "point", many: "points" },
+  earn: [{ label: "Minimal earn", per_pound: 1 }],
+  rewards: [{ key: "free-coffee", title: "Free coffee" }],
+  milestones: [{ label: "Spend £10.50 free coffee", reward: "free-coffee", at_lifetime_spend_pence: 1050 }],
+  summary: "Spend £10.50 in total and receive a free coffee.",
+};
+
+test("points that can never be spent are sent back to the AI to fix", async () => {
+  assert.equal(designProblems(good).length, 0);
+  assert.equal(designProblems(pointsGoNowhere).length, 1);
+  const repeating = { ...pointsGoNowhere, earn: [{ label: "Per pound", per_pound: 2 }], milestones: undefined,
+    rewards: [{ key: "free-coffee", title: "Free coffee", points_cost: 21 }] };
+  delete repeating.milestones;
+  assert.equal(designProblems(repeating).length, 0);
+  const seen = [];
+  const replies = [
+    JSON.stringify({ reply: "Once only", rules: pointsGoNowhere }),
+    JSON.stringify({ reply: "Every £10.50", rules: repeating }),
+  ];
+  const out = await designTurn(async (convo) => { seen.push(convo); return replies.shift(); }, shop, null, ask);
+  assert.equal(out.reply, "Every £10.50");
+  assert.equal(out.rules.rewards[0].points_cost, 21);
+  assert.match(seen[1].at(-1).content, /can never spend them/);
+});
+
+test("a milestone-only programme with no points is still fine", () => {
+  const visits = { version: 1, unit: { one: "stamp", many: "stamps" }, earn: [{ label: "Double on Mondays", multiplier: 2, when: { days: [1] } }],
+    rewards: [{ key: "coffee", title: "Free coffee" }], milestones: [{ label: "Every 10th visit", reward: "coffee", every_visits: 10 }], summary: "Every 10th visit is free." };
+  assert.equal(designProblems(visits).length, 0);
 });

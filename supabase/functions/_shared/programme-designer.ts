@@ -99,7 +99,9 @@ WHAT YOU DO
 2. As soon as you can, build the full rules and explain them in a few short lines in "reply", in the owner's words, with real numbers ("Spend ${money}10, get 10 points; 3 points = ${money}1 off"). Then ask if they want to change anything.
 3. When they ask for changes, send the complete updated rules each time.
 4. If they ask for something these blocks cannot do (for example points for social media posts, per-product points without a till link, games, prize draws, or anything that needs information the till does not record), still build the closest working version, say plainly what is different, and list it in "unsupported". Never pretend the app does something it does not.
-5. Check the maths is sensible for a small shop (e.g. warn if rewards are very generous) but respect the owner's choice.
+5. "Spend ${money}X, get a reward" means every time, unless the owner clearly says once: earn per_pound and give the reward a points_cost (1 point per ${money}1 and a ${money}10 coffee costs 10 points). Pick per_pound so the cost is a whole number (${money}10.50 → 2 points per ${money}1, reward costs 21). Use at_lifetime_spend_pence only for a one-off thank-you the owner asked for, and tell them it happens once per customer.
+6. If customers collect points, they must be able to spend them: at least one reward with a points_cost, or cash_value. A programme whose only reward comes from milestones must not hand out points that do nothing.
+7. Check the maths is sensible for a small shop (e.g. warn if rewards are very generous) but respect the owner's choice.
 
 ANSWER FORMAT
 Reply with ONE JSON object and nothing else:
@@ -130,6 +132,22 @@ export function parseAnswer(raw: string): { reply: string; rules: unknown; unsup
   return { reply: parsed.reply.trim().slice(0, 4000), rules: parsed.rules ?? null, unsupported }
 }
 
+/**
+ * Design mistakes the rules format allows but owners never want. Only the AI
+ * designer applies these; saved programmes are still read with validateRules alone.
+ */
+export function designProblems(rules: ProgrammeRules): string[] {
+  const problems: string[] = []
+  const b = rules.bonuses
+  const collects = rules.earn.some((r) => r.per_pound !== undefined || r.per_visit !== undefined) ||
+    Boolean(b && ((b.signup ?? 0) > 0 || (b.birthday ?? 0) > 0 || (b.referral ?? 0) > 0))
+  const canSpend = rules.rewards.some((r) => r.points_cost !== undefined) || Boolean(rules.cash_value)
+  if (collects && !canSpend) {
+    problems.push('Customers collect points but can never spend them: give at least one reward a points_cost (for "spend X, get Y" make it repeat with points, not a once-only at_lifetime_spend_pence milestone), or add cash_value.')
+  }
+  return problems
+}
+
 export type ModelCall = (messages: { role: 'system' | 'user' | 'assistant'; content: string }[]) => Promise<string>
 
 /**
@@ -147,7 +165,7 @@ export async function designTurn(
     ...messages,
   ]
   let lastReply = ''
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const raw = await call(convo)
     let answer
     try {
@@ -160,6 +178,11 @@ export async function designTurn(
     lastReply = answer.reply
     if (answer.rules === null) return { reply: answer.reply, rules: null, unsupported: answer.unsupported }
     const check = validateRules(answer.rules)
+    if (check.ok && designProblems(check.rules).length) {
+      convo.push({ role: 'assistant', content: raw.slice(0, 8000) })
+      convo.push({ role: 'user', content: `(Automatic check, not the owner.) ${designProblems(check.rules).join(' ')} Fix it and answer again with the full JSON.` })
+      continue
+    }
     if (check.ok) return { reply: answer.reply, rules: check.rules, unsupported: answer.unsupported }
     convo.push({ role: 'assistant', content: raw.slice(0, 8000) })
     convo.push({
