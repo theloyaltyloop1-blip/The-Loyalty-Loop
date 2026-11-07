@@ -20,6 +20,7 @@ export function ShopPass({
   fields,
   action,
   topBar,
+  wrapStamp,
 }: {
   skin: ShopSkin;
   shop: { name: string; logo_url?: string | null; cover_url?: string | null };
@@ -33,6 +34,9 @@ export function ShopPass({
   fields: PassField[];
   action?: ReactNode;
   topBar: ReactNode;
+  /** Lets the app animate a stamp (e.g. a freshly earned one). This package
+   * stays animation-free so the website and both apps can share it. */
+  wrapStamp?: (index: number, stamp: ReactNode) => ReactNode;
 }) {
   const d = skin.design;
   const ink = skin.ink;
@@ -60,11 +64,12 @@ export function ShopPass({
           <View style={s.stampRow} accessibilityLabel={progressLabel ?? undefined}>
             {Array.from({ length: stamps.total }, (_, i) => {
               const filled = i < stamps.filled;
-              return (
-                <View key={i} style={[s.stamp, { borderColor: filled ? skin.accent : skin.panelBorder, backgroundColor: filled ? skin.accent : "transparent" }]}>
+              const stamp = (
+                <View style={[s.stamp, { borderColor: filled ? skin.accent : skin.panelBorder, backgroundColor: filled ? skin.accent : "transparent" }]}>
                   {filled ? <StampIcon icon={d.icon} color={skin.onAccent} size={22} /> : null}
                 </View>
               );
+              return <View key={i}>{wrapStamp ? wrapStamp(i, stamp) : stamp}</View>;
             })}
           </View>
         ) : progress !== null ? (

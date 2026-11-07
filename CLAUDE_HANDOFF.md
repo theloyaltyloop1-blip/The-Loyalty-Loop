@@ -11,6 +11,24 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Motion components from the owner's reference video (2026-11-07) - Claude
+
+Branch `motion-components` (worktree `.claude/worktrees/motion-components`, from origin/main 1390c0e). **Not committed, not shipped.**
+
+Owner rule for this work: **never slow the business down.** So the receipt printer is in the shopper app only. The till keeps its speed.
+
+- **Business app scan screen** (`apps/retailer/App.tsx`): "Award stamps" / "Add £x" are now `DynamicButton` (label → spinner → green "✓ Awarded"). The full-screen `SuccessCheck` is gone from this screen; the screen resets 650 ms after success (the old tick took about 750 ms). Redeem is a 0.6 s press-and-hold `HoldButton` (it was a single tap with no confirm). Screen readers can double-tap instead.
+- **Shopper shop page** (`apps/shopper/App.tsx`): when stamps, spend or points have gone up since the last view, `ReceiptPrinter` feeds out a receipt (what landed, card progress, next reward). It closes after about 3 s or on tap. Then each new stamp lands on the pass with `StampThump`. `ShopPass` gained an optional `wrapStamp` prop; `packages/card-design` itself stays animation-free. This replaces the old green tick on the shop page.
+- **Shopper Rewards tab**: each reward is a perforated `Ticket` (shop colour, tear line, QR stub, code, use-by date).
+- **Shopper points rewards** (`src/shop-profile.tsx`): "Get reward" is now a compact 0.7 s "Hold to get" (spending points can't be undone).
+- **Website Settings logo/cover upload**: `MagneticDropZone`. The old box said "Drag image here" but had no drop handling. It now accepts drops, rejects non-images with a message, and supports keyboard and click.
+
+Checks: `tsc` clean for shopper, retailer and web (`tsc -b`). Drop zone tested in the browser with a temporary harness (drag-over state, PDF rejected, PNG upload state and preview). `expo export --platform android` bundles cleanly for both apps. **Not checked on a device:** the hold, receipt, stamp thump and ticket animations, haptics, and the timing of the Business app at a real till.
+
+Next (owner): try both apps on a phone and say if the motion feels right. Then Claude commits, merges to main and ships by OTA (`eas update --environment production`, per platform) when the owner says so.
+
+---
+
 ## Owner voice line, basic version (2026-10-18) - Claude
 - What: the owner calls a Twilio number, enters a PIN, and describes a feature. Twilio transcribes it into `voice_requests`, and an SMS confirms it was logged. Built on a branch only; it never deploys.
 - Files: `supabase/functions/voice-call/index.ts`, `supabase/migrations/20261018180000_voice_requests.sql`, `supabase/config.toml` (voice-call, verify_jwt=false), `docs/VOICE_LINE_SETUP.md`.

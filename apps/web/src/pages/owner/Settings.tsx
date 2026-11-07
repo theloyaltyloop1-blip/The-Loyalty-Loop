@@ -1,11 +1,12 @@
 import * as React from 'react'
 import { rewardWords } from '@/lib/shop-types'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Upload, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
+import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { SumUpCard } from '@/components/sumup-card'
+import { MagneticDropZone } from '@/components/MagneticDropZone'
 import { useOwner } from '@/lib/owner-context'
 import { CATEGORIES, categoryCopy, categoryOptions } from '@/lib/categories'
 import { buildShopArgs, PROGRAMMES, type DraftTier, type ProgrammeId } from '@loyalty-loop/loyalty'
@@ -96,7 +97,6 @@ function BrandImageUpload({
   currentUrl: string | null
   onUploaded: (url: string) => void
 }) {
-  const inputRef = React.useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -111,43 +111,20 @@ function BrandImageUpload({
       setError(e instanceof Error ? e.message : 'Upload failed')
     } finally {
       setUploading(false)
-      if (inputRef.current) inputRef.current.value = ''
     }
   }
 
   return (
     <div>
       <p className="text-sm font-semibold text-foreground mb-1.5">{label}</p>
-      <div
-        onClick={() => inputRef.current?.click()}
-        className="h-32 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground text-sm cursor-pointer overflow-hidden bg-white/40 hover:border-primary/50 transition-colors duration-150 ease-out"
-        style={
-          currentUrl
-            ? { backgroundImage: `url(${currentUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-            : undefined
-        }
-      >
-        {!currentUrl && (
-          <>
-            <ImageIcon className="h-5 w-5" />
-            Drag image here or pick file
-          </>
-        )}
-      </div>
-      <input
-        ref={inputRef}
-        type="file"
+      <MagneticDropZone
         accept="image/png,image/jpeg,image/webp,image/gif"
-        className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        currentUrl={currentUrl}
+        uploading={uploading}
+        onFile={(file) => void handleFile(file)}
+        onReject={setError}
+        hint={field === 'logo_url' ? 'Drag your logo here, or click to choose' : 'Drag a cover photo here, or click to choose'}
       />
-      <button data-press-feedback
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="mt-2 flex items-center gap-2 rounded-full border border-border px-4 h-9 text-sm font-semibold text-foreground disabled:opacity-40"
-      >
-        <Upload className="h-3.5 w-3.5" /> {uploading ? 'Uploading…' : currentUrl ? 'Replace' : 'Upload'}
-      </button>
       {error && <p className="text-xs text-destructive mt-1">{error}</p>}
     </div>
   )

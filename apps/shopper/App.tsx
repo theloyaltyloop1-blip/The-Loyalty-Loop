@@ -64,6 +64,9 @@ import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { AppAlertHost, showAlert } from './src/components/AppAlert'
 import { SuccessCheck } from './src/components/SuccessCheck'
+import { ReceiptPrinter, type ReceiptData } from './src/components/ReceiptPrinter'
+import { StampThump } from './src/components/StampThump'
+import { Ticket } from './src/components/Ticket'
 import { HowItWorks, OpeningHoursList, openStatus, type OpeningHours, type TierRow } from './src/shop-profile'
 import { pointsStanding, programmeIdFor, tierStanding } from '@loyalty-loop/loyalty'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
@@ -1065,7 +1068,10 @@ function ShopDetail({
   const [rollingSpend, setRollingSpend] = useState<number | null>(null)
   const scrollRef = useRef<ScrollView>(null)
   const cardY = useRef(0)
-  const [showStampSuccess, setShowStampSuccess] = useState(false)
+  // How much just landed on the card, for the receipt (null when nothing new).
+  const [landed, setLanded] = useState<number | null>(null)
+  // After the receipt closes, the new stamps land on the card one by one.
+  const [thump, setThump] = useState<{ count: number; key: number } | null>(null)
 
   // Celebrate a stamp/points increase picked up on mount or refresh — the
   // shopper app has no realtime subscription, so this is the only "it
@@ -1074,7 +1080,7 @@ function ShopDetail({
   // on every fresh visit).
   useEffect(() => {
     const previous = lastObservedStampValues[business.id]
-    if (previous !== undefined && value > previous) setShowStampSuccess(true)
+    if (previous !== undefined && value > previous) setLanded(value - previous)
     lastObservedStampValues[business.id] = value
   }, [business.id, value])
 
@@ -1421,6 +1427,42 @@ function ShopDetail({
     : programmeId === 'points' ? (pointsView.next ? pointsView.label : `${value} ${value === 1 ? 'point' : 'points'}`)
     : spendShop ? `${pounds(value, business.country_code)} of ${pounds(threshold, business.country_code)} · ${reward}`
     : value >= threshold ? `${reward} is ready` : `${threshold - value} more for ${reward}`
+  const money = (pence: number) => pounds(pence, business.country_code)
+  const unitOne = label.replace(/s$/, '')
+  const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+  const receipt: ReceiptData | null = landed == null ? null
+    : spendShop ? {
+        title: 'Purchase added',
+        headline: `+${money(landed)}`,
+        shopName: business.name,
+        lines: [
+          { label: 'Purchase', value: money(landed) },
+          { label: 'Towards reward', value: `${money(Math.min(value, threshold))} / ${money(threshold)}` },
+        ],
+        note: value >= threshold ? `${reward} is ready` : `${money(threshold - value)} more for ${reward}`,
+      }
+    : programmeId === 'points' || business.loyalty_type === 'points' ? {
+        title: 'Points added',
+        headline: `+${landed}`,
+        shopName: business.name,
+        lines: [
+          { label: 'Points earned', value: `+${landed}` },
+          { label: 'Balance', value: `${value} pts` },
+        ],
+        note: passLabel,
+      }
+    : {
+        title: `${cap(landed === 1 ? unitOne : label)} added`,
+        headline: `+${landed}`,
+        shopName: business.name,
+        lines: [
+          { label: `${cap(landed === 1 ? unitOne : label)} today`, value: `+${landed}` },
+          threshold > 0
+            ? { label: 'Your card', value: `${Math.min(value, threshold)} / ${threshold}` }
+            : { label: `Total ${label}`, value: String(value) },
+        ],
+        note: passLabel,
+      }
   // The whole page wears the shop's design; the QR tile stays black on white so it scans.
   const ss = useMemo(() => {
     const skinned = skinStyles(styles, skin, { keep: ['qrText', 'pressed', 'disabled', 'nativeMap', 'mapEmbed', 'shortCard', 'shortImage', 'shortOverlay', 'shortShopName', 'shortIndex', 'favouriteButton'], clear: ['screen'] })
@@ -1438,6 +1480,12 @@ function ShopDetail({
             shop={business}
             eyebrow={[business.category || 'Local business', openStatus(business.opening_hours)?.label].filter(Boolean).join(' · ')}
             stamps={membership && passStamps ? { filled: Math.min(value, threshold), total: threshold } : null}
+            wrapStamp={(i, stamp) => {
+              const filled = Math.min(value, threshold)
+              const first = filled - (thump?.count ?? 0)
+              if (!thump || i < first || i >= filled) return stamp
+              return <StampThump key={thump.key} delay={(i - first) * 170} ringColor={skin.accent} radius={14}>{stamp}</StampThump>
+            }}
             count={!membership || programmeId === 'tiers' ? null
               : programmeId === 'points' ? { value: String(value), of: ' pts' }
               : spendShop ? (threshold > 0 ? { value: pounds(Math.min(value, threshold), business.country_code).replace(/\.00$/, ''), of: `/${pounds(threshold, business.country_code).replace(/\.00$/, '')}` } : null)
@@ -1627,7 +1675,13 @@ function ShopDetail({
           )}
         </View>
       </KeyboardAwareScrollView>
-      <SuccessCheck visible={showStampSuccess} onFinished={() => setShowStampSuccess(false)} />
+      <ReceiptPrinter
+        receipt={receipt}
+        onFinished={() => {
+          if (landed && passStamps) setThump({ count: landed, key: Date.now() })
+          setLanded(null)
+        }}
+      />
     </SafeAreaView>
     </ShopSkinProvider>
   )
@@ -2096,15 +2150,19 @@ function RewardsTab({ rewards }: { rewards: Reward[] }) {
     <>
       <Text style={styles.pageTitle}>Ready to enjoy</Text>
       {active.length ? (
-        active.map((reward) => (
-          <View key={reward.id} style={styles.reward}>
-            <Text style={styles.rewardShop}>{reward.business?.name || 'The Loyalty Loop shop'}</Text>
-            <Text style={styles.rewardTitle}>{reward.title}</Text>
-            <Text style={styles.muted}>Code: {reward.short_code}</Text>
-            <View style={styles.rewardQr}>
-              <QRCode value={encodeRewardQr(reward.qr_token)} size={120} />
-            </View>
-          </View>
+        active.map((reward, index) => (
+          <Ticket
+            key={reward.id}
+            index={index}
+            color={reward.business?.brand_color || primary}
+            shopName={reward.business?.name || 'The Loyalty Loop shop'}
+            title={reward.title}
+            code={reward.short_code}
+            expiresAt={reward.expires_at}
+            pageColor={background}
+          >
+            <QRCode value={encodeRewardQr(reward.qr_token)} size={150} />
+          </Ticket>
         ))
       ) : (
         <Text style={styles.empty}>Your unlocked rewards will appear here. Keep collecting!</Text>
@@ -2897,10 +2955,6 @@ const styles = StyleSheet.create({
   autoEarnChipText: { fontSize: 12.5, fontWeight: '700', color: '#7a4a0c' },
 
   // Rewards
-  reward: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  rewardShop: { color: primary, fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  rewardTitle: { color: foreground, fontSize: 21, fontFamily: FONT_DISPLAY, marginTop: 8 },
-  rewardQr: { alignItems: 'center', marginTop: 16 },
 
   // Favourites
   favouriteCard: { backgroundColor: card, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },

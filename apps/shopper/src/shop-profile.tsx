@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { PROGRAMMES, pointsStanding, programmeIdFor, tierStanding, type PointsReward, type TierRung } from '@loyalty-loop/loyalty'
 import { showAlert } from './components/AppAlert'
+import { HoldButton } from './components/HoldButton'
 import { supabase } from './supabase'
 import { colors } from './theme'
 import { useShopSkin, useSkinStyles } from '../../../packages/card-design/skin'
@@ -421,14 +422,21 @@ function PointsHow({ business, membership, catalog, brand, refresh }: { business
                 <Text style={st.listRowStrong}>{reward.points_cost} points</Text>
               </View>
               {membership ? (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={!can || busyId !== null}
-                  onPress={() => void redeem(reward)}
-                  style={({ pressed }) => [st.getButton, { backgroundColor: can ? brand : '#E4E2DA' }, pressed && { opacity: 0.8 }]}
-                >
-                  <Text style={[st.getButtonText, { color: can ? readableOn(brand) : '#000000' }]}>{busyId === reward.id ? 'Getting…' : 'Get reward'}</Text>
-                </Pressable>
+                // Spending points can't be undone, so it's a short press and hold.
+                <HoldButton
+                  compact
+                  label="Hold to get"
+                  holdingLabel="Keep holding…"
+                  doneLabel="Getting…"
+                  busy={busyId === reward.id}
+                  busyLabel="Getting…"
+                  disabled={!can || (busyId !== null && busyId !== reward.id)}
+                  duration={700}
+                  onConfirm={() => void redeem(reward)}
+                  accessibilityLabel={`Get ${reward.title} for ${reward.points_cost} points`}
+                  color={can ? brand : '#E4E2DA'}
+                  textColor={can ? readableOn(brand) : '#000000'}
+                />
               ) : null}
             </View>
           )
@@ -486,8 +494,6 @@ const styles = StyleSheet.create({
   pointsBox: { backgroundColor: '#FBE7BF', borderRadius: 20, paddingVertical: 18, alignItems: 'center' },
   pointsBalance: { fontSize: 44, lineHeight: 48, fontWeight: '900', color: '#000000', letterSpacing: -1 },
   pointsLabel: { fontSize: 14, fontWeight: '700', color: '#000000', marginTop: 2 },
-  getButton: { height: 40, paddingHorizontal: 16, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  getButtonText: { fontSize: 13, fontWeight: '900' },
 
   hoursList: { marginTop: 8 },
   hoursRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },

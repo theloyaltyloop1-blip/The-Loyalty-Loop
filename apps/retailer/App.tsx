@@ -64,7 +64,8 @@ import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
-import { SuccessCheck } from "./src/components/SuccessCheck";
+import { HoldButton } from "./src/components/HoldButton";
+import { DynamicButton } from "./src/components/DynamicButton";
 import {
   NativeOwnerPageView,
   type NativeOnboardingDestination,
@@ -961,6 +962,16 @@ function StampsScreen({
 
   // After a successful award/redeem, show the checkmark confirmation first;
   // the screen only resets once that animation has finished fading out.
+  // The button turns into a green "Awarded" tick; reset for the next customer
+  // after ~0.65s (the old full-screen tick took ~0.75s), so the till is never slower.
+  useEffect(() => {
+    if (!showSuccess) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const timer = setTimeout(finishAfterSuccess, 650);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSuccess]);
+
   function finishAfterSuccess() {
     setShowSuccess(false);
     reset();
@@ -1318,34 +1329,27 @@ function StampsScreen({
                       </Pressable>
                     ))}
                   </View>
-                  <Pressable
+                  <DynamicButton
+                    status={busy ? "busy" : showSuccess ? "done" : "idle"}
+                    label={amountPence ? `Add ${pounds(amountPence)}` : "Type the amount"}
+                    busyLabel="Adding…"
+                    doneLabel="Added"
                     onPress={() => void submitSpend()}
-                    disabled={busy || amountPence < 1}
-                    style={({ pressed }) => [
-                      styles.bigActionButton,
-                      pressed && styles.pressed,
-                      (busy || amountPence < 1) && styles.disabled,
-                    ]}
-                  >
-                    <Text style={styles.bigActionButtonText}>
-                      {busy ? "Adding…" : amountPence ? `Add ${pounds(amountPence)}` : "Type the amount"}
-                    </Text>
-                  </Pressable>
+                    disabled={amountPence < 1}
+                    color={orange}
+                    style={styles.dynamicAction}
+                  />
                 </View>
               ) : mode === "stamps" ? (
-                <Pressable
+                <DynamicButton
+                  status={busy ? "busy" : showSuccess ? "done" : "idle"}
+                  label={`Award ${unit}`}
+                  busyLabel="Awarding…"
+                  doneLabel="Awarded"
                   onPress={() => void award()}
-                  disabled={busy}
-                  style={({ pressed }) => [
-                    styles.bigActionButton,
-                    pressed && styles.pressed,
-                    busy && styles.disabled,
-                  ]}
-                >
-                  <Text style={styles.bigActionButtonText}>
-                    {busy ? "Awarding…" : `Award ${unit}`}
-                  </Text>
-                </Pressable>
+                  color={orange}
+                  style={styles.dynamicAction}
+                />
               ) : activeReward ? (
                 <View>
                 {activeReward.discount_pence ? (
@@ -1355,19 +1359,20 @@ function StampsScreen({
                     onBillTotalChange={setBillTotal}
                   />
                 ) : null}
-                <Pressable
-                  onPress={redeem}
-                  disabled={busy}
-                  style={({ pressed }) => [
-                    styles.bigActionButton,
-                    pressed && styles.pressed,
-                    busy && styles.disabled,
-                  ]}
-                >
-                  <Text style={styles.bigActionButtonText}>
-                    {busy ? "Redeeming…" : activeReward.discount_pence ? "Customer paid, use reward" : `Redeem "${activeReward.title}"`}
-                  </Text>
-                </Pressable>
+                {/* Redeeming can't be undone, so it takes a short (0.6s) press and hold
+                    instead of a tap: no accidental redemptions, no extra pop-up. */}
+                <HoldButton
+                  label={activeReward.discount_pence ? "Hold: customer paid, use reward" : `Hold to redeem "${activeReward.title}"`}
+                  holdingLabel="Keep holding…"
+                  busy={busy || showSuccess}
+                  busyLabel={showSuccess ? "Redeemed" : "Redeeming…"}
+                  doneLabel="Redeeming…"
+                  duration={600}
+                  onConfirm={() => void redeem()}
+                  accessibilityLabel={activeReward.discount_pence ? "Customer paid, use reward" : `Redeem ${activeReward.title}`}
+                  color={showSuccess ? colors.funGreen : orange}
+                  style={styles.dynamicAction}
+                />
                 </View>
               ) : (
                 <Text style={styles.copy}>
@@ -1451,7 +1456,6 @@ function StampsScreen({
           ) : null}
         </SafeAreaView>
       </Sheet>
-      <SuccessCheck visible={showSuccess} onFinished={finishAfterSuccess} />
     </View>
   );
 }
@@ -3112,6 +3116,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   bigActionButtonText: { color: "#fff", fontWeight: "900", fontSize: 18 },
+  dynamicAction: { minHeight: 64, borderRadius: 32 },
   pageKicker: {
     fontSize: 11,
     fontWeight: "900",
