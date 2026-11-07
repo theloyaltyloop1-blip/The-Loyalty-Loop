@@ -7,7 +7,6 @@ import { useOwner } from '@/lib/owner-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { supabase } from '@/lib/supabase'
-import { rewardWords } from '@/lib/shop-types'
 
 type Member = {
   user_id: string
@@ -59,12 +58,9 @@ export function OwnerCustomers() {
   if (!session) return <Navigate to="/login" replace />
   if (!business) return <Navigate to="/owner/onboarding" replace />
 
-  const words = rewardWords(business.loyalty_type)
-  const progress = (m: Member) => (business.loyalty_type === 'points' ? m.points_balance : business.loyalty_type === 'tiered' ? m.visit_count : m.stamp_count)
   const cutoff = Date.now() - 30 * DAY
   const lastSeen = (m: Member) => (m.last_activity_at ? new Date(m.last_activity_at).getTime() : 0)
   const list = members ?? []
-  const loyal = [...list].filter((m) => lastSeen(m) >= cutoff).sort((a, b) => b.visit_count - a.visit_count).slice(0, 5)
   const slipping = list.filter((m) => lastSeen(m) < cutoff).sort((a, b) => lastSeen(b) - lastSeen(a))
 
   function messageSlipping() {
@@ -113,24 +109,6 @@ export function OwnerCustomers() {
               </div>
             ))}
           </div>
-
-          <section className="mb-8">
-            <h2 className="font-display text-xl font-semibold tracking-tight mb-3">Your most loyal</h2>
-            {loyal.length === 0 ? (
-              <p className="text-muted-foreground">Nobody yet. Scan a customer to get started.</p>
-            ) : (
-              <ul className="grid gap-2">
-                {loyal.map((m) => (
-                  <li key={m.user_id} className="flex items-center justify-between rounded-xl bg-card px-4 py-3 ring-1 ring-foreground/8">
-                    <span className="font-semibold text-foreground">{nameOf(m)}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {m.visit_count} visits · {progress(m)} {words.units}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
 
           <section className="mb-8">
             <div className="flex items-center justify-between mb-3">

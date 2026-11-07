@@ -1672,7 +1672,6 @@ function CustomersHome({ business }: { business: Business }) {
   // Same rule as the server: no visit yet counts from the day they joined.
   const seen = (m: MemberRow) => new Date(m.last_activity_at || m.joined_at).getTime();
   const list = members || [];
-  const loyal = list.filter((m) => seen(m) >= cutoff).sort((a, b) => b.visit_count - a.visit_count).slice(0, 5);
   const quiet = list.filter((m) => seen(m) < cutoff).sort((a, b) => seen(b) - seen(a));
   const nameOf = (m: MemberRow) => [m.first_name, m.last_name].filter(Boolean).join(" ") || "Customer";
   const ago = (m: MemberRow) => {
@@ -1735,17 +1734,6 @@ function CustomersHome({ business }: { business: Business }) {
           <Text style={styles.fieldLabel}>
             {list.length} customers · {list.length - quiet.length} back this month · {quiet.length} gone quiet
           </Text>
-          <Text style={[styles.fieldLabel, { marginTop: 18 }]}>Your most loyal</Text>
-          {loyal.length ? (
-            loyal.map((m) => (
-              <View key={m.user_id} style={styles.memberCard}>
-                <Text style={[styles.memberName, { flex: 1 }]}>{nameOf(m)}</Text>
-                <Text style={styles.memberMeta}>{m.visit_count} visits</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.pageIntro}>Nobody yet. Scan a customer to get started.</Text>
-          )}
           <Text style={[styles.fieldLabel, { marginTop: 18 }]}>Haven't been back in a while</Text>
           {quiet.length ? (
             quiet.slice(0, 6).map((m) => (
