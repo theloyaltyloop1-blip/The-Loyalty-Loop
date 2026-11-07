@@ -1066,6 +1066,7 @@ function ShopDetail({
   refresh,
   cardLinking,
   onLinkCard,
+  onJoined,
   programmeVersion = 0,
 }: {
   business: Business
@@ -1078,6 +1079,8 @@ function ShopDetail({
   refresh: () => Promise<void>
   cardLinking: CardLinking
   onLinkCard: () => void
+  /** Puts a just-joined membership on screen without waiting for a full reload. */
+  onJoined: (membership: Membership) => void
   /** Goes up when any shop's programme changes, so this page reloads its rewards. */
   programmeVersion?: number
 }) {
@@ -1405,7 +1408,12 @@ function ShopDetail({
       const { error } = await supabase.from('memberships').upsert({ user_id: userId, business_id: business.id }, { onConflict: 'user_id,business_id' })
       // Already a member (e.g. stale UI after joining elsewhere) — not a real failure.
       if (error && error.code !== '23505') throw error
-      await refresh()
+      // Show the card straight away from the saved row, rather than waiting on
+      // (and depending on) the full home reload, which runs in the background.
+      const { data: row, error: readError } = await supabase.from('memberships').select('*').eq('user_id', userId).eq('business_id', business.id).maybeSingle()
+      if (readError) throw readError
+      if (row) onJoined(row as Membership)
+      void refresh()
     } catch (e) {
       showAlert('Could not join', e instanceof Error ? e.message : 'Please try again.')
     } finally {
@@ -2690,6 +2698,7 @@ function AppHome({ session }: { session: Session }) {
         onBack={() => setSelected(null)}
         onToggleFavourite={() => toggleFavourite(selected)}
         refresh={load}
+        onJoined={(m) => setMemberships(prev => [...prev.filter(x => x.business_id !== m.business_id), { ...m, rolling_spend_pence: 0 }])}
         cardLinking={cardLinking}
         onLinkCard={() => void linkCardFromShop()}
       />
