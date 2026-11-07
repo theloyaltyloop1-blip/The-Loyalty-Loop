@@ -1036,6 +1036,25 @@ function LoyaltyProgressBar({ pct, color }: { pct: number; color: string }) {
 // on app restart, which is fine: no AsyncStorage persistence is needed here.
 const lastObservedStampValues: Record<string, number> = {}
 
+/** The reward lists home uses for progress (stamp/spend rewards, membership
+ * levels, points rewards). Null when the main read fails, so callers keep what
+ * they had rather than blanking every card. */
+async function fetchHomeCatalog(): Promise<HomeTier[] | null> {
+  const [catalogRows, levelRows, pointsRows] = await Promise.all([
+    supabase.from('reward_catalog').select('business_id,title,stamp_threshold,spend_threshold_pence'),
+    supabase.from('membership_tiers').select('business_id,name,spend_threshold_pence'),
+    supabase.from('reward_catalog').select('business_id,title,points_cost').gt('points_cost', 0),
+  ])
+  if (catalogRows.error) return null
+  const levels: HomeTier[] = levelRows.error ? [] : (levelRows.data || []).map((row: any) => ({
+    business_id: row.business_id, title: row.name, stamp_threshold: 0, spend_threshold_pence: row.spend_threshold_pence, kind: 'tier',
+  }))
+  const points: HomeTier[] = pointsRows.error ? [] : (pointsRows.data || []).map((row: any) => ({
+    business_id: row.business_id, title: row.title, stamp_threshold: 0, points_cost: row.points_cost,
+  }))
+  return [...((catalogRows.data || []) as HomeTier[]), ...levels, ...points]
+}
+
 function ShopDetail({
   business,
   userId,
@@ -1047,6 +1066,7 @@ function ShopDetail({
   refresh,
   cardLinking,
   onLinkCard,
+  programmeVersion = 0,
 }: {
   business: Business
   userId: string
@@ -1058,6 +1078,8 @@ function ShopDetail({
   refresh: () => Promise<void>
   cardLinking: CardLinking
   onLinkCard: () => void
+  /** Goes up when any shop's programme changes, so this page reloads its rewards. */
+  programmeVersion?: number
 }) {
   const [busy, setBusy] = useState(false)
   const [addingToWallet, setAddingToWallet] = useState(false)
@@ -1131,9 +1153,12 @@ function ShopDetail({
     await refresh()
   }
 
+  const catalogFor = useRef<string | null>(null)
   useEffect(() => {
     let active = true
-    setCatalogLoading(true)
+    // Only show loading when opening a shop; a live programme change swaps the rewards in place.
+    if (catalogFor.current !== business.id) setCatalogLoading(true)
+    catalogFor.current = business.id
     supabase
       .from('reward_catalog')
       .select('id,title,description,stamp_threshold,spend_threshold_pence,points_cost')
@@ -1152,7 +1177,7 @@ function ShopDetail({
     return () => {
       active = false
     }
-  }, [business.id, spendShop])
+  }, [business.id, spendShop, programmeVersion])
 
   // Membership tiers: the ladder is public. The shopper's own spend over the last
   // 12 months is read from their own transactions (they can see those); if that
@@ -1169,7 +1194,7 @@ function ShopDetail({
         if (active) setTiers(error ? [] : ((data || []) as TierRow[]))
       })
     return () => { active = false }
-  }, [business.id, programmeId])
+  }, [business.id, programmeId, programmeVersion])
 
   useEffect(() => {
     if (programmeId !== 'tiers' || !membership) { setRollingSpend(null); return }
@@ -2490,18 +2515,42 @@ function AppHome({ session }: { session: Session }) {
     }
   }, [serviceStatus.level, serviceStatus.checkedAt])
 
+  // Shop changes, live: a new card design, or a shop switching or editing its
+  // programme (reward model, AI-designed rules, rewards, levels). The whole shop
+  // row is refreshed, plus the reward lists, and the open shop page reloads its
+  // rewards via programmeVersion. Bursts (one save touches several rows) are
+  // batched into one refetch; also runs when the app comes back to the front.
+  const [programmeVersion, setProgrammeVersion] = useState(0)
   useEffect(() => {
     let active = true;
-    const refreshDesigns = async () => {
-      const { data, error } = await supabase.from('businesses').select('id,card_design').eq('is_active', true);
-      if (!active || error || !data) return;
-      const designs = new Map(data.map(row => [row.id, row.card_design]));
-      setBusinesses(rows => rows.map(row => designs.has(row.id) ? { ...row, card_design: designs.get(row.id) } : row));
-      setSelected(row => row && designs.has(row.id) ? { ...row, card_design: designs.get(row.id) } : row);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const refreshShops = async () => {
+      const [shops, catalog] = await Promise.all([
+        supabase.from('businesses').select('*').eq('is_active', true),
+        fetchHomeCatalog(),
+      ]);
+      if (!active) return;
+      if (!shops.error && shops.data) {
+        const fresh = new Map((shops.data as Business[]).map(row => [row.id, row]));
+        // Keep fields the list adds itself (star ratings); take everything else fresh.
+        setBusinesses(rows => rows.map(row => fresh.has(row.id) ? { ...row, ...fresh.get(row.id) } : row));
+        setSelected(row => row && fresh.has(row.id) ? { ...row, ...fresh.get(row.id) } : row);
+      }
+      if (catalog) setHomeCatalog(catalog);
+      setProgrammeVersion(v => v + 1);
     };
-    const channel = supabase.channel('shop-card-designs').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses' }, () => { void refreshDesigns(); }).subscribe(status => { if (status === 'SUBSCRIBED') void refreshDesigns(); });
-    const foreground = AppState.addEventListener('change', state => { if (state === 'active') void refreshDesigns(); });
-    return () => { active = false; foreground.remove(); void supabase.removeChannel(channel); };
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => { timer = null; void refreshShops(); }, 300);
+    };
+    const channel = supabase
+      .channel('shop-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses' }, schedule)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reward_catalog' }, schedule)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'membership_tiers' }, schedule)
+      .subscribe(status => { if (status === 'SUBSCRIBED') schedule(); });
+    const foreground = AppState.addEventListener('change', state => { if (state === 'active') schedule(); });
+    return () => { active = false; if (timer) clearTimeout(timer); foreground.remove(); void supabase.removeChannel(channel); };
   }, [userId])
 
   // Live balances: when staff award a stamp, points or spend at the counter,
@@ -2633,6 +2682,7 @@ function AppHome({ session }: { session: Session }) {
       {celebration}
       <ShopDetail
         business={selected}
+        programmeVersion={programmeVersion}
         userId={userId}
         membership={memberships.find((m) => m.business_id === selected.id)}
         stampCode={stampCode}

@@ -11,6 +11,27 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Shopper: programme changes show live (2026-11-07) - Claude
+
+**Bug (owner report).** When a shop changed its AI reward programme, the shopper app kept showing the old one until a restart. There were three causes:
+- The live `businesses` listener only copied `card_design` and dropped the new `reward_model`, `programme_rules` and `loyalty_type`.
+- `reward_catalog` and `membership_tiers` were not in `supabase_realtime`.
+- The open shop page loaded its rewards and levels only once, when it opened.
+
+**Fix (committed on branch `motion-components`, NOT on main, NOT shipped).**
+- `supabase/migrations/20261107210000_realtime_programme_tables.sql` adds `reward_catalog` and `membership_tiers` to `supabase_realtime`. Both are publicly readable for active shops. **Not applied yet.**
+- `apps/shopper/App.tsx`:
+  - The `shop-changes` channel replaces `shop-card-designs`.
+  - It listens to business updates and to any change in reward_catalog or membership_tiers, and also runs on foreground. Changes are batched over 300ms.
+  - Each refresh refetches the whole shop row (merged over the existing one, so star ratings are kept), plus the home reward lists (new `fetchHomeCatalog`).
+  - It also bumps `programmeVersion`, which makes an open `ShopDetail` reload its rewards and levels in place, without a loading flash.
+
+**Checks run.** Shopper tsc clean; 35/35 unit tests; android bundle builds. **Not tested end to end**: an owner editing a programme while a shopper's app is open.
+
+**Next.** To release: apply the migration to production, merge to main, then publish shopper OTAs for 1.0.2 and 1.0.1. Then test by changing a test shop's programme while the shopper app is open on its page.
+
+---
+
 ## Design rules from the owner's second video: depth, one tap colour, huge/tiny type (2026-11-07) - Claude
 
 **Why.** The owner shared a design video and chose all three of its rules for both apps:
