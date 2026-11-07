@@ -100,7 +100,8 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const business = businesses.find((b) => b.id === businessId) ?? null
-  const needsRewardSetup = business != null && !rewardsReadyIds.has(business.id)
+  // A custom programme is complete from the moment it is created (its rules hold everything).
+  const needsRewardSetup = business != null && business.reward_model !== 'custom' && !rewardsReadyIds.has(business.id)
 
   return (
     <OwnerContext.Provider

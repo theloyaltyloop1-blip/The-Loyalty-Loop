@@ -43,6 +43,8 @@ import {
 import { mergeReplyInputs } from "./review-reply-inputs";
 import { parsePounds } from "./reward-discount";
 import { supabase } from "./supabase";
+import { validateRules, type ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
+import { ProgrammeBuilder, RulesCard } from "./ProgrammeBuilder";
 import { fonts } from "@loyalty-loop/design-tokens";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
@@ -85,7 +87,9 @@ export interface NativeBusiness {
     stamp_icon?: string;
     points_per_pound?: number;
   };
-  reward_model?: "stamp_legacy" | "spend_threshold" | "tiers" | "points";
+  reward_model?: "stamp_legacy" | "spend_threshold" | "tiers" | "points" | "custom";
+  programme_rules?: unknown;
+  category?: string | null;
   reward_threshold_pence?: number | null;
   manual_spend_max_pence?: number;
 }
@@ -1129,6 +1133,14 @@ function RewardsPage({
       },
     ]);
   }
+  if (business.reward_model === "custom") {
+    return (
+      <View>
+        <PageHeader title="Your programme" eyebrow="LOYALTY PROGRAMME" onBack={onBack} />
+        <CustomProgrammeSection business={business} onBusinessChanged={onBusinessChanged} preview={preview} />
+      </View>
+    );
+  }
   return (
     <View>
       <PageHeader
@@ -1241,7 +1253,77 @@ function RewardsPage({
       {business.reward_model === "spend_threshold" && !preview ? (
         <ManualSpendSettings business={business} onBusinessChanged={onBusinessChanged} />
       ) : null}
+      {!preview ? <CustomProgrammeSection business={business} onBusinessChanged={onBusinessChanged} switching /> : null}
     </View>
+  );
+}
+
+// AI-designed programmes. For a custom shop: its rules and a chat to change them.
+// For any other shop: an offer to switch, which the database allows only while
+// no customer has progress (lock_programme_after_activity).
+function CustomProgrammeSection({
+  business, onBusinessChanged, switching = false, preview = false,
+}: { business: NativeBusiness; onBusinessChanged: () => Promise<void>; switching?: boolean; preview?: boolean }) {
+  const checked = business.reward_model === "custom" ? validateRules(business.programme_rules) : null;
+  const current = checked?.ok ? checked.rules : null;
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<ProgrammeRules | null>(null);
+  const [saving, setSaving] = useState(false);
+  const symbol = currencySymbol();
+
+  async function save() {
+    if (!draft) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc("set_custom_programme", { _business_id: business.id, _rules: draft });
+      if (error) throw error;
+      setOpen(false);
+      setDraft(null);
+      await onBusinessChanged();
+      showAlert("Saved", "Customers see the new programme straight away.");
+    } catch (e) {
+      const raw = (e as { message?: string } | null)?.message ?? "";
+      showAlert(
+        "Not saved",
+        raw.includes("programme_locked")
+          ? "Customers already have progress on your current programme, so it can no longer be swapped. Contact support if you need to."
+          : raw.includes("invalid_programme_rules")
+            ? "Those rules couldn't be saved. Ask the AI to adjust them and try again."
+            : "Could not save. Try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Section>
+      <Text style={styles.cardTitle}>{switching ? "Want something different?" : "Your programme"}</Text>
+      {current && !open ? <View style={{ marginTop: 10 }}><RulesCard rules={current} symbol={symbol} brandColor={business.brand_color} /></View> : null}
+      {switching && !open ? (
+        <Text style={styles.muted}>
+          Describe your own loyalty programme in your own words and our AI sets it up, for example "3 points is £1 off". You can only switch while no customer has progress yet.
+        </Text>
+      ) : null}
+      {preview ? null : !open ? (
+        <PrimaryButton label={current ? "Change with AI" : "Design my own with AI"} onPress={() => setOpen(true)} />
+      ) : (
+        <View style={{ marginTop: 6 }}>
+          <ProgrammeBuilder
+            shop={{ name: business.name, category: business.category ?? undefined, currencySymbol: symbol }}
+            businessId={business.id}
+            initialRules={current}
+            onRules={setDraft}
+            brandColor={business.brand_color}
+          />
+          {draft ? (
+            <PrimaryButton label={switching ? "Switch to this programme" : "Save these changes"} busy={saving} onPress={() => void save()} />
+          ) : null}
+          <PrimaryButton label="Cancel" secondary onPress={() => { setOpen(false); setDraft(null); }} />
+          {current && draft ? <Text style={styles.muted}>Points customers already have are kept.</Text> : null}
+        </View>
+      )}
+    </Section>
   );
 }
 

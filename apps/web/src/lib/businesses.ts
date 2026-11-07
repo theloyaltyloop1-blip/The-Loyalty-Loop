@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { ProgrammeSnapshot, ShopRpcArgs } from '@loyalty-loop/loyalty'
+import type { ProgrammeRules } from '@loyalty-loop/loyalty/programme-rules'
 
 export interface LoyaltyConfig {
   stamps_required?: number
@@ -41,7 +42,9 @@ export interface Business {
   rating_count?: number | null
   loyalty_type: 'stamp_card' | 'points' | 'tiered'
   loyalty_config: LoyaltyConfig
-  reward_model: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'
+  reward_model: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points' | 'custom'
+  /** Custom programmes only (reward_model = 'custom'). */
+  programme_rules?: ProgrammeRules | null
   reward_threshold_pence: number | null
   manual_spend_max_pence: number
   features: string[] | null
@@ -176,6 +179,55 @@ export async function createShopWithProgramme(
   })
   if (error) throw error
   return data as string
+}
+
+/** Creates a shop running an AI-designed custom programme (rules are re-checked by the database). */
+export async function createShopWithCustomProgramme(
+  values: { name: string; category: string; country_code: string; brand_color: string },
+  rules: ProgrammeRules
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_shop_with_custom_programme', {
+    _name: values.name,
+    _category: values.category,
+    _country_code: values.country_code,
+    _rules: rules,
+    _brand_color: values.brand_color,
+  })
+  if (error) throw error
+  return data as string
+}
+
+/** Saves new custom rules for a shop (or moves a shop with no customer progress to custom). */
+export async function setCustomProgramme(businessId: string, rules: ProgrammeRules): Promise<void> {
+  const { error } = await supabase.rpc('set_custom_programme', { _business_id: businessId, _rules: rules })
+  if (error) throw error
+}
+
+export interface DesignMessage { role: 'user' | 'assistant'; content: string }
+export interface DesignAnswer {
+  reply: string
+  rules: ProgrammeRules | null
+  unsupported: { request: string; closest: string }[]
+}
+
+/** One turn with the AI programme builder (edge function design-programme). */
+export async function designProgramme(input: {
+  messages: DesignMessage[]
+  shop?: { name?: string; category?: string; currencySymbol?: string }
+  businessId?: string
+}): Promise<DesignAnswer> {
+  const { data, error } = await supabase.functions.invoke('design-programme', {
+    body: { messages: input.messages, shop: input.shop, business_id: input.businessId },
+  })
+  if (error) {
+    let message = 'The programme builder could not answer. Try again.'
+    try {
+      const body = await (error as { context?: Response }).context?.json()
+      if (body?.error) message = String(body.error)
+    } catch { /* keep the default */ }
+    throw new Error(message)
+  }
+  return data as DesignAnswer
 }
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -523,6 +575,27 @@ export function spendErrorMessage(error: unknown): string {
   if (message.includes('already_undone')) return 'This entry has already been undone.'
   if (message.includes('not_allowed')) return "You don't have permission to do this."
   return message || 'Something went wrong. Please try again.'
+}
+
+/** Staff turn a customer's points into money off ("3 points = £1 off"). Custom programmes only. */
+export async function redeemPointsForCash(
+  businessId: string, customerId: string, points: number, clientRef: string
+): Promise<{ status: 'redeemed' | 'duplicate'; pointsUsed: number; discountPence: number; pointsBalance: number }> {
+  const { data, error } = await supabase.rpc('redeem_points_for_cash', {
+    _business_id: businessId, _customer_id: customerId, _points: points, _client_ref: clientRef,
+  })
+  if (error) throw error
+  return data as { status: 'redeemed' | 'duplicate'; pointsUsed: number; discountPence: number; pointsBalance: number }
+}
+
+export function cashRedeemErrorMessage(e: unknown): string {
+  const raw = (e as { message?: string } | null)?.message ?? ''
+  if (raw.includes('not_enough_points')) return "They don't have enough points for that."
+  if (raw.includes('above_visit_limit')) return "That's more than this shop allows off in one visit."
+  if (raw.includes('points_not_a_whole_step')) return 'Points come off in whole steps.'
+  if (raw.includes('not_allowed')) return "You don't have permission to do that here."
+  if (raw.includes('shop_has_no_cash_value')) return "This shop's programme doesn't turn points into money."
+  return 'Could not take the points off. Try again.'
 }
 
 export async function fetchSpendSummary(businessId: string, userId: string): Promise<SpendSummary> {

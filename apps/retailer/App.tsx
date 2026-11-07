@@ -61,7 +61,7 @@ import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument
 import { AppIntro, INK, MUTED, NIGHT, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SLATE, STONE } from "./src/components/Poster";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
-import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
+import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
 import { HoldButton } from "./src/components/HoldButton";
@@ -77,7 +77,8 @@ import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, se
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
 import { TourOverlay, TourProvider, TourTarget, useTour } from "./src/components/Tour";
-import { programmeIdFor, recordsSpend, standingFromSnapshot, type ProgrammeSnapshot, type SnapshotStanding } from "@loyalty-loop/loyalty";
+import { pointsBalanceSentence, programmeIdFor, recordsSpend, standingFromSnapshot, type ProgrammeSnapshot, type SnapshotStanding } from "@loyalty-loop/loyalty";
+import { CashOff } from "./src/CashOff";
 import { useLaunchUpdate } from "./src/launch-update";
 import { BusinessSettings } from "./src/shop-pages";
 
@@ -165,7 +166,8 @@ type Business = {
     signup_reward_title?: string;
     stamp_icon?: string;
   };
-  reward_model?: "stamp_legacy" | "spend_threshold" | "tiers" | "points";
+  reward_model?: "stamp_legacy" | "spend_threshold" | "tiers" | "points" | "custom";
+  programme_rules?: unknown;
   reward_threshold_pence?: number | null;
   manual_spend_max_pence?: number;
   features?: string[] | null;
@@ -376,13 +378,18 @@ const WEB_ORIGIN = "https://www.the-loyalty-loop.com";
 
 // Scan result lines for membership tiers and points shops (see standingFromSnapshot).
 function standingSentence(name: string, standing: SnapshotStanding): string {
-  if (standing.kind === "points") return `${name} now has ${standing.balance} point${standing.balance === 1 ? "" : "s"}.`;
+  if (standing.kind === "points") return pointsBalanceSentence(name, standing);
   return `${name} is ${standing.tierName ? `at ${standing.tierName}` : "not yet at a level"}${standing.label ? `, ${standing.label}` : ""}.`;
 }
 
 function StandingLines({ name, standing }: { name: string; standing: SnapshotStanding }) {
   if (standing.kind === "points") {
-    return <Text style={styles.spendProgress}>{name}: {standing.label}</Text>;
+    return (
+      <View>
+        <Text style={styles.spendProgress}>{name}: {standing.label}</Text>
+        {standing.levelPerks?.length ? <Text style={styles.spendCap}>{standing.levelName}: {standing.levelPerks.join(" · ")}</Text> : null}
+      </View>
+    );
   }
   return (
     <View>
@@ -410,26 +417,31 @@ type RecentSpend = { id: string; value: number; created_at: string };
 // Amounts show in the open shop's currency (src/money.ts).
 const pounds = money;
 
-type ActiveReward = { id: string; title: string; discount_pence: number | null };
+type ActiveReward = { id: string; title: string; discount_pence: number | null; discount_percent: number | null };
 
 function toActiveReward(row: { id: string; title: string; catalog?: unknown }): ActiveReward {
-  return { id: row.id, title: row.title, discount_pence: rewardDiscountPence(row) };
+  return { id: row.id, title: row.title, discount_pence: rewardDiscountPence(row), discount_percent: rewardDiscountPercent(row) };
 }
 
 /** "£ off" reward: staff type the bill, the app shows what to charge on the card machine. */
 function DiscountCharge({
   discountPence,
+  discountPercent,
   billTotal,
   onBillTotalChange,
 }: {
-  discountPence: number;
+  discountPence: number | null;
+  discountPercent?: number | null;
   billTotal: string;
   onBillTotalChange: (value: string) => void;
 }) {
   const billPence = parsePounds(billTotal);
+  const off = (bill: number) => (discountPercent ? percentOff(bill, discountPercent) : discountPence ?? 0);
   return (
     <View style={{ marginBottom: 12 }}>
-      <Text style={styles.copy}>{`This reward takes ${pounds(discountPence)} off the bill.`}</Text>
+      <Text style={styles.copy}>
+        {discountPercent ? `This reward takes ${discountPercent}% off the bill.` : `This reward takes ${pounds(discountPence ?? 0)} off the bill.`}
+      </Text>
       <TextInput
         value={billTotal}
         onChangeText={onBillTotalChange}
@@ -441,7 +453,7 @@ function DiscountCharge({
       />
       {billPence !== null ? (
         <Text style={[styles.matchTitle, { marginTop: 8 }]}>
-          {`Charge ${pounds(chargeAfterDiscount(billPence, discountPence))} on the card machine`}
+          {`Charge ${pounds(chargeAfterDiscount(billPence, off(billPence)))} on the card machine`}
         </Text>
       ) : null}
     </View>
@@ -472,6 +484,14 @@ function spendRefusal(error: { message?: string; details?: string } | null): str
   if (message.includes("already_undone")) return "This entry has already been undone.";
   if (message.includes("not_allowed")) return "You don't have permission to do this.";
   return manualEntryRefusal(error);
+}
+
+function winbackCouponError(message: string): string {
+  if (message.includes("coupon_already_used")) return "This win-back code has already been used.";
+  if (message.includes("coupon_expired")) return "This win-back code has expired.";
+  if (message.includes("coupon_not_found")) return "That win-back code isn't valid for this shop.";
+  if (message.includes("not_allowed")) return "Your staff account can't redeem codes here.";
+  return "Please try again.";
 }
 
 // The database refuses some manual entries for customers with a linked card
@@ -778,6 +798,11 @@ function StampsScreen({
         : "stamps";
   useEffect(() => {
     let active = true;
+    // Custom programmes may have no reward list at all (e.g. only "3 points = £1 off").
+    if (business.reward_model === "custom") {
+      setHasReward(true);
+      return;
+    }
     setHasReward(null);
     void supabase
       .from("reward_catalog")
@@ -985,7 +1010,7 @@ function StampsScreen({
       supabase.rpc("get_scanned_member_details", { _business_id: business.id, _user_id: userId }),
       supabase
         .from("rewards")
-        .select("id,title,catalog:reward_catalog(discount_pence)")
+        .select("id,title,catalog:reward_catalog(discount_pence,discount_percent)")
         .eq("business_id", business.id)
         .eq("user_id", userId)
         .is("redeemed_at", null)
@@ -1023,7 +1048,7 @@ function StampsScreen({
       try {
         const { data: reward, error } = await supabase
           .from("rewards")
-          .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence)")
+          .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence,discount_percent)")
           .eq("business_id", business.id)
           .eq("qr_token", rewardToken)
           .maybeSingle();
@@ -1062,10 +1087,24 @@ function StampsScreen({
     setBusy(true);
     const normalized = code.replace(/\s+/g, "").toUpperCase();
     try {
+      if (normalized.startsWith("COMEBACK")) {
+        const { data, error } = await supabase.rpc("redeem_winback_coupon", {
+          _business_id: business.id,
+          _code: normalized,
+        });
+        if (error) throw new Error(winbackCouponError(error.message));
+        const userId = (data as { user_id: string }).user_id;
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showAlert("Win-back code accepted", "Give the customer their welcome-back extra. The code is now used up.");
+        setMatched({ id: userId });
+        setCode("");
+        void loadMemberDetails(userId);
+        return;
+      }
       if (mode === "reward") {
         const { data: reward, error: rewardError } = await supabase
           .from("rewards")
-          .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence)")
+          .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence,discount_percent)")
           .eq("business_id", business.id)
           .eq("short_code", normalized)
           .maybeSingle();
@@ -1306,6 +1345,16 @@ function StampsScreen({
               {mode === "stamps" && spendShop ? (
                 <View>
                   {standing ? <StandingLines name={matched.first_name || "Customer"} standing={standing} /> : null}
+                  {standing?.kind === "points" && standing.cash ? (
+                    <CashOff
+                      businessId={business.id}
+                      customerId={matched.id}
+                      name={matched.first_name || "the customer"}
+                      standing={standing}
+                      pounds={pounds}
+                      onDone={() => void loadSpendSummary(matched.id)}
+                    />
+                  ) : null}
                   {!standing && spendSummary && spendSummary.thresholdPence ? (
                     <Text style={styles.spendProgress}>
                       {(matched.first_name || "Customer")}: {pounds(Math.max(0, spendSummary.progressPence ?? 0))} of {pounds(spendSummary.thresholdPence)}
@@ -1352,9 +1401,10 @@ function StampsScreen({
                 />
               ) : activeReward ? (
                 <View>
-                {activeReward.discount_pence ? (
+                {activeReward.discount_pence || activeReward.discount_percent ? (
                   <DiscountCharge
                     discountPence={activeReward.discount_pence}
+                    discountPercent={activeReward.discount_percent}
                     billTotal={billTotal}
                     onBillTotalChange={setBillTotal}
                   />
@@ -1362,14 +1412,14 @@ function StampsScreen({
                 {/* Redeeming can't be undone, so it takes a short (0.6s) press and hold
                     instead of a tap: no accidental redemptions, no extra pop-up. */}
                 <HoldButton
-                  label={activeReward.discount_pence ? "Hold: customer paid, use reward" : `Hold to redeem "${activeReward.title}"`}
+                  label={activeReward.discount_pence || activeReward.discount_percent ? "Hold: customer paid, use reward" : `Hold to redeem "${activeReward.title}"`}
                   holdingLabel="Keep holding…"
                   busy={busy || showSuccess}
                   busyLabel={showSuccess ? "Redeemed" : "Redeeming…"}
                   doneLabel="Redeeming…"
                   duration={600}
                   onConfirm={() => void redeem()}
-                  accessibilityLabel={activeReward.discount_pence ? "Customer paid, use reward" : `Redeem ${activeReward.title}`}
+                  accessibilityLabel={activeReward.discount_pence || activeReward.discount_percent ? "Customer paid, use reward" : `Redeem ${activeReward.title}`}
                   color={showSuccess ? colors.funGreen : orange}
                   style={styles.dynamicAction}
                 />
@@ -2305,7 +2355,8 @@ function Dashboard({
   // Force the first-run loyalty programme wizard for an owner (never staff)
   // whose shop has no reward defined yet — see LoyaltyProgramSetup above.
   useEffect(() => {
-    if (preview || !selected || !ownedIds.has(selected.id)) {
+    // A custom (AI-designed) programme is complete from creation: its rules hold everything.
+    if (preview || !selected || !ownedIds.has(selected.id) || selected.reward_model === "custom") {
       setNeedsLoyaltySetup(false);
       return;
     }

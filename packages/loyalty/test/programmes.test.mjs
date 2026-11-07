@@ -10,14 +10,14 @@ const ladder = [
   { name: "Platinum", spend_threshold_pence: 100000 },
 ];
 
-test("all four programmes resolve from their own model and know whether they record spend", () => {
-  assert.deepEqual(Object.keys(PROGRAMMES).sort(), ["points", "spend", "stamps", "tiers"]);
+test("all programmes resolve from their own model and know whether they record spend", () => {
+  assert.deepEqual(Object.keys(PROGRAMMES).sort(), ["custom", "points", "spend", "stamps", "tiers"]);
   for (const programme of Object.values(PROGRAMMES)) {
     assert.equal(programmeIdFor(programme.model), programme.id);
     assert.equal(recordsSpend({ reward_model: programme.model }), programme.recordsSpend);
   }
   assert.equal(recordsSpend("stamp_legacy"), false);
-  for (const model of ["spend_threshold", "tiers", "points"]) assert.equal(recordsSpend(model), true);
+  for (const model of ["spend_threshold", "tiers", "points", "custom"]) assert.equal(recordsSpend(model), true);
 });
 
 test("unknown or missing models fall back to stamps", () => {
@@ -97,4 +97,23 @@ test("pointsStanding: what they can swap now and what is next", () => {
   assert.equal(none.affordable.length, 0);
   assert.equal(none.label, "0 points · 100 to Free coffee");
   assert.equal(pointsStanding({}, 1, []).label, "1 point");
+});
+
+test("custom programmes: own unit names, wallet, snapshot with cash and level", async () => {
+  const { hasPointsWallet, unitNames, standingFromSnapshot, pointsBalanceSentence, programmeIdFor } = await import("../src/index.ts");
+  assert.equal(programmeIdFor("custom"), "custom");
+  assert.equal(hasPointsWallet({ reward_model: "custom" }), true);
+  assert.equal(hasPointsWallet({ reward_model: "tiers" }), false);
+  assert.deepEqual(unitNames({ reward_model: "custom", programme_rules: { unit: { one: "bean", many: "beans" } } }), { one: "bean", many: "beans" });
+  assert.deepEqual(unitNames({ reward_model: "points" }), { one: "point", many: "points" });
+  const s = standingFromSnapshot({
+    programme: "custom", pointsBalance: 10, unitOne: "bean", unitMany: "beans", levelName: "Gold", levelPerks: ["Oat milk", " "],
+    cashPoints: 3, cashPence: 100, cashAvailablePoints: 9, cashAvailablePence: 300,
+  });
+  assert.equal(s.kind, "points");
+  assert.equal(s.label, "10 beans · Gold · £3.00 off available");
+  assert.deepEqual(s.levelPerks, ["Oat milk"]);
+  assert.deepEqual(s.cash, { points: 3, pence: 100, availablePoints: 9, availablePence: 300 });
+  assert.equal(pointsBalanceSentence("Sam", s), "Sam now has 10 beans.");
+  assert.equal(pointsBalanceSentence("Sam", { balance: 1 }), "Sam now has 1 point.");
 });

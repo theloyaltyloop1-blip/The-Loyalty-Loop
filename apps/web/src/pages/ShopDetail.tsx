@@ -11,7 +11,7 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { ReviewsSection } from '@/components/reviews-section'
 import { HowItWorks, openStatus } from '@/components/shop-profile'
-import { programmeIdFor } from '@loyalty-loop/loyalty'
+import { programmeIdFor, unitNames } from '@loyalty-loop/loyalty'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShopMap } from '@/components/shop-map'
 import { featureBadge } from '@/lib/shop-features'
@@ -253,7 +253,8 @@ export function ShopDetail() {
   const spendShop = business.reward_model === 'spend_threshold'
   const programmeId = programmeIdFor(business)
   const tierShop = programmeId === 'tiers'
-  const pointsShop = programmeId === 'points'
+  const pointsShop = programmeId === 'points' || programmeId === 'custom'
+  const pointUnits = unitNames(business)
   const status = openStatus(business.opening_hours)
   const featureChips = [business.category, ...(business.features ?? []).map((id) => featureBadge(id, business.halal_certifier))].filter(Boolean) as string[]
   const StampIcon = categoryCopy(business.category).icon
@@ -422,7 +423,7 @@ export function ShopDetail() {
               {tierShop
                 ? membership.current_tier || 'Getting started'
                 : pointsShop
-                  ? `${membership.points_balance} ${membership.points_balance === 1 ? 'point' : 'points'}`
+                  ? `${membership.points_balance} ${membership.points_balance === 1 ? pointUnits.one : pointUnits.many}`
                   : spendShop
                 ? `${poundsLabel(progress)} / ${poundsLabel(targetPence)} · ${rewardTitle}`
                 : `${stampProgress} / ${stampsRequired} · ${catalog[0]?.title ?? 'Free reward'}`}

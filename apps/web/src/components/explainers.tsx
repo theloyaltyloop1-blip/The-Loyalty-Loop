@@ -8,7 +8,7 @@ import * as React from 'react'
  * and the finished frame shows.
  */
 
-export type ExplainerKind = 'join' | 'scan' | 'stamps' | 'tiers' | 'points' | 'spend'
+export type ExplainerKind = 'join' | 'scan' | 'stamps' | 'tiers' | 'points' | 'spend' | 'custom'
 
 export const EXPLAINER_CAPTIONS: Record<ExplainerKind, string> = {
   join: 'Customers scan your poster to join.',
@@ -17,6 +17,7 @@ export const EXPLAINER_CAPTIONS: Record<ExplainerKind, string> = {
   tiers: 'The more they spend, the higher their level.',
   points: 'Every £ spent earns points towards rewards.',
   spend: 'Every £ spent fills the bar towards a reward.',
+  custom: 'Your own rules, set up by AI. Customers collect and spend as you described.',
 }
 
 const LOOP_S = 5.6
@@ -32,6 +33,7 @@ const BG: Record<ExplainerKind, string> = {
   tiers: '#F1ECFA',
   points: '#FFF6DD',
   spend: '#CCF8FF',
+  custom: '#FFF6DD',
 }
 
 type Style = { opacity?: number; transform?: string }
@@ -237,7 +239,7 @@ export function Explainer({ kind, caption, showCaption = true }: { kind: Explain
   const text = caption ?? EXPLAINER_CAPTIONS[kind]
   const scene =
     kind === 'join' ? <Join /> : kind === 'scan' ? <Scan /> : kind === 'stamps' ? <Stamps /> :
-    kind === 'tiers' ? <Tiers /> : kind === 'points' ? <Points still={still} /> : <Spend still={still} />
+    kind === 'tiers' ? <Tiers /> : kind === 'points' || kind === 'custom' ? <Points still={still} /> : <Spend still={still} />
   return (
     <figure className="m-0">
       <style>{`@media (prefers-reduced-motion: reduce){.ex-frame *{animation:none!important}}`}</style>

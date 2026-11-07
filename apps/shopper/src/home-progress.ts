@@ -1,11 +1,12 @@
-import { pointsStanding, progressFor, tierStanding } from '@loyalty-loop/loyalty'
+import { pointsStanding, progressFor, tierStanding, unitNames } from '@loyalty-loop/loyalty'
 
 export type HomeShop = {
   card_design?: unknown;
   id: string; name: string; category?: string | null; description?: string | null;
   address?: string | null; logo_url?: string | null; cover_url?: string | null; brand_color?: string | null;
   loyalty_type?: string; loyalty_config?: { stamps_required?: number; points_per_pound?: number };
-  reward_model?: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'; reward_threshold_pence?: number | null;
+  reward_model?: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points' | 'custom'; reward_threshold_pence?: number | null;
+  programme_rules?: unknown;
   country_code?: string | null;
   rating_avg?: number | null; rating_count?: number | null;
 }
@@ -32,7 +33,7 @@ const pounds = (value: number) => `£${(value / 100).toFixed(2)}`
 // `money` formats minor units in the shop's currency; it defaults to pounds.
 export function homeProgress(shop: HomeShop, member: HomeMember | undefined, catalog: HomeTier[], money: (value: number) => string = pounds) {
   if (shop.reward_model === 'tiers') return tierHomeProgress(shop, member, catalog, money)
-  if (shop.reward_model === 'points') return pointsHomeProgress(shop, member, catalog)
+  if (shop.reward_model === 'points' || shop.reward_model === 'custom') return pointsHomeProgress(shop, member, catalog)
   const rewards = catalog.filter((row) => !row.kind)
   const { value, threshold, unit, spend, title, label, offer, fraction } = progressFor(shop, member, rewards, money)
   return { value, threshold, unit, spend, title, label, offer, fraction }
@@ -66,8 +67,10 @@ function pointsHomeProgress(shop: HomeShop, member: HomeMember | undefined, cata
   const rewards = catalog
     .filter((row) => row.business_id === shop.id && (row.points_cost ?? 0) > 0)
     .map((row) => ({ id: `${row.title}-${row.points_cost}`, title: row.title, points_cost: row.points_cost as number }))
-  const standing = pointsStanding(shop, member?.points_balance ?? 0, rewards)
+  const units = unitNames(shop)
+  const standing = pointsStanding(shop, member?.points_balance ?? 0, rewards, units)
   const next = standing.next
+  const summary = (shop.programme_rules as { summary?: unknown } | null | undefined)?.summary
   return {
     value: standing.balance,
     threshold: next ? next.points_cost : null,
@@ -75,7 +78,7 @@ function pointsHomeProgress(shop: HomeShop, member: HomeMember | undefined, cata
     spend: false,
     title: next?.title ?? standing.affordable[0]?.title ?? null,
     label: standing.label,
-    offer: next ? `${next.points_cost} points · ${next.title}` : standing.affordable.length ? 'Rewards ready to swap' : 'Points rewards',
+    offer: next ? `${next.points_cost} ${units.many} · ${next.title}` : standing.affordable.length ? 'Rewards ready to swap' : typeof summary === 'string' && shop.reward_model === 'custom' ? summary : 'Points rewards',
     fraction: standing.fraction,
   }
 }

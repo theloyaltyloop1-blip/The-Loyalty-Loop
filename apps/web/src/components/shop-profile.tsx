@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { toast } from 'sonner'
-import { PROGRAMMES, pointsStanding, programmeIdFor, tierStanding, type PointsReward } from '@loyalty-loop/loyalty'
+import { PROGRAMMES, pointsStanding, programmeIdFor, tierStanding, unitNames, type PointsReward } from '@loyalty-loop/loyalty'
+import { describeRules, validateRules } from '@loyalty-loop/loyalty/programme-rules'
 import { supabase } from '@/lib/supabase'
 import { onBrandColor } from '@/lib/utils'
 import type { Business, MembershipTier, Membership, OpeningHours, RewardCatalogItem } from '@/lib/businesses'
@@ -65,12 +66,12 @@ export function HowItWorks({
   return (
     <section className="rounded-3xl bg-card p-6 ring-1 ring-foreground/8 sm:p-7" aria-labelledby="how-it-works-title">
       <p className="text-xs font-extrabold tracking-[0.14em] text-foreground">HOW IT WORKS</p>
-      <h2 id="how-it-works-title" className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-foreground">{programme.name}</h2>
-      <p className="mb-5 mt-1 text-sm text-foreground">{programme.pitch}</p>
+      <h2 id="how-it-works-title" className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-foreground">{programme.id === 'custom' ? `${business.name} rewards` : programme.name}</h2>
+      <p className="mb-5 mt-1 text-sm text-foreground">{programme.id === 'custom' ? business.programme_rules?.summary ?? '' : programme.pitch}</p>
       {programme.id === 'stamps' && <StampsHow business={business} membership={membership} catalog={catalog} brand={brand} onBrand={onBrand} />}
       {programme.id === 'spend' && <SpendHow membership={membership} catalog={catalog} brand={brand} onBrand={onBrand} />}
       {programme.id === 'tiers' && <TiersHow membership={membership} tiers={tiers} rollingSpendPence={rollingSpendPence} brand={brand} />}
-      {programme.id === 'points' && <PointsHow business={business} membership={membership} catalog={catalog} brand={brand} onBrand={onBrand} refetch={refetch} />}
+      {(programme.id === 'points' || programme.id === 'custom') && <PointsHow business={business} membership={membership} catalog={catalog} brand={brand} onBrand={onBrand} refetch={refetch} />}
     </section>
   )
 }
@@ -197,7 +198,12 @@ function TiersHow({ membership, tiers, rollingSpendPence, brand }: { membership:
 
 function PointsHow({ business, membership, catalog, brand, onBrand, refetch }: { business: Business; membership: Membership | null; catalog: RewardCatalogItem[]; brand: string; onBrand: string; refetch: () => Promise<void> }) {
   const rewards: PointsReward[] = catalog.filter((r) => (r.points_cost ?? 0) > 0).map((r) => ({ id: r.id, title: r.title, points_cost: r.points_cost as number }))
-  const standing = pointsStanding(business, membership?.points_balance ?? 0, rewards)
+  const units = unitNames(business)
+  const standing = pointsStanding(business, membership?.points_balance ?? 0, rewards, units)
+  // Custom programmes: the shop's own rules, read out in plain English.
+  const checked = business.reward_model === 'custom' ? validateRules(business.programme_rules) : null
+  const rules = checked?.ok ? checked.rules : null
+  const described = rules ? describeRules(rules, whole) : null
   const [busyId, setBusyId] = React.useState<string | null>(null)
   // One id per tap-attempt, reused if the same tap is retried after a dropped
   // connection, so the database can tell a retry from a second redemption.
@@ -233,13 +239,38 @@ function PointsHow({ business, membership, catalog, brand, onBrand, refetch }: {
   return (
     <div>
       <div className="rounded-2xl bg-amber/25 py-5 text-center text-foreground">
-        <p className="font-display text-5xl font-bold leading-none tracking-tight">{membership ? standing.balance : standing.perPound}</p>
-        <p className="mt-1 text-sm font-bold">{membership ? (standing.balance === 1 ? 'point' : 'points') : `point${standing.perPound === 1 ? '' : 's'} for every £1`}</p>
+        {described ? (
+          <>
+            <p className="font-display text-5xl font-bold leading-none tracking-tight">{membership ? standing.balance : '0'}</p>
+            <p className="mt-1 text-sm font-bold">{(membership ? standing.balance : 0) === 1 ? units.one : units.many}</p>
+          </>
+        ) : (
+          <>
+            <p className="font-display text-5xl font-bold leading-none tracking-tight">{membership ? standing.balance : standing.perPound}</p>
+            <p className="mt-1 text-sm font-bold">{membership ? (standing.balance === 1 ? 'point' : 'points') : `point${standing.perPound === 1 ? '' : 's'} for every £1`}</p>
+          </>
+        )}
       </div>
-      <Line>
-        You earn {standing.perPound} point{standing.perPound === 1 ? '' : 's'} for every £1 you spend here.
-        {membership && standing.next && standing.toNext != null ? ` ${standing.toNext} more to get ${standing.next.title}.` : ''}
-      </Line>
+      {described ? (
+        <>
+          {[['Earn', described.earn], ['Get', described.spend], ['Levels', described.levels]].map(([title, lines]) =>
+            (lines as string[]).length > 0 && (
+              <div key={title as string} className="mt-4">
+                <p className="text-xs font-extrabold tracking-[0.14em] text-foreground">{(title as string).toUpperCase()}</p>
+                <ul className="mt-1.5 space-y-1">
+                  {(lines as string[]).map((line, i) => <li key={i} className="text-sm font-semibold text-foreground">{line}</li>)}
+                </ul>
+              </div>
+            ))}
+          {described.small.length > 0 && <p className="mt-3 text-xs text-foreground/70">{described.small.join(' · ')}</p>}
+          {membership && standing.next && standing.toNext != null && <Line>{standing.toNext} more to get {standing.next.title}.</Line>}
+        </>
+      ) : (
+        <Line>
+          You earn {standing.perPound} point{standing.perPound === 1 ? '' : 's'} for every £1 you spend here.
+          {membership && standing.next && standing.toNext != null ? ` ${standing.toNext} more to get ${standing.next.title}.` : ''}
+        </Line>
+      )}
       <ul className="mt-3 space-y-2">
         {rewards.map((reward) => {
           const can = Boolean(membership) && standing.balance >= reward.points_cost
@@ -247,7 +278,7 @@ function PointsHow({ business, membership, catalog, brand, onBrand, refetch }: {
             <li key={reward.id} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3 text-foreground">
               <div>
                 <p className="font-semibold">{reward.title}</p>
-                <p className="text-sm font-extrabold">{reward.points_cost} points</p>
+                <p className="text-sm font-extrabold">{reward.points_cost} {reward.points_cost === 1 ? units.one : units.many}</p>
               </div>
               {membership && (
                 <button
@@ -264,7 +295,7 @@ function PointsHow({ business, membership, catalog, brand, onBrand, refetch }: {
           )
         })}
       </ul>
-      {!rewards.length && <Line>This shop's rewards are being set up.</Line>}
+      {!rewards.length && !described && <Line>This shop's rewards are being set up.</Line>}
     </div>
   )
 }

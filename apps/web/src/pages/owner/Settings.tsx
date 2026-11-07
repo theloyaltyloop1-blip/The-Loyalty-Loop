@@ -8,8 +8,12 @@ import { OwnerLayout } from '@/components/owner-layout'
 import { SumUpCard } from '@/components/sumup-card'
 import { MagneticDropZone } from '@/components/MagneticDropZone'
 import { useOwner } from '@/lib/owner-context'
+import { handleTask } from '@/lib/async'
 import { CATEGORIES, categoryCopy, categoryOptions } from '@/lib/categories'
 import { buildShopArgs, PROGRAMMES, type DraftTier, type ProgrammeId } from '@loyalty-loop/loyalty'
+import type { ProgrammeRules } from '@loyalty-loop/loyalty/programme-rules'
+import { ProgrammeBuilder, RulesPreview } from '@/components/programme-builder'
+import { setCustomProgramme } from '@/lib/businesses'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from '@/lib/shop-features'
@@ -831,10 +835,89 @@ function StampLoyaltyTab() {
 
 function LoyaltyTab() {
   const { business } = useOwner()
-  if (business?.reward_model === 'spend_threshold') return <SpendLoyaltyTab />
-  if (business?.reward_model === 'tiers') return <TiersLoyaltyTab />
-  if (business?.reward_model === 'points') return <PointsLoyaltyTab />
-  return <StampLoyaltyTab />
+  if (business?.reward_model === 'custom') return <CustomProgrammeCard />
+  const tab = business?.reward_model === 'spend_threshold' ? <SpendLoyaltyTab />
+    : business?.reward_model === 'tiers' ? <TiersLoyaltyTab />
+    : business?.reward_model === 'points' ? <PointsLoyaltyTab />
+    : <StampLoyaltyTab />
+  return <>{tab}<CustomProgrammeCard switching /></>
+}
+
+// AI-designed programmes. For a custom shop: the rules and a chat to change them.
+// For any other shop: an offer to switch, which the database allows only while
+// no customer has progress (lock_programme_after_activity).
+function CustomProgrammeCard({ switching = false }: { switching?: boolean }) {
+  const { business, updateLocalBusiness } = useOwner()
+  const [open, setOpen] = React.useState(false)
+  const [draft, setDraft] = React.useState<ProgrammeRules | null>(null)
+  const [saving, setSaving] = React.useState(false)
+  const [message, setMessage] = React.useState<string | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+  if (!business) return null
+  const current = business.reward_model === 'custom' ? business.programme_rules ?? null : null
+
+  async function save() {
+    if (!business || !draft) return
+    setSaving(true)
+    setError(null)
+    try {
+      await setCustomProgramme(business.id, draft)
+      updateLocalBusiness({ ...business, reward_model: 'custom', loyalty_type: 'points', programme_rules: draft })
+      setMessage('Saved. Customers see the new programme straight away.')
+      setOpen(false)
+      setDraft(null)
+    } catch (e) {
+      const raw = (e as { message?: string } | null)?.message ?? ''
+      setError(raw.includes('programme_locked')
+        ? 'Customers already have progress on your current programme, so it can no longer be swapped. Contact support if you need to.'
+        : raw.includes('invalid_programme_rules')
+          ? 'Those rules could not be saved. Ask the AI to adjust them and try again.'
+          : 'Could not save. Try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <SectionCard title={switching ? 'Want something different?' : 'Your programme'}>
+      {current && !open && <RulesPreview rules={current} brandColor={business.brand_color} />}
+      {switching && !open && (
+        <p className="text-sm text-muted-foreground">
+          Describe your own loyalty programme in your own words and our AI sets it up, for example "3 points is £1 off".
+          You can only switch while no customer has progress yet.
+        </p>
+      )}
+      {!open ? (
+        <button data-press-feedback type="button" onClick={() => { setOpen(true); setMessage(null) }}
+          className="mt-4 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-11">
+          {current ? 'Change with AI' : 'Design my own with AI'}
+        </button>
+      ) : (
+        <div className="mt-2">
+          <ProgrammeBuilder
+            shop={{ name: business.name, category: business.category ?? undefined, currencySymbol: '£' }}
+            businessId={business.id}
+            initialRules={current}
+            onRules={setDraft}
+            brandColor={business.brand_color}
+          />
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button data-press-feedback type="button" onClick={handleTask(save)} disabled={!draft || saving}
+              className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-11 disabled:opacity-50">
+              {saving ? 'Saving…' : switching ? 'Switch to this programme' : 'Save these changes'}
+            </button>
+            <button data-press-feedback type="button" onClick={() => { setOpen(false); setDraft(null); setError(null) }}
+              className="rounded-full ring-1 ring-foreground/15 font-semibold px-6 h-11 text-foreground">
+              Cancel
+            </button>
+          </div>
+          {current && draft && <p className="mt-2 text-xs text-muted-foreground">Points customers already have are kept.</p>}
+        </div>
+      )}
+      {message && <p className="mt-3 text-sm font-semibold text-fun-green">{message}</p>}
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+    </SectionCard>
+  )
 }
 
 // The programme type is fixed when the shop is created and locked once customers

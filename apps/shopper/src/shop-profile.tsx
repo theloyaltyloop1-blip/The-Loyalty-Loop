@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import { PROGRAMMES, pointsStanding, programmeIdFor, tierStanding, type PointsReward, type TierRung } from '@loyalty-loop/loyalty'
+import { PROGRAMMES, pointsStanding, programmeIdFor, tierStanding, unitNames, type PointsReward, type TierRung } from '@loyalty-loop/loyalty'
+import { describeRules, validateRules } from '@loyalty-loop/loyalty/programme-rules'
 import { showAlert } from './components/AppAlert'
 import { HoldButton } from './components/HoldButton'
 import { supabase } from './supabase'
@@ -181,6 +182,8 @@ export type CatalogRow = {
 
 type HowBusiness = {
   id: string
+  name?: string
+  programme_rules?: unknown
   brand_color?: string
   reward_model?: string | null
   loyalty_type?: string
@@ -227,12 +230,12 @@ export function HowItWorks({
   return (
     <View style={st.how}>
       <Text style={st.howEyebrow}>HOW IT WORKS</Text>
-      <Text style={st.howTitle}>{programme.name}</Text>
-      <Text style={st.howPitch}>{programme.pitch}</Text>
+      <Text style={st.howTitle}>{programme.id === 'custom' ? `${business.name ?? 'Shop'} rewards` : programme.name}</Text>
+      <Text style={st.howPitch}>{programme.id === 'custom' ? (business.programme_rules as { summary?: string } | null)?.summary ?? '' : programme.pitch}</Text>
       {programme.id === 'stamps' ? <StampsHow business={business} membership={membership} catalog={catalog} brand={brand} /> : null}
       {programme.id === 'spend' ? <SpendHow business={business} membership={membership} catalog={catalog} brand={brand} money={money} /> : null}
       {programme.id === 'tiers' ? <TiersHow membership={membership} tiers={tiers} rollingSpendPence={rollingSpendPence} brand={brand} money={money} /> : null}
-      {programme.id === 'points' ? <PointsHow business={business} membership={membership} catalog={catalog} brand={brand} refresh={refresh} /> : null}
+      {programme.id === 'points' || programme.id === 'custom' ? <PointsHow business={business} membership={membership} catalog={catalog} brand={brand} refresh={refresh} money={money} /> : null}
     </View>
   )
 }
@@ -360,10 +363,14 @@ function TiersHow({ membership, tiers, rollingSpendPence, brand, money }: { memb
   )
 }
 
-function PointsHow({ business, membership, catalog, brand, refresh }: { business: HowBusiness; membership: HowMembership; catalog: CatalogRow[]; brand: string; refresh: () => Promise<void> }) {
+function PointsHow({ business, membership, catalog, brand, refresh, money }: { business: HowBusiness; membership: HowMembership; catalog: CatalogRow[]; brand: string; refresh: () => Promise<void>; money: (pence: number) => string }) {
   const st = useSkinStyles(styles)
   const rewards: PointsReward[] = catalog.filter((r) => (r.points_cost ?? 0) > 0).map((r) => ({ id: r.id, title: r.title, points_cost: r.points_cost as number }))
-  const standing = pointsStanding(business, membership?.points_balance ?? 0, rewards)
+  const units = unitNames(business)
+  const standing = pointsStanding(business, membership?.points_balance ?? 0, rewards, units)
+  // Custom programmes: the shop's own rules, read out in plain English.
+  const checked = business.reward_model === 'custom' ? validateRules(business.programme_rules) : null
+  const described = checked?.ok ? describeRules(checked.rules, money) : null
   const [busyId, setBusyId] = useState<string | null>(null)
   // One id per tap-attempt, reused if the same tap is retried after a dropped
   // connection, so the database can tell a retry from a second redemption.
@@ -405,13 +412,36 @@ function PointsHow({ business, membership, catalog, brand, refresh }: { business
   return (
     <View>
       <View style={st.pointsBox}>
-        <Text style={st.pointsBalance}>{membership ? standing.balance : standing.perPound}</Text>
-        <Text style={st.pointsLabel}>{membership ? (standing.balance === 1 ? 'point' : 'points') : `point${standing.perPound === 1 ? '' : 's'} for every £1`}</Text>
+        {described ? (
+          <>
+            <Text style={st.pointsBalance}>{membership ? standing.balance : 0}</Text>
+            <Text style={st.pointsLabel}>{(membership ? standing.balance : 0) === 1 ? units.one : units.many}</Text>
+          </>
+        ) : (
+          <>
+            <Text style={st.pointsBalance}>{membership ? standing.balance : standing.perPound}</Text>
+            <Text style={st.pointsLabel}>{membership ? (standing.balance === 1 ? 'point' : 'points') : `point${standing.perPound === 1 ? '' : 's'} for every £1`}</Text>
+          </>
+        )}
       </View>
-      <Text style={st.howLine}>
-        You earn {standing.perPound} point{standing.perPound === 1 ? '' : 's'} for every £1 you spend here.
-        {membership && standing.next && standing.toNext != null ? ` ${standing.toNext} more to get ${standing.next.title}.` : ''}
-      </Text>
+      {described ? (
+        <>
+          {([['EARN', described.earn], ['GET', described.spend], ['LEVELS', described.levels]] as const).map(([title, lines]) =>
+            lines.length ? (
+              <View key={title} style={{ marginTop: 12 }}>
+                <Text style={st.howEyebrow}>{title}</Text>
+                {lines.map((line, i) => <Text key={i} style={st.howLine}>{line}</Text>)}
+              </View>
+            ) : null)}
+          {described.small.length ? <Text style={st.howPitch}>{described.small.join(' · ')}</Text> : null}
+          {membership && standing.next && standing.toNext != null ? <Text style={st.howLine}>{standing.toNext} more to get {standing.next.title}.</Text> : null}
+        </>
+      ) : (
+        <Text style={st.howLine}>
+          You earn {standing.perPound} point{standing.perPound === 1 ? '' : 's'} for every £1 you spend here.
+          {membership && standing.next && standing.toNext != null ? ` ${standing.toNext} more to get ${standing.next.title}.` : ''}
+        </Text>
+      )}
       <View style={st.rowList}>
         {rewards.map((reward) => {
           const can = Boolean(membership) && standing.balance >= reward.points_cost
@@ -419,7 +449,7 @@ function PointsHow({ business, membership, catalog, brand, refresh }: { business
             <View key={reward.id} style={st.listRow}>
               <View style={{ flex: 1 }}>
                 <Text style={st.listRowText}>{reward.title}</Text>
-                <Text style={st.listRowStrong}>{reward.points_cost} points</Text>
+                <Text style={st.listRowStrong}>{reward.points_cost} {reward.points_cost === 1 ? units.one : units.many}</Text>
               </View>
               {membership ? (
                 // Spending points can't be undone, so it's a short press and hold.
@@ -442,7 +472,7 @@ function PointsHow({ business, membership, catalog, brand, refresh }: { business
           )
         })}
       </View>
-      {!rewards.length ? <Text style={st.howLine}>This shop's rewards are being set up.</Text> : null}
+      {!rewards.length && !described ? <Text style={st.howLine}>This shop's rewards are being set up.</Text> : null}
     </View>
   )
 }

@@ -4,7 +4,7 @@
  * which stop to show next.
  */
 /** Mirrors `ProgrammeId` in @loyalty-loop/loyalty (not imported so node --test can load this file). */
-export type ProgrammeId = 'stamps' | 'spend' | 'tiers' | 'points'
+export type ProgrammeId = 'stamps' | 'spend' | 'tiers' | 'points' | 'custom'
 
 export type TourScreen = 'home' | 'scan' | 'settings'
 
@@ -31,6 +31,7 @@ const SCAN_RESULT_COPY: Record<ProgrammeId, string> = {
   spend: 'Enter what they spent.',
   tiers: 'Their level and perks show here.',
   points: 'Their points balance shows here.',
+  custom: 'Enter what they spent. Their balance and money off show here.',
 }
 
 /** `programme` comes from `programmeIdFor(business)` in @loyalty-loop/loyalty. */

@@ -23,3 +23,12 @@ test("rewardDiscountPence handles object, array and missing catalog", () => {
   assert.equal(rewardDiscountPence({ catalog: { discount_pence: null } }), null);
   assert.equal(rewardDiscountPence({}), null);
 });
+
+test("percent-off rewards", async () => {
+  const { rewardDiscountPercent, percentOff } = await import("./reward-discount.ts");
+  assert.equal(rewardDiscountPercent({ catalog: { discount_percent: 50 } }), 50);
+  assert.equal(rewardDiscountPercent({ catalog: [{ discount_percent: null }] }), null);
+  assert.equal(rewardDiscountPercent({ catalog: { discount_percent: 150 } }), null);
+  assert.equal(percentOff(1999, 10), 200);
+  assert.equal(percentOff(1000, 50), 500);
+});

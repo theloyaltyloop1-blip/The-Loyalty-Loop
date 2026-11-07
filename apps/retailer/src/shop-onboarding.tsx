@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BadgeCheck, Check, Gem, Plus, QrCode, ScanLine, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
+import { BadgeCheck, Check, Gem, Plus, QrCode, ScanLine, Sparkles, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import {
   PROGRAMMES,
@@ -20,6 +20,8 @@ import { showAlert } from "./components/AppAlert";
 import { FALLBACK_COUNTRIES, guessCountry, selectableCountries } from "./country";
 import { findCountry } from "./money";
 import { supabase } from "./supabase";
+import type { ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
+import { ProgrammeBuilder, RulesCard } from "./ProgrammeBuilder";
 
 const { foreground: green, primary: orange, background: cream } = colors;
 const BRAND_COLOR = "#8B7355";
@@ -138,6 +140,10 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
   const [draft, setDraft] = useState<ProgrammeDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  // "None of these fit": the owner describes their own programme to the AI builder.
+  const [custom, setCustom] = useState(false);
+  const [rules, setRules] = useState<ProgrammeRules | null>(null);
+  const isCustom = custom && !resume;
 
   const country = findCountry([], countryCode);
   const currency = { symbol: country.currency_symbol, scale: country.amount_scale };
@@ -153,11 +159,42 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
     setKind(next);
     setProgramme(next.programme);
     setDraft(null);
+    setCustom(false);
   }
   function chooseProgramme(id: ProgrammeId) {
     setProgramme(id);
     setDraft(null);
+    setCustom(false);
     setPicking(false);
+  }
+  function chooseCustom() {
+    setCustom(true);
+    setPicking(false);
+  }
+
+  async function createCustom() {
+    if (!rules) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc("create_shop_with_custom_programme", {
+        _name: name.trim(),
+        _category: kind?.category ?? "Other",
+        _country_code: country.code,
+        _rules: rules,
+        _brand_color: BRAND_COLOR,
+      });
+      if (error) throw error;
+      setDone(true);
+      setStep(3);
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
+      showAlert(
+        "Could not set up your shop",
+        raw.includes("invalid_programme_rules") ? "Those rules couldn't be saved. Ask the AI to adjust them and try again." : raw || "Please try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
   const patchReward = (index: number, patch: Partial<ProgrammeDraft["rewards"][number]>) =>
     setDraft((d) => d && { ...d, rewards: d.rewards.map((r, i) => (i === index ? { ...r, ...patch } : r)) });
@@ -245,8 +282,28 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
                   </Pressable>
                 );
               })}
+              <Pressable onPress={() => { setKind(null); chooseCustom(); }} style={[styles.optionCard, styles.optionCardDashed, custom && !kind && styles.optionCardActive]}>
+                <Sparkles size={26} color={custom && !kind ? "#fff" : orange} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionTitle, custom && !kind && { color: "#fff" }]}>Something different</Text>
+                  <Text style={[styles.optionBlurb, custom && !kind && { color: "#fff" }]}>Describe your own programme and our AI sets it up</Text>
+                </View>
+              </Pressable>
             </View>
-            {kind && (
+            {custom && (
+              <View style={styles.suggestion}>
+                <Text style={styles.suggestionTitle}>Design your own with AI</Text>
+                <Text style={styles.suggestionText}>
+                  In two steps you'll tell our AI how rewards should work, in your own words, like "3 points is £1 off". It shows you exactly what customers will see before anything goes live.
+                </Text>
+                {kind && (
+                  <Pressable onPress={() => setCustom(false)} hitSlop={8}>
+                    <Text style={styles.link}>Use the suggestion instead</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+            {kind && !custom && (
               <View style={styles.suggestion}>
                 <Text style={styles.suggestionTitle}>We suggest: {PROGRAMMES[programme].name}</Text>
                 <Text style={styles.suggestionText}>{PROGRAMMES[programme].pitch}</Text>
@@ -255,7 +312,7 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
                 </Pressable>
               </View>
             )}
-            <PrimaryButton title="Continue" disabled={!kind} onPress={() => setStep(1)} />
+            <PrimaryButton title="Continue" disabled={!kind && !custom} onPress={() => setStep(1)} />
           </>
         )}
 
@@ -290,7 +347,15 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
                 );
               })}
             </View>}
-            <CardPreview programme={programme} name={name} draft={onboardingDefaults(programme, kind?.key ?? "everyday", currency)} symbol={symbol} />
+            {custom ? (
+              <View style={styles.preview}>
+                <Text style={styles.previewEyebrow}>WHAT YOUR CUSTOMERS WILL SEE</Text>
+                <Text style={styles.previewName}>{name.trim() || "Your shop"}</Text>
+                <Text style={styles.previewLine}>Your own programme, designed on the next step</Text>
+              </View>
+            ) : (
+              <CardPreview programme={programme} name={name} draft={onboardingDefaults(programme, kind?.key ?? "everyday", currency)} symbol={symbol} />
+            )}
             <PrimaryButton
               title="Continue"
               onPress={() => (name.trim() ? setStep(2) : showAlert("Add your shop name", "Customers will see this on their loyalty card."))}
@@ -301,7 +366,23 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
           </>
         )}
 
-        {step === 2 && draft && (
+        {step === 2 && isCustom && (
+          <>
+            <Text style={styles.hero}>Design your{"\n"}programme</Text>
+            <Text style={styles.copy}>Describe it like you'd explain it to a customer. Keep changing it until it's right.</Text>
+            <ProgrammeBuilder
+              shop={{ name: name.trim(), category: kind?.category ?? undefined, currencySymbol: symbol }}
+              onRules={setRules}
+              brandColor={BRAND_COLOR}
+            />
+            <PrimaryButton title={saving ? "Setting up…" : "Looks good"} disabled={saving || !rules} onPress={createCustom} />
+            <Pressable onPress={() => setStep(1)} style={styles.back}>
+              <Text style={styles.backText}>Back</Text>
+            </Pressable>
+          </>
+        )}
+
+        {step === 2 && !isCustom && draft && (
           <>
             <Text style={styles.hero}>{activeProgramme === "tiers" ? "Your membership\nlevels" : "Your rewards"}</Text>
             <Text style={styles.copy}>We've filled these in for you. Change anything, then tap Looks good.</Text>
@@ -381,14 +462,18 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
           </>
         )}
 
-        {step === 3 && done && draft && (
+        {step === 3 && done && (isCustom ? rules : draft) && (
           <>
             <View style={styles.liveBadge}>
               <Check size={32} color="#fff" />
             </View>
             <Text style={[styles.hero, { textAlign: "center" }]}>You're live!</Text>
             <Text style={[styles.copy, { textAlign: "center", marginBottom: 20 }]}>Customers can join {resume?.name ?? name} now. This is their card:</Text>
-            <CardPreview programme={activeProgramme} name={resume?.name ?? name} draft={draft} symbol={symbol} />
+            {isCustom && rules ? (
+              <RulesCard rules={rules} symbol={symbol} brandColor={BRAND_COLOR} />
+            ) : draft ? (
+              <CardPreview programme={activeProgramme} name={resume?.name ?? name} draft={draft} symbol={symbol} />
+            ) : null}
             <View style={{ height: 18 }} />
             <PrimaryButton title="Print your QR poster" icon={<QrCode size={18} color="#fff" />} onPress={() => onFinish("tools")} />
             <PrimaryButton title="Scan your first customer" secondary icon={<ScanLine size={18} color={green} />} onPress={() => onFinish("scan")} />
@@ -415,6 +500,13 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
               </Pressable>
             );
           })}
+          <Pressable onPress={chooseCustom} style={[styles.optionCard, styles.optionCardDashed]}>
+            <Sparkles size={24} color={orange} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.optionTitle}>Design my own with AI</Text>
+              <Text style={styles.optionBlurb}>None of these fit? Describe it and our AI builds it.</Text>
+            </View>
+          </Pressable>
         </View>
       </Sheet>
     </SafeAreaView>
@@ -432,6 +524,7 @@ const styles = StyleSheet.create({
   stack: { gap: 12, marginTop: 22, marginBottom: 16 },
   optionCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#fff", borderRadius: 20, borderWidth: 2, borderColor: "#eee0cc", padding: 18 },
   optionCardActive: { backgroundColor: orange, borderColor: orange },
+  optionCardDashed: { borderStyle: "dashed" },
   optionTitle: { color: "#000000", fontSize: 17, fontWeight: "800" },
   optionBlurb: { color: "#000000", fontSize: 13, marginTop: 2 },
   suggestion: { backgroundColor: "#FFF3DC", borderRadius: 18, padding: 16, marginBottom: 18, gap: 4 },

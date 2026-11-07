@@ -23,7 +23,7 @@ import Svg, { Circle, G, Polyline, Rect, Text as SvgText } from 'react-native-sv
  * t = 0.85, so `t = 1` is also the static frame.
  */
 
-export type ExplainerKind = 'join' | 'scan' | 'stamps' | 'tiers' | 'points' | 'spend'
+export type ExplainerKind = 'join' | 'scan' | 'stamps' | 'tiers' | 'points' | 'spend' | 'custom'
 
 export const EXPLAINER_CAPTIONS: Record<ExplainerKind, string> = {
   join: 'Customers scan your poster to join.',
@@ -32,6 +32,7 @@ export const EXPLAINER_CAPTIONS: Record<ExplainerKind, string> = {
   tiers: 'The more they spend, the higher their level.',
   points: 'Every £ spent earns points towards rewards.',
   spend: 'Every £ spent fills the bar towards a reward.',
+  custom: 'Your own rules, set up by AI. Customers collect and spend as you described.',
 }
 
 const LOOP_MS = 5600
@@ -48,6 +49,7 @@ const BG: Record<ExplainerKind, string> = {
   tiers: '#F1ECFA',
   points: '#FFF6DD',
   spend: '#E8F3EA',
+  custom: '#FFF6DD',
 }
 
 /** 0 before a, 1 after b, linear between. */
@@ -270,7 +272,7 @@ export function Explainer({ kind, caption, showCaption = true }: { kind: Explain
     kind === 'scan' ? <Scan t={t} /> :
     kind === 'stamps' ? <Stamps t={t} /> :
     kind === 'tiers' ? <Tiers t={t} /> :
-    kind === 'points' ? <Points t={t} reduced={reduced} /> :
+    kind === 'points' || kind === 'custom' ? <Points t={t} reduced={reduced} /> :
     <Spend t={t} reduced={reduced} />
 
   const text = caption ?? EXPLAINER_CAPTIONS[kind]
