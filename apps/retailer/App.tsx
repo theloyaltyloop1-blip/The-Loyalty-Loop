@@ -58,7 +58,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
 import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from "@expo-google-fonts/inter";
 import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument-serif";
-import { AppIntro, INK, MUTED, NIGHT, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SLATE, STONE } from "./src/components/Poster";
+import { AppIntro, INK, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM } from "./src/components/Poster";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
@@ -1545,8 +1545,10 @@ function StatTile({
   );
 }
 
-// Home, Sapphire look: one big number on navy, the week as bars, one huge
-// Scan button. Setup steps only show while something is missing.
+// Home, three planes: the stats card (ink on white) in the middle, and the
+// Scan button lifted on top of its lower edge. Sapphire is kept for things
+// you tap; type is huge numbers or tiny caps. Setup steps only show while
+// something is missing.
 const WEEKDAY = ["S", "M", "T", "W", "T", "F", "S"];
 function DashboardHome({
   business,
@@ -1600,7 +1602,7 @@ function DashboardHome({
           <View accessible accessibilityLabel={`${weekTotal} ${spendShop ? "purchases" : "stamps"} in the last 7 days`} style={styles.homeBars}>
             {days.map((d, i) => (
               <View key={i} style={styles.homeBarCol}>
-                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? SAGE : SLATE }]} />
+                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? INK : "rgba(26,33,56,0.16)" }]} />
                 <Text style={styles.homeBarDay}>{d.day}</Text>
               </View>
             ))}
@@ -1619,17 +1621,17 @@ function DashboardHome({
           <Text style={styles.homeScanTitle}>Scan a customer</Text>
           <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : "Stamp, spend or reward"}</Text>
         </View>
-        <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={PAPER} /></View>
+        <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={NIGHT} /></View>
       </Pressable>
 
       <View style={styles.homePills}>
-        <Pressable accessibilityRole="button" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, { backgroundColor: STONE }, pressed && styles.pressed]}>
-          <Gift size={19} strokeWidth={1.8} color={INK} />
-          <Text style={[styles.homePillText, { color: INK }]}>Redeem</Text>
+        <Pressable accessibilityRole="button" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, pressed && styles.pressed]}>
+          <Gift size={19} strokeWidth={1.8} color={NIGHT} />
+          <Text style={styles.homePillText}>Redeem</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.homePill, { backgroundColor: "#FFFFFF" }, pressed && styles.pressed]}>
-          <Sparkles size={19} strokeWidth={1.8} color={INK} />
-          <Text style={[styles.homePillText, { color: INK }]}>Report</Text>
+        <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.homePill, pressed && styles.pressed]}>
+          <Sparkles size={19} strokeWidth={1.8} color={NIGHT} />
+          <Text style={styles.homePillText}>Report</Text>
         </Pressable>
       </View>
 
@@ -3079,29 +3081,30 @@ const styles = StyleSheet.create({
   homeHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(17,17,17,0.14)" },
   homeHeaderLogo: { width: 34, height: 34, borderRadius: 17 },
   homeHeaderLetter: { color: PAPER, fontSize: 14, fontWeight: "700" },
-  homeHeaderName: { flex: 1, fontSize: 15, fontFamily: SANS_MEDIUM, color: INK, letterSpacing: -0.2 },
-  homePanel: { backgroundColor: NIGHT, borderRadius: 28, padding: 24, gap: 6, overflow: "hidden" },
-  homePanelLabel: { color: "rgba(244,241,234,0.6)", fontSize: 11, fontWeight: "500", letterSpacing: 1.6, textTransform: "uppercase" },
+  homeHeaderName: { flex: 1, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: INK },
+  homePanel: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 24, paddingBottom: 54, gap: 6, shadowColor: INK, shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
+  homePanelLabel: { color: MUTED, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase" },
   homeBigRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6 },
-  homeBig: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 92, lineHeight: 94, letterSpacing: -5, includeFontPadding: false, flexShrink: 1 },
-  homeBadge: { height: 28, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: "rgba(244,241,234,0.25)", justifyContent: "center" },
-  homeBadgeText: { color: "rgba(244,241,234,0.75)", fontSize: 12, fontWeight: "500" },
-  homeBigLabel: { color: PAPER, fontFamily: "Inter_600SemiBold", fontSize: 20, lineHeight: 25, letterSpacing: -0.4 },
+  homeBig: { color: INK, fontFamily: SANS_HEAVY, fontSize: 104, lineHeight: 104, letterSpacing: -6, includeFontPadding: false, flexShrink: 1 },
+  homeBadge: { height: 28, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: "rgba(26,33,56,0.2)", justifyContent: "center" },
+  homeBadgeText: { color: MUTED, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" },
+  homeBigLabel: { color: MUTED, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase" },
   homeBars: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 96, marginTop: 18 },
   homeBarCol: { flex: 1, alignItems: "center", gap: 6 },
   homeBar: { width: "100%", borderRadius: 4 },
-  homeBarDay: { color: "rgba(244,241,234,0.5)", fontSize: 11, fontWeight: "500" },
-  homeWeek: { color: "rgba(244,241,234,0.6)", fontSize: 11, fontWeight: "500", letterSpacing: 1.6, textTransform: "uppercase", marginTop: 10 },
-  homeScan: { minHeight: 104, borderRadius: 28, backgroundColor: PACIFIC, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14 },
-  homeScanTitle: { color: INK, fontFamily: SANS_HEAVY, fontSize: 28, lineHeight: 32, letterSpacing: -1.2 },
-  homeScanSub: { color: "rgba(26,33,56,0.72)", fontSize: 14 },
-  homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: INK, alignItems: "center", justifyContent: "center" },
+  homeBarDay: { color: MUTED, fontSize: 11, fontWeight: "600" },
+  homeWeek: { color: MUTED, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", marginTop: 10 },
+  // Top plane: overlaps the stats card's lower edge.
+  homeScan: { minHeight: 104, marginTop: -54, marginHorizontal: 10, borderRadius: 28, backgroundColor: NIGHT, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14, shadowColor: NIGHT, shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
+  homeScanTitle: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 30, lineHeight: 34, letterSpacing: -1.2 },
+  homeScanSub: { color: "rgba(244,241,234,0.7)", fontSize: 11, fontWeight: "600", letterSpacing: 1.4, textTransform: "uppercase" },
+  homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: PAPER, alignItems: "center", justifyContent: "center" },
   homePills: { flexDirection: "row", gap: 10 },
-  homePill: { flex: 1, height: 54, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM },
+  homePill: { flex: 1, height: 54, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "rgba(43,58,103,0.25)" },
+  homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM, color: NIGHT },
   homeTiles: { flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: "rgba(17,17,17,0.14)" },
   homeTile: { flex: 1, paddingVertical: 18, gap: 4 },
-  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 30, letterSpacing: -1.2, color: INK, fontVariant: ['tabular-nums'] },
+  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 44, lineHeight: 46, letterSpacing: -2, color: INK, fontVariant: ['tabular-nums'] },
   homeTileLabel: { fontSize: 11, fontWeight: "500", letterSpacing: 1.4, textTransform: "uppercase", color: MUTED },
   homeGuideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 48 },
   homeGuideLinkText: { color: INK, fontFamily: SANS_MEDIUM, fontSize: 15 },

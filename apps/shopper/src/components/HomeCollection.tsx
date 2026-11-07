@@ -137,8 +137,8 @@ type HeroCard<T> = { shop: T; progress: ReturnType<typeof homeProgress> }
 function EditGlyph({ pinned }: { pinned: boolean }) {
   return <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
     {pinned
-      ? <Path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" stroke={PAPER} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      : <Path d="M12 5v14M5 12h14" stroke={PAPER} strokeWidth={2.2} strokeLinecap="round" />}
+      ? <Path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" stroke={NIGHT} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      : <Path d="M12 5v14M5 12h14" stroke={NIGHT} strokeWidth={2.2} strokeLinecap="round" />}
   </Svg>
 }
 
@@ -169,7 +169,7 @@ function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, wi
       ? <View style={s.nextDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{Array.from({ length: threshold }, (_, i) => <View key={i} style={[s.nextDot, i < progress.value && s.nextDotOn]} />)}</View>
       : <View style={s.nextTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={[s.nextFill, { width: `${Math.round(Math.min(1, progress.fraction) * 100)}%` }]} /></View>}
     <Pressable accessibilityRole="button" accessibilityLabel={`Show my ${shop.name} card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.nextButton, pressed && s.pressed]}>
-      <Text style={s.nextButtonText}>{ready ? 'Use it now' : 'Show my card'}</Text><Arrow color={NIGHT} />
+      <Text style={s.nextButtonText}>{ready ? 'Use it now' : 'Show my card'}</Text><Arrow color={PAPER} />
     </Pressable>
   </View>
 }
@@ -325,29 +325,30 @@ export const homeStyles = StyleSheet.create({
   sectionHeading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 23, color: c.foreground, marginTop: 32, marginBottom: 16 },
 })
 const s = StyleSheet.create({
-  nextCard: { backgroundColor: NIGHT, borderRadius: 28, padding: 24, gap: 18, marginBottom: 24, overflow: 'hidden' },
+  // Ink on white: sapphire is kept for the things you tap (the button, the edit control).
+  nextCard: { backgroundColor: '#FFFFFF', borderRadius: 28, padding: 24, gap: 18, marginBottom: 24, shadowColor: INK, shadowOpacity: 0.1, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 4 },
   nextShop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  nextLogo: { width: 30, height: 30, borderRadius: 15, backgroundColor: PAPER, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  nextLogoText: { color: NIGHT, fontSize: 13, fontWeight: '700' },
-  nextShopName: { flex: 1, color: 'rgba(244,241,234,0.62)', fontSize: 11, fontWeight: '500', letterSpacing: 1.6, textTransform: 'uppercase' },
-  nextEdit: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(244,241,234,0.14)', alignItems: 'center', justifyContent: 'center' },
+  nextLogo: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#ECE7DC', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  nextLogoText: { color: INK, fontSize: 13, fontWeight: '700' },
+  nextShopName: { flex: 1, color: 'rgba(26,33,56,0.55)', fontSize: 11, fontWeight: '600', letterSpacing: 1.6, textTransform: 'uppercase' },
+  nextEdit: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(43,58,103,0.1)', alignItems: 'center', justifyContent: 'center' },
   quickWrap: { marginBottom: 24 },
   quickEmpty: { marginBottom: 24, borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(43,58,103,0.35)', paddingVertical: 18, alignItems: 'center' },
   quickEmptyText: { color: NIGHT, fontFamily: SANS_MEDIUM, fontSize: 15 },
-  nextBig: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 76, lineHeight: 76, letterSpacing: -4.5, includeFontPadding: false },
-  nextLine: { color: PAPER, fontFamily: 'Inter_600SemiBold', fontSize: 22, lineHeight: 27, letterSpacing: -0.6, marginTop: 6 },
+  nextBig: { color: INK, fontFamily: SANS_HEAVY, fontSize: 88, lineHeight: 88, letterSpacing: -5, includeFontPadding: false },
+  nextLine: { color: 'rgba(26,33,56,0.6)', fontSize: 12, lineHeight: 17, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 8 },
   cardTile: { width: 156, height: 116, borderRadius: 22, padding: 14, justifyContent: 'space-between' },
   cardTileLine: { borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(17,17,17,0.18)' },
   cardTileName: { fontFamily: SANS_MEDIUM, fontSize: 14, lineHeight: 17, letterSpacing: -0.2 },
   cardTileCount: { fontFamily: SANS_HEAVY, fontSize: 36, letterSpacing: -2, fontVariant: ['tabular-nums'] },
   cardTileOf: { fontFamily: SANS_MEDIUM, fontSize: 16, letterSpacing: -0.4 },
   nextDots: { flexDirection: 'row', gap: 6 },
-  nextDot: { flex: 1, aspectRatio: 1, maxWidth: 26, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(244,241,234,0.3)' },
-  nextDotOn: { backgroundColor: PAPER, borderColor: PAPER },
-  nextTrack: { height: 2, borderRadius: 1, backgroundColor: 'rgba(244,241,234,0.2)', overflow: 'hidden' },
-  nextFill: { height: '100%', backgroundColor: PAPER },
-  nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 20, borderRadius: 999, backgroundColor: PAPER },
-  nextButtonText: { color: NIGHT, fontFamily: SANS_MEDIUM, fontSize: 14 },
+  nextDot: { flex: 1, aspectRatio: 1, maxWidth: 26, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(26,33,56,0.2)' },
+  nextDotOn: { backgroundColor: INK, borderColor: INK },
+  nextTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(26,33,56,0.1)', overflow: 'hidden' },
+  nextFill: { height: '100%', backgroundColor: INK },
+  nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 50, paddingHorizontal: 22, borderRadius: 999, backgroundColor: NIGHT, shadowColor: NIGHT, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  nextButtonText: { color: PAPER, fontFamily: SANS_MEDIUM, fontSize: 14 },
   pressed: { opacity: 0.78 },
   hero: { borderRadius: 22, overflow: 'hidden', backgroundColor: c.olive },
   photo: { height: 128, backgroundColor: c.sage, overflow: 'hidden' },

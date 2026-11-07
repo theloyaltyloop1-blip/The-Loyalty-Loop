@@ -1511,7 +1511,7 @@ function ShopDetail({
             progressLabel={passLabel}
             code={membership ? <QRCode value={`loyaltyloop:customer:${userId}`} size={190} /> : null}
             action={membership ? null : (
-              <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: '#FFFFFF', borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48 }, (busy || pressed) && { opacity: 0.8 }]}>
+              <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: '#FFFFFF', borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, (busy || pressed) && { opacity: 0.8 }]}>
                 <Text style={{ color: skin.dark ? skin.bg : skin.ink, fontWeight: '800', fontSize: 17 }}>{busy ? 'Joining…' : 'Join card'}</Text>
               </Pressable>
             )}

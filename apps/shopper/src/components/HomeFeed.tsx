@@ -18,7 +18,7 @@ const MARK_TONES = [
   { bg: SAGE, fg: INK },
   { bg: SLATE, fg: '#FFFFFF' },
   { bg: PACIFIC, fg: INK },
-  { bg: SAPPHIRE, fg: PAPER },
+  { bg: INK, fg: PAPER },
 ]
 
 type FeedShop = HomeShop & { lat?: number | null; lng?: number | null }
@@ -141,10 +141,11 @@ const s = StyleSheet.create({
   date: { fontSize: 11, fontWeight: '500', letterSpacing: 1.8, color: MUTED },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: SAPPHIRE, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: PAPER, fontSize: 16, fontWeight: '700' },
-  title: { marginTop: 14, marginBottom: 24, fontFamily: SANS_HEAVY, fontSize: 46, lineHeight: 47, letterSpacing: -2.4, color: INK },
+  title: { marginTop: 14, marginBottom: 26, fontFamily: SANS_HEAVY, fontSize: 56, lineHeight: 56, letterSpacing: -3, color: INK },
   section: { marginTop: 12, marginBottom: 24 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40, marginBottom: 12 },
-  heading: { fontSize: 20, fontWeight: '700', letterSpacing: -0.6, color: INK },
+  // Huge or tiny: section labels are small caps under the poster-sized greeting.
+  heading: { fontSize: 12, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', color: MUTED },
   link: { color: SAPPHIRE, fontSize: 14, fontFamily: SANS_MEDIUM },
   searchButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: CARD, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(26,33,56,0.2)', alignItems: 'center', justifyContent: 'center' },
   locationLink: { alignSelf: 'flex-start', marginTop: -4, marginBottom: 12 },

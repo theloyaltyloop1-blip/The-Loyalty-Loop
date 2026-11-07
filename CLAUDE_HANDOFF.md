@@ -11,6 +11,42 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## Design rules from the owner's second video: depth, one tap colour, huge/tiny type (2026-11-07) - Claude
+
+**Why.** The owner shared a design video and chose all three of its rules for both apps:
+- **Three planes:** a back, a middle and a top layer.
+- **One colour means "tap":** sapphire marks things you can tap; everything else is ink and paper.
+- **Huge or tiny type:** nothing in between.
+
+**What changed (committed on branch `motion-components`, NOT on main, NOT shipped).**
+- **Shopper shop page** (`packages/card-design/ShopPass.tsx`, only the shopper app uses it):
+  - The shop name is poster-sized and uppercase at the back (76px, shrinks to fit).
+  - The logo overlaps its lower edge as the middle layer, with a ring in the page colour and a shadow.
+  - The QR tile and the Join button lift on top with shadows.
+  - The eyebrow, progress label and field labels are tiny caps; field values are larger.
+  - Shop-skinned colours are untouched, because each shop's own card design still decides those.
+- **Shopper home:**
+  - The top card (`NextRewardHero`) is now ink on white with a shadow, instead of a sapphire panel.
+  - The "Show my card" button is sapphire, and the edit button is a sapphire glyph.
+  - The big number is 88px and the line under it is tiny caps.
+  - The greeting is 56px, and section headings are tiny caps.
+  - A sapphire initials tone became ink.
+  - The only sapphire left on home is on things you tap.
+- **Business home** (`DashboardHome`):
+  - The stats card is ink on white, with a 104px number and tiny caps labels; the bars are ink and grey.
+  - The Scan button is now sapphire and overlaps the bottom of the stats card as the top layer (it was teal).
+  - Redeem and Report are white with sapphire text; the tile numbers are 44px.
+- **Business owner pages** (`owner-pages.tsx`):
+  - Primary and secondary buttons are now sapphire (they were ink).
+  - Page titles are 36px; section titles and metric labels are tiny caps; metric values are 40px.
+- **Not touched:** the till (StampsScreen), so till speed is unchanged.
+
+**Checks run.** tsc clean for both apps; 35/35 unit tests; `expo export --platform android` bundles for both apps. **Not seen rendered anywhere.** The risk to look at: on the shop page, the logo overlaps the bottom of the shop name, which needs a look with long names, two-line names and dark shop skins.
+
+**Next.** Owner: decide whether to ship. To release: merge to main, then OTA the shopper app (1.0.2 and 1.0.1) and the Business app (1.0.1), with `--environment production`, per platform.
+
+---
+
 ## Shopper: quick cards at the top of home (2026-11-07) - Claude
 
 **Why.** The owner asked for shoppers to choose which cards sit at the top of home, keeping the automatic pick when they don't choose.

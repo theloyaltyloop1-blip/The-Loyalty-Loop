@@ -2144,7 +2144,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: muted,
   },
-  title: { fontSize: 28, lineHeight: 34, fontFamily: FONT_DISPLAY, color: ink },
+  title: { fontSize: 36, lineHeight: 40, fontFamily: FONT_DISPLAY, color: ink, letterSpacing: -1 },
   section: {
     backgroundColor: card,
     borderWidth: 1.5,
@@ -2153,10 +2153,13 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
   },
+  // Huge or tiny: section labels are small caps under the big page title.
   sectionTitle: {
-    fontSize: 19,
-    fontWeight: "900",
-    color: ink,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: muted,
     marginTop: 6,
     marginBottom: 12,
   },
@@ -2177,14 +2180,15 @@ const styles = StyleSheet.create({
   primaryButton: {
     minHeight: 48,
     borderRadius: 999,
-    backgroundColor: ink,
+    // Sapphire marks what you can tap.
+    backgroundColor: orange,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 18,
     marginTop: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.72)",
-    shadowColor: ink,
+    shadowColor: orange,
     shadowOpacity: 0.16,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -2193,11 +2197,11 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: "transparent",
     borderWidth: 1.5,
-    borderColor: ink,
+    borderColor: orange,
   },
   dangerButton: { backgroundColor: "#B4433A" },
   primaryButtonText: { color: "#fff", fontWeight: "900", fontSize: 15 },
-  secondaryButtonText: { color: ink },
+  secondaryButtonText: { color: orange },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.85 },
   disabled: { opacity: 0.55 },
   input: {
@@ -2250,8 +2254,8 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
-  metricValue: { fontSize: 29, fontFamily: FONT_DISPLAY, color: ink, fontVariant: ['tabular-nums'] },
-  metricLabel: { color: muted, fontWeight: "700", fontSize: 12, marginTop: 3 },
+  metricValue: { fontSize: 40, lineHeight: 44, fontFamily: FONT_DISPLAY, color: ink, letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
+  metricLabel: { color: muted, fontWeight: "700", fontSize: 11, letterSpacing: 1.4, textTransform: "uppercase", marginTop: 4 },
   metricChange: {
     color: "#2D7A43",
     fontSize: 11,
