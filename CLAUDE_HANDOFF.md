@@ -15,7 +15,16 @@ need Claude's sign-off before the next one starts.
 
 **Why.** The owner asked for shoppers to choose which cards sit at the top of home, keeping the automatic pick when they don't choose.
 
-**What changed (committed on branch `motion-components`, NOT on main, NOT shipped).**
+**Shipped 2026-11-07** (owner asked). On main as 292a8af. Shopper OTAs (`--environment production`, branch production), built from main, so they also carry the outage banner and live balances. Each bundle was checked for the project ref, `quick_cards_`, `user_id=eq.` and `status.json`:
+
+| Runtime | Android | iOS | Groups |
+|---|---|---|---|
+| 1.0.2 | 01a1b790 | 01a1b792 | 1eec905d / 8b6b0b17 |
+| 1.0.1 | 01a1b793 | 01a1b794 | cf18046a / 9092e494 |
+
+Undo: republish the outage-banner groups, 58da35de / 26c8d1a2 (1.0.2) and 3d946c3c / 83f14ab5 (1.0.1).
+
+**What changed.**
 - `apps/shopper/src/quick-cards.ts`: `useQuickCards(userId)` stores up to 4 picked shop ids, in pick order, in SecureStore (`quick_cards_<userId>`), on this device only. Includes the pure helpers `toggleQuickCard` and `parseQuickCards`.
 - `apps/shopper/src/components/QuickCardsSheet.tsx`: a pop-up sheet listing joined shops. Tapping a shop toggles it, and a numbered circle shows its order. It offers "Use automatic" to clear the picks.
 - `apps/shopper/src/components/HomeCollection.tsx` (`NextRewardHero`):
@@ -29,7 +38,7 @@ need Claude's sign-off before the next one starts.
 
 **Checks run.** Shopper tsc clean; 35/35 shopper and Business unit tests (3 new in `quick-cards.test.cjs`); `expo export --platform android` bundles. **Not seen on a device or simulator.**
 
-**Next.** Owner: decide whether to ship. To release: merge to main, then publish shopper OTAs for runtime 1.0.2 and 1.0.1 (`--environment production`, per platform). Later option: sync picks across devices (would need a table).
+**Next.** Owner: open the shopper app twice so the update applies, tap the round button on the top card, pick two cards and swipe between them. Later option: sync picks across devices (would need a table).
 
 ---
 
