@@ -53,6 +53,8 @@ import { AppIntro } from './src/components/Poster'
 import { colors, fonts } from './src/theme'
 import { encodeRewardQr } from './src/reward-qr'
 import { hasSupabaseConfig, supabase } from './src/supabase'
+import { OutageBanner, setSimulatedOutage, simulatedOutage, useServiceStatus } from './src/service-status'
+import { clearHomeCache, readHomeCache, writeHomeCache } from './src/home-cache'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
 import { registerPushToken } from './src/push'
 import { addPassFromBase64 } from './modules/expo-wallet-pass'
@@ -776,7 +778,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   function confirmSignOut() {
     showAlert('Sign out?', 'You can sign back in at any time.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void supabase.auth.signOut() },
+      { text: 'Sign out', style: 'destructive', onPress: () => { clearHomeCache(userId); void supabase.auth.signOut() } },
     ])
   }
   return (
@@ -878,7 +880,16 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                 <SettingsRow icon={(c) => <TrashIcon color={c} size={18} />} title="Delete account" detail="Permanently removes your login, linked cards, stamps and rewards" onPress={confirmDeleteAccount} danger last />
               </SettingsGroup>
 
-              <Text style={styles.settingsFooter}>The Loyalty Loop v{version} · {updateLabel}</Text>
+              <Pressable
+                onLongPress={() => {
+                  const next = !simulatedOutage()
+                  setSimulatedOutage(next)
+                  showAlert(next ? 'Outage test on' : 'Outage test off', next ? 'The app now acts as if our servers are down, on this phone only. Long-press here again to turn it off.' : 'Back to normal.')
+                }}
+                delayLongPress={1200}
+              >
+                <Text style={styles.settingsFooter}>The Loyalty Loop v{version} · {updateLabel}{simulatedOutage() ? ' · outage test' : ''}</Text>
+              </Pressable>
             </>
           )}
 
@@ -2274,19 +2285,23 @@ function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => voi
 function AppHome({ session }: { session: Session }) {
   const [askShop, setAskShop] = useState<{query:string;location?:{lat:number;lng:number}}|null>(null)
   const [tab, setTab] = useState<Tab>('home')
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [memberships, setMemberships] = useState<Membership[]>([])
-  const [homeCatalog, setHomeCatalog] = useState<HomeTier[]>([])
-  const [rewards, setRewards] = useState<Reward[]>([])
+  // Last home screen saved on this phone, so the app never opens blank.
+  const [cached] = useState(() => readHomeCache(session.user.id))
+  const [savedAt, setSavedAt] = useState<number | null>(cached?.savedAt ?? null)
+  const serviceStatus = useServiceStatus('shopper')
+  const [businesses, setBusinesses] = useState<Business[]>(() => (cached?.businesses ?? []) as Business[])
+  const [memberships, setMemberships] = useState<Membership[]>(() => (cached?.memberships ?? []) as Membership[])
+  const [homeCatalog, setHomeCatalog] = useState<HomeTier[]>(() => (cached?.homeCatalog ?? []) as HomeTier[])
+  const [rewards, setRewards] = useState<Reward[]>(() => (cached?.rewards ?? []) as Reward[])
   const [celebrate, setCelebrate] = useState<Reward | null>(null)
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => (cached?.announcements ?? []) as Announcement[])
   const [platformNotices, setPlatformNotices] = useState<PlatformNotice[]>([])
   const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set())
-  const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set())
+  const [favouriteIds, setFavouriteIds] = useState<Set<string>>(() => new Set(cached?.favouriteIds ?? []))
   const [selected, setSelected] = useState<Business | null>(null)
   const [showProfile, setShowProfile] = useState(false)
-  const [stampCode, setStampCode] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [stampCode, setStampCode] = useState<string | null>(cached?.stampCode ?? null)
+  const [loading, setLoading] = useState(!cached)
   const userId = session.user.id
   const shopperCountry = useCountry(userId)
   const linking = useCardLinking(userId)
@@ -2362,6 +2377,7 @@ function AppHome({ session }: { session: Session }) {
   const load = async () => {
     setLoading(true)
     try {
+      if (simulatedOutage()) throw new Error('Simulated outage')
       const platformTargetColumn = Platform.OS === 'ios' ? 'target_shopper_ios' : 'target_shopper_android'
       const twelveMonthsAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
       const [shops, memberRows, earned, news, favs, profile, notices, catalogRows, levelRows, pointsRows, spendRows] = await Promise.all([
@@ -2433,8 +2449,24 @@ function AppHome({ session }: { session: Session }) {
       setFavouriteIds(new Set((favs.data || []).map((row: any) => row.business_id as string)))
       setStampCode(profile.data?.stamp_code || null)
       void syncShopperWidget(shops.data || [], memberRows.data || []).catch(() => undefined)
+      const announcementsToSave = (news.data || [])
+        .filter((a: any) => newsMemberBusinessIds.has(a.business_id))
+        .map((a: any) => ({ ...a, business: Array.isArray(a.business) ? a.business[0] : a.business }))
+      setSavedAt(writeHomeCache(userId, {
+        businesses: (shops.data || []).map((shop: Business) => ({ ...shop, ...stats.get(shop.id) })),
+        memberships: (memberRows.data || []).map((m: any) => ({ ...m, rolling_spend_pence: spendRows.error ? null : rollingByShop.get(m.business_id) ?? 0 })),
+        rewards: rewardList,
+        announcements: announcementsToSave,
+        homeCatalog: [...(catalogRows.error ? [] : (catalogRows.data || [])), ...levelCatalog, ...pointsCatalog],
+        favouriteIds: (favs.data || []).map((row: any) => row.business_id as string),
+        stampCode: profile.data?.stamp_code || null,
+      }))
+      if (serviceStatus.level !== 'ok') serviceStatus.recheck()
     } catch (e) {
-      showAlert('Could not refresh', e instanceof Error ? e.message : 'Please try again.')
+      // Servers down or no signal: keep showing the saved home screen and let
+      // the banner explain. Only pop up when there is nothing to show at all.
+      serviceStatus.recheck()
+      if (!businesses.length) showAlert('Could not refresh', 'We couldn’t reach our servers. Pull down to try again in a moment.')
     } finally {
       setLoading(false)
     }
@@ -2443,6 +2475,16 @@ function AppHome({ session }: { session: Session }) {
   useEffect(() => {
     load()
   }, [])
+
+  // When our servers come back, refresh straight away.
+  const wasDown = useRef(false)
+  useEffect(() => {
+    if (serviceStatus.level !== 'ok') wasDown.current = true
+    else if (wasDown.current && serviceStatus.checkedAt) {
+      wasDown.current = false
+      void load()
+    }
+  }, [serviceStatus.level, serviceStatus.checkedAt])
 
   useEffect(() => {
     let active = true;
@@ -2552,6 +2594,7 @@ function AppHome({ session }: { session: Session }) {
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
       <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
       {!discovering && tab !== 'home' && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
+      {!discovering && <OutageBanner status={serviceStatus} savedAt={savedAt} />}
       {!discovering && (
         <PlatformBanner
           notices={platformNotices}
@@ -2647,8 +2690,11 @@ function AppRoot() {
     }
     ;(async () => {
       await supabase.rpc('ensure_current_user_bootstrap')
-      const { data } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id)
-      const ok = isShopper((data || []).map((row: any) => row.role))
+      const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id)
+      // Couldn't reach us (outage or no signal): keep them signed in and show
+      // the saved home screen. Row-level security still guards every read.
+      if (error || !data) { setAllowed(true); return }
+      const ok = isShopper(data.map((row: any) => row.role))
       setAllowed(ok)
       if (!ok) {
         showAlert('Use the business app', 'This account is an owner or staff account. Please sign in to The Loyalty Loop for Business instead.')

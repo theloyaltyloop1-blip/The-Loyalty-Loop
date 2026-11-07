@@ -43,6 +43,7 @@ import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { PROGRAMMES, programmeIdFor } from "@loyalty-loop/loyalty";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./shop-features";
 import { supabase } from "./supabase";
+import { setSimulatedOutage, simulatedOutage } from "./service-status";
 import { biometricLockEnabled, setBiometricLock } from "./biometric";
 import { getUsageAnalyticsConsent, setUsageAnalyticsConsent } from "./usage-analytics";
 import type { NativeOwnerPage } from "./owner-pages";
@@ -1034,11 +1035,26 @@ function AccountPage({
           last
         />
       </View>
-      <Text style={styles.settingsFootnote}>
-        Deleting your account also permanently deletes every shop you own.
-        Deleting a single shop, or transferring it to another owner, is done on
-        the website.
-      </Text>
+      {/* Long-press this note to switch the outage test on or off (this phone only). */}
+      <Pressable
+        delayLongPress={1200}
+        onLongPress={() => {
+          const next = !simulatedOutage();
+          setSimulatedOutage(next);
+          showAlert(
+            next ? "Outage test on" : "Outage test off",
+            next
+              ? "The app now acts as if our servers are down, on this phone only. Long-press here again to turn it off."
+              : "Back to normal.",
+          );
+        }}
+      >
+        <Text style={styles.settingsFootnote}>
+          Deleting your account also permanently deletes every shop you own.
+          Deleting a single shop, or transferring it to another owner, is done on
+          the website.
+        </Text>
+      </Pressable>
     </View>
   );
 }

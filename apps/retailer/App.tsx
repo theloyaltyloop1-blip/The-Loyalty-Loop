@@ -64,6 +64,8 @@ import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
+import { OutageBanner, simulatedOutage, useServiceStatus } from "./src/service-status";
+import Storage from "expo-sqlite/kv-store";
 import { HoldButton } from "./src/components/HoldButton";
 import { DynamicButton } from "./src/components/DynamicButton";
 import {
@@ -2267,6 +2269,8 @@ function Dashboard({
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
   const [needsLoyaltySetup, setNeedsLoyaltySetup] = useState<boolean | null>(null);
   const [platformNotices, setPlatformNotices] = useState<{ id: string; title: string; body: string | null }[]>([]);
+  const serviceStatus = useServiceStatus("business");
+  const shopsCacheKey = `loyalty-loop:business-shops:v1:${session.user.id}`;
   const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (preview) return;
@@ -2305,6 +2309,7 @@ function Dashboard({
     if (preview) return;
     if (!silent) setLoading(true);
     try {
+      if (simulatedOutage()) throw new Error("Simulated outage");
       const [
         { data: owned, error: ownedError },
         { data: staff, error: staffError },
@@ -2340,11 +2345,28 @@ function Dashboard({
           ? all.find((s) => s.id === current.id) || all[0] || null
           : all[0] || null,
       );
+      // Saved on the phone so the app still opens on your shop during an outage.
+      try {
+        Storage.setItemSync(shopsCacheKey, JSON.stringify({ shops: all, ownedIds: (owned || []).map((b) => b.id) }));
+      } catch {}
+      if (serviceStatus.level !== "ok") serviceStatus.recheck();
     } catch (e) {
-      showAlert(
-        "Could not load business",
-        e instanceof Error ? e.message : "Please try again.",
-      );
+      serviceStatus.recheck();
+      let saved: { shops: Business[]; ownedIds: string[] } | null = null;
+      try {
+        const raw = Storage.getItemSync(shopsCacheKey);
+        saved = raw ? JSON.parse(raw) : null;
+      } catch {}
+      if (saved?.shops?.length) {
+        setShops((current) => (current.length ? current : saved!.shops));
+        setOwnedIds((current) => (current.size ? current : new Set(saved!.ownedIds)));
+        setSelected((current) => current ?? saved!.shops[0] ?? null);
+      } else {
+        showAlert(
+          "Could not load business",
+          "We couldn’t reach our servers. Check the banner at the top and try again in a moment.",
+        );
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -2352,6 +2374,15 @@ function Dashboard({
   useEffect(() => {
     if (!preview) load();
   }, [preview]);
+  // When our servers come back, reload quietly.
+  const wasDown = useRef(false);
+  useEffect(() => {
+    if (serviceStatus.level !== "ok") wasDown.current = true;
+    else if (wasDown.current && serviceStatus.checkedAt) {
+      wasDown.current = false;
+      if (!preview) void load(true);
+    }
+  }, [serviceStatus.level, serviceStatus.checkedAt]);
   // Force the first-run loyalty programme wizard for an owner (never staff)
   // whose shop has no reward defined yet — see LoyaltyProgramSetup above.
   useEffect(() => {
@@ -2513,6 +2544,7 @@ function Dashboard({
     >
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
+      {!preview && <OutageBanner status={serviceStatus} />}
       {platformNotices.filter((notice) => !dismissedNoticeIds.has(notice.id)).map((notice) => (
         <View key={notice.id} style={styles.platformBanner}>
           <Text style={styles.platformBannerText}>
@@ -2709,11 +2741,26 @@ function AppRoot() {
     }
     (async () => {
       await supabase.rpc("ensure_current_user_bootstrap");
-      const { data } = await supabase
+      const rolesKey = `loyalty-loop:business-roles:v1:${session.user.id}`;
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id);
-      const roles = (data || []).map((r: any) => r.role);
+      if (error || !data) {
+        // Couldn't reach us (outage or no signal): never sign people out for
+        // that. Use the roles saved last time; the server still checks every action.
+        let saved: string[] = [];
+        try {
+          saved = JSON.parse(Storage.getItemSync(rolesKey) || "[]");
+        } catch {}
+        setIsOwner(saved.includes("business_owner"));
+        setAllowed(true);
+        return;
+      }
+      try {
+        Storage.setItemSync(rolesKey, JSON.stringify(data.map((r: any) => r.role)));
+      } catch {}
+      const roles = data.map((r: any) => r.role);
       const ok = roles.some((role: string) =>
         ["admin", "brand_head", "business_owner", "staff"].includes(role),
       );

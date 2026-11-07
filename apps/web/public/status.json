@@ -1,0 +1,8 @@
+{
+  "level": "ok",
+  "title": "",
+  "message": "",
+  "apps": ["shopper", "business"],
+  "updated_at": "2026-11-07T00:00:00Z",
+  "_how_to_use": "Set level to 'degraded' (or 'down') and write a title and message to show the orange banner in both apps within 30 seconds of the deploy. Set level back to 'ok' to clear it. Remove an app from 'apps' to hide the banner there."
+}
