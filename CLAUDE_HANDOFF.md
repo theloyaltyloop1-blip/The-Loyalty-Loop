@@ -22,7 +22,8 @@ need Claude's sign-off before the next one starts.
   - `registerPushToken` no longer prompts on sign-in; after a first join a sheet asks "Get a ping when you earn a reward?" once (`push_ping_asked`).
   - One-time tips (`src/components/Tip.tsx`): under the member QR code and under the quick-cards + button.
   - Checks: tsc clean, 29/29 shopper unit tests. Expo web cannot bundle the shopper app, so not seen on screen; needs a device check.
-- **Next (owner: user):** approve the shopper OTA; then on a fresh install check guest list → Join → sign up → card opens joined → ping sheet.
+- **Shipped 2026-11-08 by OTA:** shopper groups 1.0.2 android c9495667 / ios 9910bbf8; 1.0.1 android 64571ed5 / ios b2c50365. All four verified (project ref + `guest_interests`). Business app not republished: its live OTA (71d15ba "New look") already matches main.
+- **Next (owner: user):** on a fresh install check guest list → Join → sign up → card opens joined → ping sheet.
 
 
 ## 2026-11-07 — Shopper Join button fixed (shipped by OTA)
