@@ -11,9 +11,9 @@ need Claude's sign-off before the next one starts.
 
 ---
 
-## 2026-11-08 — Business app: app-first onboarding (built, NOT shipped) - Claude
+## 2026-11-08 — Business app: app-first onboarding (main 036329a, shipped by OTA) - Claude
 
-Reorders the Business app along the owner's "steal this order" slides (open on the app, one question, account when there's something to save, permission when it helps, tips not tours). Branch `business-onboarding` (from origin/main 7de5340), uncommitted.
+Reorders the Business app along the owner's "steal this order" slides (open on the app, one question, account when there's something to save, permission when it helps, tips not tours). Commit 6755687, merged to main as 036329a.
 
 - **First screen is the setup itself.** Signed-out people land on "What kind of shop is it?" (`ShopOnboarding` with `ownerId={null}`), with "Already have an account? Sign in". The welcome slides, analytics-consent slide and `BusinessLanding` are removed. Analytics stays off unless switched on in Settings (it already defaulted to off).
 - **Account asked for last.** After "Looks good" a guest sees "Save your shop" (card preview, email + password only, no first/last name). The design is kept on the phone (`loyalty-loop:pending-shop:v1`, expo-sqlite kv-store) and created automatically the moment the owner is signed in (`autoSaved` effect in `shop-onboarding.tsx`). This survives an email-confirmation round trip. "Something different" (the AI builder) asks for the account before the builder, because `design-programme` needs auth. The pending design is cleared once the account has shops.
@@ -23,7 +23,9 @@ Reorders the Business app along the owner's "steal this order" slides (open on t
 
 Checks: retailer `tsc` clean; `tour-logic` tests pass. Web test build (temporary wasm asset setting, reverted) walked through as a guest: one question → name → rewards → "Save your shop"; the design was restored after a reload when the browser storage was swapped in. On web, kv-store's sync read times out (web-only, phones fine). **Not tested:** real sign-up → auto-create (I can't create accounts on production), any phone.
 
-Next (Claude, on owner's go): commit, push to main, OTA the Business app (runtime 1.0.1, both platforms, `--environment production`), verify bundles. Owner: try a fresh email on a phone after the OTA.
+OTA production, Business runtime 1.0.1: Android group bf29153b, iOS group 8279860e. Both bundles downloaded and checked (project ref, `pending-shop:v1`, "Save and go live").
+
+Next (owner): on a phone, sign out (or fresh install), set up a shop and sign up with a new email; confirm the shop goes live by itself, including after an email-confirmation link. Rollback: republish the previous Business group.
 
 ---
 
