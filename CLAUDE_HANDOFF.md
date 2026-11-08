@@ -11,6 +11,14 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-08 — Shopper signed-out home redesigned (f457fe3), shipped by OTA
+
+- Owner disliked the onboarding. The "What are you into?" question is removed; the app opens straight on the shop list.
+- `apps/shopper/src/components/GuestHome.tsx`: shops are now big brand-coloured cards (logo, category, name, reward pill), with an optional category filter row, a dark floating "Keep your cards / Sign up" bar, a "Sign in" button top right, and a pop-up sheet with a large card and a "Join {shop}" button. The join, sign-up and auto-join flow is unchanged. The `guest_interests` SecureStore key is no longer used.
+- Checks: shopper tsc clean. OTA production groups: 1.0.2 android dd9a2554, ios 9dcea1ef; 1.0.1 android 4986d6fe, ios 41702af1. All four bundles were downloaded and checked (projectRef plus the "Keep your cards" marker).
+- Not verified on a device. Next (Claude/owner): owner checks it signed out on a phone.
+
+
 ## 2026-11-07 — AI builder fix deployed, Squeezed fixed, shopper onboarding rebuilt (not shipped)
 
 - **AI builder (d45c39d, deployed):** `design-programme` edge function redeployed. Prompt now says "spend X, get Y" repeats via `points_cost` unless the owner says once; `designProblems()` sends back programmes whose points can never be spent (designer-only; `validateRules` unchanged so saved programmes still display). 10/10 designer tests.
