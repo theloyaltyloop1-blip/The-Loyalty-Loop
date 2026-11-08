@@ -6,10 +6,13 @@ import { supabase } from './supabase'
 
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) })
 
-export async function registerPushToken(userId: string) {
+/** Saves this phone's push token. Never shows the system question unless
+ * `ask` is set: permission is asked for when a ping would help, not on launch. */
+export async function registerPushToken(userId: string, { ask = false }: { ask?: boolean } = {}) {
   if (Platform.OS === 'web' || !Device.isDevice) return { registered: false, reason: 'physical device required' }
-  if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('default', { name: 'Business updates', importance: Notifications.AndroidImportance.DEFAULT, vibrationPattern: [0, 250, 250, 250] })
   const current = await Notifications.getPermissionsAsync()
+  if (!current.granted && !ask) return { registered: false, reason: 'not asked yet' }
+  if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('default', { name: 'Business updates', importance: Notifications.AndroidImportance.DEFAULT, vibrationPattern: [0, 250, 250, 250] })
   const permission = current.granted ? current : await Notifications.requestPermissionsAsync()
   if (!permission.granted) return { registered: false, reason: 'permission denied' }
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId

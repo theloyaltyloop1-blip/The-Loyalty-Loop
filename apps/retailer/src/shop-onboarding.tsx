@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BadgeCheck, Check, Gem, Plus, QrCode, ScanLine, Sparkles, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
+import { BadgeCheck, Check, Gem, Mail, Plus, QrCode, ScanLine, Sparkles, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
+import Storage from "expo-sqlite/kv-store";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import {
   PROGRAMMES,
@@ -30,6 +31,48 @@ const PROGRAMME_ORDER: ProgrammeId[] = ["stamps", "tiers", "points", "spend"];
 const KIND_ICONS = { everyday: Coffee, style: Gem, premium: Star } as const;
 
 export type OnboardingDestination = "tools" | "scan" | "home";
+
+const WEB_ORIGIN = "https://www.the-loyalty-loop.com";
+// Steps: 0 kind, 1 name, 2 rewards, 3 live. 4 is "Save your shop" (an account),
+// shown only to someone who started without one.
+const ACCOUNT_STEP = 4;
+
+/** A shop designed before the owner had an account. Kept on the phone so it
+ * survives sign-up (and an email confirmation), then created as soon as they're in. */
+type PendingShop = {
+  kindKey: ShopKind["key"] | null;
+  programme: ProgrammeId;
+  name: string;
+  countryCode: string;
+  draft: ProgrammeDraft | null;
+  custom: boolean;
+};
+const PENDING_KEY = "loyalty-loop:pending-shop:v1";
+
+function readPendingShop(): PendingShop | null {
+  try {
+    const raw = Storage.getItemSync(PENDING_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PendingShop;
+    return typeof parsed.name === "string" && parsed.programme ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function writePendingShop(shop: PendingShop) {
+  try {
+    Storage.setItemSync(PENDING_KEY, JSON.stringify(shop));
+  } catch {
+    // Storage unavailable: they'd just answer the questions again after signing in.
+  }
+}
+export function clearPendingShop() {
+  try {
+    Storage.removeItemSync(PENDING_KEY);
+  } catch {
+    // nothing saved
+  }
+}
 
 /** A shop that exists but has no rewards or levels yet (created before onboarding
  * was one transaction): only its rewards are asked, its programme is fixed. */
@@ -117,7 +160,9 @@ function CardPreview({ programme, name, draft, symbol }: { programme: ProgrammeI
   );
 }
 
-function Dots({ step }: { step: number }) {
+function Dots({ step: raw }: { step: number }) {
+  if (raw === 3) return null;
+  const step = raw === ACCOUNT_STEP ? STEP_COUNT - 1 : raw;
   return (
     <View style={styles.dots} accessibilityLabel={`Step ${step + 1} of ${STEP_COUNT}`}>
       {Array.from({ length: STEP_COUNT }, (_, i) => (
@@ -127,21 +172,42 @@ function Dots({ step }: { step: number }) {
   );
 }
 
-export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string; resume?: ResumeShop | null; onFinish: (destination: OnboardingDestination) => void }) {
+/**
+ * The Business app's first screen. Someone new answers one question (what kind
+ * of shop), names it and sees its card before we ask for anything. An account
+ * is asked for only at the end, when there's a shop to save.
+ *
+ * `ownerId` null = no account yet: "Looks good" leads to "Save your shop".
+ */
+export function ShopOnboarding({
+  ownerId,
+  resume,
+  onFinish,
+  onSignIn,
+}: {
+  ownerId: string | null;
+  resume?: ResumeShop | null;
+  onFinish: (destination: OnboardingDestination) => void;
+  /** Guests only: open the sign-in screen (staff, or owners coming back). */
+  onSignIn?: () => void;
+}) {
+  const guest = !ownerId;
   const resumeProgramme = resume ? programmeIdFor(resume.reward_model) : null;
-  const [step, setStep] = useState(resume ? 2 : 0);
-  const [kind, setKind] = useState<ShopKind | null>(null);
-  const [programme, setProgramme] = useState<ProgrammeId>(resumeProgramme ?? "stamps");
+  // A shop designed before signing up picks up where it left off.
+  const [pending] = useState(() => (resume ? null : readPendingShop()));
+  const [step, setStep] = useState(resume || pending ? 2 : 0);
+  const [kind, setKind] = useState<ShopKind | null>(() => SHOP_KINDS.find((k) => k.key === pending?.kindKey) ?? null);
+  const [programme, setProgramme] = useState<ProgrammeId>(resumeProgramme ?? pending?.programme ?? "stamps");
   const [picking, setPicking] = useState(false);
-  const [name, setName] = useState(resume?.name ?? "");
+  const [name, setName] = useState(resume?.name ?? pending?.name ?? "");
   // Guessed from the phone's time zone; the chip changes it. It sets the shop's currency.
   const countryOptions = selectableCountries(FALLBACK_COUNTRIES);
-  const [countryCode, setCountryCode] = useState(() => resume?.country_code ?? guessCountry(countryOptions.map((c) => c.code)));
-  const [draft, setDraft] = useState<ProgrammeDraft | null>(null);
+  const [countryCode, setCountryCode] = useState(() => resume?.country_code ?? pending?.countryCode ?? guessCountry(countryOptions.map((c) => c.code)));
+  const [draft, setDraft] = useState<ProgrammeDraft | null>(pending?.draft ?? null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   // "None of these fit": the owner describes their own programme to the AI builder.
-  const [custom, setCustom] = useState(false);
+  const [custom, setCustom] = useState(pending?.custom ?? false);
   const [rules, setRules] = useState<ProgrammeRules | null>(null);
   const isCustom = custom && !resume;
 
@@ -184,6 +250,7 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
         _brand_color: BRAND_COLOR,
       });
       if (error) throw error;
+      clearPendingShop();
       setDone(true);
       setStep(3);
     } catch (e) {
@@ -245,9 +312,14 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
       showAlert("Check your rewards", result && !result.ok ? result.message : "Please check the details.");
       return;
     }
+    if (guest) {
+      askForAccount();
+      return;
+    }
     setSaving(true);
     try {
       await save(result.args);
+      clearPendingShop();
       setDone(true);
       setStep(3);
     } catch (e) {
@@ -258,6 +330,19 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
   }
 
   const symbol = currency.symbol;
+
+  // Signed in with a shop designed beforehand: create it straight away.
+  const autoSaved = useRef(false);
+  useEffect(() => {
+    if (guest || !pending || pending.custom || autoSaved.current || !result) return;
+    autoSaved.current = true;
+    void looksGood();
+  }, [guest, result]);
+
+  function askForAccount() {
+    writePendingShop({ kindKey: kind?.key ?? null, programme, name: name.trim(), countryCode, draft, custom: isCustom });
+    setStep(ACCOUNT_STEP);
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -313,6 +398,13 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
               </View>
             )}
             <PrimaryButton title="Continue" disabled={!kind && !custom} onPress={() => setStep(1)} />
+            {guest && onSignIn && (
+              <Pressable onPress={onSignIn} style={styles.back} accessibilityRole="button">
+                <Text style={styles.backText}>
+                  Already have an account? <Text style={{ color: orange, textDecorationLine: "underline" }}>Sign in</Text>
+                </Text>
+              </Pressable>
+            )}
           </>
         )}
 
@@ -358,7 +450,12 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
             )}
             <PrimaryButton
               title="Continue"
-              onPress={() => (name.trim() ? setStep(2) : showAlert("Add your shop name", "Customers will see this on their loyalty card."))}
+              onPress={() => {
+                if (!name.trim()) return showAlert("Add your shop name", "Customers will see this on their loyalty card.");
+                // The AI designer needs an account; everything else waits until the end.
+                if (guest && isCustom) return askForAccount();
+                setStep(2);
+              }}
             />
             <Pressable onPress={() => setStep(0)} style={styles.back}>
               <Text style={styles.backText}>Back</Text>
@@ -462,6 +559,16 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
           </>
         )}
 
+        {step === ACCOUNT_STEP && guest && (
+          <SaveShopAccount
+            shopName={name.trim()}
+            custom={isCustom}
+            onBack={() => setStep(isCustom ? 1 : 2)}
+            onSignIn={onSignIn}
+            preview={!isCustom && draft ? <CardPreview programme={activeProgramme} name={name} draft={draft} symbol={symbol} /> : null}
+          />
+        )}
+
         {step === 3 && done && (isCustom ? rules : draft) && (
           <>
             <View style={styles.liveBadge}>
@@ -510,6 +617,116 @@ export function ShopOnboarding({ ownerId, resume, onFinish }: { ownerId: string;
         </View>
       </Sheet>
     </SafeAreaView>
+  );
+}
+
+/** "Save your shop": the one place a new owner is asked for an account. Email
+ * and password only. Once the account exists the app signs them in and the
+ * shop kept on the phone is created (see `pending` above). */
+function SaveShopAccount({
+  shopName,
+  custom,
+  preview,
+  onBack,
+  onSignIn,
+}: {
+  shopName: string;
+  custom: boolean;
+  preview: React.ReactNode;
+  onBack: () => void;
+  onSignIn?: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const shop = shopName || "Your shop";
+
+  async function create() {
+    const address = email.trim();
+    if (!address.includes("@")) return showAlert("Check your email", "Enter the email address you'd like to sign in with.");
+    if (password.length < 8) return showAlert("Choose a longer password", "Use at least 8 characters.");
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: address,
+        password,
+        options: { emailRedirectTo: `${WEB_ORIGIN}/auth/callback`, data: { intent: "business_owner" } },
+      });
+      if (error) throw error;
+      void supabase.functions.invoke("send-owner-legal-documents", { body: { email: address, site_url: WEB_ORIGIN } }).catch(() => undefined);
+      // With a session the app signs in by itself and creates the shop.
+      if (!data.session) setSentTo(address);
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
+      showAlert(
+        "Could not create your account",
+        /already|registered|exists/i.test(raw) ? "There's already an account with that email. Sign in instead and your shop will be created." : raw || "Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (sentTo)
+    return (
+      <>
+        <View style={styles.liveBadge}>
+          <Mail size={28} color="#fff" />
+        </View>
+        <Text style={[styles.hero, { textAlign: "center" }]}>Check your email</Text>
+        <Text style={[styles.copy, { textAlign: "center" }]}>
+          We've sent a link to {sentTo}. Tap it, then sign in. {shop} is saved on this phone and goes live as soon as you're in.
+        </Text>
+        {onSignIn && <PrimaryButton title="Sign in" onPress={onSignIn} />}
+        <Pressable onPress={() => setSentTo(null)} style={styles.back}>
+          <Text style={styles.backText}>Use a different email</Text>
+        </Pressable>
+      </>
+    );
+
+  return (
+    <>
+      <Text style={styles.hero}>Save your shop</Text>
+      <Text style={styles.copy}>
+        {custom
+          ? `A free account keeps ${shopName || "your shop"} safe, and lets our AI design its programme with you.`
+          : `${shop} is ready. A free account keeps it safe and puts it live.`}
+      </Text>
+      {preview ? <View style={{ marginTop: 18 }}>{preview}</View> : null}
+      <TextInput
+        style={[styles.input, { marginTop: 18 }]}
+        value={email}
+        onChangeText={setEmail}
+        placeholder="Email address"
+        placeholderTextColor="#000000"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
+      />
+      <TextInput
+        style={[styles.input, { marginTop: 10 }]}
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Password (8+ characters)"
+        placeholderTextColor="#000000"
+        secureTextEntry
+        autoComplete="new-password"
+        textContentType="newPassword"
+      />
+      <PrimaryButton title={busy ? "Saving…" : custom ? "Save and design it" : "Save and go live"} disabled={busy} onPress={create} />
+      {onSignIn && (
+        <Pressable onPress={onSignIn} style={styles.back} accessibilityRole="button">
+          <Text style={styles.backText}>
+            Already have an account? <Text style={{ color: orange, textDecorationLine: "underline" }}>Sign in</Text>
+          </Text>
+        </Pressable>
+      )}
+      <Pressable onPress={onBack} style={[styles.back, { paddingTop: 0 }]}>
+        <Text style={styles.backText}>Back</Text>
+      </Pressable>
+    </>
   );
 }
 

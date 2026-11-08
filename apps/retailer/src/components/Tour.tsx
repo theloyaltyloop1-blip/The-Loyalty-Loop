@@ -20,7 +20,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import Svg, { Defs, Mask, Rect } from 'react-native-svg'
+import Svg, { Rect } from 'react-native-svg'
 
 import {
   TOUR_STOPS,
@@ -38,8 +38,10 @@ import {
 } from '../tour-logic'
 
 /**
- * Guided tour on the real screens: a dimmed overlay with a spotlight cut-out
- * around a real element, one sentence, a Next / Got it pill and Skip.
+ * One-time tips on the real screens (tips, not a tour): a ring around a real
+ * element and one sentence beside it. Nothing is dimmed or blocked; the tip
+ * counts as seen the moment it appears, and goes when tapped, after a few
+ * seconds, or when the owner moves to another screen.
  *
  * - `<TourProvider>` wraps the dashboard and owns the seen-state (per shop, per
  *   stop, in SecureStore).
@@ -143,6 +145,15 @@ export function TourProvider({
     [registryVersion],
   )
 
+  const markSeen = useCallback(
+    (ids: TourStopId[]) => {
+      if (!businessId) return
+      setSeen((prev) => new Set([...prev, ...ids]))
+      for (const id of ids) SecureStore.setItemAsync(tourSeenKey(businessId, id), 'true').catch(() => {})
+    },
+    [businessId],
+  )
+
   // Pick and measure the next stop once the screen has settled.
   useEffect(() => {
     if (!enabled || !businessId || loadedFor !== businessId || current) return
@@ -160,22 +171,14 @@ export function TourProvider({
         const rect = { x, y, width, height }
         if (!rectIsUsable(rect, Dimensions.get('window'))) return giveUp()
         setCurrent({ stop, rect })
+        markSeen([stop.id])
       })
     }, 450)
     return () => {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [enabled, businessId, loadedFor, current, screen, seen, registered, skipped])
-
-  const markSeen = useCallback(
-    (ids: TourStopId[]) => {
-      if (!businessId) return
-      setSeen((prev) => new Set([...prev, ...ids]))
-      for (const id of ids) SecureStore.setItemAsync(tourSeenKey(businessId, id), 'true').catch(() => {})
-    },
-    [businessId],
-  )
+  }, [enabled, businessId, loadedFor, current, screen, seen, registered, skipped, markSeen])
 
   const advance = useCallback(() => {
     Haptics.selectionAsync().catch(() => {})
@@ -243,7 +246,8 @@ export function TourTarget({
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect)
 const PAD = 6
-const DIM = 'rgba(12,12,10,0.74)'
+const RING = '#2B3A67'
+const TIP_SECONDS = 7
 
 export function TourOverlay() {
   const state = useContext(StateContext)
@@ -294,21 +298,27 @@ export function TourOverlay() {
 
   const holeProps = useAnimatedProps(() => ({ x: x.value, y: y.value, width: w.value, height: h.value }))
 
+  // A tip, not a tour step: it gets out of the way by itself.
+  const advance = state?.advance
+  useEffect(() => {
+    if (!current || !advance) return
+    const timer = setTimeout(advance, TIP_SECONDS * 1000)
+    return () => clearTimeout(timer)
+  }, [current, advance])
+
   if (!state || !current || !target) return null
   const placement = calloutPlacement(
     { x: target.x, y: target.y, width: target.width, height: target.height },
     size.height || 1,
   )
   const copy = tourCopy(current.stop.id, state.programme)
-  const last = state.remaining <= 1
 
   return (
     <View
       ref={rootRef}
       style={StyleSheet.absoluteFill}
       collapsable={false}
-      accessibilityViewIsModal
-      onStartShouldSetResponder={() => true}
+      pointerEvents="box-none"
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout
         setSize({ width, height })
@@ -317,14 +327,7 @@ export function TourOverlay() {
     >
       {size.width > 0 && (
         <Svg width={size.width} height={size.height} style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Defs>
-            <Mask id="tour-hole">
-              <Rect x={0} y={0} width={size.width} height={size.height} fill="#fff" />
-              <AnimatedRect animatedProps={holeProps} rx={18} ry={18} fill="#000" />
-            </Mask>
-          </Defs>
-          <Rect x={0} y={0} width={size.width} height={size.height} fill={DIM} mask="url(#tour-hole)" />
-          <AnimatedRect animatedProps={holeProps} rx={18} ry={18} fill="none" stroke="#fff" strokeWidth={2} />
+          <AnimatedRect animatedProps={holeProps} rx={18} ry={18} fill="none" stroke={RING} strokeWidth={2.5} />
         </Svg>
       )}
       <Animated.View
@@ -333,56 +336,36 @@ export function TourOverlay() {
         style={[
           styles.callout,
           placement === 'below'
-            ? { top: Math.min(target.y + target.height + 16, Math.max(size.height - 190, 0)) }
-            : { bottom: Math.max(size.height - target.y + 16, 0) },
+            ? { top: Math.min(target.y + target.height + 12, Math.max(size.height - 120, 0)) }
+            : { bottom: Math.max(size.height - target.y + 12, 0) },
         ]}
       >
-        <Text style={styles.copy} accessibilityRole="header">
-          {copy}
-        </Text>
-        <View style={styles.row}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Skip the tour" onPress={state.skip} hitSlop={8} style={styles.skip}>
-            <Text style={styles.skipText}>Skip</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={last ? 'Got it' : 'Next'}
-            onPress={state.advance}
-            style={({ pressed }) => [styles.pill, pressed && { opacity: 0.85 }]}
-          >
-            <Text style={styles.pillText}>{last ? 'Got it' : 'Next'}</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${copy} Tap to hide`}
+          onPress={state.advance}
+          style={({ pressed }) => [styles.bubble, pressed && { opacity: 0.85 }]}
+        >
+          <Text style={styles.copy}>{copy}</Text>
+        </Pressable>
       </Animated.View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  callout: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 18,
+  callout: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
+  bubble: {
+    backgroundColor: '#1D1C1A',
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    maxWidth: 320,
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 12,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
-  copy: { color: '#000', fontSize: 18, fontWeight: '800', lineHeight: 24 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
-  skip: { minHeight: 44, justifyContent: 'center', paddingRight: 16 },
-  skipText: { color: '#000', fontSize: 15, fontWeight: '700', opacity: 0.6 },
-  pill: {
-    minHeight: 46,
-    paddingHorizontal: 28,
-    borderRadius: 999,
-    backgroundColor: '#2B3A67',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pillText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  copy: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 20, textAlign: 'center' },
 })

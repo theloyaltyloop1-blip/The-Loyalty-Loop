@@ -2,7 +2,7 @@ import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { AppAlertHost, showAlert } from "./src/components/AppAlert";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
-import { ShopOnboarding, type OnboardingDestination } from "./src/shop-onboarding";
+import { ShopOnboarding, clearPendingShop, type OnboardingDestination } from "./src/shop-onboarding";
 import {
   ActivityIndicator,
   AppState,
@@ -76,7 +76,7 @@ import {
 } from "./src/owner-pages";
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from "./src/biometric";
 import { registerPushToken } from "./src/push";
-import { completeOnboarding, getOnboardingComplete, getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
+import { getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
 import { TourOverlay, TourProvider, TourTarget, useTour } from "./src/components/Tour";
@@ -86,68 +86,6 @@ import { useLaunchUpdate } from "./src/launch-update";
 import { BusinessSettings } from "./src/shop-pages";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
-
-function BusinessLanding({ onContinue }: { onContinue: () => void }) {
-  return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAwareScrollView contentContainerStyle={styles.auth}>
-        <View style={styles.mark}>
-          <Text style={styles.markText}>↻</Text>
-        </View>
-        <Text style={styles.eyebrow}>THE LOYALTY LOOP FOR BUSINESS</Text>
-        <Text style={styles.hero}>Turn visits into{`\n`}regulars.</Text>
-        <Text style={styles.copy}>
-          A simple loyalty programme for independent businesses and the teams
-          that run them.
-        </Text>
-        <View style={styles.card}>
-          <Text style={styles.section}>Reward customers in seconds</Text>
-          <Text style={styles.copy}>
-            Scan their personal QR code or enter their code at the counter.
-          </Text>
-          <Text style={styles.section}>Keep every shop in sync</Text>
-          <Text style={styles.copy}>
-            Give owners and staff access to the businesses they work with.
-          </Text>
-          <Text style={styles.section}>Grow with clarity</Text>
-          <Text style={styles.copy}>
-            See your loyalty activity and customer progress in one place.
-          </Text>
-        </View>
-        <Button title="Sign in to your business" onPress={onContinue} />
-        <Text style={styles.small}>
-          New business? Create your loyalty programme on The Loyalty Loop
-          website.
-        </Text>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
-  );
-}
-
-function BusinessOnboarding({ onComplete }: { onComplete: () => void }) {
-  // Two screens: a plain welcome, then the analytics choice. (An animated
-  // "how a customer joins" explainer replaces the welcome copy later.)
-  const [step, setStep] = useState(0);
-  const finish = async (analyticsAllowed: boolean) => { await completeOnboarding(analyticsAllowed); onComplete(); };
-  return <SafeAreaView style={styles.safe}>
-    <StatusBar barStyle="dark-content" />
-    <KeyboardAwareScrollView contentContainerStyle={styles.onboarding}>
-    <View style={styles.onboardingMark}><Text style={styles.markText}>↻</Text></View>
-    {step === 0 ? <>
-      <Text style={styles.eyebrow}>WELCOME</Text>
-      <Text style={styles.onboardingTitle}>{"Loyalty made\nsimple."}</Text>
-      <Text style={styles.copy}>Customers scan your QR to join. You scan theirs to reward them. We take care of the rest.</Text>
-    </> : <View style={styles.onboardingConsent}>
-      <Text style={styles.eyebrow}>ONE LAST THING</Text>
-      <Text style={styles.section}>Help improve the business app?</Text>
-      <Text style={styles.copy}>Allow anonymous feature-use analytics. No customer data, QR codes, emails or message content is recorded.</Text>
-    </View>}
-    <View style={styles.onboardingDots}>{[0, 1].map((index) => <View key={index} style={[styles.onboardingDot, index === step && styles.onboardingDotActive]} />)}</View>
-    {step === 0
-      ? <Button title="Continue" onPress={() => setStep(1)} />
-      : <><Button title="Allow anonymous analytics" onPress={() => void finish(true)} /><Pressable onPress={() => void finish(false)} style={styles.onboardingSkip}><Text style={styles.onboardingSkipText}>Continue without analytics</Text></Pressable></>}
-  </KeyboardAwareScrollView></SafeAreaView>;
-}
 
 type Business = {
   id: string;
@@ -522,50 +460,15 @@ function manualEntryRefusal(error: { message?: string; details?: string } | null
   return null;
 }
 
-function Auth({ onSession }: { onSession: (session: Session) => void }) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [firstName, setFirstName] = useState(""),
-    [lastName, setLastName] = useState(""),
-    [email, setEmail] = useState(""),
+function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void; onNewShop: () => void }) {
+  const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false);
-  const signup = mode === "signup";
   async function submit() {
     if (!email.trim() || !password)
-      return showAlert(
-        "Check your details",
-        "Enter your business email and password.",
-      );
-    if (signup && (!firstName.trim() || !lastName.trim()))
-      return showAlert("Check your details", "Enter your first name and surname.");
-    if (signup && password.length < 8)
-      return showAlert("Choose a longer password", "Use at least 8 characters.");
+      return showAlert("Check your details", "Enter your email and password.");
     setBusy(true);
     try {
-      if (signup) {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            emailRedirectTo: `${WEB_ORIGIN}/auth/callback`,
-            data: { first_name: firstName.trim(), last_name: lastName.trim(), intent: "business_owner" },
-          },
-        });
-        if (error) throw error;
-        void supabase.functions
-          .invoke("send-owner-legal-documents", { body: { email: email.trim(), site_url: WEB_ORIGIN } })
-          .catch(() => undefined);
-        if (data.session) {
-          onSession(data.session);
-          return;
-        }
-        setMode("signin");
-        showAlert(
-          "Check your email",
-          `We've sent a confirmation link to ${email.trim()}. Follow it, then sign in here to set up your shop.`,
-        );
-        return;
-      }
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -573,9 +476,10 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
       if (error) throw error;
       onSession(data.session);
     } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
       showAlert(
-        signup ? "Could not create account" : "Could not sign in",
-        e instanceof Error ? e.message : "Please try again.",
+        "Could not sign in",
+        /confirm/i.test(raw) ? "Tap the link in the email we sent you first, then sign in." : raw || "Please try again.",
       );
     } finally {
       setBusy(false);
@@ -591,62 +495,40 @@ function Auth({ onSession }: { onSession: (session: Session) => void }) {
           <Text style={styles.markText}>↻</Text>
         </View>
         <Text style={styles.eyebrow}>THE LOYALTY LOOP FOR BUSINESS</Text>
-        <Text style={styles.hero}>
-          {signup ? "Bring your shop\nto the loop." : "Your regulars,\nall in one place."}
-        </Text>
+        <Text style={styles.hero}>Welcome back</Text>
         <Text style={styles.copy}>
-          {signup
-            ? "Create your business account, then set up your shop and rewards in a couple of minutes."
-            : "Sign in as an owner or staff member to reward customers at your shop."}
+          Sign in as an owner or staff member to reward customers at your shop.
         </Text>
         <View style={styles.card}>
-          {signup && (
-            <>
-              <TextInput
-                style={styles.input}
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="First name"
-                placeholderTextColor="#000000"
-                autoCapitalize="words"
-              />
-              <TextInput
-                style={styles.input}
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Surname"
-                placeholderTextColor="#000000"
-                autoCapitalize="words"
-              />
-            </>
-          )}
           <TextInput
             style={styles.input}
             value={email}
             onChangeText={setEmail}
-            placeholder="Business email address"
+            placeholder="Email address"
             placeholderTextColor="#000000"
             keyboardType="email-address"
             autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
           />
           <TextInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder={signup ? "Password (8+ characters)" : "Password"}
+            placeholder="Password"
             placeholderTextColor="#000000"
             secureTextEntry
+            autoComplete="current-password"
+            textContentType="password"
           />
           <Button
-            title={busy ? (signup ? "Creating account…" : "Signing in…") : signup ? "Create business account" : "Sign in to business"}
+            title={busy ? "Signing in…" : "Sign in"}
             onPress={submit}
             disabled={busy}
           />
         </View>
-        <Pressable onPress={() => setMode(signup ? "signin" : "signup")} style={styles.onboardingSkip}>
-          <Text style={styles.onboardingSkipText}>
-            {signup ? "Already registered? Sign in" : "New here? Create a business account"}
-          </Text>
+        <Pressable onPress={onNewShop} style={styles.onboardingSkip}>
+          <Text style={styles.onboardingSkipText}>New here? Set up your shop</Text>
         </Pressable>
         <Text style={styles.small}>
           Customer account? Use The Loyalty Loop shopper app.
@@ -2532,6 +2414,7 @@ function Dashboard({
     { id: "scan", icon: Stamp, label: "Scan", active: tab === "scan" },
     { id: "settings", icon: Store, label: "Shop", active: tab === "settings" },
   ] as const;
+  if (!loading && shops.length) clearPendingShop();
   if (!loading && !shops.length && canCreateBusiness) {
     return <ShopOnboarding ownerId={session.user.id} onFinish={finishOnboarding} />;
   }
@@ -2735,9 +2618,7 @@ function AppRoot() {
     [showAuth, setShowAuth] = useState(false),
     [locked, setLocked] = useState(false),
     [checkingLock, setCheckingLock] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const checkingUpdate = useLaunchUpdate();
-  useEffect(() => { getOnboardingComplete().then(setOnboardingComplete); }, []);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -2815,6 +2696,7 @@ function AppRoot() {
     return () => subscription.remove();
   }, [session?.user.id]);
   useEffect(() => {
+    // Only saves a token if notifications are already allowed: never asks on launch.
     if (session) void registerPushToken(session.user.id).catch(() => undefined);
   }, [session?.user.id]);
   if (!hasSupabaseConfig)
@@ -2829,7 +2711,7 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     );
-  if (checkingUpdate || onboardingComplete === null || checking || (session && (!allowed || checkingLock)))
+  if (checkingUpdate || checking || (session && (!allowed || checkingLock)))
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
@@ -2848,13 +2730,14 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     );
-  if (!onboardingComplete) return <BusinessOnboarding onComplete={() => setOnboardingComplete(true)} />;
+  // Open on the app, not a form: someone new starts setting up their shop and
+  // is asked for an account only when there's a shop to save.
   return session ? (
     <Dashboard session={session} canCreateBusiness={isOwner} />
   ) : showAuth ? (
-    <Auth onSession={setSession} />
+    <Auth onSession={setSession} onNewShop={() => setShowAuth(false)} />
   ) : (
-    <BusinessLanding onContinue={() => setShowAuth(true)} />
+    <ShopOnboarding ownerId={null} onSignIn={() => setShowAuth(true)} onFinish={() => undefined} />
   );
 }
 

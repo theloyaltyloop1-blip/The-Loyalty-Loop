@@ -11,6 +11,22 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-08 — Business app: app-first onboarding (built, NOT shipped) - Claude
+
+Reorders the Business app along the owner's "steal this order" slides (open on the app, one question, account when there's something to save, permission when it helps, tips not tours). Branch `business-onboarding` (from origin/main 7de5340), uncommitted.
+
+- **First screen is the setup itself.** Signed-out people land on "What kind of shop is it?" (`ShopOnboarding` with `ownerId={null}`), with "Already have an account? Sign in". The welcome slides, analytics-consent slide and `BusinessLanding` are removed. Analytics stays off unless switched on in Settings (it already defaulted to off).
+- **Account asked for last.** After "Looks good" a guest sees "Save your shop" (card preview, email + password only, no first/last name). The design is kept on the phone (`loyalty-loop:pending-shop:v1`, expo-sqlite kv-store) and created automatically the moment the owner is signed in (`autoSaved` effect in `shop-onboarding.tsx`). This survives an email-confirmation round trip. "Something different" (the AI builder) asks for the account before the builder, because `design-programme` needs auth. The pending design is cleared once the account has shops.
+- **Sign-in screen** is sign-in only ("Welcome back"); "New here? Set up your shop" goes back to the setup.
+- **No notification prompt on sign-in.** `registerPushToken` now only saves a token if permission was already granted (`{ ask: true }` to request). Owners currently receive no pushes (checked: no notifications rows for owner-only accounts), so nothing asks.
+- **Tour → one-time tips.** `Tour.tsx` no longer dims or blocks the screen: a ring plus a small dark bubble. Each tip is marked seen when shown, hides on tap, after 7 s, or on a screen change. Same stops and copy (`tour-logic.ts` unchanged).
+
+Checks: retailer `tsc` clean; `tour-logic` tests pass. Web test build (temporary wasm asset setting, reverted) walked through as a guest: one question → name → rewards → "Save your shop"; the design was restored after a reload when the browser storage was swapped in. On web, kv-store's sync read times out (web-only, phones fine). **Not tested:** real sign-up → auto-create (I can't create accounts on production), any phone.
+
+Next (Claude, on owner's go): commit, push to main, OTA the Business app (runtime 1.0.1, both platforms, `--environment production`), verify bundles. Owner: try a fresh email on a phone after the OTA.
+
+---
+
 ## 2026-11-07 — AI builder fix deployed, Squeezed fixed, shopper onboarding rebuilt (not shipped)
 
 - **AI builder (d45c39d, deployed):** `design-programme` edge function redeployed. Prompt now says "spend X, get Y" repeats via `points_cost` unless the owner says once; `designProblems()` sends back programmes whose points can never be spent (designer-only; `validateRules` unchanged so saved programmes still display). 10/10 designer tests.
