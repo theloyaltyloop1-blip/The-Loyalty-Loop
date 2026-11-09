@@ -11,6 +11,15 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-09 — Shopper: map tab is now a whole-page map (NOT committed, NOT shipped) - Claude
+
+Branch `shopper-full-map` (worktree `.claude/worktrees/shopper-full-map`, cut from origin/main d89cb19). Uncommitted.
+
+- **What changed** (`apps/shopper/App.tsx` only): the Map tab no longer shows a 320px map box inside a scrolling page. `MapTab` now fills the page between the status bar and the floating tab bar. A pill search bar floats on top (searches shop name or category; results drop down under it; no match offers "Ask them to join"). Shop cards swipe along the bottom: swiping moves the map to that shop, tapping a pin brings its card forward, tapping a card opens the shop. A round "my location" button appears when location is available; cards sort nearest-first with distance once the position is known. The app header is hidden on this tab. Unused `NearbyRow` removed.
+- **Checks done**: `tsc --noEmit` on the shopper app — no new errors (the only errors are missing modules in the borrowed install: `@expo-google-fonts/inter`, `instrument-serif`, `expo-sqlite/kv-store`).
+- **Not checked**: not run on a phone or emulator. The native Google map cannot render in the web preview, so layout, pin taps and card/map syncing on iOS and Android are unverified.
+- **Next (Claude, when the owner says so)**: test on a device, then commit and ship by OTA (`eas update --environment production`, per platform). JS-only, no new build needed.
+
 ## 2026-11-08 — Business app: app-first onboarding (main 036329a, shipped by OTA) - Claude
 
 Reorders the Business app along the owner's "steal this order" slides (open on the app, one question, account when there's something to save, permission when it helps, tips not tours). Commit 6755687, merged to main as 036329a.

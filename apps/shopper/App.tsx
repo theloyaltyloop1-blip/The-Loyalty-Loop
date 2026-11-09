@@ -8,6 +8,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Keyboard,
   Linking,
   PixelRatio,
   Platform,
@@ -30,6 +31,7 @@ import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features
 import { formatAddress } from './src/format-address'
 import { useLaunchUpdate } from './src/launch-update'
 import { useUserLocation } from './src/use-user-location'
+import { formatMiles, nearestFirst } from './src/distance'
 import type { HomeTier } from './src/home-progress'
 import { useQuickCards } from './src/quick-cards'
 import { shopMoney } from './src/money'
@@ -168,11 +170,11 @@ function SearchIcon({ color = foreground, size = 20 }: IconProps) {
 }
 
 // White, outlined search field so it stands out from the cream page background.
-function SearchBar({ value, onChangeText, accessibilityLabel, autoFocus }: { value: string; onChangeText: (v: string) => void; accessibilityLabel: string; autoFocus?: boolean }) {
+function SearchBar({ value, onChangeText, accessibilityLabel, autoFocus, floating, placeholder = 'Search shops' }: { value: string; onChangeText: (v: string) => void; accessibilityLabel: string; autoFocus?: boolean; floating?: boolean; placeholder?: string }) {
   return (
-    <View style={styles.searchBar}>
+    <View style={[styles.searchBar, floating && styles.searchBarFloating]}>
       <SearchIcon color={foreground} size={20} />
-      <TextInput accessibilityLabel={accessibilityLabel} placeholder="Search shops" placeholderTextColor="#000000" value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} autoFocus={autoFocus} />
+      <TextInput accessibilityLabel={accessibilityLabel} placeholder={placeholder} placeholderTextColor={floating ? '#6B6A66' : '#000000'} value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} autoFocus={autoFocus} />
       {value.length > 0 && (
         <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
           <CloseIcon color="#8A857C" size={16} />
@@ -1722,26 +1724,6 @@ function TrendingCard({ business, onPress }: { business: Business; onPress: () =
   )
 }
 
-function NearbyRow({ business, onPress }: { business: Business; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.nearbyRow, pressed && styles.pressed]}>
-      {business.logo_url ? (
-        <Image source={{ uri: business.logo_url }} style={styles.nearbyLogo} />
-      ) : (
-        <View style={[styles.nearbyLogo, { backgroundColor: business.brand_color || ink }]}>
-          <Text style={styles.logoLetter}>{initialsOf(business.name)}</Text>
-        </View>
-      )}
-      <View style={{ flex: 1 }}>
-        <Text style={styles.shopName} numberOfLines={1}>{business.name}</Text>
-        <Text style={styles.nearbyCategory} numberOfLines={1}>{[ratingLabel(business), business.category || 'Local business'].filter(Boolean).join(' · ')}</Text>
-        {business.address ? <Text style={styles.nearbyAddress} numberOfLines={1}>{formatAddress(business.address)}</Text> : null}
-      </View>
-      <ArrowRightIcon />
-    </Pressable>
-  )
-}
-
 /** Dietary and access filters (Halal, Vegan options…); a shop must have every selected one. */
 function FeatureFilter({ selected, onChange }: { selected: string[]; onChange: (next: string[]) => void }) {
   return (
@@ -1849,7 +1831,7 @@ function pinImageUrl(business: Business, color: string) {
 
 // Brand-coloured map pin: white ring, shop logo (or initials) inside, brand tail,
 // soft halo and a ground shadow. Replaces the stock red Google marker.
-function ShopMarker({ business, description, onCalloutPress }: { business: Business; description?: string; onCalloutPress?: () => void }) {
+function ShopMarker({ business, description, onPress, onCalloutPress }: { business: Business; description?: string; onPress?: () => void; onCalloutPress?: () => void }) {
   const color = business.brand_color || primary
   // Android snapshots custom markers to a bitmap; keep tracking view changes until the
   // logo has painted (or a fallback timeout), then freeze it for map performance.
@@ -1869,6 +1851,7 @@ function ShopMarker({ business, description, onCalloutPress }: { business: Busin
         anchor={{ x: 0.5, y: 0.9 }}
         image={{ uri: pinImageUrl(business, color) }}
         pinColor={color}
+        onPress={onPress}
         onCalloutPress={onCalloutPress}
       />
     )
@@ -1880,6 +1863,7 @@ function ShopMarker({ business, description, onCalloutPress }: { business: Busin
       description={description}
       anchor={{ x: 0.5, y: 0.9 }}
       tracksViewChanges={tracksViewChanges}
+      onPress={onPress}
       onCalloutPress={onCalloutPress}
     >
       <View style={styles.pinWrap} collapsable={false}>
@@ -1904,49 +1888,192 @@ function ShopMarker({ business, description, onCalloutPress }: { business: Busin
   )
 }
 
+function LocateIcon({ color = foreground, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={6.5} stroke={color} strokeWidth={2} />
+      <Circle cx={12} cy={12} r={2} fill={color} />
+      <Path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+function MapShopLogo({ business, size }: { business: Business; size: number }) {
+  const shape = { width: size, height: size, borderRadius: size * 0.3 }
+  if (business.logo_url) return <Image source={{ uri: business.logo_url }} style={[styles.nearbyLogo, shape]} />
+  return (
+    <View style={[styles.nearbyLogo, shape, { backgroundColor: business.brand_color || ink }]}>
+      <Text style={styles.logoLetter}>{initialsOf(business.name)}</Text>
+    </View>
+  )
+}
+
+// The swipeable shop cards sit above the floating tab bar (10 + 68 tall).
+const MAP_CARD_GAP = 12
+const MAP_CARD_SIDE = 20
+const MAP_CARDS_BOTTOM = 92
+const MAP_CARD_WIDTH = Math.min(Dimensions.get('window').width - 72, 420)
+const MAP_CARD_STEP = MAP_CARD_WIDTH + MAP_CARD_GAP
+
+// Whole-page map: the search bar floats on top, shop cards swipe along the bottom.
+// Swiping a card moves the map to that shop; tapping a pin brings its card forward.
 function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSelect: (business: Business) => void; onAsk: (query: string, location?: {lat:number;lng:number}) => void }) {
   const mapRef = useRef<MapView>(null)
+  const listRef = useRef<FlatList<{ shop: Business; miles: number | null }>>(null)
   const [query, setQuery] = useState('')
   const [center, setCenter] = useState<{lat:number;lng:number}|undefined>()
-  const matches = businesses.filter(b => b.name.toLowerCase().includes(query.trim().toLowerCase()))
-  const pins = businesses
-    .filter((b): b is Business & { lat: number; lng: number } => b.lat != null && b.lng != null)
-    .map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, business: b }))
-  const initialRegion = pins.length
-    ? { latitude: pins[0].lat, longitude: pins[0].lng, latitudeDelta: 0.07, longitudeDelta: 0.07 }
+  const { coords, status: locationStatus, locate } = useUserLocation()
+  const goToMeWhenFound = useRef(false)
+
+  const term = query.trim().toLowerCase()
+  const matches = term
+    ? businesses.filter(b => b.name.toLowerCase().includes(term) || (b.category || '').toLowerCase().includes(term))
+    : []
+  // Nearest first once we know where the shopper is.
+  const cards = useMemo(() => {
+    const pinned = businesses.filter(b => b.lat != null && b.lng != null)
+    return coords ? nearestFirst(pinned, coords) : pinned.map(shop => ({ shop, miles: null as number | null }))
+  }, [businesses, coords])
+  const initialRegion = cards.length
+    ? { latitude: cards[0].shop.lat as number, longitude: cards[0].shop.lng as number, latitudeDelta: 0.07, longitudeDelta: 0.07 }
     : undefined
 
   const fitAllPins = () => {
-    if (pins.length < 2) return
+    if (cards.length < 2) return
     mapRef.current?.fitToCoordinates(
-      pins.map((p) => ({ latitude: p.lat, longitude: p.lng })),
-      { edgePadding: { top: 60, right: 60, bottom: 60, left: 60 }, animated: false },
+      cards.map(({ shop }) => ({ latitude: shop.lat as number, longitude: shop.lng as number })),
+      { edgePadding: { top: 50, right: 50, bottom: 50, left: 50 }, animated: false },
     )
   }
 
+  const moveTo = (shop: Business, zoomIn = false) => {
+    if (shop.lat == null || shop.lng == null) return
+    if (zoomIn) mapRef.current?.animateToRegion({ latitude: shop.lat, longitude: shop.lng, latitudeDelta: 0.012, longitudeDelta: 0.012 }, 400)
+    else mapRef.current?.animateCamera({ center: { latitude: shop.lat, longitude: shop.lng } }, { duration: 350 })
+  }
+  const showCard = (shop: Business) => {
+    const index = cards.findIndex(card => card.shop.id === shop.id)
+    if (index >= 0) listRef.current?.scrollToOffset({ offset: index * MAP_CARD_STEP, animated: true })
+  }
+  const pickResult = (shop: Business) => {
+    Keyboard.dismiss()
+    setQuery('')
+    if (shop.lat == null || shop.lng == null) { onSelect(shop); return }
+    moveTo(shop, true)
+    // The cards are hidden while results show; wait for them to come back.
+    setTimeout(() => showCard(shop), 80)
+  }
+
+  const flyToMe = (at: {lat:number;lng:number}) => mapRef.current?.animateToRegion({ latitude: at.lat, longitude: at.lng, latitudeDelta: 0.03, longitudeDelta: 0.03 }, 400)
+  const goToMe = () => {
+    if (coords) { flyToMe(coords); return }
+    goToMeWhenFound.current = true
+    void locate()
+  }
+  useEffect(() => {
+    if (coords && goToMeWhenFound.current) { goToMeWhenFound.current = false; flyToMe(coords) }
+  }, [coords])
+  const canLocate = locationStatus === 'ask' || locationStatus === 'locating' || locationStatus === 'ready'
+
   return (
-    <>
-      <Text style={styles.pageTitle}>Shops near you</Text>
-      <SearchBar accessibilityLabel="Search shops on map" value={query} onChangeText={setQuery} />
-      {matches.length === 0 && <Pressable accessibilityRole="button" onPress={() => onAsk(query, center)} style={styles.settingsRow}><Text style={styles.settingsRowTitle}>Can't find your favourite shop? Ask them to join</Text></Pressable>}
-      {pins.length > 0 ? (
-        <View style={styles.mapWrap}>
-          <MapView ref={mapRef} provider={PROVIDER_GOOGLE} customMapStyle={QUIET_MAP_STYLE} showsPointsOfInterest={false} style={styles.nativeMap} initialRegion={initialRegion} rotateEnabled={false} onMapReady={fitAllPins} onRegionChangeComplete={region => setCenter({lat:region.latitude,lng:region.longitude})}>
-            {pins.map((pin) => (
-              <ShopMarker key={pin.id} business={pin.business} onCalloutPress={() => onSelect(pin.business)} />
-            ))}
-          </MapView>
-        </View>
+    <View style={styles.mapPage}>
+      {cards.length > 0 ? (
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_GOOGLE}
+          customMapStyle={QUIET_MAP_STYLE}
+          showsPointsOfInterest={false}
+          style={StyleSheet.absoluteFill}
+          initialRegion={initialRegion}
+          rotateEnabled={false}
+          toolbarEnabled={false}
+          showsUserLocation={locationStatus === 'ready'}
+          showsMyLocationButton={false}
+          mapPadding={{ top: 84, right: 0, bottom: MAP_CARDS_BOTTOM + 112, left: 0 }}
+          onMapReady={fitAllPins}
+          onPress={() => Keyboard.dismiss()}
+          onRegionChangeComplete={region => setCenter({lat:region.latitude,lng:region.longitude})}
+        >
+          {cards.map(({ shop }) => (
+            <ShopMarker key={shop.id} business={shop} onPress={() => showCard(shop)} onCalloutPress={() => onSelect(shop)} />
+          ))}
+        </MapView>
       ) : (
-        <View style={styles.mapPlaceholder}>
+        <View style={styles.mapEmpty}>
           <MapPinIcon color={primary} size={30} />
           <Text style={styles.mapPlaceholderText}>No shops have a pinned location yet.</Text>
         </View>
       )}
-      {matches.map((b) => (
-        <NearbyRow key={b.id} business={b} onPress={() => onSelect(b)} />
-      ))}
-    </>
+
+      <View style={styles.mapTop} pointerEvents="box-none">
+        <SearchBar floating placeholder="Search shops or categories" accessibilityLabel="Search shops on map" value={query} onChangeText={setQuery} />
+        {term.length > 0 && (
+          <View style={styles.mapResults}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              {matches.map((shop, index) => (
+                <Pressable key={shop.id} accessibilityRole="button" onPress={() => pickResult(shop)} style={({ pressed }) => [styles.mapResultRow, index > 0 && styles.mapResultDivider, pressed && styles.settingsRowPressed]}>
+                  <MapShopLogo business={shop} size={38} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mapResultName} numberOfLines={1}>{shop.name}</Text>
+                    <Text style={styles.mapResultMeta} numberOfLines={1}>{[shop.category || 'Local business', shop.address ? formatAddress(shop.address) : null].filter(Boolean).join(' · ')}</Text>
+                  </View>
+                </Pressable>
+              ))}
+              {matches.length === 0 && (
+                <Pressable accessibilityRole="button" onPress={() => { Keyboard.dismiss(); onAsk(query, center) }} style={({ pressed }) => [styles.mapResultRow, pressed && styles.settingsRowPressed]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mapResultName}>No shops match “{query.trim()}”</Text>
+                    <Text style={[styles.mapResultMeta, { color: primary, fontWeight: '700' }]}>Can't find your favourite shop? Ask them to join</Text>
+                  </View>
+                </Pressable>
+              )}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+
+      {term.length === 0 && cards.length > 0 && (
+        <View style={styles.mapBottom} pointerEvents="box-none">
+          {canLocate && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Show my location" onPress={goToMe} style={({ pressed }) => [styles.mapLocate, pressed && styles.pressed]}>
+              {locationStatus === 'locating' && !coords ? <ActivityIndicator color={primary} /> : <LocateIcon color={primary} />}
+            </Pressable>
+          )}
+          <FlatList
+            ref={listRef}
+            data={cards}
+            horizontal
+            keyExtractor={({ shop }) => shop.id}
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={MAP_CARD_STEP}
+            decelerationRate="fast"
+            contentContainerStyle={styles.mapCards}
+            onMomentumScrollEnd={event => {
+              const card = cards[Math.round(event.nativeEvent.contentOffset.x / MAP_CARD_STEP)]
+              if (card) moveTo(card.shop)
+            }}
+            renderItem={({ item: { shop, miles } }) => {
+              const open = openStatus(shop.opening_hours)
+              return (
+                <Pressable accessibilityRole="button" accessibilityLabel={`Open ${shop.name}`} onPress={() => onSelect(shop)} style={({ pressed }) => [styles.mapCard, pressed && styles.mapCardPressed]}>
+                  <MapShopLogo business={shop} size={56} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.shopName} numberOfLines={1}>{shop.name}</Text>
+                    <Text style={styles.nearbyCategory} numberOfLines={1}>{[ratingLabel(shop), shop.category || 'Local business'].filter(Boolean).join(' · ')}</Text>
+                    <Text style={styles.mapCardMeta} numberOfLines={1}>
+                      {miles != null && <Text style={styles.mapCardMiles}>{formatMiles(miles)}</Text>}
+                      {miles != null && (open || shop.address) ? ' · ' : ''}
+                      {open ? <Text style={{ color: open.open ? '#1E7A46' : '#8A857C' }}>{open.label}</Text> : shop.address ? formatAddress(shop.address) : ''}
+                    </Text>
+                  </View>
+                  <ArrowRightIcon />
+                </Pressable>
+              )
+            }}
+          />
+        </View>
+      )}
+    </View>
   )
 }
 
@@ -2738,7 +2865,7 @@ function AppHome({ session }: { session: Session }) {
   return (
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
       <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
-      {!discovering && tab !== 'home' && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
+      {!discovering && tab !== 'home' && tab !== 'map' && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
       {!discovering && <OutageBanner status={serviceStatus} savedAt={savedAt} />}
       {!discovering && (
         <PlatformBanner
@@ -2754,10 +2881,11 @@ function AppHome({ session }: { session: Session }) {
           onOpenShop={setSelected}
           onBack={() => setTab('home')}
         />
+      ) : tab === 'map' ? (
+        <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />
       ) : (
         <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
           {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
-          {tab === 'map' && <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
           {tab === 'favourites' && (
@@ -2944,6 +3072,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#1A2138', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
   input: { backgroundColor: '#EFEBE3', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.14)', paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  searchBarFloating: { marginBottom: 0, borderRadius: 999, borderWidth: 0, paddingHorizontal: 20, shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   searchInput: { flex: 1, paddingVertical: 16, color: foreground, fontSize: 16 },
   askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
   askShopIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
@@ -3016,8 +3145,21 @@ const styles = StyleSheet.create({
   empty: { color: '#000000', fontSize: 15, lineHeight: 22, marginTop: 12 },
 
   // Map
-  mapWrap: { height: 320, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 20 },
-  mapPlaceholder: { backgroundColor: card, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', padding: 24, alignItems: 'center', gap: 12, marginBottom: 20 },
+  mapPage: { flex: 1, backgroundColor: background },
+  mapEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32 },
+  mapTop: { position: 'absolute', top: 12, left: 16, right: 16 },
+  mapResults: { marginTop: 8, maxHeight: 320, backgroundColor: '#fff', borderRadius: 22, overflow: 'hidden', shadowColor: '#1A2138', shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  mapResultRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 60 },
+  mapResultDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
+  mapResultName: { fontSize: 15.5, fontWeight: '800', color: foreground },
+  mapResultMeta: { fontSize: 12.5, color: '#55524C', marginTop: 2 },
+  mapBottom: { position: 'absolute', left: 0, right: 0, bottom: MAP_CARDS_BOTTOM },
+  mapLocate: { alignSelf: 'flex-end', marginRight: MAP_CARD_SIDE, marginBottom: 12, width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
+  mapCards: { paddingHorizontal: MAP_CARD_SIDE, gap: MAP_CARD_GAP, paddingBottom: 14, paddingTop: 4 },
+  mapCard: { width: MAP_CARD_WIDTH, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff', borderRadius: 24, padding: 14, shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
+  mapCardPressed: { transform: [{ scale: 0.98 }] },
+  mapCardMeta: { color: '#55524C', fontSize: 12.5, fontWeight: '600', marginTop: 3 },
+  mapCardMiles: { color: foreground, fontWeight: '800' },
   mapPlaceholderText: { textAlign: 'center', color: '#000000', fontSize: 13.5, lineHeight: 19 },
 
   // News
