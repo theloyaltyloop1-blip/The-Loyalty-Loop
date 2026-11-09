@@ -11,14 +11,13 @@ need Claude's sign-off before the next one starts.
 
 ---
 
-## 2026-11-09 — Shopper: map tab is now a whole-page map (NOT committed, NOT shipped) - Claude
+## 2026-11-09 — Shopper: map tab is a whole-page map (3ff6879, shipped by OTA) - Claude
 
-Branch `shopper-full-map` (worktree `.claude/worktrees/shopper-full-map`, cut from origin/main d89cb19). Uncommitted.
-
-- **What changed** (`apps/shopper/App.tsx` only): the Map tab no longer shows a 320px map box inside a scrolling page. `MapTab` now fills the page between the status bar and the floating tab bar. A pill search bar floats on top (searches shop name or category; results drop down under it; no match offers "Ask them to join"). Shop cards swipe along the bottom: swiping moves the map to that shop, tapping a pin brings its card forward, tapping a card opens the shop. A round "my location" button appears when location is available; cards sort nearest-first with distance once the position is known. The app header is hidden on this tab. Unused `NearbyRow` removed.
-- **Checks done**: `tsc --noEmit` on the shopper app — no new errors (the only errors are missing modules in the borrowed install: `@expo-google-fonts/inter`, `instrument-serif`, `expo-sqlite/kv-store`).
-- **Not checked**: not run on a phone or emulator. The native Google map cannot render in the web preview, so layout, pin taps and card/map syncing on iOS and Android are unverified.
-- **Next (Claude, when the owner says so)**: test on a device, then commit and ship by OTA (`eas update --environment production`, per platform). JS-only, no new build needed.
+- **What changed** (`apps/shopper/App.tsx` only): the Map tab no longer shows a 320px map box inside a scrolling page. `MapTab` fills the page between the status bar and the floating tab bar. A pill search bar floats on top (searches shop name or category; results drop down under it; no match offers "Ask them to join"). Shop cards swipe along the bottom: swiping moves the map to that shop, tapping a pin brings its card forward, tapping a card opens the shop. A round "my location" button appears when location is available; cards sort nearest-first with distance once the position is known. The app header is hidden on this tab and pull-to-refresh no longer applies there. Unused `NearbyRow` removed. No new native modules.
+- **Checks done**: shopper `tsc --noEmit` clean on a fresh `npm ci`; `location-guard` test passes.
+- **Shipped 2026-11-09 by OTA** (production channel, `--environment production`): runtime 1.0.2 Android group c4a28474 / iOS 4e6aeed8; runtime 1.0.1 Android ebaa2b9d / iOS 5429788d. All four bundles downloaded and checked (project ref, "Search shops or categories", "Show my location"), and the update server serves them for both runtimes and platforms.
+- **Not checked**: not seen on a phone or emulator. Layout, pin taps and card/map syncing on iOS and Android are unverified.
+- **Next (owner)**: open the shopper app twice (an update applies on the second launch) and try the Map tab on Android and iPhone. **Rollback**: republish the previous shopper groups (1.0.2 android c9495667 / ios 9910bbf8; 1.0.1 android 64571ed5 / ios b2c50365).
 
 ## 2026-11-08 — Business app: app-first onboarding (main 036329a, shipped by OTA) - Claude
 
