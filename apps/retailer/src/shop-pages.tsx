@@ -29,6 +29,7 @@ import {
   Image as ImageIcon,
   LifeBuoy,
   LogOut,
+  MapPin,
   Plus,
   QrCode,
   Settings as SettingsIcon,
@@ -43,6 +44,8 @@ import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { PROGRAMMES, programmeIdFor } from "@loyalty-loop/loyalty";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./shop-features";
 import { supabase } from "./supabase";
+import { MapPinPicker } from "./MapPinPicker";
+import { validPin, type LatLng } from "./tile-map";
 import { setSimulatedOutage, simulatedOutage } from "./service-status";
 import { biometricLockEnabled, setBiometricLock } from "./biometric";
 import { getUsageAnalyticsConsent, setUsageAnalyticsConsent } from "./usage-analytics";
@@ -59,6 +62,9 @@ export type ShopBusiness = {
   description?: string | null;
   address?: string | null;
   postcode?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  country_code?: string | null;
   phone?: string | null;
   brand_color?: string;
   logo_url?: string | null;
@@ -285,6 +291,7 @@ function completenessOf(business: ShopBusiness): Completeness[] {
   return [
     { key: "address", label: "Address", done: filled(business.address), action: "details" },
     { key: "postcode", label: "Postcode", done: filled(business.postcode), action: "details" },
+    { key: "pin", label: "Map pin", done: validPin(business.lat, business.lng) !== null, action: "details" },
     { key: "phone", label: "Phone number", done: filled(business.phone), action: "details" },
     { key: "description", label: "Description", done: filled(business.description), action: "details" },
     { key: "logo", label: "Logo", done: filled(business.logo_url), action: "branding" },
@@ -551,7 +558,27 @@ function ShopDetailsPage({
     [loyaltyType, setLoyaltyType] = useState<ShopBusiness["loyalty_type"]>(
       business.loyalty_type || "stamp_card",
     ),
-    [saving, setSaving] = useState(false);
+    [saving, setSaving] = useState(false),
+    [pinOpen, setPinOpen] = useState(false);
+  const pin = validPin(business.lat, business.lng);
+  // Saved straight away, separately from the rest of the form: the owner has
+  // just pressed "Save pin" and should not have to press Save changes as well.
+  const savePin = async (next: LatLng | null) => {
+    try {
+      const { data, error } = await supabase
+        .from("businesses")
+        .update({ lat: next?.lat ?? null, lng: next?.lng ?? null })
+        .eq("id", business.id)
+        .select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("Nothing was saved. Only the shop owner can change the map pin.");
+      await onChanged();
+      setPinOpen(false);
+    } catch (e) {
+      showAlert("Could not save the pin", e instanceof Error ? e.message : "Please try again.");
+      throw e;
+    }
+  };
   // Rewards unlock at £ amounts (ARCH_PLAN.md §4.11). The highest amount starts
   // a new cycle of rewards.
   const spendShop = business.reward_model === "spend_threshold";
@@ -746,6 +773,31 @@ function ShopDetailsPage({
                 />
               </View>
             </View>
+            <Text style={styles.fieldLabel}>Map pin</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setPinOpen(true)}
+              style={({ pressed }) => [styles.pinRow, pressed && styles.pressed]}
+            >
+              <View style={[styles.settingsIcon, { backgroundColor: pin ? "#DDEBDD" : "#FBE7BF" }]}>
+                <MapPin size={19} color={ink} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingsRowTitle}>{pin ? "Your shop is on the map" : "Put your shop on the map"}</Text>
+                <Text style={styles.settingsRowDetail}>
+                  {pin ? "Tap to move the pin." : "Shoppers nearby can't see you on the map until you add a pin."}
+                </Text>
+              </View>
+              <ChevronRight size={18} color={ink} />
+            </Pressable>
+            <MapPinPicker
+              visible={pinOpen}
+              pin={pin}
+              addressQuery={[address, postcode].map((part) => part.trim()).filter(Boolean).join(", ")}
+              countryCode={business.country_code}
+              onSave={savePin}
+              onClose={() => setPinOpen(false)}
+            />
           </View>
           <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
           <View style={styles.settingsGroup}>
@@ -1304,6 +1356,18 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(20,20,18,.07)",
   },
   settingsRowLast: { borderBottomWidth: 0 },
+  pinRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 13,
+    minHeight: 64,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "rgba(20,20,18,.12)",
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   settingsIcon: {
     width: 38,
     height: 38,

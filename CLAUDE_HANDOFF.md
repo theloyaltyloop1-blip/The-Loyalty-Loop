@@ -11,6 +11,17 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-09 — Business app: owners can set their map pin (NOT committed, NOT shipped) - Claude
+
+Branch `business-map-pin` (worktree `.claude/worktrees/shopper-full-map`, cut from main 06b81d9). Uncommitted.
+
+- **Why**: shops set up in the app had no way to get `businesses.lat/lng` (only the website's Settings page set it), so they never appeared on the shopper map.
+- **What changed**: Shop → Edit profile has a "Map pin" row under Postcode/Phone. It opens `apps/retailer/src/MapPinPicker.tsx`: full-screen map, fixed pin in the middle, drag the map under it, zoom buttons, search box. With no pin yet it starts at the typed address/postcode. "Save pin" writes `lat`/`lng` straight away (checked with `.select("id")`); "Take my shop off the map" clears them. Saving is blocked until zoomed in to street level. "Map pin" is added to the shop completeness list (`shop-pages.tsx`) and "Put your shop on the map" to the home checklist (`App.tsx`).
+- **No native module**: the Business app has no map library, and adding one needs new store builds. The picker draws OpenStreetMap image tiles with plain views (`src/tile-map.ts`, pure maths) and looks addresses up with OpenStreetMap Nominatim (one request per search, app User-Agent set; Nominatim returns 403 without it). So it is JS-only and can go by OTA. The shopper map is still Google, so streets look slightly different between the two.
+- **Checks done**: retailer `tsc --noEmit` clean; `tile-map.test.mjs` 7/7 and the other retailer tests pass; tile and Nominatim requests return 200 with the app's User-Agent.
+- **Not checked**: not seen on a phone or in a browser (dragging, layout, saving against production). No database change needed (owners already update their own `businesses` row).
+- **Next (Claude, when the owner says so)**: commit, merge to main, Business OTA (runtime 1.0.1, `--environment production`, per platform), verify bundles. Then owner sets a pin on a real shop and checks it appears on the shopper map.
+
 ## 2026-11-09 — Shopper: map tab is a whole-page map (3ff6879, shipped by OTA) - Claude
 
 - **What changed** (`apps/shopper/App.tsx` only): the Map tab no longer shows a 320px map box inside a scrolling page. `MapTab` fills the page between the status bar and the floating tab bar. A pill search bar floats on top (searches shop name or category; results drop down under it; no match offers "Ask them to join"). Shop cards swipe along the bottom: swiping moves the map to that shop, tapping a pin brings its card forward, tapping a card opens the shop. A round "my location" button appears when location is available; cards sort nearest-first with distance once the position is known. The app header is hidden on this tab and pull-to-refresh no longer applies there. Unused `NearbyRow` removed. No new native modules.

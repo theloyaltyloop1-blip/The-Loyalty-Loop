@@ -94,6 +94,8 @@ type Business = {
   description?: string | null;
   address?: string | null;
   postcode?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   phone?: string | null;
   website?: string | null;
   brand_color?: string;
@@ -1450,6 +1452,7 @@ function DashboardHome({
   const checklist = [
     { label: "Add your address", done: Boolean(business.address) },
     { label: "Add your postcode", done: Boolean(business.postcode) },
+    { label: "Put your shop on the map", done: business.lat != null && business.lng != null },
     { label: "Write a short description", done: Boolean(business.description) },
   ];
   const spendShop = business.reward_model === "spend_threshold";
