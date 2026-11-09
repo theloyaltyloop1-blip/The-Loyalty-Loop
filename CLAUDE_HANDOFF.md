@@ -11,6 +11,16 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-09 — AI business coach kept to Loyalty Loop topics (NOT committed, NOT deployed) - Claude
+
+Branch `coach-on-topic` (worktree `.claude/worktrees/shopper-full-map`, cut from main 98e6d78). Uncommitted.
+
+- **Why**: owner asked that the coach only talk about The Loyalty Loop. The old prompt only said "give small-business marketing/retention advice", so it would answer anything. It also passed whatever message roles the client sent straight to the model, so a hand-made request could add its own `system` instructions.
+- **What changed**: new `supabase/functions/_shared/business-coach.ts` (+ `business-coach.test.mjs`, 6/6). The system prompt lists what the coach helps with (the loyalty programme, customers and stats, getting people to join and return, using app features) and makes it reply with one fixed redirect (`OFF_TOPIC_REPLY`) to anything else, including general shop questions like menus, pricing, rent, tax and legal matters, and attempts to change its role. Mixed questions: it answers only the Loyalty Loop part. `cleanCoachMessages` accepts only `user`/`assistant` turns (max 20, 1,500 characters each, last must be `user`). Client-sent stats are capped at 6,000 characters and labelled as data. Temperature 0.7 → 0.4. `business-coach-chat/index.ts` uses these; auth, ownership and rate limits unchanged. No app change, so no OTA is needed.
+- **Checks done**: tests pass; `deno check` clean on a copy without Supabase's edge-runtime type file (that file fails to resolve `npm:openai` locally, unrelated).
+- **Not checked**: the model's actual replies. No Groq key locally and Claude can't sign in as an owner, so on- and off-topic answers are untested.
+- **Next**: Claude deploys `business-coach-chat` when the owner says so. Then the owner asks the coach one on-topic and one off-topic question in the Business app. Rollback: redeploy the function from main 98e6d78.
+
 ## 2026-11-09 — Business app: owners can set their map pin (f334279, shipped by OTA) - Claude
 
 - **Why**: shops set up in the app had no way to get `businesses.lat/lng` (only the website's Settings page set it), so they never appeared on the shopper map.

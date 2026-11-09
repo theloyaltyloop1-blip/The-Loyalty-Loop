@@ -1,9 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { cleanCoachMessages, coachSystemPrompt } from "../_shared/business-coach.ts";
 
 // Owner-only conversational AI coach. Re-checks owner_id = auth.uid() OR
 // admin server-side. Client sends the running message list plus current
 // stats context so the model has real numbers, not just vibes.
+// It only talks about the shop's loyalty and The Loyalty Loop: see
+// ../_shared/business-coach.ts for the instructions and input checks.
 
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -42,13 +45,10 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const businessId = body.business_id as string | undefined;
-    const messages = body.messages as Array<{ role: string; content: string }> | undefined;
+    const messages = cleanCoachMessages(body.messages);
     const stats = body.stats;
-    if (!businessId || !Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "business_id and messages required" }), { status: 400, headers: jsonHeaders });
-    }
-    if (messages.length > 20) {
-      return new Response(JSON.stringify({ error: "conversation too long" }), { status: 400, headers: jsonHeaders });
+    if (!businessId || !messages) {
+      return new Response(JSON.stringify({ error: "business_id and a valid conversation are required" }), { status: 400, headers: jsonHeaders });
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -74,7 +74,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Daily message limit reached — try again tomorrow." }), { status: 429, headers: jsonHeaders });
     }
 
-    const systemPrompt = `You are the Business Coach inside The Loyalty Loop, a neighbourhood loyalty-card app. You're helping the owner of "${business.name}" (a ${business.category ?? "local"} shop running a ${business.loyalty_type} loyalty program). Give specific, practical, small-business marketing/retention advice grounded in the stats provided below when relevant. Keep answers concise (a few sentences to a short paragraph, not an essay), conversational, no markdown headers. If you don't have enough data to answer precisely, say so and suggest what would help.\n\nCurrent stats:\n${JSON.stringify(stats ?? {}, null, 2)}`;
+    const systemPrompt = coachSystemPrompt(business, stats);
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -85,7 +85,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         model: "openai/gpt-oss-120b",
         messages: [{ role: "system", content: systemPrompt }, ...messages.slice(-10)],
-        temperature: 0.7,
+        temperature: 0.4,
         max_tokens: 500,
       }),
     });
