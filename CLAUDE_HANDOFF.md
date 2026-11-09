@@ -11,16 +11,15 @@ need Claude's sign-off before the next one starts.
 
 ---
 
-## 2026-11-09 — Business app: owners can set their map pin (NOT committed, NOT shipped) - Claude
-
-Branch `business-map-pin` (worktree `.claude/worktrees/shopper-full-map`, cut from main 06b81d9). Uncommitted.
+## 2026-11-09 — Business app: owners can set their map pin (f334279, shipped by OTA) - Claude
 
 - **Why**: shops set up in the app had no way to get `businesses.lat/lng` (only the website's Settings page set it), so they never appeared on the shopper map.
 - **What changed**: Shop → Edit profile has a "Map pin" row under Postcode/Phone. It opens `apps/retailer/src/MapPinPicker.tsx`: full-screen map, fixed pin in the middle, drag the map under it, zoom buttons, search box. With no pin yet it starts at the typed address/postcode. "Save pin" writes `lat`/`lng` straight away (checked with `.select("id")`); "Take my shop off the map" clears them. Saving is blocked until zoomed in to street level. "Map pin" is added to the shop completeness list (`shop-pages.tsx`) and "Put your shop on the map" to the home checklist (`App.tsx`).
 - **No native module**: the Business app has no map library, and adding one needs new store builds. The picker draws OpenStreetMap image tiles with plain views (`src/tile-map.ts`, pure maths) and looks addresses up with OpenStreetMap Nominatim (one request per search, app User-Agent set; Nominatim returns 403 without it). So it is JS-only and can go by OTA. The shopper map is still Google, so streets look slightly different between the two.
 - **Checks done**: retailer `tsc --noEmit` clean; `tile-map.test.mjs` 7/7 and the other retailer tests pass; tile and Nominatim requests return 200 with the app's User-Agent.
-- **Not checked**: not seen on a phone or in a browser (dragging, layout, saving against production). No database change needed (owners already update their own `businesses` row).
-- **Next (Claude, when the owner says so)**: commit, merge to main, Business OTA (runtime 1.0.1, `--environment production`, per platform), verify bundles. Then owner sets a pin on a real shop and checks it appears on the shopper map.
+- **Shipped 2026-11-09 by OTA** (production channel, `--environment production`, Business runtime 1.0.1): Android group 6eefc231, iOS group cf29c99f. Both bundles downloaded and checked (project ref, "Put your shop on the map", `tile.openstreetmap.org`); the update server serves them.
+- **Not checked**: not seen on a phone or in a browser (dragging, layout, saving against production). No database change was needed (owners already update their own `businesses` row).
+- **Next (owner)**: open the Business app twice, go to Shop → Edit profile → Map pin, save a pin, then check the shop shows on the shopper Map tab. **Rollback**: republish the previous Business groups (Android bf29153b, iOS 8279860e).
 
 ## 2026-11-09 — Shopper: map tab is a whole-page map (3ff6879, shipped by OTA) - Claude
 
