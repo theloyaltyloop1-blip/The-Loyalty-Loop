@@ -3258,6 +3258,15 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 
 **Open (later):** message templates + business-initiated progress/reward texts; payment method on the WhatsApp account; phone OTP; the "355" account the owner can't access.
 
+## WhatsApp no-reply diagnosed (2026-11-10 evening) - Claude
+- Owner texted START: nothing reached the webhook (no logs, no DB rows).
+- Temporary `whatsapp-diagnose` function (nonce-guarded, never returned the token; now retired to a 410 stub, verify_jwt on — delete it in the dashboard) showed: token = System User `loyaltyloop-whatsapp`, app 1389458169797693, valid, never expires, whatsapp_business_messaging + management.
+- `META_WHATSAPP_PHONE_NUMBER_ID` was the Meta test number (1364032340116481, +1 555-671-1182); `META_WHATSAPP_DISPLAY_NUMBER` likewise.
+- Real account: WABA 1112284144645677 (approved, business verified); number +44 7963 382835 = Phone number ID 1345822088617313, CONNECTED, CLOUD_API, LIVE.
+- Root cause of no inbound: WABA had NO subscribed apps. Fixed: `POST /1112284144645677/subscribed_apps` → success; app now listed.
+- Owner (via Claude for Chrome) gave the system user Full access to Messaging account 1112284144645677; the separate "WhatsApp account" asset assignment was not completed (not needed for API access as tested).
+- Owner action: set secrets `META_WHATSAPP_PHONE_NUMBER_ID=1345822088617313` and `META_WHATSAPP_DISPLAY_NUMBER=447963382835` (Claude can't write secrets), then text START. WhatsApp Manager shows "Missing valid payment method" (customer-initiated replies still work).
+
 ## Copy-ready prompt for Claude Code
 
 The WhatsApp inbound bot was restarted on 2026-11-10 (read "WhatsApp inbound bot restarted (2026-11-10)" in CLAUDE_HANDOFF.md). Check whether the owner's morning test worked: read the `whatsapp-webhook` logs for the last 24 h (Supabase project tgukdabfvvoywawmzbdo) and `whatsapp_message_log` counts by `direction` and `message_kind` (no phone numbers in your output). If sends failed, report the logged Meta error code and the fix (190 new System User token; 131030/100 wrong Phone number ID). Confirm `META_WHATSAPP_DISPLAY_NUMBER` was changed to the +44 number by calling `whatsapp-handoff` with `{"action":"start"}` through `pg_net` and checking the `wa.me` URL. Don't build business-initiated templates, payment method or phone OTP yet. Update this handoff with what you found.
