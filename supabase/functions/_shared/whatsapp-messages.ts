@@ -1,6 +1,6 @@
 // WhatsApp message wording. Pure functions, so they run under Deno and in
-// Node tests. Shops earn by £ spend or, while Fidel is still being built, by
-// stamps / points / visits (reward_model 'stamp_legacy').
+// Node tests. Shops earn by £ spend, stamps / visits ('stamp_legacy'),
+// points, levels ('tiers') or an AI-built custom programme ('custom').
 
 export type Tier = { title: string; spend_threshold_pence: number | null };
 export type ShopProgress = {
@@ -25,6 +25,39 @@ export function stampProgressText(business: StampSource, counts: StampCounts): s
   const unit = business.loyalty_type === "points" ? "points" : business.loyalty_type === "tiered" ? "visits" : "stamps";
   const have = unit === "points" ? counts.points_balance ?? 0 : unit === "visits" ? counts.visit_count ?? 0 : counts.stamp_count ?? 0;
   return `${have} of ${business.loyalty_config?.stamps_required ?? 10} ${unit}`;
+}
+
+export type CatalogItem = Tier & { points_cost?: number | null };
+type ProgrammeSource = StampSource & {
+  programme_rules?: { unit?: { one?: string; many?: string } | null } | null;
+};
+type ProgrammeCounts = StampCounts & { current_tier?: string | null };
+
+// One line of progress for any non-£ programme; null for a £ spend shop,
+// which uses nextTier/progressLine instead.
+//   stamps:          "3 of 8 stamps towards Free coffee"
+//   points / custom: "120 beans, 30 more beans for Free coffee"
+//   tiers:           "Gold level"
+export function programmeProgressText(business: ProgrammeSource, counts: ProgrammeCounts, catalog: CatalogItem[] = []): string | null {
+  if (business.reward_model === "spend_threshold") return null;
+  if (business.reward_model === "points" || business.reward_model === "custom") {
+    const one = business.programme_rules?.unit?.one?.trim() || "point";
+    const many = business.programme_rules?.unit?.many?.trim() || "points";
+    const amount = (n: number) => `${n} ${n === 1 ? one : many}`;
+    const balance = Math.max(0, counts.points_balance ?? 0);
+    const costed = catalog
+      .filter((r): r is CatalogItem & { points_cost: number } => typeof r.points_cost === "number" && r.points_cost > 0)
+      .sort((a, b) => a.points_cost - b.points_cost);
+    if (!costed.length) return amount(balance);
+    const next = costed.find((r) => r.points_cost > balance);
+    if (!next) return `${amount(balance)}, enough for ${costed[costed.length - 1].title}`;
+    const left = next.points_cost - balance;
+    return `${amount(balance)}, ${left} more ${left === 1 ? one : many} for ${next.title}`;
+  }
+  if (business.reward_model === "tiers") return counts.current_tier ? `${counts.current_tier} level` : "no level yet";
+  const stamps = stampProgressText(business, counts);
+  const reward = catalog.length === 1 ? catalog[0].title : null;
+  return stamps && reward ? `${stamps} towards ${reward}` : stamps;
 }
 
 export function pounds(pence: number): string {

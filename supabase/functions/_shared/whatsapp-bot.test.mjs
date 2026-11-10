@@ -56,3 +56,14 @@ test('a good answer is sent; a bad or failed one becomes the safe fallback', asy
 test('a customer with no shops still gets sensible data', () => {
   assert.deepEqual(botData(ctx({ shops: [], firstName: null })), { customer_first_name: null, shops: [] });
 });
+
+test('custom programmes give the model how-to-earn and reward costs', async () => {
+  const { botData } = await import('./whatsapp-bot.ts');
+  const data = botData({ firstName: 'Sam', shops: [{
+    name: 'Squeezed', category: 'Cafe', description: null, progressPence: 0, thresholdPence: null, tiers: [{ title: 'Free coffee', spend_threshold_pence: null }],
+    stampLine: '70 beans, 30 more beans for Free coffee', readyRewards: [], programmeSummary: 'Earn 10 beans per visit.', rewardCosts: ['Free coffee for 100 beans'],
+  }] });
+  assert.equal(data.shops[0].how_it_works, 'Earn 10 beans per visit.');
+  assert.deepEqual(data.shops[0].all_rewards, ['Free coffee for 100 beans']);
+  assert.equal(data.shops[0].progress_towards_reward, '70 beans, 30 more beans for Free coffee');
+});
