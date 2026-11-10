@@ -11,6 +11,43 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-10 — Compulsory business verification with AI checks: BUILT, not deployed - Claude
+
+Branch `business-verification` (worktree `.claude/worktrees/business-verification`, from origin/main 88c6e9a). Not committed yet.
+
+The design and an "As built" list are in `docs/BUSINESS_VERIFICATION_AI_2026-11-09.md`. Owner decisions:
+- Existing shops are never forced to verify.
+- Sole traders can be auto-approved.
+- UK only.
+- The AI makes the final call, with a spot-check list afterwards.
+- A Companies House key will come later. The check switches on when the secret is set.
+
+It ships in **shadow mode**: checks are recorded, admins still decide, and new shops go live as before. Going live is one admin button (Access panel, Business listings).
+
+Checks performed:
+- Rules unit tests 12/12.
+- Database test on embedded PostgreSQL 11/11, covering shadow/live, owner and service-role permissions, duplicate numbers, stale checks, spot-check undo, and admin approval.
+- Website `tsc -b` clean.
+- Business app `tsc` clean apart from two font packages missing from the local install (not related to this change).
+- Not checked: the edge function has not run anywhere. There's no Deno locally, so no type check or real Claude call has been done.
+
+Update 2026-11-10:
+- The migration is **applied to production** as `business_verification_ai`, followed by `business_verification_mode_revoke_anon`. Mode is `shadow` and no shop changed.
+- The security advisor showed nothing new after the revoke.
+- `verify-business` is NOT deployed yet.
+
+Next actions:
+- Claude, with the owner's OK:
+  - Set `ANTHROPIC_API_KEY` in Supabase secrets.
+  - Deploy `verify-business`.
+  - Test with a real document in shadow mode.
+  - Commit and merge.
+  - Deploy the website and publish the Business app OTA.
+- Owner: try a few real documents in shadow mode, then press "Go live".
+- Later: a Companies House key, the HMRC VAT register, and new camera permission text at the next native build.
+
+---
+
 ## 2026-11-09 — AI business coach kept to Loyalty Loop topics (7ec013a, deployed) - Claude
 
 - **Why**: owner asked that the coach only talk about The Loyalty Loop. The old prompt only said "give small-business marketing/retention advice", so it would answer anything. It also passed whatever message roles the client sent straight to the model, so a hand-made request could add its own `system` instructions.

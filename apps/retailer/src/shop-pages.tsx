@@ -33,6 +33,7 @@ import {
   Plus,
   QrCode,
   Settings as SettingsIcon,
+  ShieldCheck,
   Star,
   Store,
   Trash2,
@@ -62,6 +63,8 @@ export type ShopBusiness = {
   description?: string | null;
   address?: string | null;
   postcode?: string | null;
+  verification_status?: "unverified" | "pending" | "verified" | "rejected";
+  approval_status?: "pending" | "approved" | "rejected";
   lat?: number | null;
   lng?: number | null;
   country_code?: string | null;
@@ -464,6 +467,15 @@ function ShopHome({
           detail="A short step-by-step business guide"
           onPress={() => onOpenPage("tutorial")}
         />
+        {isOwner ? (
+          <SettingsRow
+            icon={ShieldCheck}
+            tile="teal"
+            title="Verification"
+            detail={business.verification_status === "verified" ? "Your business is verified" : business.approval_status === "pending" ? "Needed before your shop goes live" : "Get the verified badge"}
+            onPress={() => onOpenPage("verify")}
+          />
+        ) : null}
         <SettingsRow
           icon={LifeBuoy}
           tile="teal"

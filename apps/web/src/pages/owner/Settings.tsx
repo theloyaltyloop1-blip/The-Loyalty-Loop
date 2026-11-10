@@ -26,6 +26,10 @@ import {
   fetchWinbackLog,
   triggerWinbackEmails,
   submitVerificationDocument,
+  runVerificationCheck,
+  fetchMyVerification,
+  type MyVerification,
+  type VerificationRoute,
   fetchBusinessPrivate,
   type BusinessPrivate,
   fetchStaffMembers,
@@ -1534,21 +1538,31 @@ const VERIFICATION_STATUS_META: Record<
   rejected: { label: 'Rejected', color: 'var(--color-destructive)', bg: 'var(--color-destructive-subtle)', icon: XCircle },
 }
 
+const VERIFICATION_ROUTES: { id: VerificationRoute; title: string; hint: string; label: string }[] = [
+  { id: 'company', title: 'Limited company', hint: 'Your certificate of incorporation, or any Companies House letter showing your company number.', label: 'Company document' },
+  { id: 'vat', title: 'VAT registered', hint: 'Your VAT certificate, or an HMRC letter showing your VAT number.', label: 'VAT document' },
+  { id: 'sole_trader', title: 'Sole trader or partnership', hint: "A business rates bill, business bank letter, premises licence or food registration letter from the last 12 months, showing your shop's name and address.", label: 'Proof of business address' },
+]
+
 function VerificationTab() {
   const { session } = useAuth()
   const { business, updateLocalBusiness } = useOwner()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [file, setFile] = React.useState<File | null>(null)
-  const [label, setLabel] = React.useState('')
+  const [route, setRoute] = React.useState<VerificationRoute | null>(null)
+  const [postcode, setPostcode] = React.useState(() => business?.postcode ?? '')
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [details, setDetails] = React.useState<BusinessPrivate | null>(null)
+  const [latest, setLatest] = React.useState<MyVerification | null>(null)
+  const [resultMessage, setResultMessage] = React.useState<string | null>(null)
   const businessId = business?.id
   const verificationStatus = business?.verification_status
   React.useEffect(() => {
     if (!businessId) return
     let active = true
     fetchBusinessPrivate(businessId).then(d => { if (active) setDetails(d) }).catch(() => {})
+    fetchMyVerification(businessId).then(d => { if (active) setLatest(d) }).catch(() => {})
     return () => { active = false }
   }, [businessId, verificationStatus])
 
@@ -1558,21 +1572,30 @@ function VerificationTab() {
   const meta = VERIFICATION_STATUS_META[status] ?? VERIFICATION_STATUS_META.unverified
   const StatusIcon = meta.icon
   const canSubmit = status === 'unverified' || status === 'rejected'
+  const hidden = business.approval_status === 'pending'
+  const chosen = VERIFICATION_ROUTES.find(r => r.id === route)
 
   async function handleSubmit() {
-    if (!file || !label.trim()) return
+    if (!file || !chosen || !postcode.trim()) return
     setSubmitting(true)
     setError(null)
+    setResultMessage(null)
     try {
-      const updated = await submitVerificationDocument(business!.id, session!.user.id, file, label.trim())
-      updateLocalBusiness({
-        verification_status: updated.verification_status,
-        verification_submitted_at: updated.verification_submitted_at,
-      })
-      setDetails(d => ({ verification_rejection_reason: null, ...d, verification_document_label: label.trim() }))
+      // The check compares the document's postcode with the shop's, so save it first.
+      const cleanPostcode = postcode.trim().toUpperCase()
+      if (cleanPostcode !== (business!.postcode ?? '')) {
+        await updateBusiness(business!.id, { postcode: cleanPostcode })
+        updateLocalBusiness({ postcode: cleanPostcode })
+      }
+      const updated = await submitVerificationDocument(business!.id, session!.user.id, file, chosen.label)
+      updateLocalBusiness({ verification_status: updated.verification_status, verification_submitted_at: updated.verification_submitted_at })
       setFile(null)
-      setLabel('')
       if (inputRef.current) inputRef.current.value = ''
+      const result = await runVerificationCheck(business!.id, chosen.id)
+      setResultMessage(result.message)
+      if (result.decision === 'approved') updateLocalBusiness({ verification_status: 'verified', approval_status: 'approved' })
+      if (result.decision === 'rejected') updateLocalBusiness({ verification_status: 'rejected' })
+      fetchBusinessPrivate(business!.id).then(setDetails).catch(() => {})
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Submission failed')
     } finally {
@@ -1580,70 +1603,76 @@ function VerificationTab() {
     }
   }
 
+  const statusLine =
+    status === 'verified'
+      ? details?.verification_document_label ? `Verified from ${details.verification_document_label}` : 'Your business is verified.'
+      : status === 'pending'
+        ? resultMessage ?? "Thanks. We're checking your document and will let you know."
+        : status === 'rejected'
+          ? resultMessage ?? latest?.owner_message ?? details?.verification_rejection_reason ?? 'We could not verify that document. Try another one below.'
+          : hidden ? 'Upload one document to put your shop live.' : 'Upload a document to earn the verified badge.'
+
   return (
     <>
       <SectionCard>
         <div className="flex items-center gap-3 mb-4">
-          <span
-            className="h-10 w-10 rounded-full flex items-center justify-center shrink-0"
-            style={{ backgroundColor: meta.bg }}
-          >
+          <span className="h-10 w-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: meta.bg }}>
             <StatusIcon className="h-5 w-5" style={{ color: meta.color }} />
           </span>
           <div>
             <p className="font-display text-lg font-semibold tracking-tight text-foreground">{meta.label}</p>
-            <p className="text-xs text-muted-foreground">
-              {status === 'verified' && details?.verification_document_label
-                ? `Verified from ${details.verification_document_label}`
-                : status === 'pending'
-                  ? 'An admin will review your document soon.'
-                  : status === 'rejected'
-                    ? details?.verification_rejection_reason ?? 'Your submission was rejected. Resubmit below.'
-                    : 'Upload a document to earn the verified badge.'}
-            </p>
+            <p className="text-xs text-muted-foreground">{statusLine}</p>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          A verified badge shows customers your shop is a real, checked business. It doesn't affect whether your
-          shop is live. That already happened when you finished onboarding.
+          {hidden
+            ? "Your shop is hidden from customers until it's verified. Most shops are checked automatically within a few minutes."
+            : 'A verified badge shows customers your shop is a real, checked business.'}
         </p>
       </SectionCard>
 
       {canSubmit && (
-        <SectionCard title="Submit proof of business">
-          <p className="text-sm text-muted-foreground mb-4">
-            A VAT certificate, Companies House certificate, or a recent utility bill in your business's name.
-            PNG, JPEG, WEBP or PDF, up to 10MB. Stored privately. Only you and Loyalty Loop admins can see it.
-          </p>
-          <Field label="What is this document?">
-            <input
-              className={inputClass}
-              placeholder="e.g. VAT certificate"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-            />
-          </Field>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,application/pdf"
-            className="hidden"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-          <button data-press-feedback
-            onClick={() => inputRef.current?.click()}
-            className="flex items-center gap-2 rounded-full border border-border px-4 h-11 text-sm font-semibold text-foreground mb-4"
-          >
-            <FileCheck className="h-4 w-4" /> {file ? file.name : 'Choose file'}
-          </button>
-          {error && <p className="text-sm text-destructive mb-3">{error}</p>}
-          <button data-press-feedback
-            onClick={handleSubmit}
-            disabled={submitting || !file || !label.trim()}
-            className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
-          >
-            {submitting ? 'Submitting…' : 'Submit for review'}
-          </button>
+        <SectionCard title="Prove your business is real">
+          <p className="text-sm font-semibold text-foreground mb-2">Which describes your business?</p>
+          <div className="grid gap-2 mb-4">
+            {VERIFICATION_ROUTES.map(r => (
+              <button data-press-feedback
+                key={r.id}
+                type="button"
+                onClick={() => setRoute(r.id)}
+                className={'text-left rounded-2xl border-2 px-4 py-3 transition-colors ' + (route === r.id ? 'border-primary bg-primary/10' : 'border-border')}
+              >
+                <span className="block text-sm font-semibold text-foreground">{r.title}</span>
+                <span className="block text-xs text-muted-foreground mt-0.5">{r.hint}</span>
+              </button>
+            ))}
+          </div>
+          {chosen && (
+            <>
+              <Field label="Your shop's postcode">
+                <input className={inputClass} placeholder="e.g. M4 1HN" value={postcode} onChange={(e) => setPostcode(e.target.value)} autoComplete="postal-code" />
+              </Field>
+              <p className="text-xs text-muted-foreground mb-3">
+                PNG, JPEG, WEBP or PDF, up to 10MB. Make sure all four corners and the text are clear. Business documents only, never a passport or driving licence.
+                It's stored privately, read automatically by AI to check it, and deleted 90 days after a decision.
+              </p>
+              <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <button data-press-feedback
+                onClick={() => inputRef.current?.click()}
+                className="flex items-center gap-2 rounded-full border border-border px-4 h-11 text-sm font-semibold text-foreground mb-4"
+              >
+                <FileCheck className="h-4 w-4" /> {file ? file.name : 'Choose file'}
+              </button>
+              {error && <p className="text-sm text-destructive mb-3">{error}</p>}
+              <button data-press-feedback
+                onClick={handleSubmit}
+                disabled={submitting || !file || !postcode.trim()}
+                className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
+              >
+                {submitting ? 'Checking your document…' : 'Check my document'}
+              </button>
+            </>
+          )}
         </SectionCard>
       )}
     </>

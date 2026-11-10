@@ -50,6 +50,8 @@ export interface Business {
   features: string[] | null
   halal_certifier: string | null
   verification_status: 'unverified' | 'pending' | 'verified' | 'rejected'
+  /** 'pending' while a new shop waits for verification (hidden from shoppers). */
+  approval_status?: 'pending' | 'approved' | 'rejected'
   verification_submitted_at: string | null
   is_active: boolean
   whatsapp_onboarding_enabled: boolean
@@ -967,6 +969,89 @@ export async function submitVerificationDocument(
   })
   if (error) throw error
   return data as Business
+}
+
+export type VerificationRoute = 'company' | 'vat' | 'sole_trader'
+
+export interface VerificationResult {
+  /** 'pending' means a person (or shadow mode) will decide. */
+  decision: 'approved' | 'rejected' | 'pending'
+  message: string
+  mode: 'shadow' | 'live'
+}
+
+/** Runs the automatic check on the document submitted with submitVerificationDocument. */
+export async function runVerificationCheck(businessId: string, route: VerificationRoute): Promise<VerificationResult> {
+  const { data, error } = await supabase.functions.invoke('verify-business', {
+    body: { business_id: businessId, route },
+  })
+  if (error) {
+    // The function sends a friendly message in the body for 4xx answers.
+    const context = (error as { context?: Response }).context
+    const body = context ? await context.json().catch(() => null) : null
+    throw new Error(body?.error ?? 'We could not check your document. Please try again.')
+  }
+  return data as VerificationResult
+}
+
+export interface MyVerification {
+  decision: 'approved' | 'rejected' | 'needs_review'
+  owner_message: string | null
+  created_at: string
+  mode: 'shadow' | 'live'
+}
+
+export async function fetchMyVerification(businessId: string): Promise<MyVerification | null> {
+  const { data, error } = await supabase.rpc('my_business_verification', { _business_id: businessId })
+  if (error) throw error
+  return ((data as MyVerification[] | null) ?? [])[0] ?? null
+}
+
+export interface VerificationCheck {
+  id: string
+  business_id: string
+  business_name: string
+  owner_email: string | null
+  document_path: string
+  route: VerificationRoute
+  mode: 'shadow' | 'live'
+  decision: 'approved' | 'rejected' | 'needs_review'
+  decided_by: 'rules' | 'ai' | 'error'
+  reasons: string[]
+  owner_message: string | null
+  extraction: Record<string, unknown> | null
+  extraction_alt: Record<string, unknown> | null
+  register_result: Record<string, unknown> | null
+  ai_decision: { decision: string; reason: string } | null
+  register_checked: boolean
+  spot_check: boolean
+  spot_checked_at: string | null
+  spot_check_ok: boolean | null
+  applied_at: string | null
+  created_at: string
+}
+
+/** Admin-only. `spotCheckOnly` lists automatic approvals nobody has looked at yet. */
+export async function fetchVerificationChecks(spotCheckOnly = false): Promise<VerificationCheck[]> {
+  const { data, error } = await supabase.rpc('admin_business_verification_checks', { _only_spot_check: spotCheckOnly, _limit: 100 })
+  if (error) throw error
+  return (data ?? []) as VerificationCheck[]
+}
+
+export async function spotCheckVerification(checkId: string, ok: boolean, reason?: string) {
+  const { error } = await supabase.rpc('admin_spot_check_business_verification', { _check_id: checkId, _ok: ok, _reason: reason ?? null })
+  if (error) throw error
+}
+
+export async function fetchVerificationMode(): Promise<'shadow' | 'live'> {
+  const { data, error } = await supabase.from('business_verification_settings').select('mode').maybeSingle()
+  if (error) throw error
+  return data?.mode === 'live' ? 'live' : 'shadow'
+}
+
+export async function setVerificationMode(mode: 'shadow' | 'live') {
+  const { error } = await supabase.rpc('admin_set_business_verification_mode', { _mode: mode })
+  if (error) throw error
 }
 
 export interface PendingVerification {
