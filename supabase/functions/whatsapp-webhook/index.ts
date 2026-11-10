@@ -244,7 +244,9 @@ async function linkedUser(admin: Admin, phone: string): Promise<{ userId: string
 async function joinByChat(admin: Admin, phone: string, query: string): Promise<string | null> {
   const { userId, optedOut } = await linkedUser(admin, phone);
   if (optedOut) return null;
-  if (await recentCount(admin, phone, "outbound", ["join"], 0.5)) return null;
+  // Flood guard only: picking from a list ("JOIN Bean Cafe" after "JOIN cafe")
+  // must still get a reply.
+  if (await recentCount(admin, phone, "outbound", ["join"], 0.5) >= 6) return null;
   const matches = matchShops(query, await approvedShops(admin));
   if (!matches.length) {
     await sendText(admin, phone, NO_SHOP_FOUND, "join", null, userId);
@@ -452,11 +454,15 @@ Deno.serve(async (request: Request) => {
         : await processText(admin, phone, text!);
       if (!kind) continue;
       await admin.from("whatsapp_message_log").update({message_kind:kind,provider_payload:{type:item.type}}).eq('provider_message_id',item.id);
-      } catch { console.error('whatsapp-webhook reserved command failed'); }
+      } catch (commandError) {
+        // Error text only (Meta codes are logged in sendText); no phone or message text.
+        const detail = commandError instanceof Error ? commandError.message : (commandError as { message?: string; code?: string })?.message ?? (commandError as { code?: string })?.code ?? 'unknown';
+        console.error('whatsapp-webhook reserved command failed', String(detail).slice(0, 200));
+      }
     }
     return json({ ok: true });
   } catch (error) {
-    console.error("whatsapp-webhook request failed");
+    console.error("whatsapp-webhook request failed", error instanceof Error ? error.message.slice(0, 200) : "unknown");
     return json({ ok: false }, 500);
   }
 });

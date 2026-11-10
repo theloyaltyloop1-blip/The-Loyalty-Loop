@@ -68,6 +68,15 @@ export function WhatsAppOnboarding() {
           },
         })
         if (signUpError) throw signUpError
+        // Supabase hides existing accounts: signUp "succeeds" with no
+        // identities and sends nothing. Ask them to sign in instead.
+        if (!data.session && data.user && (data.user.identities ?? []).length === 0) {
+          setMode('signin')
+          setPassword('')
+          setConfirmPassword('')
+          setError('You already have a Loyalty Loop account with this email. Sign in with your password to link WhatsApp.')
+          return
+        }
         if (data.session) await finishLinking()
         else setConfirmationSent(true)
       }
