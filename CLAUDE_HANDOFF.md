@@ -3267,6 +3267,11 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 - Owner (via Claude for Chrome) gave the system user Full access to Messaging account 1112284144645677; the separate "WhatsApp account" asset assignment was not completed (not needed for API access as tested).
 - Owner action: set secrets `META_WHATSAPP_PHONE_NUMBER_ID=1345822088617313` and `META_WHATSAPP_DISPLAY_NUMBER=447963382835` (Claude can't write secrets), then text START. WhatsApp Manager shows "Missing valid payment method" (customer-initiated replies still work).
 
+## WhatsApp bot confirmed working end to end (checked 2026-11-13) - Claude
+- Owner set the two secrets. Log on 2026-11-10 21:53-21:54 UTC: 3 START, name/email steps, 3 secure links sent, 1 sign-up claimed, number linked (not opted out, conversation idle), 2 questions answered by the AI (bot_answer). Meta sends succeed, so the access token is proven. No send errors logged.
+- `/whatsapp/start` now returns wa.me/447963382835.
+- Not yet tried by the owner: "shops near me", JOIN, STOP/START, LOGOUT.
+
 ## Copy-ready prompt for Claude Code
 
 The WhatsApp inbound bot was restarted on 2026-11-10 (read "WhatsApp inbound bot restarted (2026-11-10)" in CLAUDE_HANDOFF.md). Check whether the owner's morning test worked: read the `whatsapp-webhook` logs for the last 24 h (Supabase project tgukdabfvvoywawmzbdo) and `whatsapp_message_log` counts by `direction` and `message_kind` (no phone numbers in your output). If sends failed, report the logged Meta error code and the fix (190 new System User token; 131030/100 wrong Phone number ID). Confirm `META_WHATSAPP_DISPLAY_NUMBER` was changed to the +44 number by calling `whatsapp-handoff` with `{"action":"start"}` through `pg_net` and checking the `wa.me` URL. Don't build business-initiated templates, payment method or phone OTP yet. Update this handoff with what you found.
