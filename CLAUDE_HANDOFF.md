@@ -3272,6 +3272,10 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 - `/whatsapp/start` now returns wa.me/447963382835.
 - Not yet tried by the owner: "shops near me", JOIN, STOP/START, LOGOUT.
 
+## WhatsApp sign-up returns to WhatsApp (2026-11-13) - Claude, e7f0331 on main, website live
+- Owner: after signing up it didn't reopen WhatsApp. Now `WhatsAppOnboarding.tsx` (password route) and `AuthCallback.tsx` (email-confirm route) show "You're all set" (`components/whatsapp-linked.tsx`) and open `wa.me/447963382835?text=START` (URL from `whatsapp-handoff` action start); sending it replies with rewards + card link. Buttons as fallback: Open WhatsApp / Open your Loyalty Loop account.
+- Checks: web tsc clean, build OK; live onboarding chunk imports `whatsapp-linked`. Not yet tried on a phone (iOS Safari may ask "Open in WhatsApp?").
+
 ## Copy-ready prompt for Claude Code
 
 The WhatsApp inbound bot was restarted on 2026-11-10 (read "WhatsApp inbound bot restarted (2026-11-10)" in CLAUDE_HANDOFF.md). Check whether the owner's morning test worked: read the `whatsapp-webhook` logs for the last 24 h (Supabase project tgukdabfvvoywawmzbdo) and `whatsapp_message_log` counts by `direction` and `message_kind` (no phone numbers in your output). If sends failed, report the logged Meta error code and the fix (190 new System User token; 131030/100 wrong Phone number ID). Confirm `META_WHATSAPP_DISPLAY_NUMBER` was changed to the +44 number by calling `whatsapp-handoff` with `{"action":"start"}` through `pg_net` and checking the `wa.me` URL. Don't build business-initiated templates, payment method or phone OTP yet. Update this handoff with what you found.
