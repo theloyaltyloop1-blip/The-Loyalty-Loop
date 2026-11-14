@@ -9,6 +9,27 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-14 — Business app: business verification shipped by OTA (main 0ea03ec, shadow mode) - Claude
+
+PR #10 (merge commit 0ea03ec) is on `main`. The Business app now has Settings → Verification (photo from camera or library) and a Home banner while a shop is hidden. The `verify-business` function (v1, Gemini) and the website were already live. **Mode is still `shadow`: checks are recorded, nothing is applied.** Only the owner switches to live.
+
+- **Published by OTA** from a clean worktree of `origin/main` (not the main folder, which has other uncommitted work). Production branch/channel, `--environment production`, Business runtime 1.0.1, message "Business verification (shadow mode)". No EAS build.
+  - iOS: group `61e7b58e-3c63-4d87-9980-ab33e973ffb6` (update `01a1daa3-6c6e-7b3e-928e-d6189925f21e`)
+  - Android: group `7a6409dc-b59f-44c6-8133-67441a5a9aab` (update `01a1daa4-e1ac-768d-9ad7-d0afdab4d84c`)
+  - Rollback if needed: republish the previous Business OTA (2026-11-09 map pin: Android 6eefc231, iOS cf29c99f) or `eas update:roll-back-to-embedded --branch production --runtime-version 1.0.1`.
+- **Checks performed:**
+  - `npx tsc --noEmit` in `apps/retailer`: clean, 0 errors (fresh `npm ci`; the two font-package errors from 2026-11-10 came from the old local install and did not appear).
+  - No native change: `apps/retailer/package.json` and `app.json` are unchanged since the last Business OTA (f334279); `expo-image-picker` was already in the 1.0.1 builds.
+  - Both **uploaded** bundles downloaded from the update server: each contains `tgukdabfvvoywawmzbdo`, `verify-business` and "Verification".
+  - The update server serves these two updates to runtime 1.0.1 on channel `production` for iOS and Android.
+  - Not checked: not seen on a phone yet; no real document has gone through the app.
+- **What's left:**
+  - Owner: upload one real document from the Business app (an update applies on the second launch). Claude then checks the row in `public.business_verification_checks` (result and reasons only; never paste document contents or extracted fields).
+  - Owner, later: a Companies House API key.
+  - The HMRC VAT register is not connected.
+  - Claude, at the next native build: update the camera permission text in `apps/retailer/app.json` to mention verification photos.
+  - Owner only: press "Go live" when happy with shadow results.
+
 ---
 
 ## 2026-11-14 — Business verification: Gemini option added; deployment paused by owner - Claude
