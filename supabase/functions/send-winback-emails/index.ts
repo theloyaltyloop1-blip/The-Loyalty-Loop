@@ -5,12 +5,15 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // the business_id they pass in (checked below, not just implied by the
 // JWT existing). Finds members inactive past `days_inactive_threshold`,
 // not opted out of promos, not already emailed in the last 30 days
-// (winback_email_log), sends via Resend, logs each send.
+// (winback_email_log), sends via Resend, logs each send. Coupons are
+// redeemed once at the till via redeem_winback_coupon (30-day expiry).
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-// Must be an address on a domain verified in Resend. The resend.dev fallback
-// only delivers to the Resend account owner, so real customers get nothing.
-const FROM_EMAIL = Deno.env.get("WINBACK_FROM_EMAIL") ?? "The Loyalty Loop <onboarding@resend.dev>";
+// Must be on a domain verified in Resend (the-loyalty-loop.com). Never fall back
+// to onboarding@resend.dev: Resend only delivers that to the account owner, so
+// real customers would get nothing.
+const RESEND_FROM_EMAIL = [Deno.env.get("WINBACK_FROM_EMAIL"), Deno.env.get("RESEND_FROM_EMAIL")]
+  .find((v) => v && !v.includes("resend.dev")) ?? "The Loyalty Loop <hello@the-loyalty-loop.com>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -21,9 +24,18 @@ const corsHeaders = {
 };
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
+// No 0/O/1/I so codes read back cleanly at the till.
+const COUPON_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function genCoupon() {
-  return "COMEBACK" + Math.random().toString(36).slice(2, 8).toUpperCase();
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return "COMEBACK" + Array.from(bytes, (b) => COUPON_ALPHABET[b % COUPON_ALPHABET.length]).join("");
 }
+
+function esc(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+const SAFE_COLOR = /^#[0-9a-f]{3,8}$/i;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -124,12 +136,16 @@ Deno.serve(async (req: Request) => {
         (Date.now() - new Date(member.last_activity_at ?? member.joined_at).getTime()) / (24 * 60 * 60 * 1000)
       );
       const subject = `We miss you at ${business.name}!`;
-      const greeting = profile.first_name ? `Hi ${profile.first_name},` : "Hi there,";
+      const greeting = profile.first_name ? `Hi ${esc(profile.first_name)},` : "Hi there,";
+      const shop = esc(business.name);
+      const color = SAFE_COLOR.test(business.brand_color ?? "") ? business.brand_color : "#222";
       const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
         <div style="text-align:center;margin:0 0 20px"><img src="https://www.the-loyalty-loop.com/logo-for-emails" alt="The Loyalty Loop" width="160" style="display:inline-block;width:160px;max-width:100%;height:auto"></div>
-        <h2 style="color:${business.brand_color}">${greeting}</h2>
-        <p>It's been a while since your last visit to <strong>${business.name}</strong> — come back and use code <strong>${coupon}</strong> for a little something extra on us.</p>
-        <p style="color:#888;font-size:13px">You're receiving this because you're a member of ${business.name}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
+        <h2 style="color:${color}">${greeting}</h2>
+        <p>It's been a while since your last visit to <strong>${shop}</strong>. Come back and show this code at the till for a little something extra on us:</p>
+        <p style="text-align:center;font-size:22px;letter-spacing:2px;margin:20px 0"><strong>${coupon}</strong></p>
+        <p style="color:#555;font-size:13px">One use only, valid for 30 days.</p>
+        <p style="color:#888;font-size:13px">You're receiving this because you're a member of ${shop}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
       </div>`;
 
       try {
@@ -140,7 +156,7 @@ Deno.serve(async (req: Request) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: FROM_EMAIL,
+            from: RESEND_FROM_EMAIL,
             to: [profile.email],
             subject,
             html,

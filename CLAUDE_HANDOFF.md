@@ -44,6 +44,14 @@ PR #10 (merge commit 0ea03ec) is on `main`. The Business app now has Settings �
 
 ---
 
+## 2026-11-14 — Win-back emails: sender fixed (function v33, LIVE) - Claude
+
+- **Why**: same problem as the release emails. The live `send-winback-emails` (v32) fell back to `onboarding@resend.dev` when `RESEND_FROM_EMAIL` is unset, which Resend only delivers to the account owner, so real customers would get nothing. `winback_email_log` is empty: no win-back has ever been sent.
+- **Changed**: sender is `WINBACK_FROM_EMAIL`, else `RESEND_FROM_EMAIL` (either ignored if it is a resend.dev address), else `hello@the-loyalty-loop.com`. Only `sent` log rows block a customer for 30 days now (a failed send no longer locks them out). Everything else is exactly the live v32 code (coupon redeemed at the till, escaping).
+- **Repo drift fixed**: v32 had been deployed from uncommitted local files. This commit puts that live code on `main`, plus its migration `20261105100000_winback_coupon_redeem.sql` (already applied: `redeem_winback_coupon` exists in production).
+- **Checks**: deployed v33; no-auth call -> 401 from the gateway. Not checked: a real win-back send (needs a shop with members inactive 30+ days, and an owner login).
+- **Still on the old fallback** (same risk if `RESEND_FROM_EMAIL` is unset): `send-visit-thank-you`, `send-owner-legal-documents`, `_shared/shop-request-notify.ts`.
+
 ## 2026-11-14 — Release announcement emails (main 704d276, LIVE) - Claude
 
 - **Why**: owner asked for an email after every big product release, to business owners and shoppers, drafted by Claude and sent only after the owner approves.
