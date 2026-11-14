@@ -11,6 +11,14 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-13 — Website on a phone: "Continue in our app!" then the store (branch web-mobile-app-gate, not committed or deployed) - Claude
+
+- **Why**: owner asked that phone visitors to the website are told to use the app and sent to the store automatically.
+- **What changed** (`apps/web` only, built on origin/main in worktree `.claude/worktrees/web-mobile-app-gate`): new `src/components/mobile-app-gate.tsx`, mounted in `App.tsx`. On Android/iPhone/iPad it covers the page with a "Continue in our app!" sheet and after 1.6s goes to Google Play (Android) or the App Store (iPhone/iPad). `/owner…`, `/join` and `/signup/owner` go to the Business app; everything else to the shopper app. A visit that starts on a business page stays "business" for the visit, because signed-out `/owner` bounces to `/login`. It redirects once per visit; coming back with Back shows the sheet with an "Open Google Play/App Store" button instead of bouncing again. "Continue on the website" or `?web=1` hides it for the visit. Never shown: desktops, crawlers (Googlebot's mobile UA says Android), and `/auth/…`, `/reset-password`, `/forgot-password`, `/whatsapp/…`, `/access` so email links, the WhatsApp sign-up/card/start pages and the admin panel still work on phones. Store URLs moved from `store-badges.tsx` to `src/lib/store-links.ts` (shared).
+- **Checks done**: `tsc -b` clean, oxlint clean on the changed files. In the in-app browser: desktop shows no sheet; Android phone emulation shows the sheet, `/owner` → `/login` points at `com.theloyaltyloop.retailer`, `/reset-password` shows no sheet, "Continue on the website" hides it, and a fresh homepage visit lands on the shopper's Google Play page by itself.
+- **Not checked**: a real phone. On a real Android, Chrome normally opens the Play Store app from a play.google.com link; in-app browsers (Instagram, WhatsApp) may show the web store page instead. iPhone not tested (emulation was Android only).
+- **Next (owner)**: decide whether to ship. Shipping = commit this branch, merge to main, deploy the website to Vercel. Rollback: revert the commit and redeploy.
+
 ## 2026-11-09 — AI business coach kept to Loyalty Loop topics (7ec013a, deployed) - Claude
 
 - **Why**: owner asked that the coach only talk about The Loyalty Loop. The old prompt only said "give small-business marketing/retention advice", so it would answer anything. It also passed whatever message roles the client sent straight to the model, so a hand-made request could add its own `system` instructions.

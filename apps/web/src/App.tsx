@@ -7,6 +7,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import { OwnerProvider } from '@/lib/owner-context'
 import { Landing } from '@/pages/Landing'
 import { CookieConsent } from '@/components/cookie-consent'
+import { MobileAppGate } from '@/components/mobile-app-gate'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { UsageTracker } from '@/components/usage-tracker'
 import { PlatformAnnouncementBanner } from '@/components/platform-announcement-banner'
@@ -144,6 +145,7 @@ function App() {
                 </Routes>
               </Suspense>
               <CookieConsent />
+              <MobileAppGate />
             </BrowserRouter>
           </OwnerProvider>
         </AuthProvider>
