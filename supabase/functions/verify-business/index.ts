@@ -10,9 +10,11 @@ import {
 
 // Automatic business verification. The owner uploads a document and calls
 // submit_business_verification (shop -> 'pending'), then calls this function.
-//   1. Claude reads the document into set fields (it never decides here).
+//   1. The AI reads the document into set fields (it never decides here).
+//      Provider: Gemini when GEMINI_API_KEY is set, otherwise Claude.
+//      VERIFY_AI_PROVIDER=claude|gemini forces one.
 //   2. Companies House is checked when COMPANIES_HOUSE_API_KEY is set.
-//   3. Code rules decide; only unclear cases go to a second Claude call.
+//   3. Code rules decide; only unclear cases go to a second AI call.
 //   4. The result is recorded, and applied by apply_business_verification
 //      only when business_verification_settings.mode = 'live'.
 // Body: { business_id: uuid, route: 'company' | 'vat' | 'sole_trader' }
@@ -23,7 +25,16 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const COMPANIES_HOUSE_API_KEY = Deno.env.get("COMPANIES_HOUSE_API_KEY");
-const MODEL = Deno.env.get("VERIFY_CLAUDE_MODEL") ?? "claude-opus-5-5";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+const PROVIDER: "claude" | "gemini" = (() => {
+  const forced = Deno.env.get("VERIFY_AI_PROVIDER");
+  if (forced === "claude" || forced === "gemini") return forced;
+  return GEMINI_API_KEY ? "gemini" : "claude";
+})();
+const AI_KEY = PROVIDER === "gemini" ? GEMINI_API_KEY : ANTHROPIC_API_KEY;
+const MODEL = PROVIDER === "gemini"
+  ? Deno.env.get("VERIFY_GEMINI_MODEL") ?? "gemini-2.5-flash"
+  : Deno.env.get("VERIFY_CLAUDE_MODEL") ?? "claude-opus-5-5";
 // Optional second reader for comparison in shadow mode (images only).
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 const GROQ_VISION_MODEL = Deno.env.get("GROQ_VISION_MODEL");
@@ -121,7 +132,7 @@ Deno.serve(async (req: Request) => {
       return data.id as string;
     };
 
-    if (!ANTHROPIC_API_KEY) {
+    if (!AI_KEY) {
       await record({ decision: "needs_review", decided_by: "error", reasons: ["ai_not_configured"] });
       return reply(ownerReply(mode, "needs_review", null));
     }
@@ -136,11 +147,11 @@ Deno.serve(async (req: Request) => {
     if (!Object.values(MIME).includes(mime)) return reply({ error: "Upload a PNG, JPEG, WEBP or PDF." }, 400);
     const bytes = new Uint8Array(await file.data.arrayBuffer());
 
-    const claude = new Anthropic({ apiKey: ANTHROPIC_API_KEY, timeout: 60_000, maxRetries: 1 });
+    const ask = makeAsk(bytes, mime);
 
     let extraction: Extraction;
     try {
-      extraction = parseExtraction(await askClaude(claude, EXTRACTION_SYSTEM, documentBlock(bytes, mime), "Fill in the form for this document.", EXTRACTION_SCHEMA, "low"));
+      extraction = parseExtraction(await ask(EXTRACTION_SYSTEM, "Fill in the form for this document.", EXTRACTION_SCHEMA, "low"));
     } catch (e) {
       console.error(JSON.stringify({ business: businessId, step: "extract", error: String(e).slice(0, 200) }));
       await record({ decision: "needs_review", decided_by: "error", reasons: ["extraction_failed"] });
@@ -169,7 +180,7 @@ Deno.serve(async (req: Request) => {
     let ai: AiDecision | null = null;
     if (rules.kind === "ask_ai") {
       try {
-        ai = parseAiDecision(await askClaude(claude, DECISION_SYSTEM, documentBlock(bytes, mime), decisionPrompt(input, rules.reasons), DECISION_SCHEMA, "high"));
+        ai = parseAiDecision(await ask(DECISION_SYSTEM, decisionPrompt(input, rules.reasons), DECISION_SCHEMA, "high"));
       } catch (e) {
         console.error(JSON.stringify({ business: businessId, step: "decide", error: String(e).slice(0, 200) }));
         await record({
@@ -217,6 +228,19 @@ function ownerReply(mode: "shadow" | "live", decision: string, message: string |
 
 // deno-lint-ignore no-explicit-any
 type ContentBlock = any;
+type Effort = "low" | "high";
+type Ask = (system: string, text: string, schema: unknown, effort: Effort) => Promise<string>;
+
+/** One function for both AI steps, whichever provider is configured. */
+function makeAsk(bytes: Uint8Array, mime: string): Ask {
+  if (PROVIDER === "gemini") {
+    const data = encodeBase64(bytes);
+    return (system, text, schema, effort) => askGemini(system, data, mime, text, schema, effort);
+  }
+  const claude = new Anthropic({ apiKey: ANTHROPIC_API_KEY, timeout: 60_000, maxRetries: 1 });
+  const document = documentBlock(bytes, mime);
+  return (system, text, schema, effort) => askClaude(claude, system, document, text, schema, effort);
+}
 
 function documentBlock(bytes: Uint8Array, mime: string): ContentBlock {
   const data = encodeBase64(bytes);
@@ -231,7 +255,7 @@ async function askClaude(
   document: ContentBlock,
   text: string,
   schema: unknown,
-  effort: "low" | "high",
+  effort: Effort,
 ): Promise<string> {
   const response = await claude.beta.messages.create({
     model: MODEL,
@@ -249,6 +273,60 @@ async function askClaude(
   const out = response.content.find((b: { type: string }) => b.type === "text") as { text?: string } | undefined;
   if (!out?.text) throw new Error("no text in response");
   return out.text;
+}
+
+// Gemini reads images and PDFs inline. Use a paid-tier key: free-tier content
+// may be used by Google to improve its products.
+async function askGemini(system: string, data: string, mime: string, text: string, schema: unknown, effort: Effort): Promise<string> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": GEMINI_API_KEY!, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ inline_data: { mime_type: mime, data } }, { text }] }],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 8000,
+        responseMimeType: "application/json",
+        responseSchema: toGeminiSchema(schema),
+        // Extraction needs little thinking; the decision step may think as much as it needs.
+        thinkingConfig: { thinkingBudget: effort === "low" ? 512 : -1 },
+      },
+    }),
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!res.ok) throw new Error(`gemini ${res.status}`);
+  const json = await res.json();
+  if (json.promptFeedback?.blockReason) throw new Error(`gemini blocked: ${json.promptFeedback.blockReason}`);
+  const candidate = json.candidates?.[0];
+  if (candidate?.finishReason === "MAX_TOKENS") throw new Error("model ran out of tokens");
+  if (candidate?.finishReason && candidate.finishReason !== "STOP") throw new Error(`gemini finish: ${candidate.finishReason}`);
+  const out = (candidate?.content?.parts ?? [])
+    .filter((p: { text?: string; thought?: boolean }) => typeof p.text === "string" && !p.thought)
+    .map((p: { text: string }) => p.text)
+    .join("");
+  if (!out) throw new Error("no text in response");
+  return out;
+}
+
+/** JSON Schema -> Gemini's OpenAPI subset: ["string","null"] becomes nullable, unsupported keys are dropped. */
+// deno-lint-ignore no-explicit-any
+function toGeminiSchema(s: any): any {
+  if (!s || typeof s !== "object") return s;
+  // deno-lint-ignore no-explicit-any
+  const out: any = {};
+  if (Array.isArray(s.type)) {
+    const types = s.type.filter((t: string) => t !== "null");
+    out.type = types[0];
+    if (types.length !== s.type.length) out.nullable = true;
+  } else if (s.type) out.type = s.type;
+  for (const k of ["description", "enum", "required", "format"]) if (s[k] !== undefined) out[k] = s[k];
+  if (s.items) out.items = toGeminiSchema(s.items);
+  if (s.properties) {
+    out.properties = Object.fromEntries(Object.entries(s.properties).map(([k, v]) => [k, toGeminiSchema(v)]));
+    out.propertyOrdering = Object.keys(s.properties);
+  }
+  return out;
 }
 
 async function askGroq(bytes: Uint8Array, mime: string): Promise<unknown> {

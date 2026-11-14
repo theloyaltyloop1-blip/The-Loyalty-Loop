@@ -14,7 +14,8 @@ Design, 2026-11-09. Status: **built on branch `business-verification`, not deplo
   - The update-scope trigger now lets the service role through.
 - **Rules** `supabase/functions/_shared/business-verification.ts`, with 12 tests.
 - **Edge function** `supabase/functions/verify-business`.
-  - Secrets: `ANTHROPIC_API_KEY` (required). Optional: `COMPANIES_HOUSE_API_KEY`, `VERIFY_CLAUDE_MODEL`, and `GROQ_VISION_MODEL` (with the existing `GROQ_API_KEY`) for the shadow-mode comparison. Groq reads images only.
+  - AI provider (added 2026-11-14): Gemini when `GEMINI_API_KEY` is set, otherwise Claude. `VERIFY_AI_PROVIDER=claude|gemini` forces one; `VERIFY_GEMINI_MODEL` (default `gemini-2.5-flash`) and `VERIFY_CLAUDE_MODEL` pick the model. Gemini reads images and PDFs inline, returns JSON against the same schemas (converted to Gemini's schema format), and uses a small thinking budget for extraction and a dynamic one for the decision. Use a paid-tier Gemini key only. The owner has a Gemini account and chose Gemini.
+  - Secrets: `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` (one is required). Optional: `COMPANIES_HOUSE_API_KEY`, `VERIFY_CLAUDE_MODEL`, and `GROQ_VISION_MODEL` (with the existing `GROQ_API_KEY`) for the shadow-mode comparison. Groq reads images only.
   - The HMRC VAT register is **not connected**. VAT shops use the no-register path.
   - Documents are purged opportunistically, 90 days after a decision, on later calls.
 - **Website**

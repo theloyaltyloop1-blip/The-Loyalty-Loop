@@ -11,6 +11,27 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-14 — Business verification: Gemini option added; deployment paused by owner - Claude
+
+Branch `business-verification`. Nothing deployed. Production mode is still `shadow`.
+
+- **2026-11-10:** the owner paused the deployment ("leave it"). Do not deploy, merge or press "Go live" without asking again. The owner's worry: live mode would hide every new shop while verification isn't working.
+- **Changed:** `supabase/functions/verify-business/index.ts` can now use Gemini. Gemini is used when `GEMINI_API_KEY` is set; otherwise Claude is used. `VERIFY_AI_PROVIDER` forces one, and `VERIFY_GEMINI_MODEL` (default `gemini-2.5-flash`) picks the model. The rules, database, website and app are unchanged. The design doc's "As built" section is updated.
+- **Checks performed:**
+  - Rules tests 12/12.
+  - Website `tsc -b` clean (2026-11-10, before this change).
+  - `deno check` of `verify-business` passes, run in a scratch copy with Deno 2.9.6. This is the first type check the function has had.
+  - Not checked: no real Gemini or Claude call has run, and the function is not deployed.
+- **Still missing for it to work in shadow mode:**
+  - Owner: add `GEMINI_API_KEY`, from a paid-tier Gemini key, to the Supabase Edge Function secrets.
+  - Claude, after the owner's OK: deploy `verify-business` and check that a request without a login gets 401. Then open the PR to `main` and merge after asking.
+  - Business app OTA: needs an `EXPO_TOKEN` in the cloud environment, or the owner runs `eas update --environment production`.
+  - Owner: upload a few real documents.
+- **Before "Go live" (owner only):**
+  - Shadow results look right.
+  - The App Store reviewer demo shop is verified.
+  - The privacy policy and terms name Google as the AI provider.
+
 ## 2026-11-10 — Compulsory business verification with AI checks: BUILT, not deployed - Claude
 
 Branch `business-verification` (worktree `.claude/worktrees/business-verification`, from origin/main 88c6e9a). Not committed yet.
