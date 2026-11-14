@@ -236,7 +236,7 @@ function GalleryTab({ businessId }: { businessId: string }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {photos.map((p) => (
             <div key={p.id} className="relative rounded-xl overflow-hidden aspect-square group">
-              <img src={p.url} alt="" className="h-full w-full object-cover" />
+              <img src={p.url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button data-press-feedback

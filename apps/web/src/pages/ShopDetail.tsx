@@ -551,7 +551,7 @@ export function ShopDetail() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {photos.map((p, index) => (
               <div key={p.id} className="rounded-xl overflow-hidden aspect-square">
-                <img src={p.url} alt={`${business.name} gallery photo ${index + 1}`} className="h-full w-full object-cover" />
+                <img src={p.url} alt={`${business.name} gallery photo ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </div>
             ))}
           </div>
