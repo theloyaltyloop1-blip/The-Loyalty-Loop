@@ -32,8 +32,10 @@ Branch `business-verification`. Nothing deployed. Production mode is still `shad
   - Created a personal cloud environment, "The-Loyalty-Loop", that allows `tgukdabfvvoywawmzbdo.supabase.co`, for future sessions. This session could not move onto it.
   - Nothing calls the function until the website or app ships, so sign-up is unchanged.
   - PR to `main` opened; merge waits for the owner.
+- **Merged 2026-11-14:** PR #10 → `main` 0ea03ec, with the owner's OK. The only conflict was this file; both entries were kept.
+- **Website live:** www.the-loyalty-loop.com serves `/assets/index-BTUNClfW.js` (last-modified 15:09:44 GMT). Fetched through `pg_net`, the bundle contains `verify-business` and `admin_set_business_verification_mode`. The Vercel connector can't see this project, so the deployment id was not read.
+- **Note:** the website's phone-only screen sends phone visitors to the app. So phone owners can't upload until the Business app OTA ships.
 - **Still missing for it to work in shadow mode:**
-  - Claude, after the owner's OK: merge the PR to `main`.
   - Business app OTA: needs an `EXPO_TOKEN` in the cloud environment, or the owner runs `eas update --environment production`.
   - Owner: upload a few real documents.
 - **Before "Go live" (owner only):**
