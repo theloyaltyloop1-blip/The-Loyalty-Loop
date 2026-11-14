@@ -48,6 +48,10 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
+    /* On-brand scrollbar: thumb, then track. Uses theme tokens so it
+       follows the palette and flips with dark mode. */
+    scrollbar-color: var(--color-primary) var(--color-background);
+    scrollbar-width: auto;
   }
 
   body {
