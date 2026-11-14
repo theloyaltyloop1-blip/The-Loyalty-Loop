@@ -10,6 +10,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -20,6 +21,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { HelpFaq } from "./src/HelpFaq";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -90,6 +92,8 @@ const FONT_DISPLAY = fonts.nativeDisplay;
 type Business = {
   id: string;
   name: string;
+  slug?: string | null;
+  whatsapp_onboarding_enabled?: boolean | null;
   category?: string | null;
   description?: string | null;
   address?: string | null;
@@ -158,6 +162,7 @@ type Announcement = {
 const PREVIEW_BUSINESS: Business = {
   id: "00000000-0000-0000-0000-000000000000",
   name: "The Coffee Corner",
+  slug: "the-coffee-corner",
   category: "Cafe",
   description: "Fresh coffee, pastries and friendly faces.",
   address: "12 Market Street",
@@ -467,7 +472,15 @@ function manualEntryRefusal(error: { message?: string; details?: string } | null
 function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void; onNewShop: () => void }) {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [helpOpen, setHelpOpen] = useState(false);
+  async function forgotPassword() {
+    const address = email.trim();
+    if (!address) return showAlert("Enter your email first", "Type the email you sign in with, then tap “Forgot password?” again.");
+    const { error } = await supabase.auth.resetPasswordForEmail(address, { redirectTo: `${WEB_ORIGIN}/reset-password` });
+    if (error) return showAlert("Couldn’t send the email", "Please check the address and try again.");
+    showAlert("Check your email", `If ${address} has an account, we’ve sent a link to choose a new password.`);
+  }
   async function submit() {
     if (!email.trim() || !password)
       return showAlert("Check your details", "Enter your email and password.");
@@ -537,12 +550,25 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
         <Text style={styles.small}>
           Customer account? Use The Loyalty Loop shopper app.
         </Text>
-        <Pressable
-          onPress={() => void Linking.openURL("https://www.the-loyalty-loop.com/help")}
-          style={styles.authHelpLink}
-        >
+        <Pressable onPress={() => void forgotPassword()} style={styles.authHelpLink}>
+          <Text style={styles.authHelpLinkText}>Forgot password?</Text>
+        </Pressable>
+        <Pressable onPress={() => setHelpOpen(true)} style={styles.authHelpLink}>
           <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
         </Pressable>
+        <Modal visible={helpOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setHelpOpen(false)}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: "#F6F1E8" }} edges={["top", "bottom"]}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 12 }}>
+              <Text style={{ fontSize: 28, fontWeight: "900", color: "#1A2138" }}>Help &amp; FAQ</Text>
+              <Pressable accessibilityRole="button" onPress={() => setHelpOpen(false)} style={{ padding: 10 }}>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#2B3A67" }}>Done</Text>
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+              <HelpFaq />
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );
@@ -2187,12 +2213,8 @@ function Dashboard({
   }, [preview]);
   const navigateOnboarding = (destination: NativeOnboardingDestination) => {
     setOwnerPage(null);
-    if (destination === "branding" || destination === "rewards") {
+    if (destination === "branding" || destination === "rewards" || destination === "poster") {
       setOwnerPage(destination);
-      return;
-    }
-    if (destination === "tools") {
-      void Linking.openURL("https://www.the-loyalty-loop.com/owner/tools");
       return;
     }
     if (destination === "settings" || destination === "scan" || destination === "analytics" || destination === "news") {
@@ -2204,7 +2226,7 @@ function Dashboard({
     setNeedsLoyaltySetup(false);
     void load(true);
     if (destination === "scan") setTab("scan");
-    if (destination === "tools") void Linking.openURL(`${WEB_ORIGIN}/owner/tools`);
+    if (destination === "tools") setOwnerPage("poster");
   };
   useEffect(() => { if (!preview) void trackUsageEvent(session.user.id, 'tab_viewed', tab); }, [preview, session.user.id, tab]);
   async function load(silent = false) {

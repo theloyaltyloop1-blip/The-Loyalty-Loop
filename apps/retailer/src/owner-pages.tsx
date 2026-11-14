@@ -16,11 +16,15 @@ import {
   Image,
   Linking,
   Pressable,
+  Share,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from "react-native";
+import QRCode from "react-native-qrcode-svg";
+import { HelpFaq } from "./HelpFaq";
 import * as ImagePicker from "expo-image-picker";
 import {
   ArrowLeft,
@@ -63,7 +67,10 @@ export type NativeOwnerPage =
   | "staff"
   | "support"
   | "tutorial"
-  | "verify";
+  | "verify"
+  | "poster"
+  | "help"
+  | "closure";
 
 export type NativeOnboardingDestination =
   | "analytics"
@@ -72,7 +79,7 @@ export type NativeOnboardingDestination =
   | "rewards"
   | "scan"
   | "settings"
-  | "tools";
+  | "poster";
 
 export interface NativeBusiness {
   card_design?: unknown;
@@ -94,6 +101,8 @@ export interface NativeBusiness {
   reward_threshold_pence?: number | null;
   manual_spend_max_pence?: number;
   postcode?: string | null;
+  slug?: string | null;
+  whatsapp_onboarding_enabled?: boolean | null;
   verification_status?: "unverified" | "pending" | "verified" | "rejected";
   approval_status?: "pending" | "approved" | "rejected";
 }
@@ -2094,7 +2103,7 @@ function TutorialPage({ business, onBack, onNavigate }: PageProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Open your QR poster"
-        onPress={() => onNavigate("tools")}
+        onPress={() => onNavigate("poster")}
         style={({ pressed }) => [styles.tutorialAction, pressed && styles.pressed]}
       >
         <Text style={styles.tutorialActionText}>Open your QR poster</Text>
@@ -2270,6 +2279,199 @@ const verifyStyles = StyleSheet.create({
   photo: { width: "100%", height: 220, borderRadius: 14, backgroundColor: "#F1ECE3", marginBottom: 6 },
 });
 
+// The shop's "scan to join" poster, in the app. Print/share opens a PDF made by
+// the shop-poster edge function in the phone's own viewer (print + share
+// sheet), so owners never have to go to the website for it.
+const SITE = "https://www.the-loyalty-loop.com";
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
+// Mirrors apps/web/src/lib/features.ts WHATSAPP_VISIBLE.
+const WHATSAPP_VISIBLE = true;
+
+export function posterJoinUrl(slug: string, whatsapp: boolean): string {
+  return WHATSAPP_VISIBLE && whatsapp
+    ? `${SITE}/whatsapp/start?shop=${encodeURIComponent(slug)}`
+    : `${SITE}/dashboard/shop/${slug}`;
+}
+
+function PosterPage({ business, onBack, onBusinessChanged, preview = false }: PageProps) {
+  const [whatsapp, setWhatsapp] = useState(!!business.whatsapp_onboarding_enabled);
+  const [busy, setBusy] = useState(false);
+  const slug = business.slug ?? "";
+  const brand = business.brand_color || "#062B6B";
+  const joinUrl = slug ? posterJoinUrl(slug, whatsapp) : "";
+
+  async function toggleWhatsapp(next: boolean) {
+    if (preview) return setWhatsapp(next);
+    setBusy(true);
+    setWhatsapp(next);
+    const { error } = await supabase.from("businesses").update({ whatsapp_onboarding_enabled: next }).eq("id", business.id);
+    setBusy(false);
+    if (error) {
+      setWhatsapp(!next);
+      return showAlert("Couldn’t change WhatsApp joining", "Please try again.");
+    }
+    void onBusinessChanged();
+  }
+
+  function printPoster() {
+    if (!slug || !SUPABASE_URL) return showAlert("Poster not ready", "Your shop needs to be saved first. Please try again in a moment.");
+    Linking.openURL(`${SUPABASE_URL}/functions/v1/shop-poster?slug=${encodeURIComponent(slug)}`).catch(() =>
+      showAlert("Couldn’t open the poster", "Please try again."),
+    );
+  }
+
+  return (
+    <View>
+      <PageHeader title="QR poster" eyebrow="GET CUSTOMERS JOINING" onBack={onBack} />
+      <View style={[posterStyles.poster, { borderColor: brand }]}>
+        <View style={[posterStyles.band, { backgroundColor: brand }]} />
+        <Text style={posterStyles.platform}>The Loyalty Loop</Text>
+        {business.logo_url ? (
+          <Image source={{ uri: business.logo_url }} style={posterStyles.logo} resizeMode="contain" />
+        ) : (
+          <View style={[posterStyles.monogram, { backgroundColor: brand }]}>
+            <Text style={posterStyles.monogramText}>{business.name.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+        <Text style={[posterStyles.kicker, { color: brand }]}>LOCAL LOYALTY REWARDS</Text>
+        <Text style={posterStyles.name} numberOfLines={2} adjustsFontSizeToFit>{business.name}</Text>
+        <Text style={posterStyles.sub}>{business.category ? `${business.category} · ` : ""}Collect rewards when you visit</Text>
+        <View style={posterStyles.qr}>
+          {joinUrl ? <QRCode value={joinUrl} size={190} ecl="H" /> : <ActivityIndicator color={ink} />}
+        </View>
+        <Text style={posterStyles.scan}>{whatsapp ? "Scan to join with WhatsApp" : "Scan to join and start collecting"}</Text>
+        <Text style={posterStyles.sub}>{whatsapp ? "No app download required · Start in WhatsApp" : "No app download required · Your rewards stay in one place"}</Text>
+      </View>
+
+      <PrimaryButton label="Print or share poster (PDF)" onPress={printPoster} />
+      <Text style={[styles.muted, { marginTop: 8, textAlign: "center" }]}>Opens an A4 PDF. Use your phone’s share button to print it, save it or send it to a print shop.</Text>
+      <View style={{ height: 10 }} />
+      <PrimaryButton
+        label="Share join link"
+        secondary
+        onPress={() => { if (joinUrl) void Share.share({ message: `Join ${business.name} on The Loyalty Loop: ${joinUrl}` }); }}
+      />
+
+      {WHATSAPP_VISIBLE ? (
+        <Section>
+          <View style={posterStyles.switchRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Join on WhatsApp</Text>
+              <Text style={[styles.muted, { marginTop: 6 }]}>
+                Optional. Customers scan your poster, message us on WhatsApp and join your shop in a minute. They can then ask how close they are to a reward and get their card link right in WhatsApp.
+              </Text>
+            </View>
+            <Switch value={whatsapp} disabled={busy} onValueChange={(v) => void toggleWhatsapp(v)} trackColor={{ true: "#2E7D5B" }} />
+          </View>
+          <Text style={[styles.muted, { marginTop: 10, fontWeight: "700" }]}>
+            {whatsapp ? "Your poster now opens WhatsApp to join this shop. Reprint it if you’ve already put one up." : "Your poster uses the standard Loyalty Loop join page."}
+          </Text>
+        </Section>
+      ) : null}
+    </View>
+  );
+}
+
+// Delete one shop, or hand it to another Loyalty Loop account, from the app.
+// Same server paths as the website: the delete-business edge function (checks
+// ownership, removes files) and the transfer_owned_business_ownership RPC
+// (checks the caller owns the shop and the new owner's account exists).
+function ShopClosurePage({ business, onBack, onBusinessChanged, preview = false }: PageProps) {
+  const [confirmName, setConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [newOwnerEmail, setNewOwnerEmail] = useState("");
+  const [transferring, setTransferring] = useState(false);
+  const nameMatches = confirmName.trim() === business.name.trim();
+
+  async function deleteShop() {
+    if (!nameMatches) return;
+    if (preview) return showAlert("Preview", "Deleting is turned off in the preview.");
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-business", {
+        body: { business_id: business.id, confirmation_name: confirmName.trim() },
+      });
+      if (error) {
+        const context = (error as { context?: Response }).context;
+        const detail = context ? await context.json().catch(() => null) : null;
+        throw new Error(typeof detail?.error === "string" && detail.error.trim() ? detail.error : "Could not delete the shop. Please try again.");
+      }
+      if (data?.error) throw new Error(data.error);
+      if (!data?.deleted) throw new Error("We couldn’t confirm the shop was deleted. Please check again in a moment.");
+      showAlert("Shop deleted", `${business.name} and its data have been removed.`);
+      onBack();
+      await onBusinessChanged();
+    } catch (e) {
+      showAlert("Couldn’t delete the shop", e instanceof Error ? e.message : "Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function transferShop() {
+    const email = newOwnerEmail.trim();
+    if (!email) return;
+    if (preview) return showAlert("Preview", "Transferring is turned off in the preview.");
+    setTransferring(true);
+    const { error } = await supabase.rpc("transfer_owned_business_ownership", {
+      _business_id: business.id,
+      _new_owner_email: email,
+    });
+    setTransferring(false);
+    if (error) return showAlert("Couldn’t transfer the shop", error.message || "Please check the email and try again.");
+    showAlert("Shop transferred", `${business.name} now belongs to ${email}. It will disappear from your list.`);
+    onBack();
+    await onBusinessChanged();
+  }
+
+  return (
+    <View>
+      <PageHeader title="Delete or hand over" eyebrow={business.name.toUpperCase()} onBack={onBack} />
+      <Section>
+        <Text style={styles.cardTitle}>Hand this shop to someone else</Text>
+        <Text style={[styles.muted, { marginTop: 6, marginBottom: 12 }]}>
+          The new owner needs a Loyalty Loop account already. Enter the email they sign in with. Customers, cards and rewards move with the shop.
+        </Text>
+        <Field value={newOwnerEmail} onChangeText={setNewOwnerEmail} placeholder="New owner’s email" keyboardType="email-address" />
+        <PrimaryButton label="Transfer shop" secondary busy={transferring} onPress={() => void transferShop()} />
+      </Section>
+      <Section>
+        <Text style={[styles.cardTitle, { color: "#B4433A" }]}>Delete this shop permanently</Text>
+        <Text style={[styles.muted, { marginTop: 6, marginBottom: 12 }]}>
+          This removes the shop, its members’ loyalty activity, rewards, reviews and related data. It can’t be undone. To just hide it for a while, use Deactivate shop instead.
+        </Text>
+        <Text style={[styles.muted, { fontWeight: "800", marginBottom: 6 }]}>Type “{business.name}” to confirm</Text>
+        <Field value={confirmName} onChangeText={setConfirmName} placeholder={business.name} />
+        <PrimaryButton label={nameMatches ? "Delete shop permanently" : "Type the shop name to delete"} danger busy={deleting} onPress={() => void deleteShop()} />
+      </Section>
+    </View>
+  );
+}
+
+function HelpPage({ onBack }: PageProps) {
+  return (
+    <View>
+      <PageHeader title="Help & FAQ" eyebrow="ANSWERS" onBack={onBack} />
+      <HelpFaq />
+    </View>
+  );
+}
+
+const posterStyles = StyleSheet.create({
+  poster: { backgroundColor: "#fff", borderWidth: 4, borderRadius: 18, overflow: "hidden", alignItems: "center", paddingBottom: 22, marginBottom: 18 },
+  band: { alignSelf: "stretch", height: 14 },
+  platform: { marginTop: 16, fontSize: 13, fontWeight: "800", color: "#6B6F7A" },
+  logo: { width: 72, height: 72, marginTop: 14, borderRadius: 12 },
+  monogram: { width: 72, height: 72, borderRadius: 36, marginTop: 14, alignItems: "center", justifyContent: "center" },
+  monogramText: { color: "#fff", fontSize: 32, fontWeight: "900" },
+  kicker: { marginTop: 14, fontSize: 11, fontWeight: "900", letterSpacing: 1 },
+  name: { marginTop: 6, paddingHorizontal: 16, fontSize: 26, fontWeight: "900", color: ink, textAlign: "center" },
+  sub: { marginTop: 4, paddingHorizontal: 16, fontSize: 13, color: "#6B6F7A", textAlign: "center" },
+  qr: { marginVertical: 18, padding: 10, backgroundColor: "#fff", minHeight: 210, justifyContent: "center" },
+  scan: { fontSize: 17, fontWeight: "900", color: ink, textAlign: "center", paddingHorizontal: 16 },
+  switchRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+});
+
 export function NativeOwnerPageView({
   page,
   ...props
@@ -2285,6 +2487,9 @@ export function NativeOwnerPageView({
         support: SupportPage,
         tutorial: TutorialPage,
         verify: VerifyPage,
+        poster: PosterPage,
+        help: HelpPage,
+        closure: ShopClosurePage,
       })[page],
     [page],
   );

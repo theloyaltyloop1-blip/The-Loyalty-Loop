@@ -55,3 +55,7 @@ verify_jwt = true
 
 [functions.product-updates-unsubscribe]
 verify_jwt = false
+
+# Public printable QR poster PDF for the Business app (only shows public shop info).
+[functions.shop-poster]
+verify_jwt = false

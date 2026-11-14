@@ -25,7 +25,6 @@ import {
   FileText,
   Fingerprint,
   Gift,
-  Globe,
   Image as ImageIcon,
   LifeBuoy,
   LogOut,
@@ -274,6 +273,8 @@ export function BusinessSettings({
         isOwner={isOwner}
         onChanged={onChanged}
         onBack={() => setView("home")}
+        onOpenHelp={() => onOpenPage("help")}
+        onOpenClosure={() => onOpenPage("closure")}
       />
     );
   return (
@@ -335,7 +336,6 @@ function ShopHome({
       active = false;
     };
   }, [business.id]);
-  const openWebTools = () => void Linking.openURL("https://www.the-loyalty-loop.com/owner/tools");
   return (
     <View>
       <View style={styles.hero}>
@@ -438,7 +438,7 @@ function ShopHome({
       {isOwner ? (
         <Pressable
           testID="tour-poster-tile"
-          onPress={openWebTools}
+          onPress={() => onOpenPage("poster")}
           style={({ pressed }) => [styles.posterRow, pressed && styles.pressed]}
         >
           <View style={styles.posterIcon}>
@@ -934,12 +934,16 @@ function AccountPage({
   isOwner,
   onChanged,
   onBack,
+  onOpenHelp,
+  onOpenClosure,
 }: {
   business: ShopBusiness;
   session: Session;
   isOwner: boolean;
   onChanged: () => Promise<void>;
   onBack: () => void;
+  onOpenHelp: () => void;
+  onOpenClosure: () => void;
 }) {
   const [biometricEnabled, setBiometricEnabled] = useState(false),
     [analyticsEnabled, setAnalyticsEnabled] = useState(false);
@@ -1019,11 +1023,11 @@ function AccountPage({
           onPress={() => void Linking.openSettings()}
         />
         <SettingsRow
-          icon={Globe}
+          icon={LifeBuoy}
           tile="slate"
-          title="Visit web dashboard"
-          detail="Open the-loyalty-loop.com in your browser"
-          onPress={() => Linking.openURL("https://www.the-loyalty-loop.com")}
+          title="Help & FAQ"
+          detail="Answers to common questions"
+          onPress={onOpenHelp}
           last
         />
       </View>
@@ -1075,6 +1079,16 @@ function AccountPage({
             danger={business.is_active !== false}
           />
         )}
+        {isOwner && (
+          <SettingsRow
+            icon={Trash2}
+            tile="amber"
+            title="Delete or hand over this shop"
+            detail="Remove it for good, or give it to another owner"
+            onPress={onOpenClosure}
+            danger
+          />
+        )}
         <SettingsRow
           icon={LogOut}
           tile="orange"
@@ -1115,8 +1129,8 @@ function AccountPage({
       >
         <Text style={styles.settingsFootnote}>
           Deleting your account also permanently deletes every shop you own.
-          Deleting a single shop, or transferring it to another owner, is done on
-          the website.
+          To delete just one shop, or hand it to another owner, use “Delete or
+          hand over this shop” above.
         </Text>
       </Pressable>
     </View>

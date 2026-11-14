@@ -9,6 +9,18 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-14 — Business app: everything moved off the website (branch `business-app-off-web`, NOT committed/deployed) - Claude
+
+- **Why**: some Business app settings opened the website, and the phone "Continue in our app!" screen then sent owners to Google Play. Owner asked to move everything onto the apps.
+- **What changed** (worktree `../loyalty-app-off-web`, off origin/main cbc8940):
+  - New edge function `supabase/functions/shop-poster` (public GET `?slug=`): makes the A4 QR poster PDF (pdf-lib + qrcode), opened from the app so the phone's print/share sheet handles printing. Needs `verify_jwt = false`.
+  - Business app: new **QR poster** page (preview + Print/share PDF + Share join link + WhatsApp-joining switch), new in-app **Help & FAQ** (`src/HelpFaq.tsx`; Shop > Settings & account, and a sheet on the sign-in screen), **Forgot password?** on sign-in (emails the reset link to the website's `/reset-password`, which is already allowed on phones), new **Delete or hand over this shop** page (delete-business function + transfer RPC), "Visit web dashboard" row replaced by Help & FAQ. Onboarding "Print your QR poster" and the guide's button open the in-app poster.
+  - Added `react-native-qrcode-svg` to apps/retailer (JS-only, already used by the shopper app).
+- **Checks done**: `tsc --noEmit` clean for apps/retailer. Poster PDF function logic run in Node with two test shops (plain; long non-Latin name + logo + WhatsApp): PDFs rendered correctly, unknown/invalid slug gives 404. Browser preview (Expo web): QR poster page, Help & FAQ (questions expand), sign-in "Forgot password?" and Help sheet all render and work.
+- **Not checked**: the poster function has not run on Supabase (Deno not installed; uses npm: imports); delete-shop and transfer screens not exercised (preview is the staff view, owner-only rows hidden); nothing tried on a real phone; opening the PDF and the phone print sheet untested on a device.
+- **Still on the website by design**: Privacy notice / Terms (public PDFs, no phone screen), password-reset and email-confirm links.
+- **Next (owner)**: OK to deploy `shop-poster` and ship by `eas update --environment production` (per platform). **Next (Claude, on OK)**: add `[functions.shop-poster] verify_jwt = false` to config.toml, deploy, check a real PDF URL, commit, merge to main, OTA both platforms, verify bundle.
+
 ## 2026-11-14 — Business app: business verification shipped by OTA (main 0ea03ec, shadow mode) - Claude
 
 PR #10 (merge commit 0ea03ec) is on `main`. The Business app now has Settings → Verification (photo from camera or library) and a Home banner while a shop is hidden. The `verify-business` function (v1, Gemini) and the website were already live. **Mode is still `shadow`: checks are recorded, nothing is applied.** Only the owner switches to live.
