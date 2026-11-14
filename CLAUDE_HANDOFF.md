@@ -22,9 +22,18 @@ Branch `business-verification`. Nothing deployed. Production mode is still `shad
   - Website `tsc -b` clean (2026-11-10, before this change).
   - `deno check` of `verify-business` passes, run in a scratch copy with Deno 2.9.6. This is the first type check the function has had.
   - Not checked: no real Gemini or Claude call has run, and the function is not deployed.
+- **Update 2026-11-14 (later):**
+  - The owner saved `GEMINI_API_KEY` in Supabase secrets (owner-reported; secrets can't be listed from here).
+  - `verify-business` is **deployed as version 1** (JWT verification on), from commit 42e6746. The deployed source was read back and matches.
+  - Smoke test, sent from the database with `pg_net` because this session's network blocks the Supabase host:
+    - No Authorization header: 401 `UNAUTHORIZED_NO_AUTH_HEADER` from the gateway.
+    - Anon key: 401 `unauthorized` from the function's own code.
+  - Logs: `booted (time: 87ms)`, no errors.
+  - Created a personal cloud environment, "The-Loyalty-Loop", that allows `tgukdabfvvoywawmzbdo.supabase.co`, for future sessions. This session could not move onto it.
+  - Nothing calls the function until the website or app ships, so sign-up is unchanged.
+  - PR to `main` opened; merge waits for the owner.
 - **Still missing for it to work in shadow mode:**
-  - Owner: add `GEMINI_API_KEY`, from a paid-tier Gemini key, to the Supabase Edge Function secrets.
-  - Claude, after the owner's OK: deploy `verify-business` and check that a request without a login gets 401. Then open the PR to `main` and merge after asking.
+  - Claude, after the owner's OK: merge the PR to `main`.
   - Business app OTA: needs an `EXPO_TOKEN` in the cloud environment, or the owner runs `eas update --environment production`.
   - Owner: upload a few real documents.
 - **Before "Go live" (owner only):**
