@@ -32,7 +32,7 @@ PR #10 (merge commit 0ea03ec) is on `main`. The Business app now has Settings â†
 
 ---
 
-## 2026-11-14 â€” Release announcement emails (branch `release-emails`, NOT committed or deployed) - Claude
+## 2026-11-14 â€” Release announcement emails (main 704d276, LIVE) - Claude
 
 - **Why**: owner asked for an email after every big product release, to business owners and shoppers, drafted by Claude and sent only after the owner approves.
 - **What changed** (worktree `../loyalty-release-emails`, branch `release-emails` off origin/main 632a03f):
@@ -43,9 +43,13 @@ PR #10 (merge commit 0ea03ec) is on `main`. The Business app now has Settings â†
   - Website admin panel: new **Release emails** tab (`/access?view=release-emails`, `src/pages/admin/ReleaseEmails.tsx`): edit subject/body, Send test to me, Send to N people (confirm dialog), Discard draft, Retry failed.
 - **Workflow**: after a big release Claude inserts two drafts (`owners`, `shoppers`) into `release_announcements`; the owner reviews and presses Send on the admin tab. Claude never presses send.
 - **Checks done**: `node --experimental-strip-types --test release-email.test.mjs` 5/5 pass; web `npm run build` passes; oxlint shows only the same load-on-mount warning the other admin pages have. Migration dry run on the live DB inside a transaction that always rolls back: owners 7, shoppers 15, a second claim run takes 0 rows, opting one out drops shoppers to 14; confirmed afterwards nothing was left in the DB.
-- **Not checked**: edge functions have not run (not deployed; Deno not installed here); no real email sent; admin tab not opened against real data (needs the migration live).
+- **Shipped 2026-11-14 (owner approved)**: migration applied to production as `release_announcement_emails`; edge functions `send-release-announcement` v1 (verify_jwt on) and `product-updates-unsubscribe` v1 (verify_jwt off) deployed; 704d276 pushed to `main` and Vercel deployed it (live chunks `AccessPanel-DQWgHLIp.js` and `Unsubscribe-BWMCnv5x.js` contain the new code; `/unsubscribe` returns 200).
+- **Live smoke tests**: unsubscribe with a bad token -> 400 "link isn't valid"; send with no auth header -> 401 from the gateway; send with the anon key -> 401 `unauthorized` from the function's own code.
+- **Not checked yet**: no real email sent (needs an admin login, which Claude doesn't have); the admin tab not opened with real data; the From address secret (`RELEASE_FROM_EMAIL` / `WINBACK_FROM_EMAIL`) can't be listed from here, so the test email will show which one is used.
+- **Test draft waiting**: `release_announcements` id 3a6c099f-3751-43f5-994c-8289d873d9e2 (audience owners, subject "TEST ONLY - ..."). Only for "Send test to me", then "Discard draft".
 - **Open point**: product-news emails to shoppers count as marketing under UK PECR. OK for people who signed up with a chance to opt out (soft opt-in), and every email has an unsubscribe; owner to confirm the signup/privacy wording covers product news.
-- **Next (owner)**: approve shipping (migration + 2 functions + website). **Next (Claude, on approval)**: commit, apply migration, deploy both functions, merge to main for Vercel, send a test announcement to the admin inbox, check the unsubscribe link.
+- **Next (owner)**: on a computer open `/access?view=release-emails`, on the TEST ONLY draft press **Send test to me** (not Send), check the email, click its unsubscribe link, then **Discard draft**. Clicking unsubscribe opts the admin out of product news; Claude resets it afterwards with `update profiles set product_updates_opted_out = false where id = <admin id>`. If the test fails, read the `send-release-announcement` logs.
+- **Next (Claude)**: after each big release, insert two drafts (owners, shoppers) and tell the owner. **Rollback**: `git revert 704d276` and push; delete the two functions; the tables and the profiles column are additive and can stay.
 
 ## 2026-11-14 â€” Business verification: Gemini option added; deployment paused by owner - Claude
 
