@@ -9,7 +9,7 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
-## 2026-11-14 — Business app: everything moved off the website (branch `business-app-off-web`, NOT committed/deployed) - Claude
+## 2026-11-14 — Business app: everything moved off the website (main f553034, LIVE by OTA) - Claude
 
 - **Why**: some Business app settings opened the website, and the phone "Continue in our app!" screen then sent owners to Google Play. Owner asked to move everything onto the apps.
 - **What changed** (worktree `../loyalty-app-off-web`, off origin/main cbc8940):
@@ -18,6 +18,9 @@ need Claude's sign-off before the next one starts.
   - Added `react-native-qrcode-svg` to apps/retailer (JS-only, already used by the shopper app).
 - **Checks done**: `tsc --noEmit` clean for apps/retailer. Poster PDF function logic run in Node with two test shops (plain; long non-Latin name + logo + WhatsApp): PDFs rendered correctly, unknown/invalid slug gives 404. Browser preview (Expo web): QR poster page, Help & FAQ (questions expand), sign-in "Forgot password?" and Help sheet all render and work.
 - **Not checked**: the poster function has not run on Supabase (Deno not installed; uses npm: imports); delete-shop and transfer screens not exercised (preview is the staff view, owner-only rows hidden); nothing tried on a real phone; opening the PDF and the phone print sheet untested on a device.
+- **Shipped 2026-11-14**: `shop-poster` deployed (v1, no JWT); live PDFs checked for shops `cafe` (logo) and `bakery`, bad slug gives 404. Pushed f553034 to main. OTA `--environment production`, runtime 1.0.1 only: Android group 300fc232-2b30-49dd-9db8-d490f98ba860, iOS group 8c97d320-3262-4d06-aa6e-1d068fa46a6b. The update server serves both ids to runtime 1.0.1 on `production`; bundles contain the Supabase ref, shop-poster, delete-business and the transfer RPC, and no `/owner/tools` link. No new native code (react-native-svg already in builds).
+- **Still not checked**: a real phone (PDF opening, print sheet, delete and transfer screens). Phones on an older runtime (1.0.0) do not get this. Update applies on the second app launch.
+- **Rollback**: republish the previous Business OTA (verification: see entry above) or `eas update:roll-back-to-embedded --branch production --runtime-version 1.0.1`.
 - **Still on the website by design**: Privacy notice / Terms (public PDFs, no phone screen), password-reset and email-confirm links.
 - **Next (owner)**: OK to deploy `shop-poster` and ship by `eas update --environment production` (per platform). **Next (Claude, on OK)**: add `[functions.shop-poster] verify_jwt = false` to config.toml, deploy, check a real PDF URL, commit, merge to main, OTA both platforms, verify bundle.
 
