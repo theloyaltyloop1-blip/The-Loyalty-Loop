@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Navigate, Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle, CalendarDays } from 'lucide-react'
+import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle, CalendarDays, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -14,6 +14,7 @@ import { Audit } from '@/pages/admin/Audit'
 import { Businesses } from '@/pages/admin/Businesses'
 import { Loyalty } from '@/pages/admin/Loyalty'
 import { Users } from '@/pages/admin/Users'
+import { ReleaseEmails } from '@/pages/admin/ReleaseEmails'
 import { TrendingAdmin } from '@/pages/TrendingAdmin'
 import { ShopRequests } from '@/pages/ShopRequests'
 import { AdminCharts, AdminMetrics, AdminQueueSummary } from '@/components/admin-dashboard'
@@ -21,17 +22,17 @@ import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, getVerificationDocUrl, fetchVerificationChecks, fetchVerificationMode, setVerificationMode, spotCheckVerification, type VerificationCheck, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
 
-type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'trending' | 'shop-requests' | 'users' | 'businesses' | 'loyalty' | 'audit'
+type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'trending' | 'shop-requests' | 'users' | 'businesses' | 'loyalty' | 'audit' | 'release-emails'
 type Health = { count?: number; label: string; detail: string; ok: boolean; targetTab?: Tab }
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', audit: 'Audit log',
+  overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', audit: 'Audit log', 'release-emails': 'Release emails',
 }
 
 const navGroups: { label: string; tabs: Tab[] }[] = [
   { label: 'Workspace', tabs: ['overview', 'analytics', 'users', 'businesses', 'loyalty'] },
-  { label: 'Manage', tabs: ['verifications', 'trending', 'shop-requests', 'support', 'moderation', 'controls'] },
+  { label: 'Manage', tabs: ['verifications', 'trending', 'shop-requests', 'support', 'moderation', 'release-emails', 'controls'] },
   { label: 'System', tabs: ['audit', 'backups', 'features'] },
 ]
 
@@ -142,7 +143,7 @@ export function AccessPanel() {
   if (!session) return <Navigate to="/login" replace />
   if (primaryRole !== 'admin') return <Navigate to="/dashboard" replace />
 
-  const icons = { overview: LayoutDashboard, analytics: BarChart3, controls: SlidersHorizontal, verifications: Store, support: LifeBuoy, moderation: MessageSquareWarning, backups: HardDrive, features: PauseCircle, trending: BarChart3, 'shop-requests': Store, users: UsersIcon, businesses: Store, loyalty: Gift, audit: ScrollText }
+  const icons = { overview: LayoutDashboard, analytics: BarChart3, controls: SlidersHorizontal, verifications: Store, support: LifeBuoy, moderation: MessageSquareWarning, backups: HardDrive, features: PauseCircle, trending: BarChart3, 'shop-requests': Store, users: UsersIcon, businesses: Store, loyalty: Gift, audit: ScrollText, 'release-emails': Mail }
   const queueCount = verifications.length + support.filter(item => item.status === 'open').length + reports.length
   const analyticsFailed = errors.some(error => error.startsWith('Product analytics:'))
   return <div className="admin-panel admin-shell">
@@ -157,10 +158,10 @@ export function AccessPanel() {
     </aside>
     <main className="admin-main">
       <div className="admin-topbar"><span>Workspace / {tabLabels[tab]}</span><div className="admin-topbar-tools"><span className="admin-date"><CalendarDays size={16}/>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span className="admin-admin-chip"><ShieldCheck size={14}/>Admin access</span></div></div>
-      <header className="admin-page-header"><div><h1>{tab === 'overview' ? 'Welcome back.' : tabLabels[tab]}</h1><p>{tab === 'overview' ? 'Here’s what’s happening across The Loyalty Loop.' : 'Your platform. Everything in its place.'}</p></div>{!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <button disabled={busy} onClick={() => void load()} className="admin-refresh"><RefreshCw size={16}/>{busy ? 'Refreshing…' : 'Refresh data'}</button>}</header>
-      {!(['users', 'businesses', 'loyalty', 'audit'] as Tab[]).includes(tab) && <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}{(tab === 'overview' || tab === 'analytics') && <span>Analytics · last 30 days</span>}</div>}
+      <header className="admin-page-header"><div><h1>{tab === 'overview' ? 'Welcome back.' : tabLabels[tab]}</h1><p>{tab === 'overview' ? 'Here’s what’s happening across The Loyalty Loop.' : 'Your platform. Everything in its place.'}</p></div>{!(['users', 'businesses', 'loyalty', 'audit', 'release-emails'] as Tab[]).includes(tab) && <button disabled={busy} onClick={() => void load()} className="admin-refresh"><RefreshCw size={16}/>{busy ? 'Refreshing…' : 'Refresh data'}</button>}</header>
+      {!(['users', 'businesses', 'loyalty', 'audit', 'release-emails'] as Tab[]).includes(tab) && <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}{(tab === 'overview' || tab === 'analytics') && <span>Analytics · last 30 days</span>}</div>}
       {!!errors.length && <div role="alert" className="admin-error"><strong>Some data could not be loaded.</strong>{errors.map(error => <p key={error}>{error}</p>)}<button disabled={busy} onClick={() => void load()}>Retry failed checks</button></div>}
-      {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : busy ? <div role="status" className="admin-loading">Loading your dashboard…</div> : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/> : tab === 'overview' ? <>
+      {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : tab === 'release-emails' ? <ReleaseEmails/> : busy ? <div role="status" className="admin-loading">Loading your dashboard…</div> : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/> : tab === 'overview' ? <>
         <AdminMetrics counts={Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))}/>
         <AdminCharts items={usage} unavailable={analyticsFailed}/>
         <AdminQueueSummary message={queueCount ? 'A few things need your attention.' : errors.length ? 'Refresh failed checks to confirm your queues.' : 'You’re all caught up.'} queues={([

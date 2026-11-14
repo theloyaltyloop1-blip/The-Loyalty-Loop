@@ -47,3 +47,11 @@ verify_jwt = true
 # AI programme builder. Owner-only; the handler also validates the JWT user.
 [functions.design-programme]
 verify_jwt = true
+
+# Release announcement emails. Sending checks the admin JWT itself; the
+# unsubscribe endpoint is public and authenticated by an HMAC link token.
+[functions.send-release-announcement]
+verify_jwt = true
+
+[functions.product-updates-unsubscribe]
+verify_jwt = false

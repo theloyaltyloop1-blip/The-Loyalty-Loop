@@ -16,7 +16,7 @@ import { LoopMark } from '@/components/loop-mark'
 const DISMISS_KEY = 'loyalty-loop-stay-on-web'
 const REDIRECTED_KEY = 'loyalty-loop-store-redirected'
 const REDIRECT_DELAY_MS = 1600
-const WEB_ONLY_PATHS = ['/auth/', '/reset-password', '/forgot-password', '/access', '/whatsapp']
+const WEB_ONLY_PATHS = ['/auth/', '/reset-password', '/forgot-password', '/access', '/whatsapp', '/unsubscribe']
 const BUSINESS_PATHS = ['/owner', '/join', '/signup/owner']
 
 const BUSINESS_KEY = 'loyalty-loop-came-for-business'

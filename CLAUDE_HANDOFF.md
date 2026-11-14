@@ -32,6 +32,21 @@ PR #10 (merge commit 0ea03ec) is on `main`. The Business app now has Settings �
 
 ---
 
+## 2026-11-14 — Release announcement emails (branch `release-emails`, NOT committed or deployed) - Claude
+
+- **Why**: owner asked for an email after every big product release, to business owners and shoppers, drafted by Claude and sent only after the owner approves.
+- **What changed** (worktree `../loyalty-release-emails`, branch `release-emails` off origin/main 632a03f):
+  - Migration `20261114120000_release_announcement_emails.sql`: `profiles.product_updates_opted_out` (platform-wide product-news opt-out, separate from per-shop `memberships.promos_opted_out`); `release_announcements` (draft/sending/sent/cancelled; admins can read, and edit only drafts); `release_announcement_recipients` (one row per person per announcement; `claimed_by` = the send run that owns it, so nobody gets one twice); `release_announcement_audience(_audience)` (service role only) and `release_announcement_audience_count` (admin only).
+  - Edge function `send-release-announcement` (admin JWT): `test` sends one `[Test]` copy to the calling admin; `send` emails the audience via the Resend batch API (100 per call), claims rows before sending, retries only failed rows on re-run, never re-sends rows a crashed run left pending. From address `RELEASE_FROM_EMAIL`, else `WINBACK_FROM_EMAIL`.
+  - Edge function `product-updates-unsubscribe` (public, POST only, HMAC link token keyed from the service-role key). Email footer links to the new website page `/unsubscribe` (needs a button press, so link scanners do nothing); `List-Unsubscribe` one-click headers too. `/unsubscribe` added to the phone app-gate allowlist.
+  - `_shared/release-email.ts` (escaped plain text to HTML, signing) + tests.
+  - Website admin panel: new **Release emails** tab (`/access?view=release-emails`, `src/pages/admin/ReleaseEmails.tsx`): edit subject/body, Send test to me, Send to N people (confirm dialog), Discard draft, Retry failed.
+- **Workflow**: after a big release Claude inserts two drafts (`owners`, `shoppers`) into `release_announcements`; the owner reviews and presses Send on the admin tab. Claude never presses send.
+- **Checks done**: `node --experimental-strip-types --test release-email.test.mjs` 5/5 pass; web `npm run build` passes; oxlint shows only the same load-on-mount warning the other admin pages have. Migration dry run on the live DB inside a transaction that always rolls back: owners 7, shoppers 15, a second claim run takes 0 rows, opting one out drops shoppers to 14; confirmed afterwards nothing was left in the DB.
+- **Not checked**: edge functions have not run (not deployed; Deno not installed here); no real email sent; admin tab not opened against real data (needs the migration live).
+- **Open point**: product-news emails to shoppers count as marketing under UK PECR. OK for people who signed up with a chance to opt out (soft opt-in), and every email has an unsubscribe; owner to confirm the signup/privacy wording covers product news.
+- **Next (owner)**: approve shipping (migration + 2 functions + website). **Next (Claude, on approval)**: commit, apply migration, deploy both functions, merge to main for Vercel, send a test announcement to the admin inbox, check the unsubscribe link.
+
 ## 2026-11-14 — Business verification: Gemini option added; deployment paused by owner - Claude
 
 Branch `business-verification`. Nothing deployed. Production mode is still `shadow`.

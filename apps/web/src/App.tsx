@@ -40,6 +40,7 @@ const Login = lazy(() => import('@/pages/Login').then((m) => ({ default: m.Login
 const Signup = lazy(() => import('@/pages/Signup').then((m) => ({ default: m.Signup })))
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword').then((m) => ({ default: m.ForgotPassword })))
 const ResetPassword = lazy(() => import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPassword })))
+const Unsubscribe = lazy(() => import('@/pages/Unsubscribe').then((m) => ({ default: m.Unsubscribe })))
 const ActivityPage = lazy(() => import('@/pages/Activity').then((m) => ({ default: m.ActivityPage })))
 const InboxPage = lazy(() => import('@/pages/Inbox').then((m) => ({ default: m.InboxPage })))
 const AuthCallback = lazy(() => import('@/pages/AuthCallback').then((m) => ({ default: m.AuthCallback })))
@@ -63,7 +64,7 @@ const queryClient = new QueryClient()
 
 function RouteMeta() {
   const { pathname } = useLocation()
-  const privatePage = pathname.startsWith('/admin') || pathname.startsWith('/dashboard') || pathname.startsWith('/owner') || pathname.startsWith('/access') || pathname.startsWith('/brand') || pathname.startsWith('/whatsapp') || pathname.startsWith('/auth') || pathname.startsWith('/reset-password')
+  const privatePage = pathname.startsWith('/admin') || pathname.startsWith('/dashboard') || pathname.startsWith('/owner') || pathname.startsWith('/access') || pathname.startsWith('/brand') || pathname.startsWith('/whatsapp') || pathname.startsWith('/auth') || pathname.startsWith('/reset-password') || pathname.startsWith('/unsubscribe')
   const labels: Record<string, { title: string; description: string }> = {
     '/login': { title: 'Log in | The Loyalty Loop', description: 'Log in to your Loyalty Loop account.' },
     '/signup': { title: 'Join The Loyalty Loop', description: 'Create a free Loyalty Loop account and start collecting local rewards.' },
@@ -141,6 +142,7 @@ function App() {
                 <Route path="/signup/owner" element={<Signup asOwner />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
                 <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
