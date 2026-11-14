@@ -62,7 +62,8 @@ export type NativeOwnerPage =
   | "reviews"
   | "staff"
   | "support"
-  | "tutorial";
+  | "tutorial"
+  | "verify";
 
 export type NativeOnboardingDestination =
   | "analytics"
@@ -92,6 +93,9 @@ export interface NativeBusiness {
   category?: string | null;
   reward_threshold_pence?: number | null;
   manual_spend_max_pence?: number;
+  postcode?: string | null;
+  verification_status?: "unverified" | "pending" | "verified" | "rejected";
+  approval_status?: "pending" | "approved" | "rejected";
 }
 
 interface PageProps {
@@ -2100,6 +2104,172 @@ function TutorialPage({ business, onBack, onNavigate }: PageProps) {
   );
 }
 
+type VerifyRoute = "company" | "vat" | "sole_trader";
+const VERIFY_ROUTES: { id: VerifyRoute; title: string; hint: string; label: string }[] = [
+  { id: "company", title: "Limited company", hint: "Certificate of incorporation, or a Companies House letter with your company number.", label: "Company document" },
+  { id: "vat", title: "VAT registered", hint: "VAT certificate, or an HMRC letter with your VAT number.", label: "VAT document" },
+  { id: "sole_trader", title: "Sole trader or partnership", hint: "A business rates bill, business bank letter, premises licence or food registration letter from the last 12 months, with your shop's name and address.", label: "Proof of business address" },
+];
+const VERIFY_MIME = ["image/png", "image/jpeg", "image/webp"];
+
+function VerifyPage({ business, userId, onBack, onBusinessChanged, preview = false }: PageProps) {
+  const [route, setRoute] = useState<VerifyRoute | null>(null);
+  const [postcode, setPostcode] = useState(business.postcode ?? "");
+  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const status = business.verification_status ?? "unverified";
+  const hidden = business.approval_status === "pending";
+  const canSubmit = status === "unverified" || status === "rejected";
+  const chosen = VERIFY_ROUTES.find((r) => r.id === route);
+
+  useEffect(() => {
+    if (preview || status !== "rejected") return;
+    supabase
+      .rpc("my_business_verification", { _business_id: business.id })
+      .then(({ data }) => {
+        const latest = (data as { owner_message: string | null }[] | null)?.[0];
+        if (latest?.owner_message) setMessage(latest.owner_message);
+      });
+  }, [business.id, preview, status]);
+
+  async function pick(source: "camera" | "library") {
+    if (preview) return showAlert("Preview mode", "On a signed-in phone, this lets you photograph your document.");
+    const permission = source === "camera"
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      return showAlert(
+        source === "camera" ? "Camera permission needed" : "Photos permission needed",
+        source === "camera" ? "Allow camera access to photograph your document." : "Allow photo access to choose your document.",
+      );
+    }
+    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.8 };
+    const result = source === "camera"
+      ? await ImagePicker.launchCameraAsync(options)
+      : await ImagePicker.launchImageLibraryAsync(options);
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) return showAlert("Photo is too large", "Choose a photo smaller than 10MB.");
+    setPhoto(asset);
+  }
+
+  async function submit() {
+    if (!chosen || !photo) return;
+    if (!postcode.trim()) return showAlert("Add your postcode", "We compare it with the address on your document.");
+    setBusy(true);
+    try {
+      const cleanPostcode = postcode.trim().toUpperCase();
+      if (cleanPostcode !== (business.postcode ?? "")) {
+        const { error } = await supabase.from("businesses").update({ postcode: cleanPostcode }).eq("id", business.id);
+        if (error) throw error;
+      }
+      const mime = photo.mimeType && VERIFY_MIME.includes(photo.mimeType) ? photo.mimeType : "image/jpeg";
+      const extension = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
+      const path = `${userId}/${business.id}-${Date.now()}.${extension}`;
+      const bytes = await fetch(photo.uri).then((response) => response.arrayBuffer());
+      const { error: uploadError } = await supabase.storage
+        .from("owner_verification_docs")
+        .upload(path, bytes, { contentType: mime, upsert: false });
+      if (uploadError) throw uploadError;
+      const { error: submitError } = await supabase.rpc("submit_business_verification", {
+        _business_id: business.id,
+        _doc_path: path,
+        _doc_label: chosen.label,
+      });
+      if (submitError) throw submitError;
+      const { data, error } = await supabase.functions.invoke("verify-business", {
+        body: { business_id: business.id, route: chosen.id },
+      });
+      if (error) {
+        const context = (error as { context?: Response }).context;
+        const body = context ? await context.json().catch(() => null) : null;
+        throw new Error(body?.error ?? "We could not check your document. Please try again.");
+      }
+      const result = data as { decision: "approved" | "rejected" | "pending"; message: string };
+      setPhoto(null);
+      setMessage(result.message);
+      await onBusinessChanged();
+      showAlert(
+        result.decision === "approved" ? "You're verified" : result.decision === "rejected" ? "We couldn't verify that" : "Document received",
+        result.message,
+      );
+    } catch (e) {
+      showAlert("Could not check your document", e instanceof Error ? e.message : "Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const statusTitle = status === "verified" ? "Verified" : status === "pending" ? "Checking your document" : status === "rejected" ? "Not verified yet" : hidden ? "Verify to go live" : "Get the verified badge";
+  const statusText =
+    status === "verified" ? "Your business is verified."
+      : status === "pending" ? message ?? "Thanks. We're checking your document and will let you know."
+        : status === "rejected" ? message ?? "We couldn't verify that document. Try another one below."
+          : hidden ? "Your shop is hidden from customers until it's verified. Most shops are checked within a few minutes."
+            : "A verified badge shows customers your shop is a real, checked business.";
+
+  return (
+    <View>
+      <PageHeader title="Verification" eyebrow="YOUR BUSINESS" onBack={onBack} />
+      <Section>
+        <View style={styles.iconHeading}>
+          <ShieldCheck size={20} color={status === "verified" ? "#2F7D4F" : orange} />
+          <Text style={styles.cardTitle}>{statusTitle}</Text>
+        </View>
+        <Text style={styles.muted}>{statusText}</Text>
+      </Section>
+
+      {canSubmit ? (
+        <Section>
+          <Text style={styles.sectionTitle}>Which describes your business?</Text>
+          {VERIFY_ROUTES.map((r) => (
+            <Pressable
+              key={r.id}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: route === r.id }}
+              onPress={() => setRoute(r.id)}
+              style={({ pressed }) => [verifyStyles.option, route === r.id && verifyStyles.optionActive, pressed && styles.pressed]}
+            >
+              <Text style={verifyStyles.optionTitle}>{r.title}</Text>
+              <Text style={verifyStyles.optionHint}>{r.hint}</Text>
+            </Pressable>
+          ))}
+          {chosen ? (
+            <>
+              <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Your shop's postcode</Text>
+              <Field value={postcode} onChangeText={setPostcode} placeholder="e.g. M4 1HN" />
+              {photo ? (
+                <Image source={{ uri: photo.uri }} style={verifyStyles.photo} resizeMode="contain" accessibilityLabel="Your document photo" />
+              ) : null}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <PrimaryButton label={photo ? "Retake" : "Take a photo"} secondary onPress={() => void pick("camera")} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <PrimaryButton label="From photos" secondary onPress={() => void pick("library")} />
+                </View>
+              </View>
+              {photo ? <PrimaryButton label="Check my document" busy={busy} onPress={() => void submit()} /> : null}
+              <Text style={[styles.muted, { marginTop: 12, fontSize: 12 }]}>
+                Business documents only, never a passport or driving licence. Show all four corners in good light. It's stored privately, read automatically by AI, and deleted 90 days after a decision. Have a PDF? Upload it on the website under Settings, Verification.
+              </Text>
+            </>
+          ) : null}
+        </Section>
+      ) : null}
+    </View>
+  );
+}
+
+const verifyStyles = StyleSheet.create({
+  option: { borderWidth: 1.5, borderColor: "#C9C3B8", borderRadius: 16, padding: 14, marginBottom: 10, backgroundColor: "#fff" },
+  optionActive: { borderColor: orange, backgroundColor: "#EEF0F8" },
+  optionTitle: { color: ink, fontWeight: "900", fontSize: 15 },
+  optionHint: { color: muted, fontSize: 13, lineHeight: 18, marginTop: 3 },
+  photo: { width: "100%", height: 220, borderRadius: 14, backgroundColor: "#F1ECE3", marginBottom: 6 },
+});
+
 export function NativeOwnerPageView({
   page,
   ...props
@@ -2114,6 +2284,7 @@ export function NativeOwnerPageView({
         staff: StaffPage,
         support: SupportPage,
         tutorial: TutorialPage,
+        verify: VerifyPage,
       })[page],
     [page],
   );

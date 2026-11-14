@@ -11,6 +11,73 @@ need Claude's sign-off before the next one starts.
 
 ---
 
+## 2026-11-14 — Business verification: Gemini option added; deployment paused by owner - Claude
+
+Branch `business-verification`. Nothing deployed. Production mode is still `shadow`.
+
+- **2026-11-10:** the owner paused the deployment ("leave it"). Do not deploy, merge or press "Go live" without asking again. The owner's worry: live mode would hide every new shop while verification isn't working.
+- **Changed:** `supabase/functions/verify-business/index.ts` can now use Gemini. Gemini is used when `GEMINI_API_KEY` is set; otherwise Claude is used. `VERIFY_AI_PROVIDER` forces one, and `VERIFY_GEMINI_MODEL` (default `gemini-2.5-flash`) picks the model. The rules, database, website and app are unchanged. The design doc's "As built" section is updated.
+- **Checks performed:**
+  - Rules tests 12/12.
+  - Website `tsc -b` clean (2026-11-10, before this change).
+  - `deno check` of `verify-business` passes, run in a scratch copy with Deno 2.9.6. This is the first type check the function has had.
+  - Not checked: no real Gemini or Claude call has run, and the function is not deployed.
+- **Update 2026-11-14 (later):**
+  - The owner saved `GEMINI_API_KEY` in Supabase secrets (owner-reported; secrets can't be listed from here).
+  - `verify-business` is **deployed as version 1** (JWT verification on), from commit 42e6746. The deployed source was read back and matches.
+  - Smoke test, sent from the database with `pg_net` because this session's network blocks the Supabase host:
+    - No Authorization header: 401 `UNAUTHORIZED_NO_AUTH_HEADER` from the gateway.
+    - Anon key: 401 `unauthorized` from the function's own code.
+  - Logs: `booted (time: 87ms)`, no errors.
+  - Created a personal cloud environment, "The-Loyalty-Loop", that allows `tgukdabfvvoywawmzbdo.supabase.co`, for future sessions. This session could not move onto it.
+  - Nothing calls the function until the website or app ships, so sign-up is unchanged.
+  - PR to `main` opened; merge waits for the owner.
+- **Still missing for it to work in shadow mode:**
+  - Claude, after the owner's OK: merge the PR to `main`.
+  - Business app OTA: needs an `EXPO_TOKEN` in the cloud environment, or the owner runs `eas update --environment production`.
+  - Owner: upload a few real documents.
+- **Before "Go live" (owner only):**
+  - Shadow results look right.
+  - The App Store reviewer demo shop is verified.
+  - The privacy policy and terms name Google as the AI provider.
+
+## 2026-11-10 — Compulsory business verification with AI checks: BUILT, not deployed - Claude
+
+Branch `business-verification` (worktree `.claude/worktrees/business-verification`, from origin/main 88c6e9a). Not committed yet.
+
+The design and an "As built" list are in `docs/BUSINESS_VERIFICATION_AI_2026-11-09.md`. Owner decisions:
+- Existing shops are never forced to verify.
+- Sole traders can be auto-approved.
+- UK only.
+- The AI makes the final call, with a spot-check list afterwards.
+- A Companies House key will come later. The check switches on when the secret is set.
+
+It ships in **shadow mode**: checks are recorded, admins still decide, and new shops go live as before. Going live is one admin button (Access panel, Business listings).
+
+Checks performed:
+- Rules unit tests 12/12.
+- Database test on embedded PostgreSQL 11/11, covering shadow/live, owner and service-role permissions, duplicate numbers, stale checks, spot-check undo, and admin approval.
+- Website `tsc -b` clean.
+- Business app `tsc` clean apart from two font packages missing from the local install (not related to this change).
+- Not checked: the edge function has not run anywhere. There's no Deno locally, so no type check or real Claude call has been done.
+
+Update 2026-11-10:
+- The migration is **applied to production** as `business_verification_ai`, followed by `business_verification_mode_revoke_anon`. Mode is `shadow` and no shop changed.
+- The security advisor showed nothing new after the revoke.
+- `verify-business` is NOT deployed yet.
+
+Next actions:
+- Claude, with the owner's OK:
+  - Set `ANTHROPIC_API_KEY` in Supabase secrets.
+  - Deploy `verify-business`.
+  - Test with a real document in shadow mode.
+  - Commit and merge.
+  - Deploy the website and publish the Business app OTA.
+- Owner: try a few real documents in shadow mode, then press "Go live".
+- Later: a Companies House key, the HMRC VAT register, and new camera permission text at the next native build.
+
+---
+
 ## 2026-11-14 — Website on a phone: "Continue in our app!" then the store (main 0012213, LIVE) - Claude
 
 - **Why**: owner asked that phone visitors to the website are told to use the app and sent to the store automatically.

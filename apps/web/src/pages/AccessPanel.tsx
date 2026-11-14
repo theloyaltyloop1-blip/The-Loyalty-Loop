@@ -19,7 +19,7 @@ import { ShopRequests } from '@/pages/ShopRequests'
 import { AdminCharts, AdminMetrics, AdminQueueSummary } from '@/components/admin-dashboard'
 import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
-import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
+import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, getVerificationDocUrl, fetchVerificationChecks, fetchVerificationMode, setVerificationMode, spotCheckVerification, type VerificationCheck, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
 
 type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'trending' | 'shop-requests' | 'users' | 'businesses' | 'loyalty' | 'audit'
 type Health = { count?: number; label: string; detail: string; ok: boolean; targetTab?: Tab }
@@ -222,7 +222,97 @@ function RejectListingDialog({ name, onReject }: { name: string; onReject: (reas
 }
 
 function VerificationQueue({ items, refresh }: { items: PendingVerification[]; refresh: () => Promise<void> }) {
-  return <div className="grid gap-4">{items.length ? items.map((item) => <article key={item.id} className="rounded-2xl bg-card p-4 sm:p-5"><p className="font-bold">{item.name}</p><p className="break-all text-sm text-muted-foreground">{item.owner_email}</p><div className="mt-3 flex flex-wrap gap-2"><button data-press-feedback onClick={async () => { await reviewBusinessVerification(item.id, true); void refresh() }} className="rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Approve</button><RejectListingDialog name={item.name} onReject={async (reason) => { await reviewBusinessVerification(item.id, false, reason); void refresh() }} /></div></article>) : <p className="text-muted-foreground">No listings waiting.</p>}</div>
+  const [mode, setMode] = React.useState<'shadow' | 'live' | null>(null)
+  const [checks, setChecks] = React.useState<VerificationCheck[]>([])
+  const [spot, setSpot] = React.useState<VerificationCheck[]>([])
+  const [busy, setBusy] = React.useState(false)
+  const loadChecks = React.useCallback(async () => {
+    const [m, all, toCheck] = await Promise.all([fetchVerificationMode(), fetchVerificationChecks(false), fetchVerificationChecks(true)])
+    setMode(m); setChecks(all); setSpot(toCheck)
+  }, [])
+  React.useEffect(() => { loadChecks().catch(() => {}) }, [loadChecks, items])
+  const latestFor = (businessId: string) => checks.find(c => c.business_id === businessId)
+  async function act(fn: () => Promise<unknown>) {
+    setBusy(true)
+    try { await fn(); await Promise.all([refresh(), loadChecks()]) } catch (error) { toast.error(error instanceof Error ? error.message : 'Something went wrong.') } finally { setBusy(false) }
+  }
+  async function openDoc(path: string | null) {
+    if (!path) return
+    // Open the tab before the await, or pop-up blockers stop it.
+    const tab = window.open('', '_blank')
+    try { const url = await getVerificationDocUrl(path); if (tab) tab.location.href = url; else window.location.href = url } catch (error) { tab?.close(); toast.error(error instanceof Error ? error.message : 'Could not open the document.') }
+  }
+  function toggleMode() {
+    if (!mode) return
+    const question = mode === 'live'
+      ? 'Switch back to shadow mode? New shops will go live without verification.'
+      : 'Go live? New shops will be hidden until verified, and decisions will be applied automatically.'
+    if (window.confirm(question)) void act(() => setVerificationMode(mode === 'live' ? 'shadow' : 'live'))
+  }
+  return <div className="grid gap-6">
+    <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-bold">Automatic checks: {mode === 'live' ? 'Live' : mode === 'shadow' ? 'Shadow mode' : '…'}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{mode === 'live'
+            ? 'New shops stay hidden until verified. The AI and register checks decide automatically, and AI approvals appear below for spot-checks.'
+            : 'Checks run and are recorded, but you still decide every listing and new shops go live as before. Compare the AI result with your own decision.'}</p>
+        </div>
+        {mode && <button data-press-feedback disabled={busy} onClick={toggleMode} className="rounded-xl border border-border px-4 py-2 text-sm font-bold">{mode === 'live' ? 'Switch to shadow mode' : 'Go live'}</button>}
+      </div>
+    </section>
+
+    <section>
+      <p className="mb-3 font-bold">Waiting for a decision</p>
+      <div className="grid gap-4">{items.length ? items.map((item) => {
+        const c = latestFor(item.id)
+        return <article key={item.id} className="rounded-2xl bg-card p-4 sm:p-5">
+          <p className="font-bold">{item.name}</p><p className="break-all text-sm text-muted-foreground">{item.owner_email}</p>
+          {c && <CheckSummary check={c} />}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {item.verification_document_path && <button data-press-feedback onClick={() => void openDoc(item.verification_document_path)} className="rounded-xl border border-border px-4 py-2 text-sm font-bold">View document</button>}
+            <button data-press-feedback disabled={busy} onClick={() => void act(() => reviewBusinessVerification(item.id, true))} className="rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Approve</button>
+            <RejectListingDialog name={item.name} onReject={(reason) => act(() => reviewBusinessVerification(item.id, false, reason))} />
+          </div>
+        </article>
+      }) : <p className="text-muted-foreground">No listings waiting.</p>}</div>
+    </section>
+
+    <section>
+      <p className="mb-1 font-bold">AI approvals to spot-check</p>
+      <p className="mb-3 text-sm text-muted-foreground">Approved without a register match. Nobody waits on these. Undoing one hides the shop again and tells the owner why.</p>
+      <div className="grid gap-4">{spot.length ? spot.map(c => <article key={c.id} className="rounded-2xl bg-card p-4 sm:p-5">
+        <p className="font-bold">{c.business_name}</p><p className="break-all text-sm text-muted-foreground">{c.owner_email}</p>
+        <CheckSummary check={c} />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button data-press-feedback onClick={() => void openDoc(c.document_path)} className="rounded-xl border border-border px-4 py-2 text-sm font-bold">View document</button>
+          <button data-press-feedback disabled={busy} onClick={() => void act(() => spotCheckVerification(c.id, true))} className="rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Looks right</button>
+          <RejectListingDialog name={c.business_name} onReject={(reason) => act(() => spotCheckVerification(c.id, false, reason))} />
+        </div>
+      </article>) : <p className="text-muted-foreground">Nothing to spot-check.</p>}</div>
+    </section>
+  </div>
+}
+
+const CHECK_FIELDS = ['document_type', 'legal_name', 'trading_name', 'company_number', 'vat_number', 'postcode', 'document_date'] as const
+
+function CheckSummary({ check }: { check: VerificationCheck }) {
+  const e = check.extraction ?? {}
+  const alt = check.extraction_alt && !('error' in check.extraction_alt) && !('skipped' in check.extraction_alt) ? check.extraction_alt : null
+  const outcome = check.decision === 'needs_review' ? 'Could not decide' : check.decision === 'approved' ? 'Approve' : 'Reject'
+  const label = check.mode === 'shadow' && check.decision !== 'needs_review' ? `Would ${outcome.toLowerCase()}` : outcome === 'Approve' ? 'Approved' : outcome === 'Reject' ? 'Rejected' : outcome
+  const by = check.decided_by === 'ai' ? 'AI' : check.decided_by === 'rules' ? 'rules' : 'error'
+  const show = (v: unknown) => (v === null || v === undefined || v === '' ? '–' : String(v))
+  return <div className="mt-3 rounded-xl border border-border p-3 text-sm">
+    <p className="font-semibold">{label} <span className="font-normal text-muted-foreground">by {by}, {check.register_checked ? 'register checked' : 'no register'} · {new Date(check.created_at).toLocaleString()}</span></p>
+    {typeof e.summary_for_reviewer === 'string' && e.summary_for_reviewer && <p className="mt-1 text-muted-foreground">{e.summary_for_reviewer}</p>}
+    <dl className="mt-2 grid grid-cols-[auto,1fr] gap-x-3 gap-y-0.5">{CHECK_FIELDS.map(k => <React.Fragment key={k}>
+      <dt className="text-muted-foreground">{k.replaceAll('_', ' ')}</dt>
+      <dd className="break-all">{show(e[k])}{alt && show(alt[k]) !== show(e[k]) ? <span className="text-warning"> (Groq: {show(alt[k])})</span> : null}</dd>
+    </React.Fragment>)}</dl>
+    {check.reasons.length > 0 && <p className="mt-2 text-muted-foreground">Why: {check.reasons.join(', ').replaceAll('_', ' ')}</p>}
+    {check.owner_message && check.decision === 'rejected' && <p className="mt-1 text-muted-foreground">Owner sees: {check.owner_message}</p>}
+  </div>
 }
 
 function SupportQueue({ items, refresh }: { items: SupportRequest[]; refresh: () => Promise<void> }) {

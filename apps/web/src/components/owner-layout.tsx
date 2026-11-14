@@ -190,6 +190,20 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
       <main id="main-content" tabIndex={-1} className="w-full min-w-0 flex-1 px-4 py-6 sm:px-6 md:max-w-6xl md:px-10 md:py-10">
         {isOwner && business && <OwnerWalkthrough businessId={business.id} />}
         {isOwner && <SubTabs pathname={pathname} />}
+        {isOwner && business?.approval_status === 'pending' && !pathname.startsWith('/owner/settings') && (
+          <Link
+            to="/owner/settings?tab=verification"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning/40 bg-warning-subtle px-4 py-3 text-sm"
+          >
+            <span>
+              <span className="font-semibold text-foreground">Your shop is hidden from customers.</span>{' '}
+              <span className="text-muted-foreground">
+                {business.verification_status === 'pending' ? "We're checking your document." : 'Verify your business to put it live.'}
+              </span>
+            </span>
+            <span className="font-semibold text-primary">{business.verification_status === 'pending' ? 'See status' : 'Verify now'} →</span>
+          </Link>
+        )}
         {children}
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           <div className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</div>

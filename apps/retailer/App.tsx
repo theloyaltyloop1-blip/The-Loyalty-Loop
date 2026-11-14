@@ -116,6 +116,8 @@ type Business = {
   features?: string[] | null;
   halal_certifier?: string | null;
   country_code?: string | null;
+  verification_status?: "unverified" | "pending" | "verified" | "rejected";
+  approval_status?: "pending" | "approved" | "rejected";
 };
 type StaffBusiness = {
   business_id: string;
@@ -2506,6 +2508,32 @@ function Dashboard({
                   ))}
                 </View>
               )}
+              {tab === "home" && selected.approval_status === "pending" && ownedIds.has(selected.id) ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setOwnerPage("verify")}
+                  style={({ pressed }) => ({
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: 14,
+                    borderRadius: 18,
+                    marginBottom: 14,
+                    backgroundColor: "#FFF4E0",
+                    borderWidth: 1.5,
+                    borderColor: "#E8B866",
+                    opacity: pressed ? 0.85 : 1,
+                  })}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "900", fontSize: 15, color: "#1A2138" }}>Your shop is hidden from customers</Text>
+                    <Text style={{ fontSize: 13, color: "#4A4A4A", marginTop: 2 }}>
+                      {selected.verification_status === "pending" ? "We're checking your document." : "Verify your business to put it live. It takes a few minutes."}
+                    </Text>
+                  </View>
+                  <ChevronRight size={20} color="#1A2138" />
+                </Pressable>
+              ) : null}
               {tab === "home" && (
                 <DashboardHome
                   business={selected}
