@@ -11,7 +11,10 @@ import { bodyToText, chunk, renderEmailHtml, signUnsubscribe, unsubscribeApiUrl,
 // rows left "pending" by a crashed run are not (they may already have gone).
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("RELEASE_FROM_EMAIL") ?? Deno.env.get("WINBACK_FROM_EMAIL") ?? "The Loyalty Loop <onboarding@resend.dev>";
+// Must be on a domain verified in Resend (the-loyalty-loop.com). Never fall back
+// to onboarding@resend.dev: Resend only lets that reach the account owner.
+const FROM_EMAIL = [Deno.env.get("RELEASE_FROM_EMAIL"), Deno.env.get("RESEND_FROM_EMAIL")]
+  .find((v) => v && !v.includes("resend.dev")) ?? "The Loyalty Loop <hello@the-loyalty-loop.com>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
