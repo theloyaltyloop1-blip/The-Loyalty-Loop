@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { isLogout, isStop, LOGGED_OUT_ALREADY, LOGOUT_REPLY, progressLine, stampProgressText, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
+import { isLogout, isStop, LOGGED_OUT_ALREADY, LOGOUT_REPLY, programmeProgressText, progressLine, STOP_REPLY, welcomeBack, type ShopProgress } from "../_shared/whatsapp-messages.ts";
 import { answerQuestion, DAILY_QUESTION_LIMIT, LIMIT_REPLY, type BotShop, type ChatMessage } from "../_shared/whatsapp-bot.ts";
 import {
   ASK_LOCATION, joinChoices, matchShops, NO_SHOP_FOUND, nearbyReply, nearestShops, parseJoin, parseNearby, type Shop,
@@ -22,6 +22,11 @@ const PHONE_NUMBER_ID = Deno.env.get("META_WHATSAPP_PHONE_NUMBER_ID");
 const GRAPH_VERSION = Deno.env.get("META_WHATSAPP_GRAPH_VERSION") ?? "v25.0";
 const APP_URL = (Deno.env.get("APP_BASE_URL") ?? "https://www.the-loyalty-loop.com").replace(/\/$/, "");
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+
+// What every progress reply needs, for £ spend, stamps, points, levels and
+// custom programmes alike.
+const MEMBER_COLUMNS = "reward_progress_pence,stamp_count,points_balance,visit_count,current_tier";
+const BUSINESS_COLUMNS = "id,name,category,description,reward_model,loyalty_type,loyalty_config,programme_rules,reward_threshold_pence,reward_catalog(title,spend_threshold_pence,points_cost)";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -76,7 +81,13 @@ async function sendText(admin: Admin, phone: string, text: string, kind: string,
     body: JSON.stringify({ messaging_product: "whatsapp", to: phone.replace(/^\+/, ""), type: "text", text: { preview_url: false, body: text.slice(0, 4096) } }),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(`Meta send failed: ${response.status}`);
+  if (!response.ok) {
+    // Meta's error code says what is wrong (190 = bad token, 131030 = number
+    // not allowed, 131047 = outside the 24-hour window…). No message text or
+    // phone number is logged.
+    console.error("whatsapp-webhook meta send failed", JSON.stringify({ kind, status: response.status, code: result?.error?.code ?? null, subcode: result?.error?.error_subcode ?? null, type: result?.error?.type ?? null }));
+    throw new Error(`Meta send failed: ${response.status}`);
+  }
   await admin.from("whatsapp_message_log").insert({
     direction: "outbound", provider_message_id: result.messages?.[0]?.id ?? null, phone_e164: phone,
     user_id: userId ?? null, business_id: businessId ?? null, message_kind: kind,
@@ -105,7 +116,7 @@ async function linkedCustomerReply(admin: Admin, phone: string, userId: string, 
   const [{ data: profile }, { data: memberships }] = await Promise.all([
     admin.from("profiles").select("first_name").eq("id", userId).single(),
     admin.from("memberships")
-      .select("reward_progress_pence,stamp_count,points_balance,visit_count,business:businesses(id,name,reward_model,loyalty_type,loyalty_config,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
+      .select(`${MEMBER_COLUMNS},business:businesses(${BUSINESS_COLUMNS})`)
       .eq("user_id", userId)
       .order("last_activity_at", { ascending: false, nullsFirst: false }),
   ]);
@@ -116,7 +127,7 @@ async function linkedCustomerReply(admin: Admin, phone: string, userId: string, 
       progressPence: m.reward_progress_pence ?? 0,
       thresholdPence: business.reward_threshold_pence ?? null,
       tiers: business.reward_catalog ?? [],
-      stampLine: stampProgressText(business, m),
+      stampLine: programmeProgressText(business, m, business.reward_catalog ?? []),
     }] : [];
   });
   const token = await createLink(admin, { linkType: "card", phone, businessId, userId, hours: 1 });
@@ -179,7 +190,7 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
   const [{ data: profile }, { data: memberships }, { data: rewards }] = await Promise.all([
     admin.from("profiles").select("first_name").eq("id", userId).single(),
     admin.from("memberships")
-      .select("reward_progress_pence,stamp_count,points_balance,visit_count,business:businesses(id,name,category,description,reward_model,loyalty_type,loyalty_config,reward_threshold_pence,reward_catalog(title,spend_threshold_pence))")
+      .select(`${MEMBER_COLUMNS},business:businesses(${BUSINESS_COLUMNS})`)
       .eq("user_id", userId),
     admin.from("rewards").select("business_id,title,expires_at").eq("user_id", userId).is("redeemed_at", null),
   ]);
@@ -187,6 +198,9 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
   const shops: BotShop[] = (memberships ?? []).flatMap((m) => {
     const business = Array.isArray(m.business) ? m.business[0] : m.business;
     if (!business) return [];
+    const catalog: Array<{ title: string; spend_threshold_pence: number | null; points_cost?: number | null }> = business.reward_catalog ?? [];
+    const pointsShop = business.reward_model === "points" || business.reward_model === "custom";
+    const unitMany = business.programme_rules?.unit?.many || "points";
     return [{
       name: business.name,
       category: business.category ?? null,
@@ -194,7 +208,11 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
       progressPence: m.reward_progress_pence ?? 0,
       thresholdPence: business.reward_threshold_pence ?? null,
       tiers: business.reward_catalog ?? [],
-      stampLine: stampProgressText(business, m),
+      stampLine: programmeProgressText(business, m, catalog),
+      programmeSummary: business.reward_model === "custom" ? business.programme_rules?.summary ?? null : null,
+      rewardCosts: pointsShop
+        ? catalog.filter((r) => typeof r.points_cost === "number" && r.points_cost > 0).map((r) => `${r.title} for ${r.points_cost} ${unitMany}`)
+        : [],
       readyRewards: (rewards ?? [])
         .filter((r) => r.business_id === business.id && (!r.expires_at || Date.parse(r.expires_at) > now))
         .map((r) => r.title),
@@ -211,7 +229,7 @@ async function askBot(admin: Admin, phone: string, text: string): Promise<string
 async function approvedShops(admin: Admin): Promise<Shop[]> {
   const { data } = await admin.from("businesses")
     .select("id,name,slug,category,lat,lng")
-    .eq("is_active", true).eq("approval_status", "approved").eq("whatsapp_onboarding_enabled", true)
+    .eq("is_active", true).eq("approval_status", "approved")
     .limit(2000);
   return (data ?? []) as Shop[];
 }
@@ -226,7 +244,9 @@ async function linkedUser(admin: Admin, phone: string): Promise<{ userId: string
 async function joinByChat(admin: Admin, phone: string, query: string): Promise<string | null> {
   const { userId, optedOut } = await linkedUser(admin, phone);
   if (optedOut) return null;
-  if (await recentCount(admin, phone, "outbound", ["join"], 0.5)) return null;
+  // Flood guard only: picking from a list ("JOIN Bean Cafe" after "JOIN cafe")
+  // must still get a reply.
+  if (await recentCount(admin, phone, "outbound", ["join"], 0.5) >= 6) return null;
   const matches = matchShops(query, await approvedShops(admin));
   if (!matches.length) {
     await sendText(admin, phone, NO_SHOP_FOUND, "join", null, userId);
@@ -245,8 +265,8 @@ async function joinByChat(admin: Admin, phone: string, query: string): Promise<s
     if (error && error.code !== "23505") throw error;
   }
   const [{ data: membership }, { data: business }] = await Promise.all([
-    admin.from("memberships").select("reward_progress_pence,stamp_count,points_balance,visit_count").eq("user_id", userId).eq("business_id", shop.id).single(),
-    admin.from("businesses").select("reward_model,loyalty_type,loyalty_config,reward_threshold_pence,reward_catalog(title,spend_threshold_pence)").eq("id", shop.id).single(),
+    admin.from("memberships").select(MEMBER_COLUMNS).eq("user_id", userId).eq("business_id", shop.id).single(),
+    admin.from("businesses").select(BUSINESS_COLUMNS).eq("id", shop.id).single(),
   ]);
   const token = await createLink(admin, { linkType: "card", phone, userId, businessId: shop.id, hours: 1 });
   const line = progressLine({
@@ -254,7 +274,7 @@ async function joinByChat(admin: Admin, phone: string, query: string): Promise<s
     progressPence: membership?.reward_progress_pence ?? 0,
     thresholdPence: business?.reward_threshold_pence ?? null,
     tiers: business?.reward_catalog ?? [],
-    stampLine: business && membership ? stampProgressText(business, membership) : null,
+    stampLine: business && membership ? programmeProgressText(business, membership, business.reward_catalog ?? []) : null,
   }).replace(/^• /, "");
   await sendText(admin, phone,
     `${existing ? "You're already a member of" : "You've joined"} ${shop.name}! 🎉\n\n${line}\n\nShow your card at the till to earn: ${APP_URL}/whatsapp/card?token=${encodeURIComponent(token)}`,
@@ -345,7 +365,7 @@ async function processText(admin: Admin, phone: string, message: string): Promis
   if (startMatch) {
     let businessId: string | null = null;
     if (startMatch[1]) {
-      const { data: business } = await admin.from("businesses").select("id").eq("slug", startMatch[1].toLowerCase()).eq("is_active", true).eq("approval_status", "approved").eq("whatsapp_onboarding_enabled", true).maybeSingle();
+      const { data: business } = await admin.from("businesses").select("id").eq("slug", startMatch[1].toLowerCase()).eq("is_active", true).eq("approval_status", "approved").maybeSingle();
       businessId = business?.id ?? null;
     }
     let linkedUserId = contact.user_id;
@@ -434,11 +454,15 @@ Deno.serve(async (request: Request) => {
         : await processText(admin, phone, text!);
       if (!kind) continue;
       await admin.from("whatsapp_message_log").update({message_kind:kind,provider_payload:{type:item.type}}).eq('provider_message_id',item.id);
-      } catch { console.error('whatsapp-webhook reserved command failed'); }
+      } catch (commandError) {
+        // Error text only (Meta codes are logged in sendText); no phone or message text.
+        const detail = commandError instanceof Error ? commandError.message : (commandError as { message?: string; code?: string })?.message ?? (commandError as { code?: string })?.code ?? 'unknown';
+        console.error('whatsapp-webhook reserved command failed', String(detail).slice(0, 200));
+      }
     }
     return json({ ok: true });
   } catch (error) {
-    console.error("whatsapp-webhook request failed");
+    console.error("whatsapp-webhook request failed", error instanceof Error ? error.message.slice(0, 200) : "unknown");
     return json({ ok: false }, 500);
   }
 });

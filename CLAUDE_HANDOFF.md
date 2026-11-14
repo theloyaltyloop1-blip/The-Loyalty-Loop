@@ -78,6 +78,15 @@ Next actions:
 
 ---
 
+## 2026-11-14 — Website on a phone: "Continue in our app!" then the store (main 0012213, LIVE) - Claude
+
+- **Why**: owner asked that phone visitors to the website are told to use the app and sent to the store automatically.
+- **What changed** (`apps/web` only, built on origin/main in worktree `.claude/worktrees/web-mobile-app-gate`): new `src/components/mobile-app-gate.tsx`, mounted in `App.tsx`. On Android/iPhone/iPad it covers the page with a "Continue in our app!" sheet and after 1.6s goes to Google Play (Android) or the App Store (iPhone/iPad). `/owner…`, `/join` and `/signup/owner` go to the Business app; everything else to the shopper app. A visit that starts on a business page stays "business" for the visit, because signed-out `/owner` bounces to `/login`. It redirects once per visit; coming back with Back shows the sheet with an "Open Google Play/App Store" button instead of bouncing again. "Continue on the website" or `?web=1` hides it for the visit. Never shown: desktops, crawlers (Googlebot's mobile UA says Android), and `/auth/…`, `/reset-password`, `/forgot-password`, `/whatsapp/…`, `/access` so email links, the WhatsApp sign-up/card/start pages and the admin panel still work on phones. Store URLs moved from `store-badges.tsx` to `src/lib/store-links.ts` (shared).
+- **Checks done**: `tsc -b` clean, oxlint clean on the changed files. In the in-app browser: desktop shows no sheet; Android phone emulation shows the sheet, `/owner` → `/login` points at `com.theloyaltyloop.retailer`, `/reset-password` shows no sheet, "Continue on the website" hides it, and a fresh homepage visit lands on the shopper's Google Play page by itself.
+- **Not checked**: a real phone. On a real Android, Chrome normally opens the Play Store app from a play.google.com link; in-app browsers (Instagram, WhatsApp) may show the web store page instead. iPhone not tested (emulation was Android only).
+- **Shipped 2026-11-14**: pushed 0012213 to `main`; Vercel auto-deployed. Live bundle `/assets/index-CxOy3vQg.js` contains the screen ~40s after push. On www.the-loyalty-loop.com in Android emulation the screen showed and the tab moved to the shopper Google Play page on its own. (The Vercel connector here is signed in to a different team, so the deployment id was not read.)
+- **Next (owner)**: open the website on a real Android phone and an iPhone and check you land in the store; try an `/owner` link too (should go to the Business app). **Rollback**: `git revert 0012213` and push to `main`, or promote the previous production deployment in Vercel.
+
 ## 2026-11-09 — AI business coach kept to Loyalty Loop topics (7ec013a, deployed) - Claude
 
 - **Why**: owner asked that the coach only talk about The Loyalty Loop. The old prompt only said "give small-business marketing/retention advice", so it would answer anything. It also passed whatever message roles the client sent straight to the model, so a hand-made request could add its own `system` instructions.
@@ -3219,10 +3228,6 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 - Owner decision carried from C: points per £1 is 1 currency unit for every currency (PKR scaling still open).
 **Merge notes**: `apps/retailer/src/owner-pages.tsx` RewardsPage region and `apps/retailer/App.tsx` StampsScreen region only; `apps/web/src/pages/owner/Settings.tsx` LoyaltyTab + new tab functions; `apps/shopper/App.tsx` home `load` function only.
 
-## Copy-ready prompt for Claude Code
-
-Review branch claude/loyalty-b-screens-07db09 (commits 4e23167 and 73e309a, from loyalty-integration) as the architecture, security and logic reviewer. Read the section "Part B screens built" above. Check: (1) every tiers/points branch in the three wallet callers and the Deno mirror agrees with packages/loyalty/test/wallet-fixtures.json; (2) the Business app RewardsPage tier/points writes (membership_tiers, reward_catalog.points_cost, loyalty_config.points_per_pound) match the RLS and trigger rules in supabase/migrations/20261020100000_programme_tiers_points.sql; (3) the shopper home loader's three extra reads cannot show another customer's transactions (they filter on the signed-in user_id). Do not apply migrations, deploy functions, push or publish an OTA. Acceptance: a written review in CLAUDE_HANDOFF.md with findings ranked by severity. Product-owner input needed: confirm points per £1 is one currency unit for every shop, and whether tier levels may be deleted while customers hold them.
-
 ## Win back: pushes and emails to customers who've gone quiet (2026-10-21) - Claude, worktree on main (ef10766), migration APPLIED to production 2026-10-21 (3 triggers verified, test left nothing)
 **Found:** owner "targeted promotions" (Gone quiet / Regulars / Everyone) were only saved to `business_promotions`; no trigger sent them (1 row ever). Win-back emails (`send-winback-emails`) exist, web-only, manual, never used (log empty), and send from `onboarding@resend.dev`, which only delivers to the Resend account owner.
 **Changed**
@@ -3288,3 +3293,65 @@ Review branch claude/loyalty-b-screens-07db09 (commits 4e23167 and 73e309a, from
 **Note:** admin "Trending" picks no longer appear on the home screen (they still drive search results ordering only via HomeCollection featured).
 **OTAs** (all `--environment production`; each bundle checked for project ref and a new-screen marker): shopper 1.0.2 android 2eb67205 / ios 6b93c894; shopper 1.0.1 android 45c912d0 / ios 7f299965; Business 1.0.1 android 91ba757c / ios 49592e20. Undo: republish the premium groups (shopper b3755cd8/1864ab21, c43d20e5/ad97ca23; Business 2975fca8/d0991593).
 **Open:** not seen on a device; website still uses sapphire #0042AC buttons (switch to palette 1 if wanted); other app screens only got the colour change.
+
+## WhatsApp inbound bot restarted (2026-11-10) - Claude, branch `whatsapp-bot-restart` merged to main, webhook + handoff DEPLOYED, website released
+**Why:** Meta lifted the October ban (number Connected in WhatsApp Manager, checked 2026-11-10). Owner wants to text +44 7963 382835 in the morning and have the inbound bot work. Business-initiated texts (progress/reward templates), payment method and phone OTP stay LATER.
+
+**Changed**
+- `supabase/functions/_shared/whatsapp-messages.ts`: `programmeProgressText()` gives one progress line for stamp, points, custom (programme's own unit, e.g. "beans") and levels programmes. Used by welcome back, JOIN and the bot.
+- `supabase/functions/_shared/whatsapp-bot.ts`: bot gets `how_it_works` (custom programme summary) and points reward costs.
+- `supabase/functions/whatsapp-webhook/index.ts`: selects `programme_rules`, `points_cost`, `current_tier`. JOIN, "shops near" and `START <slug>` work for any active approved shop (no longer need `whatsapp_onboarding_enabled`). JOIN flood guard raised from "1 reply per 30 min" to 6 (before, "JOIN Bean Cafe" after a "JOIN cafe" list got no reply). Meta send failures log `{kind,status,code,subcode,type}` only; command failures now log the error text (max 200 chars, no phone or message text).
+- `supabase/functions/whatsapp-handoff/index.ts`: card returns `programme_rules` so the card page shows custom unit names.
+- `apps/web/src/lib/features.ts`: `WHATSAPP_VISIBLE = true` (the /whatsapp pages, owner toggle and WhatsApp poster QR are back).
+- `apps/web/src/pages/WhatsAppOnboarding.tsx`: if the email already has an account, Supabase's signUp silently does nothing; the page now switches to "Sign in" with a message instead of a dead "check your email".
+- `apps/web/src/pages/WhatsAppCard.tsx`: points/custom shops show their unit ("12 beans").
+- `apps/web/src/pages/owner/Tools.tsx`: "Join on WhatsApp" copy no longer says "£ progress".
+- Migration `20261110120000_whatsapp_phone_match_uk.sql` (APPLIED): `find_whatsapp_user_by_phone` also matches profiles stored as UK `07…`; still only when exactly one profile matches; execute stays service_role only.
+
+**Checks actually run**
+- `deno check` webhook + handoff: pass (Deno 2.9.6). `node --test supabase/functions/_shared/whatsapp-*.test.mjs`: 20/20. Web `tsc -b`: clean. `npm run build:web`: builds.
+- Live schema: every column/RPC the webhook, handoff and `complete_whatsapp_signup` use exists. `profiles.phone` is empty for all 13 profiles, so nobody is matched by phone today: everyone goes START → name → email → link.
+- After deploy, via `pg_net` from the database (this container can't reach supabase.co): webhook GET with a wrong verify token → 403; unsigned POST → 401 "invalid signature"; handoff `start` → 200; handoff card with a bad token → 404.
+- Deleted Meta's test contact `+16315551181` (1 contact + 1 log row). `whatsapp_contacts` is now empty.
+- Outbound check: no cron calls `whatsapp-dispatch`. The spend trigger queues + dispatches only for `£ spend` shops, and there are none (5 `stamp_legacy`, 1 `custom`), so nothing business-initiated goes out.
+
+**Deployed:** `whatsapp-webhook` v21, `whatsapp-handoff` v19 (both `verify_jwt=false`), from commit a8f8503. Website: main (merge of `whatsapp-bot-restart`), see IMPLEMENTATION_TIMELINE.
+
+**NOT proven:** that our access token can SEND. Only proven when the owner texts START and gets a reply.
+
+**Problem found, owner action needed:** `META_WHATSAPP_DISPLAY_NUMBER` is `15556711182` (a Meta US test number), so `/whatsapp/start` and poster QRs open WhatsApp to the wrong number. Fix: Supabase dashboard → Edge Functions → Secrets → set `META_WHATSAPP_DISPLAY_NUMBER` to `447963382835` (no redeploy needed). I couldn't change secrets from here. This also hints `META_WHATSAPP_PHONE_NUMBER_ID` may still be the test number's ID: if so, replies come from the test number or fail with Meta code 131030. Check in Meta → WhatsApp → API Setup that the Phone number ID for +44 7963 382835 equals that secret. Secret names `META_WHATSAPP_ACCESS_TOKEN`, `_PHONE_NUMBER_ID`, `_APP_SECRET`, `_VERIFY_TOKEN`, `GROQ_API_KEY` could not be listed from here; the app secret and verify token are proven to be set (signature check passed on Meta's test, 403/401 behave).
+
+**Morning test (owner, from your own phone, to +44 7963 382835)**
+1. `START` → "What's your first name?"
+2. your first name → asks for email
+3. your email → secure link. Open it. If you already have an account with that email tap "Sign in" (the page also switches itself). Set/enter password → you land on the dashboard; WhatsApp is now linked.
+4. `how close am I?` → AI answer about your cards
+5. `shops near me` → asks for location (or `shops near <postcode>`)
+6. `JOIN cafe` (or a shop's name) → joins, or a list to pick from with `JOIN <slug>`
+7. `STOP` → stop confirmation; `START` → welcome back with your card link.
+
+**No reply?** Supabase → Edge Functions → `whatsapp-webhook` → Logs. Look for `whatsapp-webhook meta send failed` and its `code`: 190 = token expired/invalid → create a new System User token in Meta Business settings (with whatsapp_business_messaging) and update `META_WHATSAPP_ACCESS_TOKEN`; 131030 = recipient not allowed (still on the test number, see above); 100 = wrong Phone number ID. No log line at all = Meta isn't delivering: check the webhook subscription in the Meta app.
+
+**Open (later):** message templates + business-initiated progress/reward texts; payment method on the WhatsApp account; phone OTP; the "355" account the owner can't access.
+
+## WhatsApp no-reply diagnosed (2026-11-10 evening) - Claude
+- Owner texted START: nothing reached the webhook (no logs, no DB rows).
+- Temporary `whatsapp-diagnose` function (nonce-guarded, never returned the token; now retired to a 410 stub, verify_jwt on — delete it in the dashboard) showed: token = System User `loyaltyloop-whatsapp`, app 1389458169797693, valid, never expires, whatsapp_business_messaging + management.
+- `META_WHATSAPP_PHONE_NUMBER_ID` was the Meta test number (1364032340116481, +1 555-671-1182); `META_WHATSAPP_DISPLAY_NUMBER` likewise.
+- Real account: WABA 1112284144645677 (approved, business verified); number +44 7963 382835 = Phone number ID 1345822088617313, CONNECTED, CLOUD_API, LIVE.
+- Root cause of no inbound: WABA had NO subscribed apps. Fixed: `POST /1112284144645677/subscribed_apps` → success; app now listed.
+- Owner (via Claude for Chrome) gave the system user Full access to Messaging account 1112284144645677; the separate "WhatsApp account" asset assignment was not completed (not needed for API access as tested).
+- Owner action: set secrets `META_WHATSAPP_PHONE_NUMBER_ID=1345822088617313` and `META_WHATSAPP_DISPLAY_NUMBER=447963382835` (Claude can't write secrets), then text START. WhatsApp Manager shows "Missing valid payment method" (customer-initiated replies still work).
+
+## WhatsApp bot confirmed working end to end (checked 2026-11-13) - Claude
+- Owner set the two secrets. Log on 2026-11-10 21:53-21:54 UTC: 3 START, name/email steps, 3 secure links sent, 1 sign-up claimed, number linked (not opted out, conversation idle), 2 questions answered by the AI (bot_answer). Meta sends succeed, so the access token is proven. No send errors logged.
+- `/whatsapp/start` now returns wa.me/447963382835.
+- Not yet tried by the owner: "shops near me", JOIN, STOP/START, LOGOUT.
+
+## WhatsApp sign-up returns to WhatsApp (2026-11-13) - Claude, e7f0331 on main, website live
+- Owner: after signing up it didn't reopen WhatsApp. Now `WhatsAppOnboarding.tsx` (password route) and `AuthCallback.tsx` (email-confirm route) show "You're all set" (`components/whatsapp-linked.tsx`) and open `wa.me/447963382835?text=START` (URL from `whatsapp-handoff` action start); sending it replies with rewards + card link. Buttons as fallback: Open WhatsApp / Open your Loyalty Loop account.
+- Checks: web tsc clean, build OK; live onboarding chunk imports `whatsapp-linked`. Not yet tried on a phone (iOS Safari may ask "Open in WhatsApp?").
+
+## Copy-ready prompt for Claude Code
+
+The WhatsApp inbound bot was restarted on 2026-11-10 (read "WhatsApp inbound bot restarted (2026-11-10)" in CLAUDE_HANDOFF.md). Check whether the owner's morning test worked: read the `whatsapp-webhook` logs for the last 24 h (Supabase project tgukdabfvvoywawmzbdo) and `whatsapp_message_log` counts by `direction` and `message_kind` (no phone numbers in your output). If sends failed, report the logged Meta error code and the fix (190 new System User token; 131030/100 wrong Phone number ID). Confirm `META_WHATSAPP_DISPLAY_NUMBER` was changed to the +44 number by calling `whatsapp-handoff` with `{"action":"start"}` through `pg_net` and checking the `wa.me` URL. Don't build business-initiated templates, payment method or phone OTP yet. Update this handoff with what you found.

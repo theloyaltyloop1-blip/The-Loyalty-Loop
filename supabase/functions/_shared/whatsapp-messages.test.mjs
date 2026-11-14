@@ -61,3 +61,19 @@ test("stamp shops show a stamp count, £ shops show none", () => {
     "• Cafe: 3 of 8 stamps",
   );
 });
+
+test('progress text covers stamps, points, custom programmes and levels', async () => {
+  const { programmeProgressText } = await import('./whatsapp-messages.ts');
+  const stamp = { reward_model: 'stamp_legacy', loyalty_type: 'stamp_card', loyalty_config: { stamps_required: 8 } };
+  assert.equal(programmeProgressText(stamp, { stamp_count: 3 }, [{ title: 'Free coffee', spend_threshold_pence: null }]), '3 of 8 stamps towards Free coffee');
+  assert.equal(programmeProgressText(stamp, { stamp_count: 3 }, []), '3 of 8 stamps');
+  const custom = { reward_model: 'custom', loyalty_type: 'points', programme_rules: { unit: { one: 'bean', many: 'beans' } } };
+  const menu = [{ title: 'Free cake', spend_threshold_pence: null, points_cost: 300 }, { title: 'Free coffee', spend_threshold_pence: null, points_cost: 100 }];
+  assert.equal(programmeProgressText(custom, { points_balance: 70 }, menu), '70 beans, 30 more beans for Free coffee');
+  assert.equal(programmeProgressText(custom, { points_balance: 299 }, menu), '299 beans, 1 more bean for Free cake');
+  assert.equal(programmeProgressText(custom, { points_balance: 500 }, menu), '500 beans, enough for Free cake');
+  assert.equal(programmeProgressText(custom, { points_balance: 1 }, [{ title: 'Free coffee', spend_threshold_pence: null, points_cost: null }]), '1 bean');
+  assert.equal(programmeProgressText({ reward_model: 'points' }, { points_balance: 5 }, []), '5 points');
+  assert.equal(programmeProgressText({ reward_model: 'tiers' }, { current_tier: 'Gold' }, []), 'Gold level');
+  assert.equal(programmeProgressText({ reward_model: 'spend_threshold' }, {}, []), null);
+});

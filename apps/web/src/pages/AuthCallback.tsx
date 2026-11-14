@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
 import { supabase, OAUTH_INTENT_KEY } from '@/lib/supabase'
+import { WhatsAppLinked } from '@/components/whatsapp-linked'
 
 /** Handles Supabase email-confirmation AND OAuth (Google) redirects, once the
  * browser has stored the session from the redirect URL. Roles are loaded
@@ -50,6 +51,7 @@ export function AuthCallback() {
     return <main className="grid min-h-dvh place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-bold">Finishing your sign-in…</p><p className="mt-2 text-sm text-muted-foreground">Just a moment while we prepare your account.</p></div></main>
   }
   if (!session) return <Navigate to="/login" replace />
+  if (whatsAppToken && whatsAppLinked) return <WhatsAppLinked />
   if (whatsAppError) return <main className="grid min-h-dvh place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-bold">We could not link WhatsApp</p><p className="mt-2 text-sm text-destructive">{whatsAppError}</p><a className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover" href="/dashboard">Open your dashboard</a></div></main>
   if (primaryRole === 'admin') return <Navigate to="/access" replace />
   if (primaryRole === 'brand_head') return <Navigate to="/brand" replace />

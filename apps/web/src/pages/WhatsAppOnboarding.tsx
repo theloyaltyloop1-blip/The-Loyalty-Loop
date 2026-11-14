@@ -1,8 +1,9 @@
 import * as React from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, LockKeyhole, MessageCircle } from 'lucide-react'
 import { AUTH_REDIRECT_URL, supabase } from '@/lib/supabase'
 import { AuthInput, AuthLayout } from '@/components/auth-layout'
+import { WhatsAppLinked } from '@/components/whatsapp-linked'
 
 type Handoff = {
   kind: 'signup'
@@ -13,7 +14,6 @@ type Handoff = {
 
 export function WhatsAppOnboarding() {
   const [params] = useSearchParams()
-  const navigate = useNavigate()
   const token = params.get('token') ?? ''
   const [handoff, setHandoff] = React.useState<Handoff | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -23,6 +23,7 @@ export function WhatsAppOnboarding() {
   const [error, setError] = React.useState<string | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [confirmationSent, setConfirmationSent] = React.useState(false)
+  const [linkedPath, setLinkedPath] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (token.length < 32) {
@@ -43,7 +44,7 @@ export function WhatsAppOnboarding() {
     const { data, error: completionError } = await supabase.rpc('complete_whatsapp_signup', { _token: token })
     if (completionError) throw completionError
     const slug = (data as { business_slug?: string | null } | null)?.business_slug
-    void navigate(slug ? `/dashboard/shop/${slug}` : '/dashboard', { replace: true })
+    setLinkedPath(slug ? `/dashboard/shop/${slug}` : '/dashboard')
   }
 
   async function submit(event: React.FormEvent) {
@@ -68,6 +69,15 @@ export function WhatsAppOnboarding() {
           },
         })
         if (signUpError) throw signUpError
+        // Supabase hides existing accounts: signUp "succeeds" with no
+        // identities and sends nothing. Ask them to sign in instead.
+        if (!data.session && data.user && (data.user.identities ?? []).length === 0) {
+          setMode('signin')
+          setPassword('')
+          setConfirmPassword('')
+          setError('You already have a Loyalty Loop account with this email. Sign in with your password to link WhatsApp.')
+          return
+        }
         if (data.session) await finishLinking()
         else setConfirmationSent(true)
       }
@@ -78,6 +88,7 @@ export function WhatsAppOnboarding() {
     }
   }
 
+  if (linkedPath) return <WhatsAppLinked dashboardPath={linkedPath} />
   if (loading) return <AuthLayout title="Opening your loyalty card"><p className="text-muted-foreground">Just a moment while we secure your details.</p></AuthLayout>
   if (error && !handoff) return <AuthLayout title="That link has expired"><p className="font-semibold text-destructive">{error}</p><Link className="mt-5 inline-block font-bold text-primary" to="/">Back to The Loyalty Loop</Link></AuthLayout>
   if (!handoff) return null
