@@ -27,7 +27,7 @@ export function notifyHandler(store:NotifyStore,fetchFn:typeof fetch,env:(name:s
    if(current.status!=='ready'){await store.finish(place_id,shop.lease!,false);return Response.json({skipped:true});}
    const mail=await operatorEmail({...current,...details,request_count:current.request_count,ready_at:current.ready_at},env('APP_BASE_URL')??'https://www.the-loyalty-loop.com');
    const r=await fetchFn('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':mail.idempotencyKey},
-    body:JSON.stringify({from:env('RESEND_FROM_EMAIL')??'The Loyalty Loop <onboarding@resend.dev>',
+    body:JSON.stringify({from:[env('RESEND_FROM_EMAIL')].find(v=>v&&!v.includes('resend.dev'))??'The Loyalty Loop <hello@the-loyalty-loop.com>',
       to:[env('SHOP_REQUEST_OPERATOR_EMAIL')??'developer@the-loyalty-loop.com'],subject:mail.subject,text:mail.text}),signal:AbortSignal.timeout(15000)});
    await store.finish(place_id,shop.lease!,r.ok);return Response.json({sent:r.ok},{status:r.ok?200:502});
   }catch{return Response.json({error:'notification failed'},{status:500});}

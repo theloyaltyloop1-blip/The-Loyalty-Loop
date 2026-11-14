@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          from: Deno.env.get("RESEND_FROM_EMAIL") ?? "The Loyalty Loop <onboarding@resend.dev>",
+          from: [Deno.env.get("RESEND_FROM_EMAIL")].find((v) => v && !v.includes("resend.dev")) ?? "The Loyalty Loop <hello@the-loyalty-loop.com>",
           to: [profile.email],
           subject: `Thanks for visiting ${business.name}!`,
           html,

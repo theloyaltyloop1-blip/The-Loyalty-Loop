@@ -44,6 +44,11 @@ PR #10 (merge commit 0ea03ec) is on `main`. The Business app now has Settings �
 
 ---
 
+## 2026-11-14 — Thank-you, legal-docs, shop-request emails: sender fix COMMITTED, NOT DEPLOYED - Claude
+
+- Same resend.dev fallback fix as win-back, in `send-visit-thank-you`, `send-owner-legal-documents` and `_shared/shop-request-notify.ts` (used only by `shop-request-notify`). Live versions (v31, v29, v10) were read back and match main apart from this line, so redeploying from main is safe.
+- **Next (Claude)**: deploy those three functions from main (thank-you and notify include their `_shared` files; legal-docs and notify keep verify_jwt off, thank-you on), then a no-auth smoke call each.
+
 ## 2026-11-14 — Win-back emails: sender fixed (function v33, LIVE) - Claude
 
 - **Why**: same problem as the release emails. The live `send-winback-emails` (v32) fell back to `onboarding@resend.dev` when `RESEND_FROM_EMAIL` is unset, which Resend only delivers to the account owner, so real customers would get nothing. `winback_email_log` is empty: no win-back has ever been sent.

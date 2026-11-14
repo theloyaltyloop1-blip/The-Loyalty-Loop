@@ -11,7 +11,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // signup metadata, and (c) have been created within the last 15 minutes.
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") ?? "The Loyalty Loop <onboarding@resend.dev>";
+// Never onboarding@resend.dev: Resend only delivers that to the account owner.
+const RESEND_FROM_EMAIL = [Deno.env.get("RESEND_FROM_EMAIL")].find((v) => v && !v.includes("resend.dev")) ?? "The Loyalty Loop <hello@the-loyalty-loop.com>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
