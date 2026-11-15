@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View, type AlertButton } from 'react-native'
-import { colors as c, fonts } from '@loyalty-loop/design-tokens'
+import { colors as c, fonts, schemeColor, themed } from '@loyalty-loop/design-tokens'
 import { Sheet } from './Sheet'
+import { useTheme } from '../theme'
 
 // Branded replacement for the grey system Alert: same call shape as
 // Alert.alert(title, message, buttons, options), shown as a bottom sheet in
@@ -29,10 +30,11 @@ function tone(title: string, buttons: AlertButton[]) {
   if (buttons.some((button) => button.style === 'destructive')) return { bg: c.peach, ink: c.destructive, glyph: '!' }
   if (/could not|couldn|error|failed|try again|check|problem/i.test(title)) return { bg: c.peach, ink: c.peachInk, glyph: '!' }
   if (/saved|thank|done|added|sent|welcome|success/i.test(title)) return { bg: c.sage, ink: c.funGreen, glyph: '✓' }
-  return { bg: c.peach, ink: c.primary, glyph: '?' }
+  return { bg: c.peach, ink: c.primaryText, glyph: '?' }
 }
 
 export function AppAlertHost() {
+  useTheme() // re-render when the scheme changes
   const [queue, setQueue] = useState<Request[]>([])
   const [visible, setVisible] = useState(false)
   const current = queue[0]
@@ -102,7 +104,7 @@ export function AppAlertHost() {
                 pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
               ]}
             >
-              <Text style={[styles.buttonText, main ? { color: '#FFFFFF' } : destructive ? { color: c.destructive } : { color: c.foreground }]}>
+              <Text style={[styles.buttonText, main ? { color: schemeColor('#FFFFFF', 'fg') } : destructive ? { color: c.destructive } : { color: c.foreground }]}>
                 {button.text ?? 'OK'}
               </Text>
             </Pressable>
@@ -113,7 +115,7 @@ export function AppAlertHost() {
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   sheet: {
     backgroundColor: c.card,
     borderTopLeftRadius: 28,
@@ -132,4 +134,4 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: c.background, borderWidth: 1, borderColor: c.border },
   cancel: { backgroundColor: 'transparent' },
   buttonText: { fontSize: 16, fontWeight: '700' },
-})
+}))

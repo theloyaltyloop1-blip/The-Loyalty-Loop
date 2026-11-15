@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { Check } from "lucide-react-native";
-import { colors } from "@loyalty-loop/design-tokens";
+import { colors, schemeColor, themed } from "@loyalty-loop/design-tokens";
 
 /** Brief (~0.5s) success confirmation shown after a stamp is awarded or a
  * reward is redeemed: a green checkmark that pops in with a spring, holds
@@ -65,7 +65,7 @@ export function SuccessCheck({
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <View style={styles.center}>
           <Animated.View style={[styles.circle, animStyle]}>
-            <Check color="#fff" size={40} strokeWidth={3} />
+            <Check color={schemeColor("#fff", 'fg')} size={40} strokeWidth={3} />
           </Animated.View>
         </View>
       </View>
@@ -73,7 +73,7 @@ export function SuccessCheck({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   circle: {
     width: 84,
@@ -88,4 +88,4 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-});
+}));

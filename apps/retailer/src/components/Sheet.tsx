@@ -14,6 +14,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets'
 
 import { useKeyboardHeight } from './KeyboardAware'
+import { themed } from '@loyalty-loop/design-tokens'
 
 /** Gesture-driven bottom sheet: drag-to-dismiss with 1:1 finger tracking, spring
  * settle, velocity-based dismissal and rubber-banding past the open position.
@@ -156,6 +157,6 @@ export function Sheet({
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   host: { flex: 1, justifyContent: 'flex-end' },
-})
+}))

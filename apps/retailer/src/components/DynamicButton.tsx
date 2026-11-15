@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Check } from "lucide-react-native";
-import { colors } from "@loyalty-loop/design-tokens";
+import { colors, themed } from "@loyalty-loop/design-tokens";
 
 /** A main action button that shows its own progress: the label rolls up to
  * a spinner while the request runs, then to a tick on a green fill when it
@@ -96,7 +96,7 @@ export function DynamicButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   button: {
     minHeight: 58,
     borderRadius: 999,
@@ -108,4 +108,4 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 10, position: "absolute" },
   label: { fontSize: 17, fontWeight: "800", letterSpacing: -0.2 },
   off: { opacity: 0.45 },
-});
+}));

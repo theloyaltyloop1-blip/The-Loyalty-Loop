@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
+import { themed, colors, schemeColor } from '@loyalty-loop/design-tokens'
+import { useTheme } from '../theme'
 
 // Premium look, palette 1 (2026-11-04): warm paper with Twilight Indigo as the
 // brand colour, Blue Slate, Pacific Blue and Dry Sage as quiet fields, deep
@@ -26,6 +28,7 @@ let introShown = false
 
 /** Paper screen with the name and a hairline that fills, then it lifts away. Once per launch. */
 export function AppIntro() {
+  useTheme() // re-render when the scheme changes
   const { height, width } = useWindowDimensions()
   const [visible, setVisible] = useState(!introShown)
   const [count, setCount] = useState(0)
@@ -76,18 +79,18 @@ export function FadeUp({ delay = 0, children, style }: { delay?: number; childre
 }
 
 /** Small caps label row over a hairline, like gallery wall text. */
-export function CornerLabels({ left, right, color = MUTED }: { left: string; right: string; color?: string }) {
+export function CornerLabels({ left, right, color = colors.muted }: { left: string; right: string; color?: string }) {
   return <View style={s.corners} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Text style={[s.corner, { color }]}>{left}</Text><Text style={[s.corner, { color }]}>{right}</Text></View>
 }
 
-const s = StyleSheet.create({
-  intro: { ...StyleSheet.absoluteFillObject, zIndex: 1000, elevation: 1000, backgroundColor: PAPER, alignItems: 'center', justifyContent: 'center' },
-  introWord: { color: INK, fontFamily: SANS_MEDIUM, fontSize: 30, letterSpacing: -1.2 },
+const s = themed(() => StyleSheet.create({
+  intro: { ...StyleSheet.absoluteFillObject, zIndex: 1000, elevation: 1000, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  introWord: { color: colors.ink, fontFamily: SANS_MEDIUM, fontSize: 30, letterSpacing: -1.2 },
   introSerif: { fontFamily: SERIF, fontSize: 33, letterSpacing: -0.3 },
-  introTrack: { position: 'absolute', left: 24, bottom: 76, height: StyleSheet.hairlineWidth * 2, backgroundColor: HAIRLINE, overflow: 'hidden' },
-  introFill: { height: '100%', backgroundColor: INK },
-  introTag: { position: 'absolute', left: 24, bottom: 44, color: MUTED, fontSize: 10, fontWeight: '500', letterSpacing: 1.8 },
-  introCount: { position: 'absolute', right: 24, bottom: 44, color: INK, fontSize: 12, fontWeight: '500', letterSpacing: 1, fontVariant: ['tabular-nums'] },
-  corners: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: HAIRLINE },
+  introTrack: { position: 'absolute', left: 24, bottom: 76, height: StyleSheet.hairlineWidth * 2, backgroundColor: colors.hairline, overflow: 'hidden' },
+  introFill: { height: '100%', backgroundColor: schemeColor('#1A2138', 'bg') },
+  introTag: { position: 'absolute', left: 24, bottom: 44, color: colors.muted, fontSize: 10, fontWeight: '500', letterSpacing: 1.8 },
+  introCount: { position: 'absolute', right: 24, bottom: 44, color: colors.ink, fontSize: 12, fontWeight: '500', letterSpacing: 1, fontVariant: ['tabular-nums'] },
+  corners: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.hairline },
   corner: { fontSize: 10, fontWeight: '500', letterSpacing: 1.8 },
-})
+}))

@@ -24,6 +24,7 @@ import {
 } from "../../../packages/card-design/model";
 import { supabase } from "./supabase";
 import { showAlert } from "./components/AppAlert";
+import { schemeColor, themed } from "@loyalty-loop/design-tokens"
 
 type Shop = {
   id: string;
@@ -440,7 +441,7 @@ export function CardDesigner({
         style={[s.save, (locked || !dirty) && { opacity: 0.5 }]}
       >
         {busy ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={schemeColor("#FFFFFF", 'fg')} />
         ) : (
           <Text style={s.saveText}>
             {dirty ? "Save card design" : "Design saved"}
@@ -460,15 +461,15 @@ export function CardDesigner({
     </View>
   );
 }
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   root: { gap: 16, marginBottom: 28 },
   title: {
     fontFamily: "BricolageGrotesque_700Bold",
     fontSize: 30,
-    color: "#1A2138",
+    color: schemeColor("#1A2138", 'fg'),
   },
-  copy: { color: "#35443D", fontSize: 15, lineHeight: 22 },
-  label: { fontSize: 16, fontWeight: "700", color: "#1A2138" },
+  copy: { color: schemeColor("#35443D", 'fg'), fontSize: 15, lineHeight: 22 },
+  label: { fontSize: 16, fontWeight: "700", color: schemeColor("#1A2138", 'fg') },
   group: { gap: 10, marginTop: 8 },
   choices: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
@@ -476,17 +477,17 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 44,
     borderWidth: 1,
-    borderColor: "#A39E95",
+    borderColor: schemeColor("#A39E95", 'border'),
     borderRadius: 22,
   },
-  selected: { backgroundColor: "#2B3A67", borderColor: "#2B3A67" },
-  chipText: { color: "#1A2138", fontSize: 15 },
-  selectedText: { color: "#FFFFFF" },
+  selected: { backgroundColor: schemeColor("#2B3A67", 'bg'), borderColor: schemeColor("#2B3A67", 'border') },
+  chipText: { color: schemeColor("#1A2138", 'fg'), fontSize: 15 },
+  selectedText: { color: schemeColor("#FFFFFF", 'fg') },
   template: {
     padding: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#A39E95",
+    borderColor: schemeColor("#A39E95", 'border'),
     borderRadius: 14,
     minWidth: 135,
   },
@@ -494,21 +495,21 @@ const s = StyleSheet.create({
   colour: { flexGrow: 1, minWidth: 120, gap: 8 },
   input: {
     borderWidth: 1,
-    borderColor: "#A39E95",
+    borderColor: schemeColor("#A39E95", 'border'),
     borderRadius: 12,
     padding: 12,
-    color: "#1A2138",
-    backgroundColor: "#FFFFFF",
+    color: schemeColor("#1A2138", 'fg'),
+    backgroundColor: schemeColor("#FFFFFF", 'bg'),
     fontSize: 16,
   },
   save: {
     minHeight: 50,
     borderRadius: 25,
-    backgroundColor: "#2B3A67",
+    backgroundColor: schemeColor("#2B3A67", 'bg'),
     alignItems: "center",
     justifyContent: "center",
   },
-  saveText: { fontWeight: "700", color: "#FFFFFF", fontSize: 16 },
+  saveText: { fontWeight: "700", color: schemeColor("#FFFFFF", 'fg'), fontSize: 16 },
   link: { minHeight: 44, alignItems: "center", justifyContent: "center" },
-  linkText: { color: "#2B3A67", textDecorationLine: "underline", fontSize: 15 },
-});
+  linkText: { color: schemeColor("#2B3A67", 'fg'), textDecorationLine: "underline", fontSize: 15 },
+}));

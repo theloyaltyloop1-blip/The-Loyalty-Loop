@@ -49,7 +49,7 @@ import { parsePounds } from "./reward-discount";
 import { supabase } from "./supabase";
 import { validateRules, type ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
 import { ProgrammeBuilder, RulesCard } from "./ProgrammeBuilder";
-import { fonts } from "@loyalty-loop/design-tokens";
+import { fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 
@@ -209,7 +209,7 @@ function PageHeader({
         onPress={onBack}
         style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
       >
-        <ArrowLeft size={21} color={ink} />
+        <ArrowLeft size={21} color={schemeColor('#1A2138', 'fg')} />
       </Pressable>
       <View style={{ flex: 1 }}>
         <Text style={styles.eyebrow}>{eyebrow}</Text>
@@ -246,7 +246,7 @@ function PrimaryButton({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={secondary ? ink : "#fff"} />
+        <ActivityIndicator color={secondary ? schemeColor('#1A2138', 'fg') : schemeColor("#fff", 'fg')} />
       ) : (
         <Text
           style={[
@@ -285,7 +285,7 @@ function Field({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#000000"
+      placeholderTextColor={schemeColor("#000000", 'fg')}
       multiline={multiline}
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
@@ -577,7 +577,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
         ))}
       </View>
       {loading || !stats ? (
-        <ActivityIndicator color={orange} style={styles.loader} />
+        <ActivityIndicator color={schemeColor('#2B3A67', 'fg')} style={styles.loader} />
       ) : (
         <>
           <Text style={styles.sectionTitle}>What changed</Text>
@@ -605,7 +605,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
           </View>
           <Section>
             <View style={styles.iconHeading}>
-              <Sparkles size={20} color={orange} />
+              <Sparkles size={20} color={schemeColor('#2B3A67', 'fg')} />
               <Text style={styles.cardTitle}>Plain-English summary</Text>
             </View>
             {summary ? (
@@ -623,7 +623,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
           </Section>
           <Section>
             <View style={styles.iconHeading}>
-              <RefreshCw size={20} color={orange} />
+              <RefreshCw size={20} color={schemeColor('#2B3A67', 'fg')} />
               <Text style={styles.cardTitle}>Deep business report</Text>
             </View>
             <Text style={styles.muted}>
@@ -642,7 +642,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                     <Text numberOfLines={1} style={styles.sourceText}>
                       {source.title}
                     </Text>
-                    <ChevronRight size={16} color={muted} />
+                    <ChevronRight size={16} color={schemeColor('#000000', 'fg')} />
                   </Pressable>
                 ))}
               </>
@@ -655,7 +655,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
           </Section>
           <Section>
             <View style={styles.iconHeading}>
-              <Bot size={20} color={orange} />
+              <Bot size={20} color={schemeColor('#2B3A67', 'fg')} />
               <Text style={styles.cardTitle}>AI business coach</Text>
             </View>
             <Text style={styles.muted}>
@@ -677,7 +677,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                     <Text
                       style={[
                         styles.messageText,
-                        message.role === "user" && { color: "#fff" },
+                        message.role === "user" && { color: schemeColor("#fff", 'fg') },
                       ]}
                     >
                       {message.content}
@@ -695,7 +695,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                 value={coachInput}
                 onChangeText={setCoachInput}
                 placeholder="Ask the coach…"
-                placeholderTextColor="#000000"
+                placeholderTextColor={schemeColor("#000000", 'fg')}
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
               />
               <Pressable
@@ -707,9 +707,9 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                 ]}
               >
                 {coachBusy ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={schemeColor("#fff", 'fg')} />
                 ) : (
-                  <Send size={19} color="#fff" />
+                  <Send size={19} color={schemeColor("#fff", 'fg')} />
                 )}
               </Pressable>
             </View>
@@ -824,7 +824,7 @@ function BrandingPage({
         <View
           style={[
             styles.coverPreview,
-            { backgroundColor: business.brand_color || orange },
+            { backgroundColor: business.brand_color || schemeColor('#2B3A67', 'bg') },
           ]}
         >
           {business.cover_url ? (
@@ -833,7 +833,7 @@ function BrandingPage({
               style={styles.coverImage}
             />
           ) : (
-            <ImageIcon size={30} color="#fff" />
+            <ImageIcon size={30} color={schemeColor("#fff", 'fg')} />
           )}
           <View style={styles.logoPreview}>
             {business.logo_url ? (
@@ -850,7 +850,7 @@ function BrandingPage({
       </Section>
       <Section>
         <View style={styles.iconHeading}>
-          <Camera size={20} color={orange} />
+          <Camera size={20} color={schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>Shop logo</Text>
         </View>
         <Text style={styles.muted}>
@@ -865,7 +865,7 @@ function BrandingPage({
       </Section>
       <Section>
         <View style={styles.iconHeading}>
-          <ImageIcon size={20} color={orange} />
+          <ImageIcon size={20} color={schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>Cover image</Text>
         </View>
         <Text style={styles.muted}>
@@ -998,7 +998,7 @@ function ManualSpendSettings({
               onPress={() => undo(entry)}
               style={styles.iconButton}
             >
-              <Text style={{ color: orange, fontWeight: "800" }}>Undo</Text>
+              <Text style={{ color: schemeColor('#2B3A67', 'fg'), fontWeight: "800" }}>Undo</Text>
             </Pressable>
           </View>
         ))
@@ -1167,7 +1167,7 @@ function RewardsPage({
       {!tierShop && (<>
       <Section>
         <View style={styles.iconHeading}>
-          <Gift size={20} color={orange} />
+          <Gift size={20} color={schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>Add a reward</Text>
         </View>
         <Field
@@ -1209,7 +1209,7 @@ function RewardsPage({
         items.map((item) => (
           <View key={item.id} style={styles.listCard}>
             <View style={styles.listIcon}>
-              <Gift size={19} color={orange} />
+              <Gift size={19} color={schemeColor('#2B3A67', 'fg')} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.listTitle}>{item.title}</Text>
@@ -1230,7 +1230,7 @@ function RewardsPage({
               onPress={() => remove(item)}
               style={styles.iconButton}
             >
-              <Trash2 size={18} color="#B4433A" />
+              <Trash2 size={18} color={schemeColor("#B4433A", 'fg')} />
             </Pressable>
           </View>
         ))
@@ -1244,7 +1244,7 @@ function RewardsPage({
       </>)}
       <Section>
         <View style={styles.iconHeading}>
-          <Sparkles size={20} color={orange} />
+          <Sparkles size={20} color={schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>Sign-up reward</Text>
         </View>
         <Text style={styles.muted}>
@@ -1444,7 +1444,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
     <>
       <Section>
         <View style={styles.iconHeading}>
-          <Gift size={20} color={orange} />
+          <Gift size={20} color={schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>Membership levels</Text>
         </View>
         <Text style={styles.muted}>
@@ -1462,7 +1462,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
             </Text>
           </View>
           <Pressable accessibilityLabel={`Delete ${level.name}`} onPress={() => remove(level)} style={styles.iconButton}>
-            <Trash2 size={18} color="#B4433A" />
+            <Trash2 size={18} color={schemeColor("#B4433A", 'fg')} />
           </Pressable>
         </Pressable>
       ))}
@@ -1484,7 +1484,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
                   key={c}
                   onPress={() => setColour(c)}
                   accessibilityLabel={`Colour ${c}`}
-                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: 3, borderColor: c === colour ? "#000000" : "transparent" }}
+                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: 3, borderColor: c === colour ? schemeColor("#000000", 'border') : "transparent" }}
                 />
               ))}
             </View>
@@ -1655,7 +1655,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       />
       <Section>
         <View style={styles.iconHeading}>
-          <UserPlus size={20} color={orange} />
+          <UserPlus size={20} color={schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>Add a staff member</Text>
         </View>
         <Field value={name} onChangeText={setName} placeholder="Full name" />
@@ -1713,7 +1713,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
           <Section key={item.id}>
             <View style={styles.staffHeading}>
               <View style={styles.listIcon}>
-                <ShieldCheck size={19} color={orange} />
+                <ShieldCheck size={19} color={schemeColor('#2B3A67', 'fg')} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.listTitle}>{item.name}</Text>
@@ -1801,7 +1801,7 @@ function ReviewAiSettingsCard({ businessId }: { businessId: string }) {
   return (
     <View style={styles.aiCard}>
       <View style={styles.aiCardHeading}>
-        <Sparkles size={20} color={orange} />
+        <Sparkles size={20} color={schemeColor('#2B3A67', 'fg')} />
         <Text style={styles.aiCardTitle}>AI replies</Text>
       </View>
       <Text style={styles.body}>Every review gets a thoughtful reply written from your shop’s details.</Text>
@@ -1919,18 +1919,18 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
                 <Text style={styles.listTitle}>Customer review</Text>
                 <Text style={styles.date}>{new Date(review.created_at).toLocaleDateString()}</Text>
               </View>
-              <View style={styles.reviewRating}><Star size={16} fill={orange} color={orange} /><Text style={styles.reviewRatingText}>{review.rating}/5</Text></View>
+              <View style={styles.reviewRating}><Star size={16} fill={schemeColor('#2B3A67', 'bg')} color={schemeColor('#2B3A67', 'fg')} /><Text style={styles.reviewRatingText}>{review.rating}/5</Text></View>
             </View>
             <Text style={styles.body}>{review.body || "No written comment."}</Text>
             <View style={styles.aiReplyHeading}>
               <Text style={styles.replyTitle}>{reply ? "Your reply" : "Reply from your shop"}</Text>
-              {reply?.ai_generated ? <View style={styles.aiChip}><Sparkles size={12} color={orange} /><Text style={styles.aiChipText}>Written by AI</Text></View> : null}
+              {reply?.ai_generated ? <View style={styles.aiChip}><Sparkles size={12} color={schemeColor('#2B3A67', 'fg')} /><Text style={styles.aiChipText}>Written by AI</Text></View> : null}
             </View>
             {suggestion && drafts[review.id] === suggestion ? (
-              <View style={styles.aiNote}><Sparkles size={15} color={orange} /><Text style={styles.aiNoteText}>AI suggested this reply. Check it, edit it if you like, then post it.</Text></View>
+              <View style={styles.aiNote}><Sparkles size={15} color={schemeColor('#2B3A67', 'fg')} /><Text style={styles.aiNoteText}>AI suggested this reply. Check it, edit it if you like, then post it.</Text></View>
             ) : null}
             {generating ? (
-              <View style={styles.aiNote}><ActivityIndicator size="small" color={orange} /><Text style={styles.aiNoteText}>AI is writing a reply…</Text></View>
+              <View style={styles.aiNote}><ActivityIndicator size="small" color={schemeColor('#2B3A67', 'fg')} /><Text style={styles.aiNoteText}>AI is writing a reply…</Text></View>
             ) : null}
             <Field value={drafts[review.id] || ""} onChangeText={(value) => { edited.current.add(review.id); setDrafts((current) => ({ ...current, [review.id]: value })); }} placeholder="Thank them for their feedback…" multiline />
             <PrimaryButton label={reply ? "Update reply" : "Post reply"} onPress={() => void saveReply(review)} busy={busyId === review.id} />
@@ -2009,7 +2009,7 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
       />
       <Section>
         <View style={styles.iconHeading}>
-          <LifeBuoy size={20} color={orange} />
+          <LifeBuoy size={20} color={schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>New support request</Text>
         </View>
         <Field
@@ -2107,7 +2107,7 @@ function TutorialPage({ business, onBack, onNavigate }: PageProps) {
         style={({ pressed }) => [styles.tutorialAction, pressed && styles.pressed]}
       >
         <Text style={styles.tutorialActionText}>Open your QR poster</Text>
-        <ChevronRight size={17} color={ink} />
+        <ChevronRight size={17} color={schemeColor('#1A2138', 'fg')} />
       </Pressable>
     </View>
   );
@@ -2223,7 +2223,7 @@ function VerifyPage({ business, userId, onBack, onBusinessChanged, preview = fal
       <PageHeader title="Verification" eyebrow="YOUR BUSINESS" onBack={onBack} />
       <Section>
         <View style={styles.iconHeading}>
-          <ShieldCheck size={20} color={status === "verified" ? "#2F7D4F" : orange} />
+          <ShieldCheck size={20} color={status === "verified" ? schemeColor("#2F7D4F", 'fg') : schemeColor('#2B3A67', 'fg')} />
           <Text style={styles.cardTitle}>{statusTitle}</Text>
         </View>
         <Text style={styles.muted}>{statusText}</Text>
@@ -2271,13 +2271,13 @@ function VerifyPage({ business, userId, onBack, onBusinessChanged, preview = fal
   );
 }
 
-const verifyStyles = StyleSheet.create({
-  option: { borderWidth: 1.5, borderColor: "#C9C3B8", borderRadius: 16, padding: 14, marginBottom: 10, backgroundColor: "#fff" },
-  optionActive: { borderColor: orange, backgroundColor: "#EEF0F8" },
-  optionTitle: { color: ink, fontWeight: "900", fontSize: 15 },
-  optionHint: { color: muted, fontSize: 13, lineHeight: 18, marginTop: 3 },
-  photo: { width: "100%", height: 220, borderRadius: 14, backgroundColor: "#F1ECE3", marginBottom: 6 },
-});
+const verifyStyles = themed(() => StyleSheet.create({
+  option: { borderWidth: 1.5, borderColor: schemeColor("#C9C3B8", 'border'), borderRadius: 16, padding: 14, marginBottom: 10, backgroundColor: schemeColor("#fff", 'bg') },
+  optionActive: { borderColor: schemeColor('#2B3A67', 'border'), backgroundColor: schemeColor("#EEF0F8", 'bg') },
+  optionTitle: { color: schemeColor('#1A2138', 'fg'), fontWeight: "900", fontSize: 15 },
+  optionHint: { color: schemeColor('#000000', 'fg'), fontSize: 13, lineHeight: 18, marginTop: 3 },
+  photo: { width: "100%", height: 220, borderRadius: 14, backgroundColor: schemeColor("#F1ECE3", 'bg'), marginBottom: 6 },
+}));
 
 // The shop's "scan to join" poster, in the app. Print/share opens a PDF made by
 // the shop-poster edge function in the phone's own viewer (print + share
@@ -2337,7 +2337,7 @@ function PosterPage({ business, onBack, onBusinessChanged, preview = false }: Pa
         <Text style={posterStyles.name} numberOfLines={2} adjustsFontSizeToFit>{business.name}</Text>
         <Text style={posterStyles.sub}>{business.category ? `${business.category} · ` : ""}Collect rewards when you visit</Text>
         <View style={posterStyles.qr}>
-          {joinUrl ? <QRCode value={joinUrl} size={190} ecl="H" /> : <ActivityIndicator color={ink} />}
+          {joinUrl ? <QRCode value={joinUrl} size={190} ecl="H" /> : <ActivityIndicator color={schemeColor('#1A2138', 'fg')} />}
         </View>
         <Text style={posterStyles.scan}>{whatsapp ? "Scan to join with WhatsApp" : "Scan to join and start collecting"}</Text>
         <Text style={posterStyles.sub}>{whatsapp ? "No app download required · Start in WhatsApp" : "No app download required · Your rewards stay in one place"}</Text>
@@ -2436,7 +2436,7 @@ function ShopClosurePage({ business, onBack, onBusinessChanged, preview = false 
         <PrimaryButton label="Transfer shop" secondary busy={transferring} onPress={() => void transferShop()} />
       </Section>
       <Section>
-        <Text style={[styles.cardTitle, { color: "#B4433A" }]}>Delete this shop permanently</Text>
+        <Text style={[styles.cardTitle, { color: schemeColor("#B4433A", 'fg') }]}>Delete this shop permanently</Text>
         <Text style={[styles.muted, { marginTop: 6, marginBottom: 12 }]}>
           This removes the shop, its members’ loyalty activity, rewards, reviews and related data. It can’t be undone. To just hide it for a while, use Deactivate shop instead.
         </Text>
@@ -2457,20 +2457,20 @@ function HelpPage({ onBack }: PageProps) {
   );
 }
 
-const posterStyles = StyleSheet.create({
-  poster: { backgroundColor: "#fff", borderWidth: 4, borderRadius: 18, overflow: "hidden", alignItems: "center", paddingBottom: 22, marginBottom: 18 },
+const posterStyles = themed(() => StyleSheet.create({
+  poster: { backgroundColor: schemeColor("#fff", 'bg'), borderWidth: 4, borderRadius: 18, overflow: "hidden", alignItems: "center", paddingBottom: 22, marginBottom: 18 },
   band: { alignSelf: "stretch", height: 14 },
-  platform: { marginTop: 16, fontSize: 13, fontWeight: "800", color: "#6B6F7A" },
+  platform: { marginTop: 16, fontSize: 13, fontWeight: "800", color: schemeColor("#6B6F7A", 'fg') },
   logo: { width: 72, height: 72, marginTop: 14, borderRadius: 12 },
   monogram: { width: 72, height: 72, borderRadius: 36, marginTop: 14, alignItems: "center", justifyContent: "center" },
-  monogramText: { color: "#fff", fontSize: 32, fontWeight: "900" },
+  monogramText: { color: schemeColor("#fff", 'fg'), fontSize: 32, fontWeight: "900" },
   kicker: { marginTop: 14, fontSize: 11, fontWeight: "900", letterSpacing: 1 },
-  name: { marginTop: 6, paddingHorizontal: 16, fontSize: 26, fontWeight: "900", color: ink, textAlign: "center" },
-  sub: { marginTop: 4, paddingHorizontal: 16, fontSize: 13, color: "#6B6F7A", textAlign: "center" },
-  qr: { marginVertical: 18, padding: 10, backgroundColor: "#fff", minHeight: 210, justifyContent: "center" },
-  scan: { fontSize: 17, fontWeight: "900", color: ink, textAlign: "center", paddingHorizontal: 16 },
+  name: { marginTop: 6, paddingHorizontal: 16, fontSize: 26, fontWeight: "900", color: schemeColor('#1A2138', 'fg'), textAlign: "center" },
+  sub: { marginTop: 4, paddingHorizontal: 16, fontSize: 13, color: schemeColor("#6B6F7A", 'fg'), textAlign: "center" },
+  qr: { marginVertical: 18, padding: 10, backgroundColor: schemeColor("#fff", 'bg'), minHeight: 210, justifyContent: "center" },
+  scan: { fontSize: 17, fontWeight: "900", color: schemeColor('#1A2138', 'fg'), textAlign: "center", paddingHorizontal: 16 },
   switchRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-});
+}));
 
 export function NativeOwnerPageView({
   page,
@@ -2497,7 +2497,7 @@ export function NativeOwnerPageView({
   return <Component {...props} />;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -2509,22 +2509,22 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: "#3A3A3A",
+    borderColor: schemeColor("#3A3A3A", 'border'),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: card,
+    backgroundColor: schemeColor('#FCFCFA', 'bg'),
   },
   eyebrow: {
     fontSize: 11,
     letterSpacing: 1.5,
     fontWeight: "900",
-    color: muted,
+    color: schemeColor('#000000', 'fg'),
   },
-  title: { fontSize: 36, lineHeight: 40, fontFamily: FONT_DISPLAY, color: ink, letterSpacing: -1 },
+  title: { fontSize: 36, lineHeight: 40, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg'), letterSpacing: -1 },
   section: {
-    backgroundColor: card,
+    backgroundColor: schemeColor('#FCFCFA', 'bg'),
     borderWidth: 1.5,
-    borderColor: "#3A3A3A",
+    borderColor: schemeColor("#3A3A3A", 'border'),
     borderRadius: 24,
     padding: 18,
     marginBottom: 16,
@@ -2535,11 +2535,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.6,
     textTransform: "uppercase",
-    color: muted,
+    color: schemeColor('#000000', 'fg'),
     marginTop: 6,
     marginBottom: 12,
   },
-  cardTitle: { fontSize: 18, fontWeight: "900", color: ink, flex: 1 },
+  cardTitle: { fontSize: 18, fontWeight: "900", color: schemeColor('#1A2138', 'fg'), flex: 1 },
   iconHeading: {
     flexDirection: "row",
     alignItems: "center",
@@ -2547,23 +2547,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tutorialRow: { flexDirection: "row", gap: 13, alignItems: "flex-start" },
-  tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#F7D9CB", alignItems: "center", justifyContent: "center" },
-  tutorialNumberText: { color: "#2B3A67", fontWeight: "900" },
-  tutorialAction: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44, borderRadius: 13, backgroundColor: cream, paddingHorizontal: 12, marginTop: 13 },
-  tutorialActionText: { color: ink, fontSize: 13, fontWeight: "900" },
-  body: { color: "#000000", lineHeight: 21, fontSize: 14 },
-  muted: { color: muted, lineHeight: 20, fontSize: 14 },
+  tutorialNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: schemeColor("#F7D9CB", 'bg'), alignItems: "center", justifyContent: "center" },
+  tutorialNumberText: { color: schemeColor("#2B3A67", 'fg'), fontWeight: "900" },
+  tutorialAction: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44, borderRadius: 13, backgroundColor: schemeColor('#F8EAD8', 'bg'), paddingHorizontal: 12, marginTop: 13 },
+  tutorialActionText: { color: schemeColor('#1A2138', 'fg'), fontSize: 13, fontWeight: "900" },
+  body: { color: schemeColor("#000000", 'fg'), lineHeight: 21, fontSize: 14 },
+  muted: { color: schemeColor('#000000', 'fg'), lineHeight: 20, fontSize: 14 },
   primaryButton: {
     minHeight: 48,
     borderRadius: 999,
     // Sapphire marks what you can tap.
-    backgroundColor: orange,
+    backgroundColor: schemeColor('#2B3A67', 'bg'),
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 18,
     marginTop: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
+    borderColor: schemeColor("rgba(255,255,255,0.72)", 'border'),
     shadowColor: orange,
     shadowOpacity: 0.16,
     shadowRadius: 10,
@@ -2573,21 +2573,21 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: "transparent",
     borderWidth: 1.5,
-    borderColor: orange,
+    borderColor: schemeColor('#2B3A67', 'border'),
   },
-  dangerButton: { backgroundColor: "#B4433A" },
-  primaryButtonText: { color: "#fff", fontWeight: "900", fontSize: 15 },
-  secondaryButtonText: { color: orange },
+  dangerButton: { backgroundColor: schemeColor("#B4433A", 'bg') },
+  primaryButtonText: { color: schemeColor("#fff", 'fg'), fontWeight: "900", fontSize: 15 },
+  secondaryButtonText: { color: schemeColor('#2B3A67', 'fg') },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.85 },
   disabled: { opacity: 0.55 },
   input: {
     minHeight: 48,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "#C9C3B8",
-    backgroundColor: "#fff",
+    borderColor: schemeColor("#C9C3B8", 'border'),
+    backgroundColor: schemeColor("#fff", 'bg'),
     paddingHorizontal: 14,
-    color: ink,
+    color: schemeColor('#1A2138', 'fg'),
     fontSize: 15,
     marginBottom: 10,
   },
@@ -2596,7 +2596,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 16,
     padding: 4,
-    backgroundColor: "#E9E0D2",
+    backgroundColor: schemeColor("#E9E0D2", 'bg'),
     marginBottom: 16,
   },
   segmentItem: {
@@ -2606,14 +2606,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: ink },
+  segmentActive: { backgroundColor: schemeColor('#1A2138', 'bg') },
   segmentText: {
     textTransform: "capitalize",
-    color: muted,
+    color: schemeColor('#000000', 'fg'),
     fontWeight: "800",
     fontSize: 13,
   },
-  segmentTextActive: { color: "#fff" },
+  segmentTextActive: { color: schemeColor("#fff", 'fg') },
   metrics: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -2624,45 +2624,45 @@ const styles = StyleSheet.create({
     width: "48%",
     minHeight: 118,
     borderWidth: 1.5,
-    borderColor: "#3A3A3A",
+    borderColor: schemeColor("#3A3A3A", 'border'),
     borderRadius: 19,
-    backgroundColor: card,
+    backgroundColor: schemeColor('#FCFCFA', 'bg'),
     padding: 14,
     marginBottom: 12,
   },
-  metricValue: { fontSize: 40, lineHeight: 44, fontFamily: FONT_DISPLAY, color: ink, letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
-  metricLabel: { color: muted, fontWeight: "700", fontSize: 11, letterSpacing: 1.4, textTransform: "uppercase", marginTop: 4 },
+  metricValue: { fontSize: 40, lineHeight: 44, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg'), letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
+  metricLabel: { color: schemeColor('#000000', 'fg'), fontWeight: "700", fontSize: 11, letterSpacing: 1.4, textTransform: "uppercase", marginTop: 4 },
   metricChange: {
-    color: "#2D7A43",
+    color: schemeColor("#2D7A43", 'fg'),
     fontSize: 11,
     fontWeight: "800",
     marginTop: 8,
   },
-  negative: { color: "#B4433A" },
+  negative: { color: schemeColor("#B4433A", 'fg') },
   loader: { marginVertical: 50 },
-  report: { marginTop: 14, color: "#000000", fontSize: 14, lineHeight: 21 },
+  report: { marginTop: 14, color: schemeColor("#000000", 'fg'), fontSize: 14, lineHeight: 21 },
   source: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     minHeight: 42,
     borderRadius: 13,
-    backgroundColor: cream,
+    backgroundColor: schemeColor('#F8EAD8', 'bg'),
     paddingHorizontal: 12,
     marginTop: 8,
   },
-  sourceText: { color: ink, fontWeight: "700", fontSize: 12, flex: 1 },
+  sourceText: { color: schemeColor('#1A2138', 'fg'), fontWeight: "700", fontSize: 12, flex: 1 },
   messages: { gap: 8, marginTop: 14, marginBottom: 12 },
   message: { maxWidth: "88%", borderRadius: 15, padding: 11 },
-  userMessage: { backgroundColor: orange, alignSelf: "flex-end" },
-  coachMessage: { backgroundColor: cream, alignSelf: "flex-start" },
-  messageText: { color: ink, lineHeight: 19, fontSize: 14 },
+  userMessage: { backgroundColor: schemeColor('#2B3A67', 'bg'), alignSelf: "flex-end" },
+  coachMessage: { backgroundColor: schemeColor('#F8EAD8', 'bg'), alignSelf: "flex-start" },
+  messageText: { color: schemeColor('#1A2138', 'fg'), lineHeight: 19, fontSize: 14 },
   coachRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   sendButton: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: orange,
+    backgroundColor: schemeColor('#2B3A67', 'bg'),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2683,22 +2683,22 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 17,
     borderWidth: 3,
-    borderColor: "#fff",
-    backgroundColor: cream,
+    borderColor: schemeColor("#fff", 'border'),
+    backgroundColor: schemeColor('#F8EAD8', 'bg'),
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
   logoImage: { width: "100%", height: "100%" },
-  logoLetter: { fontSize: 23, fontFamily: FONT_DISPLAY, color: ink },
-  previewName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: ink, marginTop: 13 },
+  logoLetter: { fontSize: 23, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg') },
+  previewName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg'), marginTop: 13 },
   listCard: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 11,
-    backgroundColor: card,
+    backgroundColor: schemeColor('#FCFCFA', 'bg'),
     borderWidth: 1.5,
-    borderColor: "#3A3A3A",
+    borderColor: schemeColor("#3A3A3A", 'border'),
     borderRadius: 20,
     padding: 15,
     marginBottom: 11,
@@ -2707,39 +2707,39 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: cream,
+    backgroundColor: schemeColor('#F8EAD8', 'bg'),
     alignItems: "center",
     justifyContent: "center",
   },
-  listTitle: { color: ink, fontSize: 16, fontWeight: "900" },
+  listTitle: { color: schemeColor('#1A2138', 'fg'), fontSize: 16, fontWeight: "900" },
   iconButton: {
     width: 40,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  empty: { color: muted, textAlign: "center", paddingVertical: 24 },
+  empty: { color: schemeColor('#000000', 'fg'), textAlign: "center", paddingVertical: 24 },
   permissionRow: {
     flexDirection: "row",
     alignItems: "center",
     minHeight: 46,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#D6D0C5",
+    borderTopColor: schemeColor("#D6D0C5", 'border'),
   },
-  permissionLabel: { flex: 1, color: ink, fontSize: 14, fontWeight: "700" },
+  permissionLabel: { flex: 1, color: schemeColor('#1A2138', 'fg'), fontSize: 14, fontWeight: "700" },
   toggle: {
     width: 46,
     height: 27,
     borderRadius: 14,
-    backgroundColor: "#CCC7BE",
+    backgroundColor: schemeColor("#CCC7BE", 'bg'),
     padding: 3,
   },
-  toggleOn: { backgroundColor: orange },
+  toggleOn: { backgroundColor: schemeColor('#2B3A67', 'bg') },
   toggleKnob: {
     width: 21,
     height: 21,
     borderRadius: 11,
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
   },
   toggleKnobOn: { marginLeft: 19 },
   staffHeading: {
@@ -2750,16 +2750,16 @@ const styles = StyleSheet.create({
   },
   status: {
     borderRadius: 999,
-    backgroundColor: "#F2D8C8",
-    color: "#1F2A4D",
+    backgroundColor: schemeColor("#F2D8C8", 'bg'),
+    color: schemeColor("#1F2A4D", 'fg'),
     paddingHorizontal: 8,
     paddingVertical: 5,
     overflow: "hidden",
     fontWeight: "900",
     fontSize: 9,
   },
-  statusRevoked: { backgroundColor: "#EFE1DF", color: "#9B3C35" },
-  statusResolved: { backgroundColor: "#DDECDD", color: "#26713C" },
+  statusRevoked: { backgroundColor: schemeColor("#EFE1DF", 'bg'), color: schemeColor("#9B3C35", 'fg') },
+  statusResolved: { backgroundColor: schemeColor("#DDECDD", 'bg'), color: schemeColor("#26713C", 'fg') },
   requestHeading: {
     flexDirection: "row",
     alignItems: "center",
@@ -2767,27 +2767,27 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  reviewRating: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#DBE7FF", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999 },
-  reviewRatingText: { color: ink, fontSize: 12, fontWeight: "900" },
+  reviewRating: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: schemeColor("#DBE7FF", 'bg'), paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999 },
+  reviewRatingText: { color: schemeColor('#1A2138', 'fg'), fontSize: 12, fontWeight: "900" },
   reply: {
     borderLeftWidth: 3,
-    borderLeftColor: orange,
+    borderLeftColor: schemeColor('#2B3A67', 'border'),
     paddingLeft: 11,
     marginTop: 13,
   },
-  replyTitle: { color: ink, fontWeight: "900", marginBottom: 4 },
-  aiCard: { backgroundColor: "#DBE7FF", borderRadius: 20, padding: 16, marginTop: 12, marginBottom: 4, gap: 6 },
+  replyTitle: { color: schemeColor('#1A2138', 'fg'), fontWeight: "900", marginBottom: 4 },
+  aiCard: { backgroundColor: schemeColor("#DBE7FF", 'bg'), borderRadius: 20, padding: 16, marginTop: 12, marginBottom: 4, gap: 6 },
   aiCardHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
-  aiCardTitle: { color: ink, fontSize: 18, fontWeight: "900" },
+  aiCardTitle: { color: schemeColor('#1A2138', 'fg'), fontSize: 18, fontWeight: "900" },
   aiToggleRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 },
-  aiSwitch: { width: 46, height: 26, borderRadius: 13, backgroundColor: "#D9D6CE", padding: 3 },
-  aiSwitchOn: { backgroundColor: orange },
-  aiKnob: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff" },
+  aiSwitch: { width: 46, height: 26, borderRadius: 13, backgroundColor: schemeColor("#D9D6CE", 'bg'), padding: 3 },
+  aiSwitchOn: { backgroundColor: schemeColor('#2B3A67', 'bg') },
+  aiKnob: { width: 20, height: 20, borderRadius: 10, backgroundColor: schemeColor("#fff", 'bg') },
   aiKnobOn: { transform: [{ translateX: 20 }] },
   aiReplyHeading: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  aiChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#DBE7FF", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
-  aiChipText: { color: orange, fontSize: 11, fontWeight: "900" },
-  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#DBE7FF", borderRadius: 12, padding: 10, marginBottom: 6 },
-  aiNoteText: { color: ink, flex: 1, fontSize: 13 },
-  date: { color: muted, fontSize: 11, marginTop: 12 },
-});
+  aiChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: schemeColor("#DBE7FF", 'bg'), borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
+  aiChipText: { color: schemeColor('#2B3A67', 'fg'), fontSize: 11, fontWeight: "900" },
+  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: schemeColor("#DBE7FF", 'bg'), borderRadius: 12, padding: 10, marginBottom: 6 },
+  aiNoteText: { color: schemeColor('#1A2138', 'fg'), flex: 1, fontSize: 13 },
+  date: { color: schemeColor('#000000', 'fg'), fontSize: 11, marginTop: 12 },
+}));

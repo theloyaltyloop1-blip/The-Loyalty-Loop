@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Minus, Plus } from "lucide-react-native";
+import { schemeColor, themed } from "@loyalty-loop/design-tokens"
 
 // Help & FAQ inside the Business app, so owners never need the website for it.
 // Same answers as the website's /help page, worded for the app.
@@ -74,7 +75,7 @@ function HelpItem({ q, a }: Item) {
       >
         <Text style={styles.questionText}>{q}</Text>
         <View style={[styles.toggle, open && styles.toggleOpen]}>
-          {open ? <Minus size={16} color="#fff" strokeWidth={2.6} /> : <Plus size={16} color={ink} strokeWidth={2.6} />}
+          {open ? <Minus size={16} color={schemeColor("#fff", 'fg')} strokeWidth={2.6} /> : <Plus size={16} color={schemeColor('#1A2138', 'fg')} strokeWidth={2.6} />}
         </View>
       </Pressable>
       {open ? <Text style={styles.answer}>{a}</Text> : null}
@@ -110,14 +111,14 @@ export function HelpFaq({ showAccount = true }: { showAccount?: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
-  group: { marginTop: 18, marginBottom: 8, fontSize: 12, fontWeight: "900", letterSpacing: 1, color: muted },
-  card: { backgroundColor: "#FCFCFA", borderRadius: 20, paddingHorizontal: 16, borderWidth: 1, borderColor: "#E6E1D8" },
+const styles = themed(() => StyleSheet.create({
+  group: { marginTop: 18, marginBottom: 8, fontSize: 12, fontWeight: "900", letterSpacing: 1, color: schemeColor('#4A4F5C', 'fg') },
+  card: { backgroundColor: schemeColor("#FCFCFA", 'bg'), borderRadius: 20, paddingHorizontal: 16, borderWidth: 1, borderColor: schemeColor("#E6E1D8", 'border') },
   contact: { paddingVertical: 14 },
-  item: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#DDD6CA" },
+  item: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: schemeColor("#DDD6CA", 'border') },
   question: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingVertical: 12 },
-  questionText: { flex: 1, fontSize: 16, fontWeight: "800", color: ink },
-  toggle: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "#EFE9DF" },
-  toggleOpen: { backgroundColor: "#2B3A67" },
-  answer: { paddingBottom: 14, fontSize: 15, lineHeight: 22, color: muted },
-});
+  questionText: { flex: 1, fontSize: 16, fontWeight: "800", color: schemeColor('#1A2138', 'fg') },
+  toggle: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: schemeColor("#EFE9DF", 'bg') },
+  toggleOpen: { backgroundColor: schemeColor("#2B3A67", 'bg') },
+  answer: { paddingBottom: 14, fontSize: 15, lineHeight: 22, color: schemeColor('#4A4F5C', 'fg') },
+}));

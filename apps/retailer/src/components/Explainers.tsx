@@ -13,6 +13,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated'
 import Svg, { Circle, G, Polyline, Rect, Text as SvgText } from 'react-native-svg'
+import { schemeColor, themed, colors } from '@loyalty-loop/design-tokens'
 
 /**
  * Short looping explainers (about 5 s, one caption line) instead of paragraphs.
@@ -98,8 +99,8 @@ function QrCode({ x, y, size, color = INK }: { x: number; y: number; size: numbe
 function Phone({ x, y, w = 90, h = 140, children }: { x: number; y: number; w?: number; h?: number; children?: ReactNode }) {
   return (
     <G>
-      <Rect x={x} y={y} width={w} height={h} rx={16} fill={INK} />
-      <Rect x={x + 6} y={y + 10} width={w - 12} height={h - 20} rx={8} fill={PAPER} />
+      <Rect x={x} y={y} width={w} height={h} rx={16} fill={schemeColor('#1A2138', 'bg')} />
+      <Rect x={x + 6} y={y + 10} width={w - 12} height={h - 20} rx={8} fill={colors.background} />
       {children}
     </G>
   )
@@ -122,23 +123,23 @@ function Join({ t }: { t: Clock }) {
   return (
     <>
       {/* The shop's poster */}
-      <Rect x={34} y={26} width={86} height={128} rx={10} fill={PAPER} stroke={INK} strokeWidth={2} />
+      <Rect x={34} y={26} width={86} height={128} rx={10} fill={colors.background} stroke={schemeColor('#1A2138', 'bg')} strokeWidth={2} />
       <QrCode x={48} y={44} size={58} />
-      <Rect x={50} y={116} width={54} height={5} rx={2.5} fill={ORANGE} />
-      <Rect x={58} y={128} width={38} height={4} rx={2} fill={TRACK} />
+      <Rect x={50} y={116} width={54} height={5} rx={2.5} fill={schemeColor('#2B3A67', 'bg')} />
+      <Rect x={58} y={128} width={38} height={4} rx={2} fill={schemeColor('#E8DFD0', 'bg')} />
       {/* scan beam over the poster */}
-      <ARect t={t} x={40} width={74} height={4} rx={2} fill={ORANGE} map={(v) => { 'worklet'; return { y: 40 + ramp(v, 0.06, 0.4) * 76, opacity: ramp(v, 0.04, 0.08) * (1 - ramp(v, 0.4, 0.44)) } }} />
+      <ARect t={t} x={40} width={74} height={4} rx={2} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { y: 40 + ramp(v, 0.06, 0.4) * 76, opacity: ramp(v, 0.04, 0.08) * (1 - ramp(v, 0.4, 0.44)) } }} />
       {/* the phone */}
       <Phone x={196} y={20} />
       {/* a spark travels poster -> phone */}
-      <ACircle t={t} cy={90} r={5} fill={ORANGE} map={(v) => { 'worklet'; return { cx: 124 + ramp(v, 0.4, 0.56) * 76, opacity: ramp(v, 0.4, 0.42) * (1 - ramp(v, 0.56, 0.6)) } }} />
+      <ACircle t={t} cy={90} r={5} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { cx: 124 + ramp(v, 0.4, 0.56) * 76, opacity: ramp(v, 0.4, 0.42) * (1 - ramp(v, 0.56, 0.6)) } }} />
       {/* the loyalty card appears */}
-      <ARect t={t} x={206} y={52} width={70} rx={9} fill={ORANGE} map={(v) => { 'worklet'; return { height: ramp(v, 0.58, 0.72) * 46 } }} />
+      <ARect t={t} x={206} y={52} width={70} rx={9} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { height: ramp(v, 0.58, 0.72) * 46 } }} />
       <Fade t={t} from={0.66} to={0.74}>
         <Rect x={214} y={62} width={34} height={5} rx={2.5} fill="#fff" />
         <Rect x={214} y={73} width={50} height={4} rx={2} fill="#fff" opacity={0.6} />
       </Fade>
-      <ACircle t={t} cx={241} cy={124} fill={GREEN} map={(v) => { 'worklet'; return { r: ramp(v, 0.74, 0.84) * 14 } }} />
+      <ACircle t={t} cx={241} cy={124} fill={schemeColor('#2F6B3F', 'bg')} map={(v) => { 'worklet'; return { r: ramp(v, 0.74, 0.84) * 14 } }} />
       <Fade t={t} from={0.8} to={0.86}>
         <Check cx={241} cy={124} s={0.8} />
       </Fade>
@@ -152,25 +153,25 @@ function Scan({ t }: { t: Clock }) {
       {/* staff phone with a viewfinder */}
       <Phone x={26} y={20} />
       <Fade t={t} from={0} to={0.02} out={[0.46, 0.52]}>
-        <Polyline points="42,56 42,46 52,46" fill="none" stroke={ORANGE} strokeWidth={3} strokeLinecap="round" />
-        <Polyline points="98,46 108,46 108,56" fill="none" stroke={ORANGE} strokeWidth={3} strokeLinecap="round" />
-        <Polyline points="42,98 42,108 52,108" fill="none" stroke={ORANGE} strokeWidth={3} strokeLinecap="round" />
-        <Polyline points="98,108 108,108 108,98" fill="none" stroke={ORANGE} strokeWidth={3} strokeLinecap="round" />
+        <Polyline points="42,56 42,46 52,46" fill="none" stroke={schemeColor('#2B3A67', 'border')} strokeWidth={3} strokeLinecap="round" />
+        <Polyline points="98,46 108,46 108,56" fill="none" stroke={schemeColor('#2B3A67', 'border')} strokeWidth={3} strokeLinecap="round" />
+        <Polyline points="42,98 42,108 52,108" fill="none" stroke={schemeColor('#2B3A67', 'border')} strokeWidth={3} strokeLinecap="round" />
+        <Polyline points="98,108 108,108 108,98" fill="none" stroke={schemeColor('#2B3A67', 'border')} strokeWidth={3} strokeLinecap="round" />
       </Fade>
-      <ARect t={t} x={44} width={62} height={3} rx={1.5} fill={ORANGE} map={(v) => { 'worklet'; return { y: 50 + ramp(v, 0.05, 0.45) * 54, opacity: ramp(v, 0.04, 0.08) * (1 - ramp(v, 0.44, 0.48)) } }} />
+      <ARect t={t} x={44} width={62} height={3} rx={1.5} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { y: 50 + ramp(v, 0.05, 0.45) * 54, opacity: ramp(v, 0.04, 0.08) * (1 - ramp(v, 0.44, 0.48)) } }} />
       {/* progress appears on the staff phone once the scan lands */}
-      <ACircle t={t} cx={75} cy={64} fill={GREEN} map={(v) => { 'worklet'; return { r: ramp(v, 0.5, 0.58) * 15 } }} />
+      <ACircle t={t} cx={75} cy={64} fill={schemeColor('#2F6B3F', 'bg')} map={(v) => { 'worklet'; return { r: ramp(v, 0.5, 0.58) * 15 } }} />
       <Fade t={t} from={0.56} to={0.6}>
         <Check cx={75} cy={64} s={0.8} />
       </Fade>
-      <Rect x={42} y={96} width={66} height={10} rx={5} fill={TRACK} />
-      <ARect t={t} x={42} y={96} height={10} rx={5} fill={ORANGE} map={(v) => { 'worklet'; return { width: 66 * (0.35 + 0.5 * ramp(v, 0.58, 0.82)) } }} />
+      <Rect x={42} y={96} width={66} height={10} rx={5} fill={schemeColor('#E8DFD0', 'bg')} />
+      <ARect t={t} x={42} y={96} height={10} rx={5} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { width: 66 * (0.35 + 0.5 * ramp(v, 0.58, 0.82)) } }} />
       {/* customer phone showing a QR */}
       <Phone x={204} y={20} />
       <QrCode x={218} y={52} size={62} />
-      <Rect x={218} y={118} width={62} height={5} rx={2.5} fill={TRACK} />
+      <Rect x={218} y={118} width={62} height={5} rx={2.5} fill={schemeColor('#E8DFD0', 'bg')} />
       {/* beam between the phones */}
-      <ARect t={t} x={122} y={86} height={3} rx={1.5} fill={ORANGE} map={(v) => { 'worklet'; return { width: ramp(v, 0.1, 0.46) * 78, opacity: 0.5 * ramp(v, 0.08, 0.12) * (1 - ramp(v, 0.46, 0.5)) } }} />
+      <ARect t={t} x={122} y={86} height={3} rx={1.5} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { width: ramp(v, 0.1, 0.46) * 78, opacity: 0.5 * ramp(v, 0.08, 0.12) * (1 - ramp(v, 0.46, 0.5)) } }} />
     </>
   )
 }
@@ -180,11 +181,11 @@ function Stamps({ t }: { t: Clock }) {
     <>
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <G key={i}>
-          <Circle cx={52 + i * 43} cy={66} r={17} fill={PAPER} stroke={INK} strokeWidth={2} />
-          <ACircle t={t} cx={52 + i * 43} cy={66} fill={ORANGE} map={(v) => { 'worklet'; return { r: ramp(v, 0.06 + i * 0.1, 0.14 + i * 0.1) * 14 } }} />
+          <Circle cx={52 + i * 43} cy={66} r={17} fill={colors.background} stroke={schemeColor('#1A2138', 'bg')} strokeWidth={2} />
+          <ACircle t={t} cx={52 + i * 43} cy={66} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { r: ramp(v, 0.06 + i * 0.1, 0.14 + i * 0.1) * 14 } }} />
         </G>
       ))}
-      <ARect t={t} x={60} y={112} height={38} rx={19} fill={GREEN} map={(v) => { 'worklet'; return { width: ramp(v, 0.68, 0.8) * 200 } }} />
+      <ARect t={t} x={60} y={112} height={38} rx={19} fill={schemeColor('#2F6B3F', 'bg')} map={(v) => { 'worklet'; return { width: ramp(v, 0.68, 0.8) * 200 } }} />
       <Fade t={t} from={0.76} to={0.84}>
         <SvgText x={160} y={137} fontSize={17} fontWeight="800" fill="#fff" textAnchor="middle">Free coffee!</SvgText>
       </Fade>
@@ -196,18 +197,18 @@ function Tiers({ t }: { t: Clock }) {
   const steps = [
     { x: 40, h: 46, colour: '#B87333', label: 'Member', a: 0.04, b: 0.2 },
     { x: 124, h: 76, colour: '#8D97A3', label: 'Silver', a: 0.26, b: 0.46 },
-    { x: 208, h: 106, colour: GOLD, label: 'Gold', a: 0.52, b: 0.74 },
+    { x: 208, h: 106, colour: schemeColor('#E0A82E', 'fg'), label: 'Gold', a: 0.52, b: 0.74 },
   ]
   return (
     <>
       {steps.map(({ x, h, colour, label, a, b }) => (
         <G key={label}>
-          <Rect x={x} y={140 - h} width={72} height={h} rx={10} fill={TRACK} />
+          <Rect x={x} y={140 - h} width={72} height={h} rx={10} fill={schemeColor('#E8DFD0', 'bg')} />
           <ARect t={t} x={x} width={72} rx={10} fill={colour} map={(v) => { 'worklet'; const k = ramp(v, a, b) * h; return { y: 140 - k, height: k } }} />
-          <SvgText x={x + 36} y={160} fontSize={13} fontWeight="800" fill={INK} textAnchor="middle">{label}</SvgText>
+          <SvgText x={x + 36} y={160} fontSize={13} fontWeight="800" fill={schemeColor('#1A2138', 'bg')} textAnchor="middle">{label}</SvgText>
         </G>
       ))}
-      <ACircle t={t} cx={244} cy={20} fill={GOLD} map={(v) => { 'worklet'; return { r: ramp(v, 0.74, 0.84) * 10 } }} />
+      <ACircle t={t} cx={244} cy={20} fill={schemeColor('#E0A82E', 'bg')} map={(v) => { 'worklet'; return { r: ramp(v, 0.74, 0.84) * 10 } }} />
     </>
   )
 }
@@ -229,12 +230,12 @@ function Points({ t, reduced }: { t: Clock; reduced: boolean }) {
   return (
     <>
       {[0, 1, 2, 3].map((i) => (
-        <ACircle key={i} t={t} cx={64 + i * 64} r={11} fill={GOLD} stroke="#B4811A" strokeWidth={2} map={(v) => { 'worklet'; const p = ramp(v, 0.06 + i * 0.16, 0.18 + i * 0.16); return { cy: 18 + p * 34, opacity: p > 0 && p < 1 ? 1 : 0 } }} />
+        <ACircle key={i} t={t} cx={64 + i * 64} r={11} fill={schemeColor('#E0A82E', 'bg')} stroke="#B4811A" strokeWidth={2} map={(v) => { 'worklet'; const p = ramp(v, 0.06 + i * 0.16, 0.18 + i * 0.16); return { cy: 18 + p * 34, opacity: p > 0 && p < 1 ? 1 : 0 } }} />
       ))}
-      <Rect x={40} y={118} width={240} height={14} rx={7} fill={TRACK} />
-      <ARect t={t} x={40} y={118} height={14} rx={7} fill={ORANGE} map={(v) => { 'worklet'; return { width: 240 * ramp(v, 0.08, 0.74) } }} />
-      <SvgText x={160} y={96} fontSize={34} fontWeight="800" fill={INK} textAnchor="middle">{points} pts</SvgText>
-      <SvgText x={280} y={154} fontSize={12} fontWeight="700" fill={INK} textAnchor="end">Reward at 200</SvgText>
+      <Rect x={40} y={118} width={240} height={14} rx={7} fill={schemeColor('#E8DFD0', 'bg')} />
+      <ARect t={t} x={40} y={118} height={14} rx={7} fill={schemeColor('#2B3A67', 'bg')} map={(v) => { 'worklet'; return { width: 240 * ramp(v, 0.08, 0.74) } }} />
+      <SvgText x={160} y={96} fontSize={34} fontWeight="800" fill={schemeColor('#1A2138', 'bg')} textAnchor="middle">{points} pts</SvgText>
+      <SvgText x={280} y={154} fontSize={12} fontWeight="700" fill={schemeColor('#1A2138', 'bg')} textAnchor="end">Reward at 200</SvgText>
     </>
   )
 }
@@ -243,11 +244,11 @@ function Spend({ t, reduced }: { t: Clock; reduced: boolean }) {
   const amount = useCounter(t, 50, 0.08, 0.74, reduced)
   return (
     <>
-      <Rect x={40} y={104} width={240} height={26} rx={13} fill={TRACK} />
-      <ARect t={t} x={40} y={104} height={26} rx={13} fill={GREEN} map={(v) => { 'worklet'; return { width: 240 * ramp(v, 0.08, 0.74) } }} />
-      <SvgText x={160} y={76} fontSize={36} fontWeight="800" fill={INK} textAnchor="middle">£{amount}</SvgText>
-      <SvgText x={280} y={154} fontSize={12} fontWeight="700" fill={INK} textAnchor="end">Reward at £50</SvgText>
-      <ACircle t={t} cx={262} cy={40} fill={GOLD} map={(v) => { 'worklet'; return { r: ramp(v, 0.74, 0.84) * 14 } }} />
+      <Rect x={40} y={104} width={240} height={26} rx={13} fill={schemeColor('#E8DFD0', 'bg')} />
+      <ARect t={t} x={40} y={104} height={26} rx={13} fill={schemeColor('#2F6B3F', 'bg')} map={(v) => { 'worklet'; return { width: 240 * ramp(v, 0.08, 0.74) } }} />
+      <SvgText x={160} y={76} fontSize={36} fontWeight="800" fill={schemeColor('#1A2138', 'bg')} textAnchor="middle">£{amount}</SvgText>
+      <SvgText x={280} y={154} fontSize={12} fontWeight="700" fill={schemeColor('#1A2138', 'bg')} textAnchor="end">Reward at £50</SvgText>
+      <ACircle t={t} cx={262} cy={40} fill={schemeColor('#E0A82E', 'bg')} map={(v) => { 'worklet'; return { r: ramp(v, 0.74, 0.84) * 14 } }} />
     </>
   )
 }
@@ -288,8 +289,8 @@ export function Explainer({ kind, caption, showCaption = true }: { kind: Explain
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   wrap: { width: '100%' },
   frame: { width: '100%', aspectRatio: 320 / 180, borderRadius: 22, overflow: 'hidden' },
-  caption: { color: '#000', fontSize: 16, fontWeight: '800', marginTop: 10, textAlign: 'center' },
-})
+  caption: { color: schemeColor('#000', 'fg'), fontSize: 16, fontWeight: '800', marginTop: 10, textAlign: 'center' },
+}))
