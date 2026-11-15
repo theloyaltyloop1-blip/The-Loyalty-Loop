@@ -4,6 +4,10 @@ import { registerRootComponent } from 'expo';
 import { Platform } from 'react-native'
 
 import App from './App';
+import { defineWalkPastTask } from './src/walk-past';
+
+// The OS can wake the app for a walk-past geofence with no UI, so the task is defined before React starts.
+defineWalkPastTask()
 
 if (Platform.OS === 'android') {
   const { registerWidgetTaskHandler } = require('react-native-android-widget') as typeof import('react-native-android-widget')

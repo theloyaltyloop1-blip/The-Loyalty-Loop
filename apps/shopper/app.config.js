@@ -12,7 +12,7 @@ module.exports = {
       ...app.expo.ios.infoPlist,
       // react-native-maps links CoreLocation even though the app never asks
       // for location; App Store Connect warns (ITMS-90683) without this.
-      NSLocationWhenInUseUsageDescription: 'The Loyalty Loop does not track your location. This is required by the maps component used to show shop pins.',
+      NSLocationWhenInUseUsageDescription: 'The Loyalty Loop uses your location to show the closest shops first. Your location stays on your phone.',
     },
     entitlements: {
       ...app.expo.ios.entitlements,

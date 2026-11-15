@@ -28,7 +28,7 @@ module.exports = function (ctx) {
       [
         'Device and technical data: device and browser type, operating system, IP address, language, and error and crash information needed to run and secure the Service.',
         'Online activity data: pages you view, when and how you use features, and navigation paths. Optional usage analytics are collected only if you choose "Accept all" (see our Cookie Policy).',
-        'Location data: your device location, only when you give permission, for nearby-shop features.',
+        'Location data: your device location, only when you give permission, for nearby-shop features. If you switch on walk-past offers in the shopper app, the app also uses your location in the background (location set to "Always" on iPhone, "Allow all the time" on Android) so it can tell when you pass a shop. Your location and the list of shops stay on your phone; when you pass a shop, the app tells us only which shop and a random key for your device, so we can decide whether to send you one offer notification. We keep these alert records for 90 days. You can turn this off in the Settings of the app or in your phone settings at any time.',
         'Notification tokens: identifiers that let us deliver push notifications to your device, if you allow them.',
       ],
       'Information from other sources:',

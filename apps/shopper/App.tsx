@@ -71,6 +71,7 @@ import { pushPermission, registerPushToken } from './src/push'
 import * as SecureStore from 'expo-secure-store'
 import { GuestHome, type GuestShop } from './src/components/GuestHome'
 import { Tip } from './src/components/Tip'
+import { disableWalkPast, enableWalkPast, refreshWalkPast, walkPastEnabled, walkPastSupported } from './src/walk-past'
 import { addPassFromBase64 } from './modules/expo-wallet-pass'
 import { haptic, getHapticsEnabled, setHapticsEnabled } from './src/haptics'
 import { signInWithGoogle } from './src/google-auth'
@@ -622,6 +623,7 @@ function confirmDeleteAccount() {
       const { data, error } = await supabase.functions.invoke('delete-my-account')
       if (error) throw error
       if (data && typeof data === 'object' && 'error' in data && data.error) throw new Error(String(data.error))
+      await disableWalkPast().catch(() => undefined)
       await supabase.auth.signOut().catch(() => undefined)
       showAlert('Account deleted', 'Your account and its data have been permanently deleted.')
     } catch (e) {
@@ -702,6 +704,8 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
   const whirlSettings = useWhirlSettings()
   const [hapticsOn, setHapticsOn] = useState(true)
+  const [walkPast, setWalkPast] = useState(false)
+  const [walkPastBusy, setWalkPastBusy] = useState(false)
   const [blocks, setBlocks] = useState<{ blocked_id: string; created_at: string }[]>([])
   const firstName: string = session.user.user_metadata?.first_name || 'Shopper'
   const email = session.user.email || ''
@@ -721,6 +725,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
     biometricLockEnabled().then(setBiometricEnabled)
     getUsageAnalyticsConsent().then(setAnalyticsEnabled)
     void getHapticsEnabled().then(setHapticsOn)
+    void walkPastEnabled().then(setWalkPast)
     void loadBlocks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
@@ -756,6 +761,29 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   }
   async function toggleHaptics(next: boolean) { setHapticsOn(next); await setHapticsEnabled(next); if (next) haptic.reward() }
   async function toggleUsageAnalytics(next: boolean) { await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next) }
+  async function switchWalkPast(next: boolean) {
+    setWalkPastBusy(true)
+    try {
+      if (!next) { await disableWalkPast(); setWalkPast(false); return }
+      const result = await enableWalkPast()
+      setWalkPast(result === 'on')
+      if (result === 'needs_always') showAlert('Location needed all the time', Platform.OS === 'ios'
+        ? 'Walk-past offers only work if location is set to "Always". You can change it in Settings > The Loyalty Loop > Location.'
+        : 'Walk-past offers only work if location is set to "Allow all the time". You can change it in your phone settings.',
+        [{ text: 'Not now', style: 'cancel' }, { text: 'Open settings', onPress: () => void Linking.openSettings() }])
+      else if (result === 'needs_notifications') showAlert('Notifications are off', 'Turn on notifications for The Loyalty Loop to get walk-past offers.',
+        [{ text: 'Not now', style: 'cancel' }, { text: 'Open settings', onPress: () => void Linking.openSettings() }])
+      else if (result === 'failed') showAlert('Could not turn it on', 'Check your connection and try again.')
+    } finally {
+      setWalkPastBusy(false)
+    }
+  }
+  function toggleWalkPast(next: boolean) {
+    if (!next) return switchWalkPast(false)
+    showAlert('Offers from shops you walk past?',
+      "When you pass a shop you haven't joined that has an offer on, we'll send you one notification. At most one a day, never the same shop twice in a month, and only while it's open.\n\nYour phone needs to use your location in the background. Your location stays on your phone; we're only told which shop you passed. Turn it off here any time.",
+      [{ text: 'Not now', style: 'cancel' }, { text: 'Turn on', onPress: () => void switchWalkPast(true) }])
+  }
   async function saveName() {
     const trimmed = name.trim()
     if (!trimmed) return showAlert('Add your name', 'Enter the name you would like shops to see.')
@@ -768,7 +796,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   function confirmSignOut() {
     showAlert('Sign out?', 'You can sign back in at any time.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => { clearHomeCache(userId); void supabase.auth.signOut() } },
+      { text: 'Sign out', style: 'destructive', onPress: () => { clearHomeCache(userId); void disableWalkPast().catch(() => undefined).finally(() => void supabase.auth.signOut()) } },
     ])
   }
   return (
@@ -876,6 +904,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               </SettingsGroup>
 
               <SettingsGroup title="Notifications">
+                {walkPastSupported() && <SettingsRow tile="teal" icon={(c) => <MapPinIcon color={c} size={18} />} title="Walk-past offers" detail="Get an offer when you pass a shop you haven't joined. At most one a day" right={<Switch value={walkPast} disabled={walkPastBusy} onValueChange={(v) => void toggleWalkPast(v)} trackColor={{ true: colors.primary }} />} />}
                 <SettingsRow tile="amber" icon={(c) => <BellIcon color={c} size={18} />} title="Notification settings" detail="Shop news and reward alerts, managed in your phone settings" onPress={() => void Linking.openSettings()} last />
               </SettingsGroup>
 
@@ -2557,6 +2586,7 @@ function AppHome({ session }: { session: Session }) {
   )
 
   useEffect(() => { void trackUsageEvent(userId, 'tab_viewed', tab) }, [tab, userId])
+  useEffect(() => { void refreshWalkPast() }, [])
   useEffect(() => { if (selected) void trackUsageEvent(userId, 'shop_opened') }, [selected?.id, userId])
   const coldStartPushHandled = useRef(false)
   useEffect(() => {
@@ -3100,6 +3130,7 @@ function AppRoot() {
       if (!active) return
       if (error && isSessionRejection(error)) {
         // The server says this session is no good: sign out for real.
+        await disableWalkPast().catch(() => undefined)
         await supabase.auth.signOut().catch(() => undefined)
         return
       }
@@ -3111,6 +3142,7 @@ function AppRoot() {
       if (ok) writeLaunchCache('role', uid, { ok: true }, ticket)
       else {
         showAlert('Use the business app', 'This account is an owner or staff account. Please sign in to The Loyalty Loop for Business instead.')
+        await disableWalkPast().catch(() => undefined)
         await supabase.auth.signOut()
       }
     })()
