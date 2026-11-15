@@ -9,6 +9,11 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Decision: walk-past goes into the next native build - Claude
+- **Owner decision:** include walk-past offers in the next native build (shopper 1.0.3). **No build has been started**; the owner will say when. The new icons (5736301) are already in this branch's base.
+- **Still open before the build (owner has not answered):** notification wording and 90-day alert-log retention; the migration must be reviewed and applied by hand first; privacy policy and Play/App Store forms; build numbers (shopper 16 / 134 or higher); the dark-mode work lives on a separate branch and must be merged in deliberately if it should ride along.
+- **Owner:** the user decides when to build; Claude does the steps in the previous entry on their go.
+
 ## 2026-11-15 - Walk-past offers merged onto the release (branch claude/walk-past), NOT shipped - Claude
 - **What it is:** an opt-in shopper feature. A shopper turns on "Walk-past offers" (Settings, Notifications). The phone watches up to 18 nearby shops that have an offer (120 m geofences) and, on entering one, asks the server whether to alert; the server enforces: one alert per person per 20 h, same shop once per 30 days, 08:00-20:00 London only, only while the shop is open, never for shops already joined. The notification is a local one scheduled by the phone (no push server, no edge function needed). Owners set the offer (3-80 characters) on a new Business app page "Walk-past offer" and see alerted/joined counts. Original commit 62b0407 (old branch sapphire-theme, 5 Nov); cherry-picked onto claude/reel-release (5736301).
 - **Merge:** conflicts in shopper `App.tsx` (kept the release imports) and Business `owner-pages.tsx` (took the release version, re-added the `walkpast` page, component and route). `app.json` is now shopper version 1.0.3 with background-location permissions; `expo-task-manager` added; `index.ts` defines the geofence task at start-up.
