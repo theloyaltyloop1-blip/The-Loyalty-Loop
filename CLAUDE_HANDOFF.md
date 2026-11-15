@@ -9,6 +9,24 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 — Reel-lessons release: apps by OTA, website pushed to main (main 5ae5034) - Claude
+**What went out**
+- Business app OTA, runtime 1.0.1, branch production, android 01a1dcb6 / ios 01a1dcb8. Shopper OTA, runtime 1.0.2, branch production, android 01a1dcba / ios 01a1dcbb. All published with `--environment production`; each uploaded bundle was downloaded and contains the project ref (checked 2026-11-15).
+- Website: pushed `claude/reel-release` to `main` (fast-forward 9c96a41..5ae5034); www.the-loyalty-loop.com serves the new `og-image.png`.
+- NOT sent: shopper OTA for runtime 1.0.1 (the shopper has since gained react-native-qrcode-svg; an older build may lack its native deps; recheck before doing it). Owner-pitch landing/sign-up copy (branch `claude/reel-pitch-80b83f`) conflicts with the live landing page and is not merged.
+**What changed (from 8 saved Instagram reels)**
+- Onboarding: one-time push pop-up ("Not now" / "Turn on") instead of an instant system prompt, situation-led intro and web sign-up copy, step counter, first-name greetings.
+- Owner dashboards (web + Business app): grouped KPIs, "Win back N customers" button, folded secondary sections, sidebar group labels, Ctrl/Cmd-K palette on web, coloured tiles restored after the owner found the flat version boring.
+- Launch speed (both apps): optimistic session, SecureStore snapshot cache (`src/launch-cache.ts`, wiped on sign-out, never caches reward QR tokens or stamp codes), parallel requests, skeletons.
+- Search: typo-tolerant ranked matcher + debounce (`src/fuzzy-search.ts`) in shopper, Business and web; migration `20261115120000_typo_tolerant_admin_search.sql` is in the repo but NOT applied.
+- Logo family in `brand/`; web favicon/OG/headers and shopper header use the new mark. Marketing packs in `marketing/reels/` and `marketing/outreach/`; notes in `docs/reel-lessons/`.
+**Checks actually done:** tsc clean (web, shopper, Business), web build OK, 31 unit tests pass (11+11 launch-cache, 10 fuzzy search). NOT done: no device or browser run of the merged apps, so the launch path (optimistic login, cached home) is untested on a phone.
+**Still open**
+- Test the apps on a phone: sign in, sign out, offline launch, account switch, first install. Rollback if broken: `npx --yes eas-cli@24.11.0 update:roll-back-to-embedded --branch production --runtime-version 1.0.1 --platform all` (and 1.0.2 for shopper); an update applies on the second launch.
+- Review and apply the search migration; owner approves the redrawn brand mark; native build needed for new app icons/splash (`brand/png/`); wallet logo change needs an edge-function deploy.
+- Outreach legal points and prices in `marketing/outreach/` are unverified; fill company name/address/ICO and update the Privacy Notice before any email.
+- Owner: the Business app's "Win back" opens the Customers tab but does not pre-select the "gone quiet" audience.
+
 ## 2026-11-14 — Business app: everything moved off the website (main f553034, LIVE by OTA) - Claude
 
 - **Why**: some Business app settings opened the website, and the phone "Continue in our app!" screen then sent owners to Google Play. Owner asked to move everything onto the apps.
@@ -3423,4 +3441,4 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 
 ## Copy-ready prompt for Claude Code
 
-The WhatsApp inbound bot was restarted on 2026-11-10 (read "WhatsApp inbound bot restarted (2026-11-10)" in CLAUDE_HANDOFF.md). Check whether the owner's morning test worked: read the `whatsapp-webhook` logs for the last 24 h (Supabase project tgukdabfvvoywawmzbdo) and `whatsapp_message_log` counts by `direction` and `message_kind` (no phone numbers in your output). If sends failed, report the logged Meta error code and the fix (190 new System User token; 131030/100 wrong Phone number ID). Confirm `META_WHATSAPP_DISPLAY_NUMBER` was changed to the +44 number by calling `whatsapp-handoff` with `{"action":"start"}` through `pg_net` and checking the `wa.me` URL. Don't build business-initiated templates, payment method or phone OTP yet. Update this handoff with what you found.
+The reel-lessons release went out on 2026-11-15 (read the top entry of CLAUDE_HANDOFF.md). Check it on a real phone and report honestly. For the Business app (runtime 1.0.1) and the shopper (runtime 1.0.2): confirm each app opens after the SECOND launch (OTAs apply on the second launch), sign in, sign out, sign in as a different account and check no previous account's data appears, launch with airplane mode on, and check the home screen shows from the cache before the refresh. Look at the owner dashboard (web and Business app) and the new sign-up copy. If anything breaks, roll back with `eas update:roll-back-to-embedded --branch production --runtime-version <1.0.1 or 1.0.2> --platform all` and write what failed here. Then pick up the open items listed in that entry. Do not publish anything new without the owner's yes.
