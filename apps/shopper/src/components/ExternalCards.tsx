@@ -7,6 +7,7 @@ import { colors, fonts } from '../theme'
 import { supabase } from '../supabase'
 import { externalCardCache, type Card } from '../external-cards'
 import { barcodeSvg, brandFormatChoice, BRANDS, checkedNumber, FORMATS, type BarcodeFormat } from '../external-card-barcode'
+import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 // No camera import: current store-build camera linkage/permission is unproven.
 // Typed entry remains available without changing the native binary.
@@ -116,7 +117,7 @@ export function ExternalCards({ userId }: { userId: string }) {
     {selected ? <>
       {action('Back to my cards', () => { setSelected(null); setMessage('') })}
       <Text style={s.heading}>Show your {selected.label} card here</Text>
-      <ScrollView horizontal contentContainerStyle={{ minWidth: width - 40, alignItems: 'center', backgroundColor: '#fff', padding: 12 }}>
+      <ScrollView horizontal contentContainerStyle={{ minWidth: width - 40, alignItems: 'center', backgroundColor: schemeColor('#fff', 'bg'), padding: 12 }}>
         {drawing ? <SvgXml xml={drawing} width={Math.max(200, width - 64)} height={170} /> : <Text style={s.copy}>Barcode unavailable. Use the number below.</Text>}
       </ScrollView>
       <Text selectable style={[s.copy, { textAlign: 'center', fontSize: 20 }]}>{selected.card_number}</Text>
@@ -133,19 +134,19 @@ export function ExternalCards({ userId }: { userId: string }) {
       <Text style={s.copy}>Barcode format: {format.toUpperCase().replace('_', '-')}</Text>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: showFormatPicker }} onPress={() => setShowFormatPicker(value => !value)} style={s.choice}><Text style={s.copy}>Change format</Text></Pressable>
       {showFormatPicker && <><Text style={s.copy}>Match the format on your original card.</Text><View style={s.wrap}>{FORMATS.map(item => <Pressable accessibilityRole="button" accessibilityState={{ selected: item === format }} key={item} onPress={() => setFormat(item)} style={[s.choice, item === format && s.chosen]}><Text style={s.copy}>{item.toUpperCase().replace('_', '-')}</Text></Pressable>)}</View></>}
-      <Text style={s.copy}>Card number</Text><TextInput accessibilityLabel="Card number" value={number} onChangeText={setNumber} autoCapitalize="none" autoCorrect={false} maxLength={128} style={s.input} placeholder="Type the number below the barcode" placeholderTextColor="#000" />
+      <Text style={s.copy}>Card number</Text><TextInput accessibilityLabel="Card number" value={number} onChangeText={setNumber} autoCapitalize="none" autoCorrect={false} maxLength={128} style={s.input} placeholder="Type the number below the barcode" placeholderTextColor={schemeColor("#000", 'fg')} />
       <Text style={s.copy}>Some offers still need switching on in the shop's own app.</Text>
       {action(busy ? 'Saving…' : 'Save card', () => void save())}
     </> : <>
       {!cards.length && loaded && <Text style={s.heading}>Your other cards, ready at the till.</Text>}
-      {cards.map((card, index) => <Pressable accessibilityRole="button" key={card.id} onPress={() => { setSelected(card); setLabel(card.label); setMessage('') }} style={[s.card, { backgroundColor: index % 2 ? '#E9C6AE' : '#D5DFBB' }]}><Text style={s.heading}>{card.label}</Text><Text style={s.copy}>Show card</Text></Pressable>)}
+      {cards.map((card, index) => <Pressable accessibilityRole="button" key={card.id} onPress={() => { setSelected(card); setLabel(card.label); setMessage('') }} style={[s.card, { backgroundColor: index % 2 ? schemeColor('#E9C6AE', 'bg') : schemeColor('#D5DFBB', 'bg') }]}><Text style={s.heading}>{card.label}</Text><Text style={s.copy}>Show card</Text></Pressable>)}
       {action(cards.length >= 30 ? '30 cards saved' : 'Add a card', () => { setAdding(true); chooseBrand('nectar', 'Nectar'); setMessage('') }, busy || !loaded || cards.length >= 30)}
     </>}
   </View>
 }
-const s = StyleSheet.create({
-  copy: { color: '#000', fontSize: 15, lineHeight: 22 }, heading: { color: '#000', fontFamily: fonts.nativeDisplay, fontSize: 23 },
-  card: { padding: 24, borderRadius: 20, gap: 20 }, input: { color: '#000', fontSize: 17, padding: 16, borderWidth: 1, borderColor: '#68705E', borderRadius: 12, backgroundColor: '#fff' },
-  action: { padding: 16, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', minHeight: 48 }, actionText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { padding: 12, borderRadius: 18, borderWidth: 1, borderColor: '#68705E', minHeight: 44 }, chosen: { backgroundColor: '#D5DFBB', borderWidth: 2 },
-})
+const s = themed(() => StyleSheet.create({
+  copy: { color: schemeColor('#000', 'fg'), fontSize: 15, lineHeight: 22 }, heading: { color: schemeColor('#000', 'fg'), fontFamily: fonts.nativeDisplay, fontSize: 23 },
+  card: { padding: 24, borderRadius: 20, gap: 20 }, input: { color: schemeColor('#000', 'fg'), fontSize: 17, padding: 16, borderWidth: 1, borderColor: schemeColor('#68705E', 'border'), borderRadius: 12, backgroundColor: schemeColor('#fff', 'bg') },
+  action: { padding: 16, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', minHeight: 48 }, actionText: { color: schemeColor('#fff', 'fg'), fontSize: 16, fontWeight: '700' },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { padding: 12, borderRadius: 18, borderWidth: 1, borderColor: schemeColor('#68705E', 'border'), minHeight: 44 }, chosen: { backgroundColor: schemeColor('#D5DFBB', 'bg'), borderWidth: 2 },
+}))

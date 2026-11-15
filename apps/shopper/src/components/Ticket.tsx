@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, FadeInDown, useReducedMotion } from 'react-native-reanimated'
 import { colors } from '../theme'
+import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 /** A reward shown as a perforated ticket: the shop's colour on top with what
  * the reward is, a punched tear line, and a white stub with the code staff
@@ -78,12 +79,12 @@ export function Ticket({
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   ticket: {
     marginTop: 4,
     marginBottom: 18,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: schemeColor('#FFFFFF', 'bg'),
     shadowColor: '#1A2138',
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -97,12 +98,12 @@ const styles = StyleSheet.create({
   admitText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.4 },
   title: { fontSize: 26, lineHeight: 30, fontWeight: '800', letterSpacing: -0.6, marginTop: 14 },
   expiry: { fontSize: 12, marginTop: 8, opacity: 0.75 },
-  tear: { height: NOTCH, justifyContent: 'center', backgroundColor: '#FFFFFF' },
+  tear: { height: NOTCH, justifyContent: 'center', backgroundColor: schemeColor('#FFFFFF', 'bg') },
   perforation: {
     marginHorizontal: NOTCH / 2 + 8,
     borderTopWidth: 2,
     borderStyle: 'dashed',
-    borderColor: '#DDD8CE',
+    borderColor: schemeColor('#DDD8CE', 'border'),
   },
   notch: { position: 'absolute', width: NOTCH, height: NOTCH, borderRadius: NOTCH / 2, top: 0 },
   notchLeft: { left: -NOTCH / 2 },
@@ -113,8 +114,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomLeftRadius: 22,
     borderBottomRightRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: schemeColor('#FFFFFF', 'bg'),
   },
   codeLabel: { marginTop: 14, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, color: colors.muted },
   code: { marginTop: 4, fontSize: 20, fontWeight: '800', letterSpacing: 3, color: colors.ink, fontVariant: ['tabular-nums'] },
-})
+}))

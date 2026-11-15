@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, STONE } from './Poster'
+import { themed, colors, schemeColor } from '@loyalty-loop/design-tokens'
 
 // Full-screen "Reward unlocked" moment, shown once per new reward.
 // Seen reward ids live in SecureStore; the first run only records what's
@@ -37,12 +38,12 @@ const EASE = Easing.bezier(0.22, 1, 0.36, 1)
 
 // Fixed positions so it looks composed rather than random.
 const PIECES = [
-  { left: '72%', top: '9%', width: 10, height: 10, borderRadius: 5, backgroundColor: PAPER, alpha: 0.7, rot: '0deg' },
-  { left: '84%', top: '18%', width: 16, height: 5, borderRadius: 2, backgroundColor: SAPPHIRE, alpha: 1, rot: '-30deg' },
-  { left: '58%', top: '27%', width: 14, height: 5, borderRadius: 2, backgroundColor: STONE, alpha: 0.6, rot: '24deg' },
-  { left: '90%', top: '36%', width: 8, height: 8, borderRadius: 4, backgroundColor: SAPPHIRE, alpha: 1, rot: '0deg' },
-  { left: '66%', top: '44%', width: 16, height: 5, borderRadius: 2, backgroundColor: PAPER, alpha: 0.5, rot: '-50deg' },
-  { left: '12%', top: '6%', width: 12, height: 4, borderRadius: 2, backgroundColor: STONE, alpha: 0.45, rot: '40deg' },
+  { left: '72%', top: '9%', width: 10, height: 10, borderRadius: 5, backgroundColor: colors.background, alpha: 0.7, rot: '0deg' },
+  { left: '84%', top: '18%', width: 16, height: 5, borderRadius: 2, backgroundColor: colors.olive, alpha: 1, rot: '-30deg' },
+  { left: '58%', top: '27%', width: 14, height: 5, borderRadius: 2, backgroundColor: schemeColor('#E7E2D8', 'bg'), alpha: 0.6, rot: '24deg' },
+  { left: '90%', top: '36%', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.olive, alpha: 1, rot: '0deg' },
+  { left: '66%', top: '44%', width: 16, height: 5, borderRadius: 2, backgroundColor: colors.background, alpha: 0.5, rot: '-50deg' },
+  { left: '12%', top: '6%', width: 12, height: 4, borderRadius: 2, backgroundColor: schemeColor('#E7E2D8', 'bg'), alpha: 0.45, rot: '40deg' },
 ] as const
 
 // Near-black, the reward huge and heavy, a few quiet paper and sapphire pieces
@@ -83,18 +84,18 @@ export function RewardCelebration({ reward, onUse, onLater }: {
   )
 }
 
-const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: NIGHT, paddingHorizontal: 24, paddingTop: 96, paddingBottom: 40, overflow: 'hidden' },
-  ring: { position: 'absolute', right: -90, top: 70, width: 320, height: 320, borderRadius: 160, borderWidth: 1, borderColor: 'rgba(244,241,234,0.22)' },
+const s = themed(() => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.olive, paddingHorizontal: 24, paddingTop: 96, paddingBottom: 40, overflow: 'hidden' },
+  ring: { position: 'absolute', right: -90, top: 70, width: 320, height: 320, borderRadius: 160, borderWidth: 1, borderColor: schemeColor('rgba(244,241,234,0.22)', 'border') },
   piece: { position: 'absolute' },
-  badge: { alignSelf: 'flex-start', height: 32, paddingHorizontal: 14, borderRadius: 999, backgroundColor: PAPER, justifyContent: 'center' },
-  label: { color: NIGHT, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
+  badge: { alignSelf: 'flex-start', height: 32, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.background, justifyContent: 'center' },
+  label: { color: colors.primaryText, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
   title: { marginTop: 30, color: PAPER, fontFamily: SANS_HEAVY, fontSize: 88, lineHeight: 84, letterSpacing: -5.5 },
-  copy: { marginTop: 22, color: 'rgba(244,241,234,0.65)', fontSize: 17, lineHeight: 25, maxWidth: 320 },
+  copy: { marginTop: 22, color: schemeColor('rgba(244,241,234,0.65)', 'fg'), fontSize: 17, lineHeight: 25, maxWidth: 320 },
   actions: { marginTop: 'auto', gap: 8 },
-  primary: { height: 58, borderRadius: 999, backgroundColor: PAPER, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: NIGHT, fontFamily: SANS_MEDIUM, fontSize: 16 },
+  primary: { height: 58, borderRadius: 999, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  primaryText: { color: colors.primaryText, fontFamily: SANS_MEDIUM, fontSize: 16 },
   secondary: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   secondaryText: { color: PAPER, fontFamily: SANS_MEDIUM, fontSize: 15, opacity: 0.8 },
   pressed: { opacity: 0.8 },
-})
+}))

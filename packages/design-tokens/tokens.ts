@@ -15,30 +15,10 @@
  * blue/ocean/jade panels, each with a readable ink.
  */
 
-export const colors = {
-  background: '#F4F1EA',
-  foreground: '#1A2138',
-  card: '#FFFFFF',
-  primary: '#2B3A67',
-  primaryHover: '#1F2A4D',
-  accent: '#66999B',
-  funGreen: '#178816',
-  ink: '#1A2138',
-  muted: '#6F6B64',
-  destructive: '#DC2626',
-  border: '#E2DDD3',
-
-  olive: '#2B3A67',
-  oliveInk: '#F4F1EA',
-  sage: '#E3E1D2',
-  sageInk: '#1A2138',
-  peach: '#DCE7E7',
-  peachInk: '#1A2138',
-  amber: '#F2B544',
-  amberInk: '#2A2410',
-  orange: '#66999B',
-  orangeInk: '#1A2138',
-} as const;
+export { lightColors, darkColors } from './palettes';
+export type { ColorScheme } from './palettes';
+export { colors, themed, schemeColor, getActiveScheme, setActiveScheme, subscribeScheme, withScheme } from './theme-core';
+export type { ToneRole } from './theme-core';
 
 export const fonts = {
   display: 'Inter',

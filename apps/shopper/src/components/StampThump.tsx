@@ -10,6 +10,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
+import { themed } from '@loyalty-loop/design-tokens'
 
 /** Wraps a freshly earned stamp so it lands like a rubber stamp: it drops in
  * slightly big and tilted, presses down with a firm thud, and a ring of ink
@@ -53,6 +54,6 @@ export function StampThump({ children, delay = 0, ringColor, size = 44, radius =
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   ring: { position: 'absolute', borderWidth: 3 },
-})
+}))

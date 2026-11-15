@@ -7,6 +7,7 @@ import { FadeUp, INK, MUTED, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SAPP
 import { formatMiles, nearestFirst, type Coords } from '../distance'
 import type { HomeMember, HomeShop, HomeTier } from '../home-progress'
 import type { LocationStatus } from '../use-user-location'
+import { colors, schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 // Shopper home, rebuilt 2026-11-04: one column, one rhythm. Greeting, the
 // next reward, your cards, a short list of shops near you, one piece of news,
@@ -14,12 +15,12 @@ import type { LocationStatus } from '../use-user-location'
 // button so the page stays calm. Every block is full width with the same
 // corners and the same section heading.
 const NEAR_COUNT = 4
-const MARK_TONES = [
-  { bg: SAGE, fg: INK },
+const MARK_TONES = themed(() => [
+  { bg: SAGE, fg: colors.ink },
   { bg: SLATE, fg: '#FFFFFF' },
-  { bg: PACIFIC, fg: INK },
-  { bg: INK, fg: PAPER },
-]
+  { bg: PACIFIC, fg: colors.ink },
+  { bg: schemeColor('#1A2138', 'bg'), fg: PAPER },
+])
 
 type FeedShop = HomeShop & { lat?: number | null; lng?: number | null }
 type FeedNews = { id: string; title: string; body: string | null; business: { name: string } | null }
@@ -29,11 +30,11 @@ function initialsOf(name: string) {
 }
 
 function Chevron() {
-  return <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"><Path d="m9 6 6 6-6 6" stroke={MUTED} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+  return <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"><Path d="m9 6 6 6-6 6" stroke={colors.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
 
 function SearchGlyph() {
-  return <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"><Circle cx={11} cy={11} r={7} stroke={INK} strokeWidth={2} /><Path d="m20 20-3.5-3.5" stroke={INK} strokeWidth={2} strokeLinecap="round" /></Svg>
+  return <Svg width={18} height={18} viewBox="0 0 24 24" fill="none"><Circle cx={11} cy={11} r={7} stroke={colors.ink} strokeWidth={2} /><Path d="m20 20-3.5-3.5" stroke={colors.primary} strokeWidth={2} strokeLinecap="round" /></Svg>
 }
 
 function Heading({ title, right }: { title: string; right?: React.ReactNode }) {
@@ -44,7 +45,7 @@ function ShopMark({ shop, index }: { shop: FeedShop; index: number }) {
   const [failed, setFailed] = useState(false)
   const tone = MARK_TONES[index % MARK_TONES.length]
   if (shop.logo_url && !failed) {
-    return <View style={[s.mark, { backgroundColor: '#FFFFFF' }]}><Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" onError={() => setFailed(true)} /></View>
+    return <View style={[s.mark, { backgroundColor: schemeColor('#FFFFFF', 'bg') }]}><Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" onError={() => setFailed(true)} /></View>
   }
   return <View style={[s.mark, { backgroundColor: tone.bg }]}><Text style={[s.markText, { color: tone.fg }]}>{initialsOf(shop.name)}</Text></View>
 }
@@ -134,37 +135,36 @@ export function HomeFeed<T extends FeedShop>({
   </View>
 }
 
-const CARD = '#FFFFFF'
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   page: { paddingTop: 8 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  date: { fontSize: 11, fontWeight: '500', letterSpacing: 1.8, color: MUTED },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: SAPPHIRE, alignItems: 'center', justifyContent: 'center' },
+  date: { fontSize: 11, fontWeight: '500', letterSpacing: 1.8, color: colors.muted },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.olive, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: PAPER, fontSize: 16, fontWeight: '700' },
-  title: { marginTop: 14, marginBottom: 26, fontFamily: SANS_HEAVY, fontSize: 56, lineHeight: 56, letterSpacing: -3, color: INK },
+  title: { marginTop: 14, marginBottom: 26, fontFamily: SANS_HEAVY, fontSize: 56, lineHeight: 56, letterSpacing: -3, color: colors.ink },
   section: { marginTop: 12, marginBottom: 24 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40, marginBottom: 12 },
   // Huge or tiny: section labels are small caps under the poster-sized greeting.
-  heading: { fontSize: 12, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', color: MUTED },
-  link: { color: SAPPHIRE, fontSize: 14, fontFamily: SANS_MEDIUM },
-  searchButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: CARD, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(26,33,56,0.2)', alignItems: 'center', justifyContent: 'center' },
+  heading: { fontSize: 12, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', color: colors.muted },
+  link: { color: colors.primaryText, fontSize: 14, fontFamily: SANS_MEDIUM },
+  searchButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: schemeColor('rgba(26,33,56,0.2)', 'border'), alignItems: 'center', justifyContent: 'center' },
   locationLink: { alignSelf: 'flex-start', marginTop: -4, marginBottom: 12 },
-  locationText: { color: SAPPHIRE, fontSize: 14, fontFamily: SANS_MEDIUM },
+  locationText: { color: colors.primaryText, fontSize: 14, fontFamily: SANS_MEDIUM },
   rows: { gap: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: CARD, borderRadius: 22, padding: 10, paddingRight: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 22, padding: 10, paddingRight: 16 },
   mark: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   markText: { fontSize: 18, fontWeight: '700' },
   rowCopy: { flex: 1, minWidth: 0, gap: 3 },
-  rowName: { fontSize: 16, fontWeight: '600', letterSpacing: -0.3, color: INK },
-  rowMeta: { fontSize: 13, color: MUTED },
-  outline: { marginTop: 12, height: 48, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(26,33,56,0.25)', alignItems: 'center', justifyContent: 'center' },
-  outlineText: { color: INK, fontSize: 14, fontFamily: SANS_MEDIUM },
-  news: { backgroundColor: CARD, borderRadius: 22, padding: 18, gap: 6 },
-  newsFrom: { fontSize: 11, fontWeight: '500', letterSpacing: 1.6, textTransform: 'uppercase', color: MUTED },
-  newsTitle: { fontSize: 17, fontWeight: '600', letterSpacing: -0.3, color: INK },
-  newsBody: { fontSize: 14, lineHeight: 21, color: MUTED },
+  rowName: { fontSize: 16, fontWeight: '600', letterSpacing: -0.3, color: colors.ink },
+  rowMeta: { fontSize: 13, color: colors.muted },
+  outline: { marginTop: 12, height: 48, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: schemeColor('rgba(26,33,56,0.25)', 'border'), alignItems: 'center', justifyContent: 'center' },
+  outlineText: { color: colors.ink, fontSize: 14, fontFamily: SANS_MEDIUM },
+  news: { backgroundColor: colors.card, borderRadius: 22, padding: 18, gap: 6 },
+  newsFrom: { fontSize: 11, fontWeight: '500', letterSpacing: 1.6, textTransform: 'uppercase', color: colors.muted },
+  newsTitle: { fontSize: 17, fontWeight: '600', letterSpacing: -0.3, color: colors.ink },
+  newsBody: { fontSize: 14, lineHeight: 21, color: colors.muted },
   ask: { alignSelf: 'center', paddingVertical: 14, marginBottom: 8 },
-  askText: { fontSize: 14, color: MUTED, textAlign: 'center' },
-  askLink: { color: SAPPHIRE, fontWeight: '600' },
+  askText: { fontSize: 14, color: colors.muted, textAlign: 'center' },
+  askLink: { color: colors.primaryText, fontWeight: '600' },
   pressed: { opacity: 0.8 },
-})
+}))

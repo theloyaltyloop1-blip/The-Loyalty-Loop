@@ -33,7 +33,7 @@ export type ReceiptData = {
   note?: string | null;
 };
 
-const INK = colors.ink;
+const INK = '#1A2138'; // a printed receipt stays paper and ink in dark mode too
 const PAPER = "#FFFFFF";
 const PRINT_MS = 950;
 const HOLD_MS = 2200;
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     marginHorizontal: 2,
-    backgroundColor: colors.funGreen,
+    backgroundColor: '#178816',
     alignItems: "center",
     justifyContent: "center",
   },
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
   lineValue: { color: INK, fontSize: 12, ...mono },
   totalLabel: { flex: 1, color: INK, fontSize: 13, fontWeight: "800", ...mono },
   totalValue: { color: INK, fontSize: 15, fontWeight: "800", ...mono },
-  note: { color: colors.muted, fontSize: 11, marginTop: 6 },
-  meta: { color: colors.muted, fontSize: 10, ...mono },
+  note: { color: '#6F6B64', fontSize: 11, marginTop: 6 },
+  meta: { color: '#6F6B64', fontSize: 10, ...mono },
   barcode: { flexDirection: "row", justifyContent: "center", marginTop: 12 },
-  thanks: { textAlign: "center", color: colors.muted, fontSize: 9, letterSpacing: 2, marginTop: 6 },
+  thanks: { textAlign: "center", color: '#6F6B64', fontSize: 9, letterSpacing: 2, marginTop: 6 },
 });
