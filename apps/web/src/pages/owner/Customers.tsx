@@ -99,7 +99,7 @@ export function OwnerCustomers() {
             type="button"
             data-press-feedback
             onClick={messageSlipping}
-            className="group inline-flex h-11 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+            className="group inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
             <HeartHandshake className="h-4 w-4 group-hover:motion-safe:animate-bounce" />
             <span className="group-hover:hidden">Win back {slipping.length} {slipping.length === 1 ? 'customer' : 'customers'}</span>
@@ -116,13 +116,13 @@ export function OwnerCustomers() {
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Customer health</p>
           <div className="grid grid-cols-3 gap-3 mb-8">
             {[
-              { label: 'Customers', value: list.length },
-              { label: 'Back this month', value: list.length - slipping.length },
-              { label: 'Gone quiet', value: slipping.length },
+              { label: 'Customers', value: list.length, tone: 'bg-sage text-sage-ink' },
+              { label: 'Back this month', value: list.length - slipping.length, tone: 'bg-amber text-amber-ink' },
+              { label: 'Gone quiet', value: slipping.length, tone: 'bg-peach text-peach-ink' },
             ].map((s) => (
-              <div key={s.label} className="rounded-2xl bg-card p-4 ring-1 ring-foreground/8">
-                <p className="font-display text-3xl font-bold tabular-nums text-foreground">{s.value}</p>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
+              <div key={s.label} className={`rounded-2xl p-4 ${s.tone}`}>
+                <p className="font-display text-3xl font-bold tabular-nums">{s.value}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider opacity-70">{s.label}</p>
               </div>
             ))}
           </div>

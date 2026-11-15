@@ -3131,8 +3131,8 @@ const styles = StyleSheet.create({
   statTile: {
     width: "31%",
     minHeight: 132,
-    borderWidth: 1,
-    borderColor: "rgba(38,48,42,.22)",
+    borderWidth: 2,
+    borderColor: "#2A2A2A",
     borderRadius: 20,
     padding: 14,
     backgroundColor: "rgba(255,255,255,.52)",
@@ -3212,8 +3212,8 @@ const styles = StyleSheet.create({
   },
   homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
   setupCard: {
-    borderWidth: 1,
-    borderColor: "rgba(38,48,42,.22)",
+    borderWidth: 2,
+    borderColor: "#2A2A2A",
     borderRadius: 22,
     padding: 18,
     backgroundColor: "rgba(255,255,255,.55)",

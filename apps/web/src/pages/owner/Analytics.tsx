@@ -92,12 +92,10 @@ function Delta({ current, prev }: { current: number; prev: number }) {
   )
 }
 
-// One card style for every tile: flat surface, subtle border. The tone prop
-// is kept so call sites stay readable, but it no longer changes colour.
 const TILE_TONES = {
-  sage: 'bg-card text-foreground ring-1 ring-foreground/8',
-  peach: 'bg-card text-foreground ring-1 ring-foreground/8',
-  amber: 'bg-card text-foreground ring-1 ring-foreground/8',
+  sage: 'bg-sage text-sage-ink',
+  peach: 'bg-peach text-peach-ink',
+  amber: 'bg-amber text-amber-ink',
   card: 'bg-card text-foreground ring-1 ring-foreground/8',
 } as const
 
@@ -181,17 +179,17 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [generate])
 
   return (
-    <div className="rounded-2xl bg-card p-6 ring-1 ring-foreground/8">
+    <div className="rounded-2xl bg-peach p-6">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="h-4 w-4 text-primary" />
-        <p className="font-display text-lg font-semibold tracking-tight text-foreground">What changed in the last {period} days</p>
+        <p className="font-display text-lg font-semibold tracking-tight text-peach-ink">What changed in the last {period} days</p>
       </div>
       {loading ? (
         <p className="text-sm text-muted-foreground">Thinking…</p>
       ) : error ? (
         <p className="text-sm text-muted-foreground">{error}</p>
       ) : (
-        <p className="max-w-[70ch] text-foreground/90 leading-relaxed">{summary}</p>
+        <p className="max-w-[70ch] text-peach-ink/90 leading-relaxed">{summary}</p>
       )}
       <button data-press-feedback onClick={generate} disabled={loading} className="mt-4 rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-card/80 disabled:opacity-40">
         Regenerate
