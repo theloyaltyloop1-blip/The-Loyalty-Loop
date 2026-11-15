@@ -1,15 +1,14 @@
 import * as React from 'react'
 import { Navigate, Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, Download, LockKeyhole, PauseCircle, ShieldCheck, CalendarDays, Mail, Menu, X } from 'lucide-react'
+import { Users as UsersIcon, LayoutDashboard, Inbox, BarChart3, Megaphone, Settings2, RefreshCw, LogOut, ArrowUpRight, Download, LockKeyhole, PauseCircle, ChevronRight, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
-import './admin-panel.css'
-import './admin-redesign.css'
+import './admin-glass.css'
 import { Audit } from '@/pages/admin/Audit'
 import { Businesses } from '@/pages/admin/Businesses'
 import { Loyalty } from '@/pages/admin/Loyalty'
@@ -19,27 +18,39 @@ import { TrendingAdmin } from '@/pages/TrendingAdmin'
 import { ShopRequests } from '@/pages/ShopRequests'
 import { AdminCharts } from '@/components/admin-dashboard'
 import { fetchDashboardStats, type DashboardStats } from '@/lib/admin'
-import { Hero, NeedsYou, RecentActivity, SystemChecks, type ActivityRow } from '@/pages/admin/Overview'
+import { Housekeeping, NeedsYou, Pulse, UsageSnapshot, type ActivityRow, type AdminTab } from '@/pages/admin/Overview'
 import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, getVerificationDocUrl, fetchVerificationChecks, fetchVerificationMode, setVerificationMode, spotCheckVerification, type VerificationCheck, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
 
-type Tab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'trending' | 'shop-requests' | 'users' | 'businesses' | 'loyalty' | 'audit' | 'release-emails'
+type Tab = AdminTab
 type Health = { count?: number; label: string; detail: string; ok: boolean; targetTab?: Tab }
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'All businesses', loyalty: 'Loyalty data', audit: 'Audit log', 'release-emails': 'Release emails',
+  overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'Businesses', loyalty: 'Loyalty data', audit: 'Audit log', 'release-emails': 'Release emails',
 }
 
-const navGroups: { label: string; tabs: Tab[] }[] = [
-  { label: 'Home', tabs: ['overview', 'analytics'] },
-  { label: 'Needs review', tabs: ['verifications', 'support', 'moderation', 'shop-requests'] },
-  { label: 'People & shops', tabs: ['users', 'businesses', 'loyalty'] },
-  { label: 'Growth', tabs: ['trending', 'release-emails'] },
-  { label: 'Platform', tabs: ['controls', 'features'] },
-  { label: 'Safety', tabs: ['audit', 'backups'] },
+// Fifteen destinations fold into six areas. Each area is one sidebar item; its
+// tabs sit at the top of the page. Old ?view= links still resolve to the right tab.
+type Area = { key: string; label: string; blurb: string; icon: LucideIcon; tabs: Tab[] }
+const navGroups: { label: string; areas: Area[] }[] = [
+  { label: 'Today', areas: [
+    { key: 'overview', label: 'Overview', blurb: '', icon: LayoutDashboard, tabs: ['overview'] },
+    { key: 'inbox', label: 'Inbox', blurb: 'Everything waiting on a decision from you', icon: Inbox, tabs: ['verifications', 'support', 'moderation', 'shop-requests'] },
+  ] },
+  { label: 'Platform', areas: [
+    { key: 'directory', label: 'Directory', blurb: 'Look up any account, shop or loyalty record', icon: UsersIcon, tabs: ['users', 'businesses', 'loyalty'] },
+    { key: 'insights', label: 'Insights', blurb: 'What people use and where they use it', icon: BarChart3, tabs: ['analytics'] },
+  ] },
+  { label: 'Operations', areas: [
+    { key: 'growth', label: 'Growth', blurb: 'Promote shops and tell people what’s new', icon: Megaphone, tabs: ['trending', 'release-emails'] },
+    { key: 'system', label: 'System', blurb: 'Switches, safety copies and the record of changes', icon: Settings2, tabs: ['controls', 'features', 'backups', 'audit'] },
+  ] },
 ]
+const allAreas = navGroups.flatMap(group => group.areas)
+// These tabs fetch their own data, so the shared refresh does not apply to them.
+const SELF_LOADING: Tab[] = ['users', 'businesses', 'loyalty', 'audit', 'release-emails']
 
 // Features that were built and shipped, then deliberately switched off at
 // the owner's request — kept here so it's obvious what still exists and how
@@ -82,21 +93,20 @@ function appleSignInHealth(): Health {
   }
 }
 
+
 export function AccessPanel() {
   const { session, loading, rolesLoading, primaryRole, signOut } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get('view')
   const tab: Tab = requestedTab && requestedTab in tabLabels ? requestedTab as Tab : 'overview'
-  const setTab = (next: Tab) => setSearchParams(next === 'overview' ? {} : { view: next })
+  const setTab = (next: Tab) => { setSearchParams(next === 'overview' ? {} : { view: next }); window.scrollTo({ top: 0 }) }
   const [health, setHealth] = React.useState<Health[]>([])
-  const [selectedHealth, setSelectedHealth] = React.useState<Health | null>(null)
   const [verifications, setVerifications] = React.useState<PendingVerification[]>([])
   const [support, setSupport] = React.useState<SupportRequest[]>([])
   const [reports, setReports] = React.useState<ReviewReport[]>([])
   const [usage, setUsage] = React.useState<UsageEvent[]>([])
   const [stats, setStats] = React.useState<DashboardStats | null>(null)
   const [checksOpen, setChecksOpen] = React.useState(false)
-  const [menuOpen, setMenuOpen] = React.useState(false)
   const [busy, setBusy] = React.useState(true)
   const [errors, setErrors] = React.useState<string[]>([])
   const [updatedAt, setUpdatedAt] = React.useState<Date | null>(null)
@@ -146,48 +156,79 @@ export function AccessPanel() {
   if (!session) return <Navigate to="/login" replace />
   if (primaryRole !== 'admin') return <Navigate to="/dashboard" replace />
 
-  const icons = { overview: LayoutDashboard, analytics: BarChart3, controls: SlidersHorizontal, verifications: Store, support: LifeBuoy, moderation: MessageSquareWarning, backups: HardDrive, features: PauseCircle, trending: BarChart3, 'shop-requests': Store, users: UsersIcon, businesses: Store, loyalty: Gift, audit: ScrollText, 'release-emails': Mail }
-  const queueCount = verifications.length + support.filter(item => item.status === 'open').length + reports.length
+  const area = allAreas.find(item => item.tabs.includes(tab)) ?? allAreas[0]
+  const openSupport = support.filter(item => item.status === 'open')
+  const tabCount: Partial<Record<Tab, number>> = { verifications: verifications.length, support: openSupport.length, moderation: reports.length }
+  const areaCount = (item: Area) => item.tabs.reduce((sum, key) => sum + (tabCount[key] ?? 0), 0)
   const analyticsFailed = errors.some(error => error.startsWith('Product analytics:'))
-  return <div className="admin-panel admin-shell">
-    <aside className={'admin-sidebar' + (menuOpen ? ' is-open' : '')}>
-      <Link to="/access" className="admin-brand"><span className="admin-brand-mark"><Gift size={21}/></span><span>The Loyalty Loop<small>Admin workspace</small></span></Link>
-      <button type="button" className="admin-menu-toggle" aria-expanded={menuOpen} aria-controls="admin-nav" onClick={() => setMenuOpen(o => !o)}>{menuOpen ? <X size={18}/> : <Menu size={18}/>}<span>{tabLabels[tab]}</span>{queueCount > 0 && <span className="admin-badge">{queueCount}</span>}</button>
-      <nav id="admin-nav" aria-label="Access panel navigation">
-        {navGroups.map(group => <div className="admin-nav-group" key={group.label}><p className="admin-nav-label">{group.label}</p>{group.tabs.map(key => { const Icon = icons[key]; const count = key === 'verifications' ? verifications.length : key === 'support' ? support.filter(item => item.status === 'open').length : key === 'moderation' ? reports.length : 0
-          return <button key={key} aria-current={tab === key ? 'page' : undefined} onClick={() => { setTab(key); setSelectedHealth(null); setMenuOpen(false) }} className={'admin-nav-item ' + (tab === key ? 'is-active' : '')}><Icon size={18}/><span>{tabLabels[key]}</span>{count > 0 && <span className="admin-badge">{count}</span>}</button>
-        })}</div>)}
-      </nav>
-      <div className="admin-sidebar-footer"><Link to="/dashboard">Customer app <ArrowUpRight size={14}/></Link><Link to="/owner">Business app <ArrowUpRight size={14}/></Link><button onClick={() => void signOut()}><LogOut size={16}/>Sign out</button></div>
+  const selfLoading = SELF_LOADING.includes(tab)
+  const counts = Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))
+
+  function overview() {
+    const failing = health.filter(item => !item.ok)
+    const queues = [
+      { key: 'verifications' as const, label: 'Business listings', count: verifications.length, source: 'Business listings:', hint: verifications.length === 1 ? '1 shop waiting for approval' : `${verifications.length} shops waiting for approval` },
+      { key: 'support' as const, label: 'Owner support', count: openSupport.length, source: 'Owner support:', hint: openSupport.length === 1 ? '1 owner needs a reply' : `${openSupport.length} owners need a reply` },
+      { key: 'moderation' as const, label: 'Reported reviews', count: reports.length, source: 'Reported reviews:', hint: reports.length === 1 ? '1 review to decide on' : `${reports.length} reviews to decide on` },
+    ].map(q => ({ ...q, unavailable: errors.some(error => error.startsWith(q.source)) }))
+    const activity: ActivityRow[] = [
+      ...verifications.map(v => ({ id: 'v' + v.id, title: v.name, sub: 'New business listing', at: v.verification_submitted_at ?? '', pill: 'Pending' as const, tab: 'verifications' as const })),
+      ...openSupport.map(r => ({ id: 's' + r.id, title: r.subject, sub: r.business?.name ?? 'Owner support', at: r.created_at, pill: 'Open' as const, tab: 'support' as const })),
+      ...reports.map(r => ({ id: 'r' + r.id, title: REASON_LABELS[r.reason], sub: r.review?.business?.name ?? 'Reported review', at: r.created_at, pill: 'Reported' as const, tab: 'moderation' as const })),
+    ].filter(r => r.at).sort((x, y) => y.at.localeCompare(x.at)).slice(0, 4)
+    // Order of operations: act on the queues, check the pulse, read usage, then upkeep.
+    return <div className="ag-flow">
+      <NeedsYou queues={queues} failing={failing} activity={activity} onOpen={setTab} onOpenChecks={() => { setChecksOpen(true); requestAnimationFrame(() => document.getElementById('ag-checks')?.scrollIntoView({ behavior: 'smooth', block: 'center' })) }}/>
+      <Pulse stats={stats} unavailable={errors.some(error => error.startsWith('Platform totals:'))} counts={counts}/>
+      <UsageSnapshot items={usage} unavailable={analyticsFailed} onOpenInsights={() => setTab('analytics')}/>
+      <Housekeeping health={health} counts={counts} checksOpen={checksOpen} onChecksOpen={setChecksOpen} onRefresh={load} onOpen={setTab}/>
+    </div>
+  }
+
+  return <div className="admin-panel ag">
+    <div className="ag-bg" aria-hidden="true"/>
+    <aside className="ag-side">
+        <Link to="/access" className="ag-brand"><img src="/favicon.svg" alt="" width={24} height={24}/><span>The Loyalty Loop</span><small>Admin</small></Link>
+        <nav className="ag-nav" aria-label="Admin sections">
+          {navGroups.map(group => <div className="ag-nav-group" key={group.label} role="group" aria-label={group.label}>
+            <p className="ag-nav-label" aria-hidden="true">{group.label}</p>
+            {group.areas.map(item => { const count = areaCount(item); const active = item.key === area.key
+              return <button key={item.key} type="button" aria-current={active ? 'page' : undefined} onClick={() => setTab(item.tabs[0])} className={'ag-nav-item' + (active ? ' is-active' : '')}>
+                <item.icon size={18} strokeWidth={1.5} aria-hidden="true"/>
+                <span>{item.label}</span>
+                {count > 0 && <span className="ag-count" aria-label={`${count} waiting`}>{count}</span>}
+              </button>
+            })}
+          </div>)}
+        </nav>
+        <div className="ag-side-foot">
+          <Link to="/dashboard"><ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true"/>Customer app</Link>
+          <Link to="/owner"><ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true"/>Business app</Link>
+          <button type="button" onClick={() => void signOut()}><LogOut size={16} strokeWidth={1.5} aria-hidden="true"/>Sign out</button>
+        </div>
     </aside>
-    <main className="admin-main">
-      <div className="admin-topbar"><span>Workspace / {tabLabels[tab]}</span><div className="admin-topbar-tools"><span className="admin-date"><CalendarDays size={16}/>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span className="admin-admin-chip"><ShieldCheck size={14}/>Admin access</span></div></div>
-      <header className="admin-page-header"><div><h1>{tab === 'overview' ? 'Welcome back.' : tabLabels[tab]}</h1><p>{tab === 'overview' ? 'Here’s what’s happening across The Loyalty Loop.' : 'Your platform. Everything in its place.'}</p></div>{!(['users', 'businesses', 'loyalty', 'audit', 'release-emails'] as Tab[]).includes(tab) && <button disabled={busy} onClick={() => void load()} className="admin-refresh"><RefreshCw size={16}/>{busy ? 'Refreshing…' : 'Refresh data'}</button>}</header>
-      {!(['users', 'businesses', 'loyalty', 'audit', 'release-emails'] as Tab[]).includes(tab) && <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}{(tab === 'overview' || tab === 'analytics') && <span>Analytics · last 30 days</span>}</div>}
-      {!!errors.length && <div role="alert" className="admin-error"><strong>Some data could not be loaded.</strong>{errors.map(error => <p key={error}>{error}</p>)}<button disabled={busy} onClick={() => void load()}>Retry failed checks</button></div>}
-      {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : tab === 'release-emails' ? <ReleaseEmails/> : busy ? <div role="status" className="admin-loading">Loading your dashboard…</div> : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/> : tab === 'overview' ? <>
-        {(() => {
-          const counts = Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))
-          const openSupport = support.filter(item => item.status === 'open')
-          const failing = health.filter(item => !item.ok)
-          const queues = [
-            { key: 'verifications' as const, label: 'Business listings', count: verifications.length, source: 'Business listings:', hint: verifications.length === 1 ? '1 shop waiting for approval' : `${verifications.length} shops waiting for approval` },
-            { key: 'support' as const, label: 'Owner support', count: openSupport.length, source: 'Owner support:', hint: openSupport.length === 1 ? '1 owner needs a reply' : `${openSupport.length} owners need a reply` },
-            { key: 'moderation' as const, label: 'Reported reviews', count: reports.length, source: 'Reported reviews:', hint: reports.length === 1 ? '1 review to decide on' : `${reports.length} reviews to decide on` },
-          ].map(q => ({ ...q, unavailable: errors.some(error => error.startsWith(q.source)) }))
-          const activity: ActivityRow[] = [
-            ...verifications.map(v => ({ id: 'v' + v.id, title: v.name, sub: 'New business listing', at: v.verification_submitted_at ?? '', pill: 'Pending' as const, tab: 'verifications' as const })),
-            ...openSupport.map(r => ({ id: 's' + r.id, title: r.subject, sub: r.business?.name ?? 'Owner support', at: r.created_at, pill: 'Open' as const, tab: 'support' as const })),
-            ...reports.map(r => ({ id: 'r' + r.id, title: REASON_LABELS[r.reason], sub: r.review?.business?.name ?? 'Reported review', at: r.created_at, pill: 'Reported' as const, tab: 'moderation' as const })),
-          ].filter(r => r.at).sort((x, y) => y.at.localeCompare(x.at)).slice(0, 6)
-          return <>
-            <NeedsYou queues={queues} failing={failing} retryNeeded={!!errors.length} onOpen={setTab} onOpenChecks={() => { setChecksOpen(true); document.getElementById('ad-system-checks')?.scrollIntoView({ behavior: 'smooth' }) }}/>
-            <Hero stats={stats} unavailable={errors.some(error => error.startsWith('Platform totals:'))} counts={counts}/>
-            <div className="ad-mid"><AdminCharts items={usage} unavailable={analyticsFailed}/><RecentActivity rows={activity} onOpen={setTab}/></div>
-            <SystemChecks health={health as (Health & { targetTab?: string })[]} open={checksOpen} onToggle={() => setChecksOpen(o => !o)} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={setTab}/>
-          </>
-        })()}
-      </> : tab === 'analytics' ? <><AdminCharts items={usage} unavailable={analyticsFailed}/>{!analyticsFailed && <ProductAnalytics items={usage}/>}</> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load}/> : tab === 'support' ? <SupportQueue items={support} refresh={load}/> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load}/> : tab === 'backups' ? <LaptopBackups/> : <PausedFeatures/>}
+    <main className="ag-main">
+      <div className="ag-topbar">
+        <div className="ag-crumb"><span className="ag-only-wide">{area.label}</span>{area.tabs.length > 1 && <><ChevronRight size={14} strokeWidth={1.5} className="ag-only-wide" aria-hidden="true"/><b>{tabLabels[tab]}</b></>}{area.tabs.length === 1 && <b className="ag-only-narrow">{area.label}</b>}</div>
+        <div className="ag-top-tools">
+          {!selfLoading && <span className="ag-stamp-time ag-only-wide">{updatedAt ? `Checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Checking…'}</span>}
+          {!selfLoading && <button type="button" disabled={busy} onClick={() => void load()} className="ag-btn"><RefreshCw size={16} strokeWidth={1.5} className={busy ? 'ag-spin' : undefined} aria-hidden="true"/>{busy ? 'Refreshing' : 'Refresh'}</button>}
+          <button type="button" onClick={() => void signOut()} className="ag-btn is-icon ag-only-narrow" aria-label="Sign out"><LogOut size={16} strokeWidth={1.5}/></button>
+        </div>
+      </div>
+      <header className="ag-head"><h1>{area.label}</h1><p>{tab === 'overview' ? new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : area.blurb}</p></header>
+      {area.tabs.length > 1 && <div className="ag-tabs" role="tablist" aria-label={`${area.label} sections`}>
+        {area.tabs.map(key => <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>{tabLabels[key]}{!!tabCount[key] && <span className="ag-count">{tabCount[key]}</span>}</button>)}
+      </div>}
+      {!!errors.length && !selfLoading && <div role="alert" className="ag-alert"><TriangleAlert size={18} strokeWidth={1.5} aria-hidden="true"/><div><strong>Some data could not be loaded</strong>{errors.map(error => <p key={error}>{error}</p>)}</div><button type="button" className="ag-btn" disabled={busy} onClick={() => void load()}>Retry</button></div>}
+      <div className="ag-body">
+        {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : tab === 'release-emails' ? <ReleaseEmails/>
+          : busy && !updatedAt ? <div role="status" aria-label="Loading your dashboard" className="ag-loading"><span/><span/><span/></div>
+          : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/>
+          : tab === 'overview' ? overview()
+          : tab === 'analytics' ? <><AdminCharts items={usage} unavailable={analyticsFailed}/>{!analyticsFailed && <ProductAnalytics items={usage}/>}</>
+          : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load}/> : tab === 'support' ? <SupportQueue items={support} refresh={load}/> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load}/> : tab === 'backups' ? <LaptopBackups/> : <PausedFeatures/>}
+      </div>
     </main>
   </div>
 }
@@ -195,7 +236,11 @@ export function AccessPanel() {
 function ProductAnalytics({ items }: { items: UsageEvent[] }) {
   const total = items.reduce((sum, item) => sum + Number(item.events), 0)
   const people = Math.max(0, ...items.map((item) => Number(item.people)))
-  return <section><div className="grid gap-4 sm:grid-cols-2"><article className="rounded-2xl bg-card p-5"><p className="text-sm text-muted-foreground">Tracked actions, last 30 days</p><p className="mt-2 font-display text-4xl font-bold">{total}</p></article><article className="rounded-2xl bg-card p-5"><p className="text-sm text-muted-foreground">Most users on one feature</p><p className="mt-2 font-display text-4xl font-bold">{people}</p></article></div><p className="mt-6 text-sm text-muted-foreground">Only people who opt in are included. Events never include passwords, emails, QR codes or message content.</p><div className="mt-4 overflow-x-auto rounded-2xl border border-border"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-b border-border text-muted-foreground"><tr><th className="p-4">Feature</th><th className="p-4">Where</th><th className="p-4">Uses</th><th className="p-4">People</th><th className="p-4">Last used</th></tr></thead><tbody>{items.length ? items.map((item) => <tr key={`${item.surface}-${item.event_name}`} className="border-b border-border"><td className="p-4 font-semibold">{item.event_name.replaceAll('_', ' ')}</td><td className="p-4 text-muted-foreground">{item.surface.replaceAll('_', ' ')}</td><td className="p-4">{item.events}</td><td className="p-4">{item.people}</td><td className="p-4 text-muted-foreground">{new Date(item.last_seen).toLocaleString()}</td></tr>) : <tr><td colSpan={5} className="p-5 text-muted-foreground">No opted-in usage yet. It will appear here after people use the website or updated apps.</td></tr>}</tbody></table></div></section>
+  return <section>
+    <div className="ag-pair"><article className="ag-glass"><p className="ag-sub">Tracked actions, last 30 days</p><strong>{total.toLocaleString('en-GB')}</strong></article><article className="ag-glass"><p className="ag-sub">Most people on one feature</p><strong>{people.toLocaleString('en-GB')}</strong></article></div>
+    <div className="overflow-x-auto rounded-2xl border border-border"><table className="w-full min-w-[560px] text-left text-sm"><thead className="bg-background text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3 font-semibold">Feature</th><th className="px-4 py-3 font-semibold">Where</th><th className="px-4 py-3 font-semibold">Uses</th><th className="px-4 py-3 font-semibold">People</th><th className="px-4 py-3 font-semibold">Last used</th></tr></thead><tbody>{items.length ? items.map((item) => <tr key={`${item.surface}-${item.event_name}`} className="border-t border-border"><td className="px-4 py-3 font-semibold">{item.event_name.replaceAll('_', ' ')}</td><td className="px-4 py-3 text-muted-foreground">{item.surface.replaceAll('_', ' ')}</td><td className="px-4 py-3 tabular-nums">{item.events}</td><td className="px-4 py-3 tabular-nums">{item.people}</td><td className="px-4 py-3 text-muted-foreground">{new Date(item.last_seen).toLocaleString('en-GB')}</td></tr>) : <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No opted-in usage yet. It will appear here after people use the website or updated apps.</td></tr>}</tbody></table></div>
+    <p className="ag-note">Only people who opt in are included. Events never include passwords, emails, QR codes or message content.</p>
+  </section>
 }
 
 function RejectListingDialog({ name, onReject }: { name: string; onReject: (reason: string) => Promise<void> }) {
