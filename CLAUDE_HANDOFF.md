@@ -1,13 +1,23 @@
-# CLAUDE_HANDOFF.md — Fidel Card-Linked Reward Engine
+# CLAUDE_HANDOFF.md: work log for The Loyalty Loop
 
-Living status log between Claude (architect/reviewer) and Codex (builder), for the
-Fidel card-linked cumulative-spend engine. Spec: [ARCH_PLAN.md](ARCH_PLAN.md).
-Both agents edit this file after every completed step; Codex reads "Next
-action" before starting and records test evidence here.
+Newest entries first. Add each new entry directly under "Current state".
+Rules for entries are in `CLAUDE.md`. Entries mentioning Codex are history; Codex is gone.
 
-Do not treat anything in "Done" as a request to redo it. Do not build ahead of "Next
-action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
-need Claude's sign-off before the next one starts.
+## Current state (update on every release)
+
+- Live code: `origin/main`.
+- Shopper versions on phones: 1.0.1, 1.0.2. In store review: 1.0.3.
+- Business versions on phones: 1.0.1. In store review: 1.0.2.
+- Waiting for the next native build: nothing listed.
+- Parked: Fidel card linking (hidden in the shopper app), SumUp till link, WhatsApp.
+
+## 2026-11-15 - Instruction files rewritten (CLAUDE.md, AGENTS.md, this header) - NOT shipped
+
+- **What:** `CLAUDE.md` replaced with the current rules (branch from `origin/main`, main chat does not build, owner's yes before commit/deploy/OTA, `eas update --environment production` per platform with a bundle check, `showAlert`, coloured tiles, no Fidel contact), a release checklist and a Never list. `AGENTS.md` is now a pointer to `CLAUDE.md`. This file's Fidel/Codex header replaced by the header and "Current state" block above. The old "Copy-ready prompt for Claude Code" section and a stray prompt line at the very end were removed; nothing replaces them.
+- **Branch:** `claude/instruction-rewrite`, worktree `.claude/worktrees/instruction-rewrite`, cut from `origin/main` b759d00. Uncommitted.
+- **Checks run:** `git diff --stat` shows only these three files; the old header and prompt section are gone and every other entry is unchanged. **Not run:** no build or test (docs only). The `eas update` line in the checklist was copied from earlier notes, not executed.
+- **Open:** the version lines in "Current state" come from the 15 November release entries and need the owner's confirmation. `ARCH_PLAN.md` and `IMPLEMENTATION_TIMELINE.md` still describe the Codex era. `.agents/skills/` is a stale Codex copy of `.claude/skills/`. GitHub's default branch is still `apps/web`.
+- **Next:** (owner) say whether to commit and merge to `main`. (owner) change the GitHub default branch to `main`.
 
 ## 2026-11-15 - Native store builds (shopper 1.0.3, Business 1.0.2) - Claude
 - **Contents:** walk-past merged, `userInterfaceStyle: automatic` in both apps, new icons/splash (already on main), accurate iOS location strings, privacy-notice walk-past paragraph in `legal/documents-privacy.js` (NOT published; PDFs not regenerated), store copy rewritten with every feature and no Pakistan/Tooting/Balham text (repo `store.config.json` only; live listings NOT pushed).
@@ -3801,10 +3811,6 @@ The other session (Shop onboarding and owner app redesign) keeps navigation, the
 - Owner: after signing up it didn't reopen WhatsApp. Now `WhatsAppOnboarding.tsx` (password route) and `AuthCallback.tsx` (email-confirm route) show "You're all set" (`components/whatsapp-linked.tsx`) and open `wa.me/447963382835?text=START` (URL from `whatsapp-handoff` action start); sending it replies with rewards + card link. Buttons as fallback: Open WhatsApp / Open your Loyalty Loop account.
 - Checks: web tsc clean, build OK; live onboarding chunk imports `whatsapp-linked`. Not yet tried on a phone (iOS Safari may ask "Open in WhatsApp?").
 
-## Copy-ready prompt for Claude Code
-
-The reel-lessons release went out on 2026-11-15 (read the top entry of CLAUDE_HANDOFF.md). Check it on a real phone and report honestly. For the Business app (runtime 1.0.1) and the shopper (runtime 1.0.2): confirm each app opens after the SECOND launch (OTAs apply on the second launch), sign in, sign out, sign in as a different account and check no previous account's data appears, launch with airplane mode on, and check the home screen shows from the cache before the refresh. Look at the owner dashboard (web and Business app) and the new sign-up copy. If anything breaks, roll back with `eas update:roll-back-to-embedded --branch production --runtime-version <1.0.1 or 1.0.2> --platform all` and write what failed here. Then pick up the open items listed in that entry. Do not publish anything new without the owner's yes.
-
 ## Stronger haptics (shopper + Business) — branch `stronger-haptics`, JS only
 
 - New `apps/shopper/src/haptics.ts` and `apps/retailer/src/haptics.ts` (identical). `haptic.tap/select` (Medium/Heavy impact), `success` (Success notification + Heavy), `warning`, `error`, `tick` (light selection, hold-fill ticks), `reward` (3 Heavy impacts ~90ms apart + Success), `celebrate` (4 Rigid + Heavy + Success). On Android `reward`/`celebrate` also run `Vibration.vibrate([0,80,60,80,60,160])`. Every call is try/catch-wrapped and respects the switch.
@@ -3814,4 +3820,3 @@ The reel-lessons release went out on 2026-11-15 (read the top entry of CLAUDE_HA
   - Business: sign-in success; QR camera scan (select, throttled 1.5s); stamp/points award success (reward); redeem/other success; hold-to-confirm; Tour steps (tap).
 - Checks: `tsc --noEmit` retailer clean; shopper only shows 4 pre-existing `expo-sqlite/kv-store` missing-module errors (worktree node_modules), none in changed files. `npm run build` not relevant (no web change).
 - NOT verified on a phone: haptics cannot be felt in a simulator. Strength on real Android devices is untested. Business sign-up and shopper QR scanning (shopper only displays QR) are not wired. No EAS build/OTA, nothing pushed.
-Review `claude/whirl-everywhere` (tip in the entry at the top of this file) against `docs/whirl-usage-rules.md`: read `packages/whirl/core.ts` and the native components, check that every rule is enforced in code and not only in the doc, check the places listed under "NOT checked", and run the tsc, build and test commands from that entry. Do not push, build, publish an OTA, apply migrations or deploy functions; the owner decides when it ships.
