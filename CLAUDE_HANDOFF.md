@@ -10,6 +10,13 @@ action" without checking in — some steps are review checkpoints (ARCH_PLAN.md 
 need Claude's sign-off before the next one starts.
 
 ## 2026-11-15 - Shopper Home layout fix (main 2c7a696, JS only, OTA'd) - Claude
+## 2026-11-16 - Shopper Home layout fix SHIPPED by OTA (main 2c7a696) - Claude
+- **Owner said "Go".** The earlier Whirl leftovers were already OTA'd by another session (see entry below); this set adds only the shopper Home layout fix (greeting size, whole Whirl, points caption, tab icon contrast). JS only; no package/app.json/lockfile/supabase change. Business unchanged, not republished.
+- **OTAs:** shopper 1.0.1 android 01a1dfdf-1a77-72ee-bf2f-b0b852fe2a8f (group 0a3aca64-ec65-4d6e-a5a0-84ee4c8cf29e), ios 01a1dfe0-9202-764a-bdcc-6025c6da5729 (group 91d38585-21be-4f56-b711-7e6215c871f3); shopper 1.0.2 android 01a1dfe2-0454-7c63-aae7-4171cece155b (group 4fe35b21-72e5-45e4-88a1-006f4f23680a), ios 01a1dfe3-4676-7329-9fc7-7f1fbe927253 (group 4e6d34b0-7043-412e-a98c-2403d4873218). 1.0.1 built from a scratch worktree with version 1.0.1 (removed, not committed). Bundles contain the project ref and the new "TO GO FOR" text.
+- **Checks:** tsc shopper and Business clean, 362 tests pass. **Not checked:** nothing seen on a phone, in dark mode or at other widths.
+- **Rollback:** `npx eas-cli@24.11.0 update:roll-back-to-embedded --branch production --runtime-version <1.0.1|1.0.2> --platform <android|ios>` (embedded drops everything since the store build), or republish the previous shopper groups from the entries below.
+
+## 2026-11-15 - Shopper Home layout fix (branch `fix-shopper-home`, JS only, not OTA'd) - Claude
 
 Owner screenshot of Play 1.0.1 showed a broken Home. Fixes (apps/shopper):
 - Greeting: 56px -> 44px with `numberOfLines={2}` + `adjustsFontSizeToFit` (min 0.7), so "Afternoon," never breaks mid-word; first name kept. HomeFeed.tsx.
