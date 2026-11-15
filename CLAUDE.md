@@ -12,8 +12,8 @@ website (`apps/web`, Vite, hosted on Vercel), backend (`supabase/`, Postgres + e
 3. The main project folder is usually on an old branch with other sessions' uncommitted
    files in it. Never judge whether a feature exists from the main folder. Read
    `origin/main`: `git show origin/main:<path>` or `git grep <text> origin/main`.
-4. Read the first 150 lines of `CLAUDE_HANDOFF.md` on `origin/main`. Newest entries are at
-   the top. Do not read the whole file. Search it when you need history.
+4. Read all of `CLAUDE_HANDOFF.md` on `origin/main`. It is short. Older history is in
+   `docs/handoff-archive/`; search it, do not read it whole.
 5. Read `ARCH_PLAN.md` only for Fidel card-linking work. That feature is parked.
 6. In `apps/shopper` or `apps/retailer`, also follow that folder's `AGENTS.md`.
 
@@ -72,8 +72,7 @@ website (`apps/web`, Vite, hosted on Vercel), backend (`supabase/`, Postgres + e
    `--environment production` is required every time. Without it the bundle has no
    Supabase keys and every phone shows "App configuration needed".
 5. An OTA only reaches the app version it was published for. Publish for every version
-   still on phones. The list is in the "Current state" block at the top of
-   `CLAUDE_HANDOFF.md`.
+   still on phones. The list is in section 1, "Current state", of `CLAUDE_HANDOFF.md`.
 6. Verify each uploaded bundle, not a local export. Download the launch asset from
    `https://u.expo.dev/update/<updateId>` and confirm it contains the Supabase project ref
    `tgukdabfvvoywawmzbdo` and a text string from the new code.
@@ -108,10 +107,12 @@ website (`apps/web`, Vite, hosted on Vercel), backend (`supabase/`, Postgres + e
 ## Handoff
 
 After each finished piece of work (a feature, fix, review, migration or release), add one
-entry at the TOP of the log in `CLAUDE_HANDOFF.md`, under "Current state":
+entry at the top of section 8, "Log", in `CLAUDE_HANDOFF.md`:
 
-`## YYYY-MM-DD - <what> - <LIVE | NOT shipped | design only>`
+`### YYYY-MM-DD - <what> - <LIVE | NOT shipped | design only>`
 
 Include: what changed, branch and commit, files, checks run, checks not run, what is still
 open, and the next action with its owner (owner or Claude). When a release changes which
-versions are on phones, update "Current state".
+versions are on phones, update "Current state". When an entry closes or opens an item in
+sections 2 to 5, correct that section too. Keep the file short: follow its own rule for
+moving old log entries to `docs/handoff-archive/`.
