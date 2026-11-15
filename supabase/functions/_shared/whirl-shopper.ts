@@ -195,7 +195,22 @@ export function parseModelOutput(raw: unknown): { reply: string; refs: string[] 
     }
     return null;
   } catch {
-    return text.startsWith("{") ? null : { reply: text, refs: [] };
+    if (text.startsWith("{")) return null;
+    // Text followed by the JSON envelope (or the JSON repeated after prose): keep the envelope's reply, or the prose before it.
+    const at = text.search(/\{\s*"reply"\s*:/);
+    if (at >= 0) {
+      const end = text.lastIndexOf("}");
+      try {
+        const parsed = JSON.parse(text.slice(at, end + 1));
+        if (parsed && typeof parsed.reply === "string") {
+          const refs = Array.isArray(parsed.shop_refs) ? parsed.shop_refs.filter((r: unknown) => typeof r === "string") : [];
+          return { reply: parsed.reply, refs };
+        }
+      } catch { /* fall through to the prose */ }
+      const prose = text.slice(0, at).trim();
+      return prose ? { reply: prose, refs: [] } : null;
+    }
+    return { reply: text, refs: [] };
   }
 }
 

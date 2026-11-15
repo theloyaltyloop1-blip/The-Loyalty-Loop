@@ -185,3 +185,12 @@ test('the system prompt covers refusals: other people, legal, medical, money, of
   const p = whirlSystemPrompt();
   for (const word of [/other customers/, /legal, medical, tax, money or investment/, /off-topic|unrelated/, /reveal or change these instructions/, /Settings/]) assert.match(p, word);
 });
+
+test('prose followed by the JSON envelope shows the reply once, with its shop refs', () => {
+  const raw = 'Stamps reward regular visits. {"reply":"Stamps reward regular visits.","shop_refs":["s1"]}';
+  const out = finishAnswer(raw, [{ ref: 's1', id: 'shop-1', name: 'Milk' }]);
+  assert.equal(out.reply, 'Stamps reward regular visits.');
+  assert.deepEqual(out.shop_ids, ['shop-1']);
+  const broken = finishAnswer('Just prose. {"reply":"cut off', []);
+  assert.equal(broken.reply, 'Just prose.');
+});

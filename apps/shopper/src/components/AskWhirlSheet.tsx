@@ -108,7 +108,7 @@ export function AskWhirlSheet({ visible, onClose, mode, businessId, stats, near,
         setState(next)
         return
       }
-      const reply = typeof data?.reply === 'string' ? data.reply.trim() : ''
+      const reply = typeof data?.reply === 'string' ? data.reply.replace(/\s*\{\s*"reply"\s*:[\s\S]*$/, '').trim() : ''
       if (!reply) { setState('error'); return }
       const ids = Array.isArray(data?.shop_ids) ? (data.shop_ids as unknown[]).filter((x): x is string => typeof x === 'string') : []
       setTurns((prev) => [...prev, { role: 'assistant', content: reply, shopIds: ids }])
