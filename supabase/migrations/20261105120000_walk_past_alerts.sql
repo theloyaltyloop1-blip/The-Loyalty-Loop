@@ -193,3 +193,18 @@ grant execute on function public.nearby_alerts_disable() to authenticated;
 grant execute on function public.set_nearby_offer(uuid, text) to authenticated;
 grant execute on function public.nearby_walk_past(text, uuid) to anon, authenticated;
 grant execute on function public.nearby_alert_stats(uuid) to authenticated;
+
+-- Retention: alert history older than 90 days is deleted daily. The longest
+-- limit that reads it is 30 days, and the shop's stats look back 30 days.
+create or replace function public.prune_nearby_alert_log()
+returns integer
+language sql
+security definer
+set search_path = ''
+as $$
+  with gone as (delete from public.nearby_alert_log where sent_at < now() - interval '90 days' returning 1)
+  select count(*)::integer from gone;
+$$;
+revoke all on function public.prune_nearby_alert_log() from public, anon, authenticated;
+grant execute on function public.prune_nearby_alert_log() to service_role;
+select cron.schedule('nearby-alert-log-retention', '17 3 * * *', $$select public.prune_nearby_alert_log()$$);

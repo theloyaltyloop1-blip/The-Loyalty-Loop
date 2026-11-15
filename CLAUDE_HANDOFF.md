@@ -9,6 +9,9 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Walk-past: 90-day alert-log retention added to the migration (not applied) - Claude
+- **Owner approved retention.** `20261105120000_walk_past_alerts.sql` now ends with `prune_nearby_alert_log()` (service_role only) and a daily pg_cron job at 03:17 that deletes `nearby_alert_log` rows older than 90 days. Not applied; not run. Checked only by reading (same `cron.schedule` pattern as `20261002211306_scheduled_delivery_recovery.sql`); pg_cron must exist on the project (it does for other schedules). Still on hold: the build.
+
 ## 2026-11-15 - Owner answers: wording OK, dark mode rides in the build, do NOT build yet - Claude
 - **Owner:** walk-past notification wording approved. Dark mode (branch from the dark-mode session) should ride in the same native build; merge it in once that session finishes and has been reviewed. **The build is on hold: do not start one until the owner says.**
 - **Not yet answered:** the 90-day alert-log retention (not added to the migration yet).
