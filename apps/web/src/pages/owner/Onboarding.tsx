@@ -1,3 +1,4 @@
+import { Whirl } from '@/components/whirl'
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Coffee, Gem, Plus, QrCode, ScanLine, Sparkles, Star, Trash2 } from 'lucide-react'
@@ -271,7 +272,7 @@ export function OwnerOnboarding() {
         <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 shadow-[0_24px_60px_rgb(28_38_32/0.08)] sm:p-9">
           {step === 0 && (
             <>
-              <img src="/mascot/whirl-wave.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
+              <Whirl pose="wave" className="mb-2 h-24 w-24" />
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What kind of shop are we dealing with?</h1>
               <p className="text-foreground/70 mb-6">We'll set up the right kind of rewards for you.</p>
               <div className="grid gap-3 mb-4">
@@ -366,7 +367,7 @@ export function OwnerOnboarding() {
 
           {step === 1 && (
             <>
-              <img src="/mascot/whirl-think.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
+              <Whirl pose="think" className="mb-2 h-24 w-24" />
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What do we call you?</h1>
               <p className="text-foreground/70 mb-6">This goes at the top of your customers' loyalty card.</p>
               <Field label="Shop name">
@@ -400,7 +401,7 @@ export function OwnerOnboarding() {
 
           {step === 2 && isCustom && (
             <>
-              <img src="/mascot/whirl-think.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
+              <Whirl pose="think" className="mb-2 h-24 w-24" />
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">Tell us how it should work.</h1>
               <p className="text-foreground/70 mb-5">
                 Describe it like you'd explain it to a customer. You can keep changing it until it's right.
@@ -415,7 +416,7 @@ export function OwnerOnboarding() {
 
           {step === 2 && !isCustom && draft && (
             <>
-              <img src="/mascot/whirl-stamp.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
+              <Whirl pose="stamp" className="mb-2 h-24 w-24" />
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">
                 {activeProgramme === 'tiers' ? 'Your membership levels' : 'Here’s what we’d give them.'}
               </h1>
@@ -505,7 +506,7 @@ export function OwnerOnboarding() {
               <div className="flex items-center justify-center h-14 w-14 rounded-full bg-olive text-olive-ink mx-auto mb-4">
                 <Check className="h-7 w-7" />
               </div>
-              <img src="/mascot/whirl-celebrate.svg" alt="" aria-hidden="true" className="mx-auto mb-2 h-28 w-28" />
+              <Whirl pose="celebrate" className="mx-auto mb-2 h-28 w-28" />
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground text-center mb-2">You're open for stamps!</h1>
               <p className="text-foreground/70 text-center mb-6">Customers can join {activeName} now. This is the card they'll see:</p>
               {isCustom && rules ? (

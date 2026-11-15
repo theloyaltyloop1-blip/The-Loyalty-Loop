@@ -257,3 +257,8 @@ html:not(.dark) [class*="text-muted-foreground/"] { color: #000000; }
 /* Long single words (shop names, "Announcements" at 200% text) wrap instead of pushing the page sideways. */
 :where(h1, h2, h3, p, li, dd) { overflow-wrap: break-word; }
 :where(input, select, textarea) { min-width: 0; max-width: 100%; }
+
+/* Whirl mascot: show the artwork that matches the theme */
+.whirl-dark { display: none; }
+html.dark .whirl-light { display: none; }
+html.dark .whirl-dark { display: block; }

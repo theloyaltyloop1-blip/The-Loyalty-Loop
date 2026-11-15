@@ -48,3 +48,11 @@
 @keyframes fx-note { 0% { opacity: 0; transform: translate(-50%, 16px); } 12%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 8px); } }
 .fx-spin svg { animation: fx-spin 1.4s var(--fx-ease); }
 @keyframes fx-spin { to { transform: rotate(360deg); } }
+
+/* Dark mode: the intro curtain follows the theme instead of flashing cream, and the hero text
+   fades in faster so it is never faint on the dark background while the reveal runs. */
+html.dark .fx-preloader { --fx-paper: #0E0E0F; --fx-ink: #F4F1EA; --fx-muted: #A8A39A; }
+html.dark .fx-preloader-line { background: rgba(244, 241, 234, .16); }
+@media (prefers-reduced-motion: no-preference) {
+  .lp-hero [data-reveal] { transition-duration: .6s; transition-delay: calc(var(--d, 0) * 70ms); }
+}

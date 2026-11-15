@@ -1,3 +1,4 @@
+import { Whirl } from '@/components/whirl'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
@@ -38,7 +39,7 @@ export function AuthLayout({ title, subtitle, mascot, children }: { title: strin
           </div>
         </div>
         <div className="mx-auto my-auto w-full max-w-md py-10">
-          {mascot && <img src={`/mascot/whirl-${mascot}.svg`} alt="" aria-hidden="true" className="mb-2 h-24 w-24" />}
+          {mascot && <Whirl pose={mascot} className="mb-2 h-24 w-24" />}
           <h1 className="mb-8 font-display text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
           {subtitle && <p className="-mt-5 mb-8 text-base text-muted-foreground">{subtitle}</p>}
           <div className="flex flex-col gap-4">{children}</div>
