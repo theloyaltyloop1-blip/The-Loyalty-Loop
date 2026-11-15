@@ -6,7 +6,7 @@ import { useOwner } from '@/lib/owner-context'
 import { createBusiness, addRewardCatalogItem, type Business } from '@/lib/businesses'
 import { geocodeAddress } from '@/lib/geocode'
 import { ShopMap, DEFAULT_MAP_CENTER } from '@/components/shop-map'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 
 import { CATEGORIES, categoryCopy } from '@/lib/categories'

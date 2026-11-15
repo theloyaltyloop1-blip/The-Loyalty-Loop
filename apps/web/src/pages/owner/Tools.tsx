@@ -9,7 +9,7 @@ import { OwnerLayout } from '@/components/owner-layout'
 import { OwnerLoadError } from '@/components/owner-load-error'
 import { supabase } from '@/lib/supabase'
 import { updateBusiness } from '@/lib/businesses'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { WHATSAPP_VISIBLE } from '@/lib/features'
 

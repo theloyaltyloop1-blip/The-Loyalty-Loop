@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
     // fall back to the platform's own (square) logo when the shop hasn't
     // uploaded one, or when its logo turns out to be a wide/wordmark shape
     // Google would reject. A wide logo still gets shown via wideProgramLogo.
-    const platformLogoUri = "https://www.the-loyalty-loop.com/logo-for-emails.png";
+    const platformLogoUri = "https://www.the-loyalty-loop.com/logo-mark.png";
     let programLogoUri = business.logo_url || platformLogoUri;
     let wideLogoUri: string | null = null;
 

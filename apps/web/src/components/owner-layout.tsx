@@ -4,7 +4,7 @@ import { Users, Store, LogOut, ChevronDown, ArrowLeftRight, ScanLine } from 'luc
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { onBrandColor } from '@/lib/utils'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 import { OwnerWalkthrough } from '@/components/owner-walkthrough'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { BarePageSkeleton } from '@/components/page-skeleton'
