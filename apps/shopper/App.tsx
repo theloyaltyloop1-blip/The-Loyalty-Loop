@@ -28,6 +28,8 @@ import { RewardCelebration, markRewardsSeen, unseenReward } from './src/componen
 import { HomeFeed } from './src/components/HomeFeed'
 import { categoryCounts } from './src/home-rails'
 import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
+import { fuzzyFilter } from './src/fuzzy-search'
+import { useDebouncedValue } from './src/use-debounced-value'
 import { formatAddress } from './src/format-address'
 import { useLaunchUpdate } from './src/launch-update'
 import { useUserLocation } from './src/use-user-location'
@@ -1767,7 +1769,9 @@ function HomeTab({ userId, businesses, memberships, catalog, announcements, load
   const [query, setQuery] = useState('')
   const [features, setFeatures] = useState<string[]>([])
   const quickCards = useQuickCards(userId)
-  const filtered = businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const searchTerm = useDebouncedValue(query)
+  // Typo-tolerant and ranked best-match-first; with no search text the list keeps its own order.
+  const filtered = fuzzyFilter(businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features)), searchTerm, b => [b.name, b.category, b.address])
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
   if (!searching) {
@@ -1925,10 +1929,9 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
   const { coords, status: locationStatus, locate } = useUserLocation()
   const goToMeWhenFound = useRef(false)
 
+  const searchTerm = useDebouncedValue(query)
   const term = query.trim().toLowerCase()
-  const matches = term
-    ? businesses.filter(b => b.name.toLowerCase().includes(term) || (b.category || '').toLowerCase().includes(term))
-    : []
+  const matches = fuzzyFilter(businesses, searchTerm, b => [b.name, b.category, b.address])
   // Nearest first once we know where the shopper is.
   const cards = useMemo(() => {
     const pinned = businesses.filter(b => b.lat != null && b.lng != null)

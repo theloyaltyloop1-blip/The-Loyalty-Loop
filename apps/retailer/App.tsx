@@ -71,6 +71,8 @@ import { OutageBanner, simulatedOutage, useServiceStatus } from "./src/service-s
 import Storage from "expo-sqlite/kv-store";
 import { HoldButton } from "./src/components/HoldButton";
 import { DynamicButton } from "./src/components/DynamicButton";
+import { fuzzyFilter } from "./src/fuzzy-search";
+import { useDebouncedValue } from "./src/use-debounced-value";
 import {
   NativeOwnerPageView,
   type NativeOnboardingDestination,
@@ -1731,11 +1733,11 @@ function MembersPage({ business }: { business: Business }) {
         setLoading(false);
       });
   }, [business.id]);
-  const shown = members.filter((member) =>
-    `${member.first_name || ""} ${member.last_name || ""}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const searchTerm = useDebouncedValue(search);
+  // Typo-tolerant, accent-insensitive; "Smith John" finds John Smith.
+  const shown = fuzzyFilter(members, searchTerm, (member) => [
+    `${member.first_name || ""} ${member.last_name || ""}`,
+  ]);
   return (
     <View>
       <Text style={styles.pageKicker}>CUSTOMERS</Text>
@@ -1797,7 +1799,11 @@ function MembersPage({ business }: { business: Business }) {
           );
         })
       ) : (
-        <Text style={styles.emptyState}>No matching members yet.</Text>
+        <Text style={styles.emptyState}>
+          {searchTerm.trim()
+            ? `No members match "${searchTerm.trim()}". Check the spelling or try just a first name.`
+            : "No members yet. Customers appear here once they join your shop."}
+        </Text>
       )}
     </View>
   );

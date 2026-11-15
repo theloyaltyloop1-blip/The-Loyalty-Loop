@@ -12,6 +12,8 @@ import { trendingShops } from '@/lib/trending'
 import { useUserLocation } from '@/lib/use-user-location'
 import { pickFeatured } from '@/lib/distance'
 import { SHOP_FEATURES, hasAllFeatures } from '@/lib/shop-features'
+import { fuzzyFilter } from '@/lib/fuzzy-search'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
 
 export function Home() {
   const { session, loading, rolesLoading, primaryRole } = useAuth()
@@ -19,6 +21,7 @@ export function Home() {
   const [category, setCategory] = React.useState('All')
   const [features, setFeatures] = React.useState<string[]>([])
   const [query, setQuery] = React.useState('')
+  const debouncedQuery = useDebouncedValue(query)
   const [askOpen, setAskOpen] = React.useState(false)
   const [businesses, setBusinesses] = React.useState<Business[]>([])
   const [memberships, setMemberships] = React.useState<Membership[]>([])
@@ -71,11 +74,12 @@ export function Home() {
     acc[name] = (acc[name] ?? 0) + 1
     return acc
   }, {})
-  const search = query.trim().toLowerCase()
-  const filtered = businesses.filter((business) =>
-    (category === 'All' || (business.category ?? 'Other') === category) &&
-    hasAllFeatures(business.features, features) &&
-    `${business.name} ${business.category ?? ''} ${business.address ?? ''} ${business.postcode ?? ''}`.toLowerCase().includes(search)
+  const search = debouncedQuery.trim()
+  // Typo-tolerant and ranked best-match-first; with no search text the list keeps its own order.
+  const filtered = fuzzyFilter(
+    businesses.filter((business) => (category === 'All' || (business.category ?? 'Other') === category) && hasAllFeatures(business.features, features)),
+    search,
+    (business) => [business.name, business.category, business.address, business.postcode],
   )
   const trending = trendingShops(businesses, filtered, { fallback: 2 })
   const joinedIds = new Set(memberships.map((membership) => membership.business_id))
