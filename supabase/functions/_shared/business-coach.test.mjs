@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MAX_COACH_MESSAGES, OFF_TOPIC_REPLY, cleanCoachMessages, coachSystemPrompt, statsBlock } from "./business-coach.ts";
+import { MAX_COACH_MESSAGES, OFF_TOPIC_REPLY, cleanCoachMessages, coachSystemPrompt, statsBlock, statsHavePersonalData } from "./business-coach.ts";
 
 test("a normal conversation passes through, trimmed", () => {
   assert.deepEqual(
@@ -52,4 +52,21 @@ test("stats are capped and odd values don't break the prompt", () => {
   const loop = {};
   loop.self = loop;
   assert.equal(statsBlock(loop), "{}");
+});
+
+test("Whirl introduces itself, knows the Business app and cannot act", () => {
+  const prompt = coachSystemPrompt({ name: "Bean There" }, {});
+  assert.match(prompt, /You are Whirl/);
+  assert.match(prompt, /QR poster/);
+  assert.match(prompt, /cannot take actions/);
+  assert.ok(prompt.includes(OFF_TOPIC_REPLY));
+});
+
+test("stats with personal keys are detected at any depth; aggregates pass", () => {
+  assert.equal(statsHavePersonalData({ period: { newMembers: 3, totalStamps: 10 }, web_research: "text" }), false);
+  assert.equal(statsHavePersonalData({ totals: { members: 5 } }), false);
+  assert.equal(statsHavePersonalData({ period: { email: "a@b.co" } }), true);
+  assert.equal(statsHavePersonalData({ top: [{ customer: 1, Name: "Sam" }] }), true);
+  assert.equal(statsHavePersonalData({ a: { b: { c: [{ phone: "0777" }] } } }), true);
+  assert.equal(statsHavePersonalData(null), false);
 });
