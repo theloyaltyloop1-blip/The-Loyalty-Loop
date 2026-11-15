@@ -9,6 +9,13 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Mascot concepts and warmer onboarding script (concept only) - Claude
+- **What:** three mascot concepts (Dot the round blob, Whirl the cheeky loop with limbs, Pip the logo with a quiet face), six poses each (wave, stamping a card, reward, sleepy, thinking, thumbs-up), light and dark versions, hand-written vector. Plus a rewritten onboarding script and 5-line voice guide. Branch `claude/mascot-concepts` (from `claude/reel-release` 5736301), nothing merged or pushed.
+- **Files:** `brand/mascot/concepts.png` (contact sheet, open this first), `brand/mascot/README.md`, `brand/mascot/svg/` and `png/` (+ `dark/`), `brand/mascot/sizes.png`, `brand/mascot/src/build.py` + `render.py`, `docs/onboarding-voice.md`.
+- **Checks done:** all 36 SVGs generated and rendered in headless Chrome; looked at the contact sheet and individual PNGs; 96/64/48/32 px check on paper and on `#121714`. Recommendation in the README is Dot.
+- **Not done / not verified:** no app or website code changed, no build or OTA. Not tried in an app, splash or icon. Pip's hands/thumb are the roughest drawings. Copy is proposed, not reviewed; old lines were copied from the code, not seen on screen.
+- **Next (owner):** pick a concept (or ask for a redraw of one), then say if the new onboarding lines can go in. **Then (Claude):** wire the chosen mascot and copy into both apps and the website, by OTA where JS-only.
+
 ## 2026-11-15 - New app icons wired in, NO build started - Claude
 - **Owner approved the redrawn brand mark.** Copied `brand/png/` into both apps' `assets/`: `icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`, `splash-icon.png`, `favicon.png`. Both app.json adaptive icons now use `android-icon-foreground.png` as `foregroundImage` (was `icon.png`) with background `#F8E4C6` (Business was `#FDF8EA`). The two apps now share one icon (the old Business icon lacked the orange leaves).
 - **Not built, not shipped.** Icons/splash are native, so nothing changes on phones until a store build; the owner will say when to start it (current: shopper 1.0.2 iOS 15 / Android 133; Business 1.0.1 iOS 13 / Android 132 - bump before building). Website icons were already updated in the release.
