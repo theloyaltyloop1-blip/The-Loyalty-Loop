@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 
 export function AuthLayout({ title, children }: { title: string; children: React.ReactNode }) {
   const navigate = useNavigate()

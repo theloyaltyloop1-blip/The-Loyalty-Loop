@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 const SITE_URL = 'https://www.the-loyalty-loop.com'
-const DEFAULT_OG_IMAGE = `${SITE_URL}/logo-for-emails.png`
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`)

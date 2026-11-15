@@ -82,7 +82,7 @@ import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests
 import { trendingShops } from './src/trending'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
 import { ExternalCards } from './src/components/ExternalCards'
-import logo from './assets/brand/loyalty-loop-logo.png'
+import logo from './assets/brand/loyalty-loop-mark.png'
 
 const FONT_DISPLAY = fonts.nativeDisplay
 

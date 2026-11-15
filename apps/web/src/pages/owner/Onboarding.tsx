@@ -17,7 +17,7 @@ import { useOwner } from '@/lib/owner-context'
 import type { ProgrammeRules } from '@loyalty-loop/loyalty/programme-rules'
 import { addProgrammeContent, createShopWithCustomProgramme, createShopWithProgramme } from '@/lib/businesses'
 import { ProgrammeBuilder, RulesPreview } from '@/components/programme-builder'
-import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.png'
+import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { OwnerLoadError } from '@/components/owner-load-error'
 
