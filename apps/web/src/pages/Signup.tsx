@@ -66,7 +66,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
 
   if (checkEmailSent) {
     return (
-      <AuthLayout title="Check your email">
+      <AuthLayout title={firstName.trim() ? `Nearly there, ${firstName.trim()}` : 'Check your email'}>
         <p className="text-foreground font-semibold">
           We've sent a confirmation link to {email}. Follow it to finish setting up your account.
         </p>
@@ -75,14 +75,17 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   }
 
   return (
-    <AuthLayout title="Welcome to The Loyalty Loop">
+    <AuthLayout
+      title={asOwner ? 'Set up your shop’s loyalty card' : 'Collect stamps at your local shops'}
+      subtitle={asOwner ? 'Free to start, no hardware needed. Name your shop, pick a reward and you’re live in minutes.' : 'Join a shop’s card for free and earn the rewards it offers. No card to carry.'}
+    >
       <AppleButton onClick={() => signInWithApple(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.'))} />
       <GoogleButton onClick={() => signInWithGoogle(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
       <AuthDivider />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <AuthInput
-            placeholder="First Name"
+            placeholder="First name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             required
@@ -126,7 +129,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           disabled={loading}
           className="h-12 rounded-full bg-primary text-primary-foreground font-semibold text-base transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
-          {loading ? 'Creating account…' : asOwner ? 'Create shop account' : 'Sign up'}
+          {loading ? 'Creating account…' : asOwner ? 'Create shop account' : 'Create free account'}
         </button>
       </form>
 

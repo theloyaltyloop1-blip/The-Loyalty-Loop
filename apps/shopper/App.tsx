@@ -492,7 +492,7 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
         })
         if (error) throw error
         if (data.session) onSession(data.session)
-        else showAlert('Check your email', 'Confirm your email address, then sign in to start collecting rewards.')
+        else showAlert(name.trim() ? `Nearly there, ${name.trim()}` : 'Check your email', 'Check your email and confirm your address, then sign in to start collecting rewards.')
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw error
@@ -555,8 +555,8 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
           <Image source={logo} style={styles.markImage} />
         </View>
         <Text style={styles.eyebrow}>THE LOYALTY LOOP</Text>
-        <Text style={styles.hero}>{reason ? 'Save your card' : mode === 'signUp' ? 'Save your cards' : 'Welcome back'}</Text>
-        <Text style={styles.copy}>{reason ?? (mode === 'signUp' ? 'A free account keeps your cards, points and rewards safe.' : 'Sign in to see your cards and rewards.')}</Text>
+        <Text style={styles.hero}>{reason ? 'Save your card' : mode === 'signUp' ? 'Collect stamps at your local shops' : 'Welcome back'}</Text>
+        <Text style={styles.copy}>{reason ?? (mode === 'signUp' ? 'A free account keeps your cards, stamps and rewards together. No card to carry.' : 'Sign in to see your cards and rewards.')}</Text>
         <View style={styles.card}>
           {Platform.OS === 'ios' ? (
             <AppleAuthentication.AppleAuthenticationButton

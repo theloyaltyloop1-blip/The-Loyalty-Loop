@@ -164,10 +164,11 @@ function Dots({ step: raw }: { step: number }) {
   if (raw === 3) return null;
   const step = raw === ACCOUNT_STEP ? STEP_COUNT - 1 : raw;
   return (
-    <View style={styles.dots} accessibilityLabel={`Step ${step + 1} of ${STEP_COUNT}`}>
-      {Array.from({ length: STEP_COUNT }, (_, i) => (
-        <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
-      ))}
+    <View style={styles.progress} accessibilityLabel={`Step ${step + 1} of ${STEP_COUNT}`}>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${((step + 1) / STEP_COUNT) * 100}%` }]} />
+      </View>
+      <Text style={styles.progressText}>Step {step + 1} of {STEP_COUNT}</Text>
     </View>
   );
 }
@@ -352,7 +353,7 @@ export function ShopOnboarding({
         {step === 0 && (
           <>
             <Text style={styles.hero}>What kind of{"\n"}shop is it?</Text>
-            <Text style={styles.copy}>We'll set up the right kind of rewards for you.</Text>
+            <Text style={styles.copy}>Pick the closest match. We'll suggest rewards your regulars will actually want.</Text>
             <View style={styles.stack}>
               {SHOP_KINDS.map((k) => {
                 const Icon = KIND_ICONS[k.key];
@@ -364,6 +365,7 @@ export function ShopOnboarding({
                       <Text style={[styles.optionTitle, active && { color: "#fff" }]}>{k.title}</Text>
                       <Text style={[styles.optionBlurb, active && { color: "#fff" }]}>{k.examples}</Text>
                     </View>
+                    {active && <View style={styles.checkBadge}><Check size={16} color="#fff" /></View>}
                   </Pressable>
                 );
               })}
@@ -373,6 +375,7 @@ export function ShopOnboarding({
                   <Text style={[styles.optionTitle, custom && !kind && { color: "#fff" }]}>Something different</Text>
                   <Text style={[styles.optionBlurb, custom && !kind && { color: "#fff" }]}>Describe your own programme and our AI sets it up</Text>
                 </View>
+                {custom && !kind && <View style={styles.checkBadge}><Check size={16} color="#fff" /></View>}
               </Pressable>
             </View>
             {custom && (
@@ -411,7 +414,7 @@ export function ShopOnboarding({
         {step === 1 && (
           <>
             <Text style={styles.hero}>What's your{"\n"}shop called?</Text>
-            <Text style={styles.copy}>Customers will see this on their loyalty card.</Text>
+            <Text style={styles.copy}>This is what customers see at the top of their loyalty card.</Text>
             <TextInput
               style={styles.input}
               value={name}
@@ -482,7 +485,7 @@ export function ShopOnboarding({
         {step === 2 && !isCustom && draft && (
           <>
             <Text style={styles.hero}>{activeProgramme === "tiers" ? "Your membership\nlevels" : "Your rewards"}</Text>
-            <Text style={styles.copy}>We've filled these in for you. Change anything, then tap Looks good.</Text>
+            <Text style={styles.copy}>{`We've filled these in for ${(resume?.name ?? name).trim() || "your shop"}. Change anything, then tap Looks good.`}</Text>
 
             {activeProgramme === "tiers"
               ? draft.tiers.map((tier, index) => (
@@ -604,6 +607,7 @@ export function ShopOnboarding({
                   <Text style={[styles.optionTitle, active && { color: "#fff" }]}>{id === "spend" ? "£ Spend rewards" : PROGRAMMES[id].name}</Text>
                   <Text style={[styles.optionBlurb, active && { color: "#fff" }]}>{PROGRAMMES[id].pitch}</Text>
                 </View>
+                {active && <View style={styles.checkBadge}><Check size={16} color="#fff" /></View>}
               </Pressable>
             );
           })}
@@ -733,9 +737,11 @@ function SaveShopAccount({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: cream },
   content: { flexGrow: 1, padding: 24, paddingBottom: 48 },
-  dots: { flexDirection: "row", gap: 8, marginTop: 6, marginBottom: 26 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#DCD6CB" },
-  dotActive: { width: 26, backgroundColor: orange },
+  progress: { marginTop: 6, marginBottom: 26, gap: 8 },
+  progressTrack: { height: 6, borderRadius: 3, backgroundColor: "#DCD6CB", overflow: "hidden" },
+  progressFill: { height: 6, borderRadius: 3, backgroundColor: orange },
+  progressText: { color: "#000000", fontSize: 13, fontWeight: "700" },
+  checkBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.28)", alignItems: "center", justifyContent: "center" },
   hero: { color: "#000000", fontSize: 36, lineHeight: 42, letterSpacing: -1, fontFamily: fonts.nativeDisplay },
   copy: { color: "#000000", fontSize: 16, lineHeight: 24, marginTop: 8 },
   stack: { gap: 12, marginTop: 22, marginBottom: 16 },
