@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
-import { Users, ShoppingBag, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink } from 'lucide-react'
+import { Users, ShoppingBag, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
@@ -92,12 +92,31 @@ function Delta({ current, prev }: { current: number; prev: number }) {
   )
 }
 
+// One card style for every tile: flat surface, subtle border. The tone prop
+// is kept so call sites stay readable, but it no longer changes colour.
 const TILE_TONES = {
-  sage: 'bg-sage text-sage-ink',
-  peach: 'bg-peach text-peach-ink',
-  amber: 'bg-amber text-amber-ink',
+  sage: 'bg-card text-foreground ring-1 ring-foreground/8',
+  peach: 'bg-card text-foreground ring-1 ring-foreground/8',
+  amber: 'bg-card text-foreground ring-1 ring-foreground/8',
   card: 'bg-card text-foreground ring-1 ring-foreground/8',
 } as const
+
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{children}</p>
+}
+
+// Secondary sections fold away so the numbers and the summary lead.
+function Fold({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  return (
+    <details open={defaultOpen} className="group rounded-2xl bg-card ring-1 ring-foreground/8">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 font-display text-lg font-semibold tracking-tight">
+        {title}
+        <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="px-1 pb-1">{children}</div>
+    </details>
+  )
+}
 
 function StatTile({
   icon: Icon,
@@ -127,12 +146,12 @@ function StatTile({
       {hint ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <p tabIndex={0} className="text-sm opacity-80 mt-1 w-fit underline decoration-dotted underline-offset-2 outline-none">{label}</p>
+            <p tabIndex={0} className="mt-1 w-fit text-[11px] font-semibold uppercase tracking-wider opacity-70 underline decoration-dotted underline-offset-2 outline-none">{label}</p>
           </TooltipTrigger>
           <TooltipContent side="bottom">{hint}</TooltipContent>
         </Tooltip>
       ) : (
-        <p className="text-sm opacity-80 mt-1">{label}</p>
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider opacity-70">{label}</p>
       )}
     </div>
   )
@@ -162,17 +181,17 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
   }, [generate])
 
   return (
-    <div className="rounded-2xl bg-peach p-6">
+    <div className="rounded-2xl bg-card p-6 ring-1 ring-foreground/8">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="h-4 w-4 text-primary" />
-        <p className="font-display text-lg font-semibold tracking-tight text-peach-ink">What changed in the last {period} days</p>
+        <p className="font-display text-lg font-semibold tracking-tight text-foreground">What changed in the last {period} days</p>
       </div>
       {loading ? (
         <p className="text-sm text-muted-foreground">Thinking…</p>
       ) : error ? (
         <p className="text-sm text-muted-foreground">{error}</p>
       ) : (
-        <p className="max-w-[70ch] text-peach-ink/90 leading-relaxed">{summary}</p>
+        <p className="max-w-[70ch] text-foreground/90 leading-relaxed">{summary}</p>
       )}
       <button data-press-feedback onClick={generate} disabled={loading} className="mt-4 rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-card/80 disabled:opacity-40">
         Regenerate
@@ -419,26 +438,42 @@ export function OwnerAnalytics() {
 
           <TabsContent value="simplified">
             <div className="flex flex-col gap-6">
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} tone="sage" />
-                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} tone="peach" />
-                <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} tone="amber" />
-                <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} tone="card" />
+              <div>
+                <GroupLabel>Customers</GroupLabel>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} tone="sage" />
+                </div>
+              </div>
+              <div>
+                <GroupLabel>Purchases &amp; rewards</GroupLabel>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} tone="peach" />
+                  <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} tone="amber" />
+                  <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} tone="card" />
+                </div>
               </div>
               <AiSummaryCard businessId={business.id} period={period} stats={stats} totals={totals} />
-              <DeepBusinessReportCard businessId={business.id} report={webResearch} onReport={setWebResearch} />
-              <BusinessCoach businessId={business.id} stats={{ period: stats, totals, web_research: webResearch?.report }} />
+              <Fold title="Deep business report"><DeepBusinessReportCard businessId={business.id} report={webResearch} onReport={setWebResearch} /></Fold>
+              <Fold title="Business coach"><BusinessCoach businessId={business.id} stats={{ period: stats, totals, web_research: webResearch?.report }} /></Fold>
             </div>
           </TabsContent>
 
           <TabsContent value="detailed">
             <div className="flex flex-col gap-6">
-              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} tone="sage" />
-                <StatTile icon={Users} label="Active members" hint="Members who made a purchase in this period" value={stats.active_members} prev={stats.active_members_prev} tone="card" />
-                <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} tone="peach" />
-                <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} tone="amber" />
-                <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} tone="card" />
+              <div>
+                <GroupLabel>Customers</GroupLabel>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatTile icon={Users} label="New members" value={stats.new_members} prev={stats.new_members_prev} tone="sage" />
+                  <StatTile icon={Users} label="Active members" hint="Members who made a purchase in this period" value={stats.active_members} prev={stats.active_members_prev} tone="card" />
+                </div>
+              </div>
+              <div>
+                <GroupLabel>Purchases &amp; rewards</GroupLabel>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatTile icon={ShoppingBag} label="Purchases recorded" value={stats.stamps_given} prev={stats.stamps_given_prev} tone="peach" />
+                  <StatTile icon={Gift} label="Rewards earned" value={stats.rewards_earned} prev={stats.rewards_earned_prev} tone="amber" />
+                  <StatTile icon={Ticket} label="Rewards redeemed" value={stats.rewards_redeemed} prev={stats.rewards_redeemed_prev} tone="card" />
+                </div>
               </div>
 
               <div className="rounded-2xl bg-card ring-1 ring-foreground/8 p-6">
@@ -482,8 +517,8 @@ export function OwnerAnalytics() {
               </div>
 
               <AiSummaryCard businessId={business.id} period={period} stats={stats} totals={totals} />
-              <DeepBusinessReportCard businessId={business.id} report={webResearch} onReport={setWebResearch} />
-              <BusinessCoach businessId={business.id} stats={{ period: stats, totals, web_research: webResearch?.report }} />
+              <Fold title="Deep business report"><DeepBusinessReportCard businessId={business.id} report={webResearch} onReport={setWebResearch} /></Fold>
+              <Fold title="Business coach"><BusinessCoach businessId={business.id} stats={{ period: stats, totals, web_research: webResearch?.report }} /></Fold>
             </div>
           </TabsContent>
         </Tabs>

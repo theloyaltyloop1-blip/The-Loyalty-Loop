@@ -1,7 +1,7 @@
 import { handleTask } from '@/lib/async'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
-import { Send } from 'lucide-react'
+import { Send, HeartHandshake } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { OwnerLayout } from '@/components/owner-layout'
@@ -89,14 +89,31 @@ export function OwnerCustomers() {
 
   return (
     <OwnerLayout>
-      <h1 className="text-3xl font-display font-bold tracking-tight text-foreground sm:text-4xl">Your customers</h1>
-      <p className="text-muted-foreground mt-2 mb-7">Who comes back, who has gone quiet, and a quick way to say hello.</p>
+      <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground sm:text-4xl">Your customers</h1>
+          <p className="text-muted-foreground mt-2">Who comes back, who has gone quiet, and a quick way to say hello.</p>
+        </div>
+        {slipping.length > 0 && (
+          <button
+            type="button"
+            data-press-feedback
+            onClick={messageSlipping}
+            className="group inline-flex h-11 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+          >
+            <HeartHandshake className="h-4 w-4 group-hover:motion-safe:animate-bounce" />
+            <span className="group-hover:hidden">Win back {slipping.length} {slipping.length === 1 ? 'customer' : 'customers'}</span>
+            <span className="hidden group-hover:inline">Send them a “we miss you”</span>
+          </button>
+        )}
+      </div>
 
       {error && <p role="alert" className="mb-4 text-sm font-semibold text-destructive">{error}</p>}
       {members === null && !error ? (
         <p className="text-muted-foreground">Loading…</p>
       ) : (
         <>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Customer health</p>
           <div className="grid grid-cols-3 gap-3 mb-8">
             {[
               { label: 'Customers', value: list.length },
@@ -104,8 +121,8 @@ export function OwnerCustomers() {
               { label: 'Gone quiet', value: slipping.length },
             ].map((s) => (
               <div key={s.label} className="rounded-2xl bg-card p-4 ring-1 ring-foreground/8">
-                <p className="font-display text-3xl font-bold text-foreground">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
+                <p className="font-display text-3xl font-bold tabular-nums text-foreground">{s.value}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
               </div>
             ))}
           </div>

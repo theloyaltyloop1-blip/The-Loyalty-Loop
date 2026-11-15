@@ -1471,6 +1471,7 @@ function DashboardHome({
   onRedeemReward,
   onReport,
   onOpenGuide,
+  onWinBack,
 }: {
   business: Business;
   stats: DashboardStats;
@@ -1478,6 +1479,7 @@ function DashboardHome({
   onRedeemReward: () => void;
   onReport: () => void;
   onOpenGuide: () => void;
+  onWinBack?: () => void;
 }) {
   const checklist = [
     { label: "Add your address", done: Boolean(business.address) },
@@ -1525,6 +1527,18 @@ function DashboardHome({
         ) : null}
         {week.length ? <Text style={styles.homeWeek}>{weekTotal} {spendShop ? "purchases" : "stamps"} this week</Text> : null}
       </View>
+
+      {stats.dormantMembers > 0 && onWinBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Win back ${stats.dormantMembers} ${stats.dormantMembers === 1 ? "customer" : "customers"}`}
+          onPress={onWinBack}
+          style={({ pressed }) => [styles.homePill, { alignSelf: "stretch" }, pressed && styles.pressed]}
+        >
+          <Users size={19} strokeWidth={1.8} color={NIGHT} />
+          <Text style={styles.homePillText}>Win back {stats.dormantMembers} {stats.dormantMembers === 1 ? "customer" : "customers"}</Text>
+        </Pressable>
+      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -1809,6 +1823,24 @@ function MembersPage({ business }: { business: Business }) {
   );
 }
 
+function FoldSection({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((v) => !v)}
+        style={({ pressed }) => [styles.accordionHeader, pressed && styles.pressed]}
+      >
+        <Text style={styles.accordionTitle}>{title}</Text>
+        <ChevronRight size={18} color="#59615A" style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }} />
+      </Pressable>
+      {open ? children : null}
+    </View>
+  );
+}
+
 function AnalyticsPage({
   business,
   totals,
@@ -1955,15 +1987,26 @@ function AnalyticsPage({
           </Pressable>
         ))}
       </View>
-      <Text style={styles.analyticsHeading}>Last {period} days</Text>
+      <Text style={styles.sectionCaption}>LAST {period} DAYS</Text>
       <View style={styles.analyticsGrid}>
         <StatTile icon="+" value={periodStats.members} label="New members" />
         <StatTile icon="♟" value={periodStats.stamps} label="Activity" />
         <StatTile icon="◇" value={periodStats.rewards} label="Rewards" />
       </View>
-      <Text style={styles.chartsHeading}>
-        The last {period} days visualised:
-      </Text>
+      <View style={styles.insightCard}>
+        <Text style={styles.insightLabel}>QUICK READ</Text>
+        <Text style={styles.insightTitle}>
+          {periodStats.members > 0
+            ? "Your loyalty audience is growing."
+            : "Focus on getting the next customer to join."}
+        </Text>
+        <Text style={styles.insightCopy}>
+          {periodStats.stamps > 0
+            ? `${periodStats.stamps} loyalty actions were recorded in this period. Keep the scan prompt visible at the till.`
+            : "No loyalty activity is recorded for this period yet. Try placing your QR poster beside the payment point."}
+        </Text>
+      </View>
+      <FoldSection title={`Charts for the last ${period} days`}>
       <View style={styles.chartCard}>
         <Text style={styles.chartTitle}>Activity: purchases & visitors</Text>
         <MiniLineChart
@@ -1988,19 +2031,7 @@ function AnalyticsPage({
           bColor="#1A2138"
         />
       </View>
-      <View style={styles.insightCard}>
-        <Text style={styles.insightLabel}>QUICK READ</Text>
-        <Text style={styles.insightTitle}>
-          {periodStats.members > 0
-            ? "Your loyalty audience is growing."
-            : "Focus on getting the next customer to join."}
-        </Text>
-        <Text style={styles.insightCopy}>
-          {periodStats.stamps > 0
-            ? `${periodStats.stamps} loyalty actions were recorded in this period. Keep the scan prompt visible at the till.`
-            : "No loyalty activity is recorded for this period yet. Try placing your QR poster beside the payment point."}
-        </Text>
-      </View>
+      </FoldSection>
       <View style={styles.totalCard}>
         <Text style={styles.totalTitle}>All-time picture</Text>
         <Text style={styles.totalLine}>
@@ -2578,6 +2609,7 @@ function Dashboard({
                   }}
                   onReport={() => setOwnerPage("ai")}
                   onOpenGuide={() => setOwnerPage("tutorial")}
+                  onWinBack={() => setTab("customers")}
                 />
               )}{" "}
               {tab === "customers" && <CustomersHome business={selected} />}{" "}
@@ -2998,8 +3030,8 @@ const styles = StyleSheet.create({
   statTile: {
     width: "31%",
     minHeight: 132,
-    borderWidth: 2,
-    borderColor: "#2A2A2A",
+    borderWidth: 1,
+    borderColor: "rgba(38,48,42,.22)",
     borderRadius: 20,
     padding: 14,
     backgroundColor: "rgba(255,255,255,.52)",
@@ -3079,8 +3111,8 @@ const styles = StyleSheet.create({
   },
   homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
   setupCard: {
-    borderWidth: 2,
-    borderColor: "#2A2A2A",
+    borderWidth: 1,
+    borderColor: "rgba(38,48,42,.22)",
     borderRadius: 22,
     padding: 18,
     backgroundColor: "rgba(255,255,255,.55)",
@@ -3121,6 +3153,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statTileWide: { width: "48%" },
+  sectionCaption: { fontSize: 11, fontWeight: "900", letterSpacing: 1.7, color: "#59615A", marginTop: 8, marginBottom: 8 },
+  reportButtonLight: { minHeight: 52, borderRadius: 26, borderWidth: 1, borderColor: "rgba(38,48,42,.25)", backgroundColor: "rgba(255,255,255,.55)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 },
+  reportButtonLightText: { color: "#171815", fontWeight: "800", fontSize: 14 },
+  accordionHeader: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, marginTop: 6 },
+  accordionTitle: { fontSize: 13, fontWeight: "800", color: "#59615A" },
   pillRow: { flexDirection: "row", gap: 10, marginTop: 6, marginBottom: 12 },
   pillButton: {
     flex: 1,
