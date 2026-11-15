@@ -9,6 +9,14 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Native store builds (shopper 1.0.3, Business 1.0.2) - Claude
+- **Contents:** walk-past merged, `userInterfaceStyle: automatic` in both apps, new icons/splash (already on main), accurate iOS location strings, privacy-notice walk-past paragraph in `legal/documents-privacy.js` (NOT published; PDFs not regenerated), store copy rewritten with every feature and no Pakistan/Tooting/Balham text (repo `store.config.json` only; live listings NOT pushed).
+- **Versions/runtime:** shopper 1.0.3 (new runtime; 1.0.1/1.0.2 phones keep their OTAs), Business 1.0.2 (new runtime so old 1.0.1 phones are not sent JS that assumes the new native build). EAS autoIncrement bumped builds: shopper Android versionCode 135, Business Android 134.
+- **Migration:** `walk_past_alerts` APPLIED to production (tgukdabfvvoywawmzbdo) on the owner's go: 2 tables, 6 functions, cron `nearby-alert-log-retention` (03:17 daily, 90-day prune). Verified in the database.
+- **Android builds finished:** shopper 361a9d69-d79d-4af8-bb9a-4646519971c3, Business b7d83d21-76d3-446d-a981-dffc046e67fe. Business submitted to Google Play production (done). **Shopper submit REJECTED by Play (403):** background-location permission declaration missing; owner must complete Play Console > App content > Sensitive permissions > Location, then rerun `eas submit --platform android --latest --profile production --non-interactive` in apps/shopper.
+- **iOS builds NOT started:** Apple returns 403 "required agreement missing or expired" (widget bundle ID registration, and metadata pull). Owner says the agreement was accepted; still failing, so likely the Account Holder must accept it, or it has not propagated.
+- **Still open:** iOS builds + submits, ASC privacy answers for location, live store copy push (`eas metadata:push`) and Play listing copy, store icon uploads, Play background-location declaration, publish the privacy notice.
+
 ## 2026-11-15 - Shopper Home layout fix (main 2c7a696, JS only, OTA'd) - Claude
 ## 2026-11-16 - Shopper Home layout fix SHIPPED by OTA (main 2c7a696) - Claude
 - **Owner said "Go".** The earlier Whirl leftovers were already OTA'd by another session (see entry below); this set adds only the shopper Home layout fix (greeting size, whole Whirl, points caption, tab icon contrast). JS only; no package/app.json/lockfile/supabase change. Business unchanged, not republished.
