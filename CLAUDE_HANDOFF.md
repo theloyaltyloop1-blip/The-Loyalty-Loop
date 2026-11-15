@@ -9,6 +9,10 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Owner answers: wording OK, dark mode rides in the build, do NOT build yet - Claude
+- **Owner:** walk-past notification wording approved. Dark mode (branch from the dark-mode session) should ride in the same native build; merge it in once that session finishes and has been reviewed. **The build is on hold: do not start one until the owner says.**
+- **Not yet answered:** the 90-day alert-log retention (not added to the migration yet).
+
 ## 2026-11-15 - Decision: walk-past goes into the next native build - Claude
 - **Owner decision:** include walk-past offers in the next native build (shopper 1.0.3). **No build has been started**; the owner will say when. The new icons (5736301) are already in this branch's base.
 - **Still open before the build (owner has not answered):** notification wording and 90-day alert-log retention; the migration must be reviewed and applied by hand first; privacy policy and Play/App Store forms; build numbers (shopper 16 / 134 or higher); the dark-mode work lives on a separate branch and must be merged in deliberately if it should ride along.
