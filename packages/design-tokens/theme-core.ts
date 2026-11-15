@@ -137,7 +137,7 @@ const OVERRIDES: Record<ToneRole, Record<string, string>> = {
     '#EFEBE3': darkColors.fill,
     '#2B3A67': darkColors.primary,
     '#1F2A4D': '#3E53A3',
-    '#1A2138': '#2A3560',
+    '#1A2138': '#3B4F94',
     '#0B0F1C': '#0B0F1C',
     '#111111': '#0A0A0C',
     '#000000': '#000000',
