@@ -79,7 +79,7 @@ import {
   type NativeOwnerPage,
 } from "./src/owner-pages";
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from "./src/biometric";
-import { registerPushToken } from "./src/push";
+import { offerPushPrompt, registerPushToken } from "./src/push";
 import { getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from "./src/usage-analytics";
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
@@ -2755,8 +2755,11 @@ function AppRoot() {
     return () => subscription.remove();
   }, [session?.user.id]);
   useEffect(() => {
-    // Only saves a token if notifications are already allowed: never asks on launch.
-    if (session) void registerPushToken(session.user.id).catch(() => undefined);
+    // Saves a token only if notifications are already allowed; otherwise a one-time friendly pop-up asks first.
+    if (session) {
+      void registerPushToken(session.user.id).catch(() => undefined);
+      void offerPushPrompt(session.user.id);
+    }
   }, [session?.user.id]);
   if (!hasSupabaseConfig)
     return (

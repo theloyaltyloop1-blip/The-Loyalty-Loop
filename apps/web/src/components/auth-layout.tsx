@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 
-export function AuthLayout({ title, children }: { title: string; children: React.ReactNode }) {
+export function AuthLayout({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   const navigate = useNavigate()
   return (
     <div className="min-h-dvh bg-background p-3 sm:p-4 md:grid md:grid-cols-[minmax(320px,0.9fr)_1.1fr] md:gap-4">
@@ -39,6 +39,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
         </div>
         <div className="mx-auto my-auto w-full max-w-md py-10">
           <h1 className="mb-8 font-display text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
+          {subtitle && <p className="-mt-5 mb-8 text-base text-muted-foreground">{subtitle}</p>}
           <div className="flex flex-col gap-4">{children}</div>
         </div>
       </main>

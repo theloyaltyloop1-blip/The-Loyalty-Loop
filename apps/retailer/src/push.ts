@@ -2,7 +2,9 @@ import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
+import * as SecureStore from 'expo-secure-store'
 import { supabase } from './supabase'
+import { showAlert } from './components/AppAlert'
 
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) })
 
@@ -21,4 +23,23 @@ export async function registerPushToken(userId: string, { ask = false }: { ask?:
   const { error } = await supabase.from('push_tokens').upsert({ token, user_id: userId, platform: Platform.OS, updated_at: new Date().toISOString() }, { onConflict: 'token' })
   if (error) throw error
   return { registered: true }
+}
+
+const ASKED_KEY = 'loyalty-loop-business-push-prompt-asked'
+
+/** Asks once, in our own pop-up with a "Not now" button, a few seconds after
+ * sign-in, before the system notification prompt ever appears. Skipped if
+ * notifications are already allowed, declined at system level, or we asked before. */
+export async function offerPushPrompt(userId: string) {
+  try {
+    if (Platform.OS === 'web' || !Device.isDevice) return
+    const current = await Notifications.getPermissionsAsync()
+    if (current.granted || !current.canAskAgain) return
+    if ((await SecureStore.getItemAsync(ASKED_KEY)) === 'yes') return
+    await SecureStore.setItemAsync(ASKED_KEY, 'yes')
+    setTimeout(() => showAlert('Get a ping about your shop?', 'We’ll tell you when customers join and when a reward is claimed. Nothing else. You can change this any time in your phone’s settings.', [
+      { text: 'Not now', style: 'cancel' },
+      { text: 'Turn on', onPress: () => void registerPushToken(userId, { ask: true }).catch(() => undefined) },
+    ]), 4000)
+  } catch { /* never block the app on this */ }
 }
