@@ -9,6 +9,21 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Dark mode SHIPPED (website main 5659279 + OTAs on both apps) - Claude
+- **Owner said "send it out".** Branch `claude/release-dark-mode` = `origin/main` (cc70e16) + `claude/dark-mode` + Whirl dark artwork from `claude/integration-review` (apps and website). Walk-past, icons/splash, `userInterfaceStyle automatic`, migrations, edge functions, admin redesign, Whirl-everywhere, Ask Whirl were NOT included (`git diff origin/main` shows no package.json/app.json/lockfile/migration/function change).
+- **Website:** pushed to `main` (cc70e16..5659279); live site serves the dark CSS, `/mascot/dark/*.svg` (200) and the theme code. Sun/moon toggle sits in the top bar of the landing page; first visit follows the visitor's system setting.
+- **Apps (OTA, branch production, `--environment production`, per platform):**
+  shopper runtime 1.0.2: android 01a1dee3-8ee4-75df-8f81-da37abe06e7f (group 6377e45f-cd5b-4f94-809b-657d551b541b), ios 01a1dee4-e953-74a3-a3e8-8cb9fc9825ea (group 94843b54-3de9-4837-871d-50c0ed0cf27f);
+  Business runtime 1.0.1: android 01a1dee6-2c11-77b3-a586-054076841f43 (group 084270ef-081a-4062-80cc-aa9b45b289d0), ios 01a1dee7-47a8-75ba-9e94-ee93cf483559 (group 1aa84f14-e935-49dc-8ef6-dbd4528d23e9).
+  All four bundles downloaded: each has Supabase ref tgukdabfvvoywawmzbdo, the theme storage key and the dark Whirl artwork.
+- **"System" handling (installed binaries are built with `userInterfaceStyle: light`, so the app cannot see the phone's dark setting):** Settings > Light or dark now offers only Light and Dark; the dialog says "Same as my phone" arrives with the next app update. A saved/default "system" reads as Light. Status bar style is set from JS (`statusBarStyle`). Full System option returns when the store build ships `automatic` (left as `light` in app.json on this branch).
+- **Whirl screens:** conflicts with the mascot branch resolved keeping its logic/copy (Whirl poses, "You're open for stamps!", etc.) and making colours theme-aware.
+- **Landing hero:** the hero looked faint only while its 1.2s staggered fade-in ran (and the cream intro curtain flashed on the dark page). Hero reveal is now 0.6s and the intro curtain follows the theme. At rest the hero text measures about 17:1 on the dark background.
+- **Checks done:** `tsc --noEmit` shopper and retailer clean; web `tsc -p tsconfig.app.json` clean and `npm run build` ok; 199 node tests pass (API integration tests skipped, need a database). Browser (dark, desktop width): landing, sign-up, login and 404 looked right. **Not seen:** shop page, owner onboarding, admin (need login/data), narrow mobile width of the site, anything on a real phone.
+- **Rollback:** apps `npx eas-cli@24.11.0 update:roll-back-to-embedded --branch production --runtime-version 1.0.2 --platform android` (and `--platform ios`; shopper) and `--runtime-version 1.0.1` (Business); website: revert 5659279 on main or promote the previous Vercel deployment.
+- **Parked (owner decides):** store build with new icons/splash, `userInterfaceStyle automatic`, walk-past; admin redesign click-through; Whirl-everywhere and Ask Whirl.
+- **Next (owner):** open each app twice on a phone, go to Settings > Light or dark, pick Dark, and look at home, a shop, scan and Settings; report anything unreadable.
+
 ## 2026-11-15 - Whirl mascot and onboarding copy SHIPPED (main 40e279d, apps by OTA) - Claude
 - **Owner said "Yes, ship".** Website: `claude/mascot-concepts` fast-forwarded onto `main` (38b703e..40e279d; Vercel deploys). Apps by OTA, branch production, `--environment production`:
   shopper runtime 1.0.2: android 01a1decc-8a0a-791f-9d95-78213b2ea5c4 (group a1a66073-224f-4e73-844c-970de6dffa05), ios 01a1dece-0246-7b49-ae36-f32c2374ff19 (group d09cf0c1-516a-4e4a-a49e-ce4820cd06dc);
