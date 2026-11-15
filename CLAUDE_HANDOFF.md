@@ -11,13 +11,13 @@ Rules for entries are in `CLAUDE.md`. Entries mentioning Codex are history; Code
 - Waiting for the next native build: nothing listed.
 - Parked: Fidel card linking (hidden in the shopper app), SumUp till link, WhatsApp.
 
-## 2026-11-15 - Instruction files rewritten (CLAUDE.md, AGENTS.md, this header) - NOT shipped
+## 2026-11-15 - Instruction files rewritten (CLAUDE.md, AGENTS.md, this header) - LIVE on main
 
 - **What:** `CLAUDE.md` replaced with the current rules (branch from `origin/main`, main chat does not build, owner's yes before commit/deploy/OTA, `eas update --environment production` per platform with a bundle check, `showAlert`, coloured tiles, no Fidel contact), a release checklist and a Never list. `AGENTS.md` is now a pointer to `CLAUDE.md`. This file's Fidel/Codex header replaced by the header and "Current state" block above. The old "Copy-ready prompt for Claude Code" section and a stray prompt line at the very end were removed; nothing replaces them.
-- **Branch:** `claude/instruction-rewrite`, worktree `.claude/worktrees/instruction-rewrite`, cut from `origin/main` b759d00. Committed on the branch, not pushed or merged.
+- **Branch:** `claude/instruction-rewrite`, worktree `.claude/worktrees/instruction-rewrite`, cut from `origin/main` b759d00. Merged to `main` by fast-forward (b47c991) on the owner's yes.
 - **Checks run:** `git diff --stat` shows only these three files; the old header and prompt section are gone and every other entry is unchanged. **Not run:** no build or test (docs only). The `eas update` line in the checklist was copied from earlier notes, not executed.
 - **Open:** the version lines in "Current state" come from the 15 November release entries and need the owner's confirmation. `ARCH_PLAN.md` and `IMPLEMENTATION_TIMELINE.md` still describe the Codex era. `.agents/skills/` is a stale Codex copy of `.claude/skills/`. GitHub's default branch is still `apps/web`.
-- **Next:** (owner) say whether to commit and merge to `main`. (owner) change the GitHub default branch to `main`.
+- **Next:** (owner) change the GitHub default branch to `main`.
 
 ## 2026-11-15 - Native store builds (shopper 1.0.3, Business 1.0.2) - Claude
 - **Contents:** walk-past merged, `userInterfaceStyle: automatic` in both apps, new icons/splash (already on main), accurate iOS location strings, privacy-notice walk-past paragraph in `legal/documents-privacy.js` (NOT published; PDFs not regenerated), store copy rewritten with every feature and no Pakistan/Tooting/Balham text (repo `store.config.json` only; live listings NOT pushed).
