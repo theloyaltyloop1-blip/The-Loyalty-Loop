@@ -9,7 +9,7 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
-## 2026-11-15 - Shopper Home layout fix (branch `fix-shopper-home`, JS only, not OTA'd) - Claude
+## 2026-11-15 - Shopper Home layout fix (main 2c7a696, JS only, OTA'd) - Claude
 
 Owner screenshot of Play 1.0.1 showed a broken Home. Fixes (apps/shopper):
 - Greeting: 56px -> 44px with `numberOfLines={2}` + `adjustsFontSizeToFit` (min 0.7), so "Afternoon," never breaks mid-word; first name kept. HomeFeed.tsx.
@@ -18,6 +18,11 @@ Owner screenshot of Play 1.0.1 showed a broken Home. Fixes (apps/shopper):
 - Points card: "21 pts / FOR FREE COFFEE." read like a balance with an empty bar. It now says "21 pts TO GO FOR FREE COFFEE." and a caption under the bar shows "0 / 21 pts" (or spend "£x / £y"). HomeCollection.tsx.
 - Tab bar: inactive icons #B3AF8F -> #D5D9E8 (about 7:1 on #2B3A67 light and #34457F dark; WCAG AA needs 3:1 for icons). App.tsx.
 - Checks: `tsc --noEmit` clean for apps/shopper. NOT checked: no simulator/browser preview was run, so nothing has been seen on a phone, in dark mode, or at 360dp/large widths; the `wave` art being fully uncropped at 44-48px is assumed from the pose list. The bar fill is truthful (0% at 0 points). No EAS build/OTA, nothing pushed.
+- **SHIPPED 2026-11-15** (main 2c7a696, owner's go). OTA groups on branch `production`, built with `--environment production`:
+  - runtime 1.0.2: android `ed4c8662-a008-4af4-a4f8-7d06673c2043`, ios `2693775c-8640-4a03-845b-9c1db8900760`
+  - runtime 1.0.1 (Play build; app.json temporarily 1.0.1, reverted): android `10926a1f-1294-4217-ba0b-03e34fa3361b`, ios `4007eb55-5562-4ba9-930f-e8b12148f840`
+  - The update server serves these update ids per runtime/platform (checked via u.expo.dev manifest). The asset CDN returns 403 to direct downloads, so the uploaded bundles themselves could not be read; instead a local `eas env:exec production "expo export"` android bundle was checked and contains project ref tgukdabfvvoywawmzbdo. Not seen on a phone.
+  - Rollback: `npx eas-cli@24.11.0 update:roll-back-to-embedded --branch production --runtime-version 1.0.1 --platform android` (repeat for ios, and for 1.0.2). Applies on the second app launch.
 
 ## 2026-11-15 - Whirl leftovers + Ask Whirl BACKEND LIVE (branch `claude/whirl-moments`; apps not yet OTA'd) - Claude
 - **Owner:** the user ("I approve all of this"). **Added:** first-join pop-up in the shopper app (once ever, Whirl celebrate; the notification ask waits until it is dismissed), Whirl thumbs on the confirm-email pop-up, web Help header (peek) and landing help-centre row (think), Whirl in the visit thank-you email (thumbs) and release email (wave) as PNGs in `apps/web/public/mascot/email/`. Ask Whirl commits were already on main (0c97b0c, 2d60638, Privacy Notice 94e7cc0); I dropped my duplicate cherry-picks when rebasing.
