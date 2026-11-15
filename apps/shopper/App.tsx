@@ -48,7 +48,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withT
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { Whirl, AppWhirlProvider } from './src/Whirl'
-import { WhirlSpinner, WhirlRefreshIndicator, whirlRefreshControlProps, useWhirlSettings } from '../../packages/whirl/native'
+import { WhirlSpinner, WhirlRefreshIndicator, whirlRefreshControlProps, useWhirlSettings, useWhirlStorage, shouldShowOnce, markSeen } from '../../packages/whirl/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import Constants from 'expo-constants'
 import * as Updates from 'expo-updates'
@@ -499,7 +499,7 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
         })
         if (error) throw error
         if (data.session) { haptic.success(); onSession(data.session) }
-        else showAlert(name.trim() ? `Nearly there, ${name.trim()}.` : 'Check your email', 'Pop over to your inbox, tap the link, then come back and sign in. Your first stamp is waiting.')
+        else showAlert(name.trim() ? `Nearly there, ${name.trim()}.` : 'Check your email', 'Pop over to your inbox, tap the link, then come back and sign in. Your first stamp is waiting.', undefined, { whirl: 'thumbs' })
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw error
@@ -2827,10 +2827,25 @@ function AppHome({ session }: { session: Session }) {
       if (error && error.code !== '23505') throw error
       await load()
       void trackUsageEvent(userId, 'loyalty_card_joined')
-      void maybeAskPing()
+      void afterJoin(business.name)
     } catch (e) {
       showAlert('Could not join', e instanceof Error ? e.message : 'Please try again.')
     }
+  }
+
+  // The very first join ever gets one warm "you're in" pop-up from Whirl (once, never again; skipped when Show Whirl is off).
+  // The notification ask waits until it is dismissed, so two prompts never stack.
+  const whirlStorage = useWhirlStorage()
+  const { showWhirl: whirlOn } = useWhirlSettings()
+  async function afterJoin(shopName?: string) {
+    try {
+      if (whirlOn && (await shouldShowOnce(whirlStorage, 'first-join'))) {
+        await markSeen(whirlStorage, 'first-join')
+        showAlert("You're in!", `${shopName ? shopName + ' is' : 'Your card is'} on your home screen. Show it at the till and your first stamp is yours.`, [{ text: 'Lovely', onPress: () => void maybeAskPing() }], { whirl: 'celebrate' })
+        return
+      }
+    } catch { /* fall through to the normal flow */ }
+    void maybeAskPing()
   }
 
   // Notifications are asked for once, right after a first join, when a ping
@@ -2876,7 +2891,7 @@ function AppHome({ session }: { session: Session }) {
         const { data: row } = await supabase.from('memberships').select('*').eq('user_id', userId).eq('business_id', shop.id).maybeSingle()
         if (row) setMemberships(prev => [...prev.filter(x => x.business_id !== shop.id), { ...(row as Membership), rolling_spend_pence: 0 }])
         void trackUsageEvent(userId, 'loyalty_card_joined', 'after_sign_up')
-        void maybeAskPing()
+        void afterJoin(shop.name)
       } catch (e) {
         pendingJoin = null
         showAlert('Could not join', `${shop.name}: ${e instanceof Error ? e.message : 'Please try again from the shop page.'}`)
@@ -2922,7 +2937,7 @@ function AppHome({ session }: { session: Session }) {
         onBack={() => setSelected(null)}
         onToggleFavourite={() => toggleFavourite(selected)}
         refresh={load}
-        onJoined={(m) => { setMemberships(prev => [...prev.filter(x => x.business_id !== m.business_id), { ...m, rolling_spend_pence: 0 }]); void maybeAskPing() }}
+        onJoined={(m) => { setMemberships(prev => [...prev.filter(x => x.business_id !== m.business_id), { ...m, rolling_spend_pence: 0 }]); void afterJoin(selected.name) }}
         cardLinking={cardLinking}
         onLinkCard={() => void linkCardFromShop()}
       />

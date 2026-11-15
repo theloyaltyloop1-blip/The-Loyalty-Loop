@@ -2,6 +2,7 @@ import { useRef, type CSSProperties, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
+import { Whirl } from '@/components/whirl'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { StoreBadges } from '@/components/store-badges'
 import { LandingDemo } from '@/components/landing-demo'
@@ -197,7 +198,10 @@ export function Landing() {
               </div>
             ))}
           </dl>
-          <Link className="lp-link" to="/help">Visit the help centre</Link>
+          <div className="lp-help-row">
+            <Whirl pose="think" size={72} className="w-[72px]" />
+            <Link className="lp-link" to="/help">Visit the help centre</Link>
+          </div>
         </section>
 
         <LandingDemo />

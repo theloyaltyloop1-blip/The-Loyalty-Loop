@@ -44,6 +44,7 @@ export function renderEmailHtml(opts: { body: string; firstName: string | null; 
   <p style="margin:0 0 16px">${greeting}</p>
   ${bodyToHtml(opts.body)}
   <p style="margin:24px 0 0">The Loyalty Loop team</p>
+  <img src="${SITE_URL}/mascot/email/whirl-wave.png" alt="" width="88" style="display:block;width:88px;max-width:100%;height:auto;margin:8px 0 0">
   <p style="margin:32px 0 0;color:#8a8f99;font-size:12px">${why} <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:#8a8f99">Unsubscribe from product news</a>.</p>
 </div>`;
 }

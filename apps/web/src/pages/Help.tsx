@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Plus, X, Mail } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
+import { Whirl } from '@/components/whirl'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { usePageMeta } from '@/lib/use-page-meta'
 
@@ -167,7 +168,8 @@ export function Help() {
           </Link>
         </div>
 
-        <header className="mt-8 rounded-3xl bg-olive px-6 py-10 text-olive-ink sm:px-10 sm:py-12">
+        <header className="relative mt-14 rounded-3xl bg-olive px-6 py-10 text-olive-ink sm:px-10 sm:py-12">
+          <Whirl pose="peek" size={112} className="absolute -top-[52px] right-6 w-24 sm:right-10 sm:w-28" />
           <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">Help &amp; FAQ</h1>
           <p className="mt-3 max-w-xl text-olive-ink/80">
             Everything you need to get going with The Loyalty Loop. Can’t find your answer? We’re a real person away.
