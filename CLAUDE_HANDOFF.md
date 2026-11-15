@@ -9,6 +9,15 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Whirl mascot and onboarding copy SHIPPED (main 40e279d, apps by OTA) - Claude
+- **Owner said "Yes, ship".** Website: `claude/mascot-concepts` fast-forwarded onto `main` (38b703e..40e279d; Vercel deploys). Apps by OTA, branch production, `--environment production`:
+  shopper runtime 1.0.2: android 01a1decc-8a0a-791f-9d95-78213b2ea5c4 (group a1a66073-224f-4e73-844c-970de6dffa05), ios 01a1dece-0246-7b49-ae36-f32c2374ff19 (group d09cf0c1-516a-4e4a-a49e-ce4820cd06dc);
+  Business runtime 1.0.1: android 01a1decf-3a8e-7935-adaf-c63191289e59 (group 2a75c750-793f-46ac-8850-3e22f1dd234b), ios 01a1ded0-627e-70fa-8229-57e57d687eff (group 7f5cf634-ac34-4636-9b43-d607776a29a6).
+- **Verified:** all four uploaded bundles downloaded; each contains the Supabase project ref and the new copy. `tsc --noEmit` clean for both apps after a clean `npm ci` in the worktree (first attempt borrowed a stale node_modules and failed to bundle, nothing uploaded).
+- **Not verified:** nothing seen on a phone; phones take the update on the second launch. Shopper runtime 1.0.1 not published (still skipped, see earlier entry). Web mascot is the light version only.
+- **Rollback:** `npx eas-cli@24.11.0 update:roll-back-to-embedded --branch production --runtime-version 1.0.2 --platform android` (and ios; runtime 1.0.1 for Business), or republish the previous groups from the 2026-11-15 reel-lessons entry.
+- **Next (owner):** open both apps on a phone twice and look at sign-up, empty screens and the Business wizard; tell me what looks off.
+
 ## 2026-11-15 - Whirl mascot and approved onboarding copy wired in, NOT shipped - Claude
 - **Owner approved** the copy in `docs/onboarding-voice.md` and chose Whirl. Branch `claude/mascot-concepts` (not pushed, no OTA, no build).
 - **Changed:** shopper `App.tsx` (sign-up hero/sub-line/button/switch link/confirm-email text, ping sheet, empty Rewards/Favourites/News with Whirl); Business `shop-onboarding.tsx` + `push.ts` (wizard copy, Whirl on each step, live and check-email screens); website `Signup.tsx`, `auth-layout.tsx` (new `mascot` prop), `owner/Onboarding.tsx`, `Favourites.tsx`. New: `src/Whirl.tsx` and generated `src/mascot-whirl.ts` in both apps (react-native-svg already a dependency), `apps/web/public/mascot/`, `brand/mascot/src/export_app.py`.
