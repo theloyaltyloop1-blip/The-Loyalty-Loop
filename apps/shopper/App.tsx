@@ -616,6 +616,7 @@ function confirmDeleteAccount() {
       const { data, error } = await supabase.functions.invoke('delete-my-account')
       if (error) throw error
       if (data && typeof data === 'object' && 'error' in data && data.error) throw new Error(String(data.error))
+      await disableWalkPast().catch(() => undefined)
       await supabase.auth.signOut().catch(() => undefined)
       showAlert('Account deleted', 'Your account and its data have been permanently deleted.')
     } catch (e) {
@@ -780,7 +781,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   function confirmSignOut() {
     showAlert('Sign out?', 'You can sign back in at any time.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => { clearHomeCache(userId); void supabase.auth.signOut() } },
+      { text: 'Sign out', style: 'destructive', onPress: () => { clearHomeCache(userId); void disableWalkPast().catch(() => undefined).finally(() => void supabase.auth.signOut()) } },
     ])
   }
   return (
@@ -3042,6 +3043,7 @@ function AppRoot() {
       if (!active) return
       if (error && isSessionRejection(error)) {
         // The server says this session is no good: sign out for real.
+        await disableWalkPast().catch(() => undefined)
         await supabase.auth.signOut().catch(() => undefined)
         return
       }
@@ -3053,6 +3055,7 @@ function AppRoot() {
       if (ok) writeLaunchCache('role', uid, { ok: true }, ticket)
       else {
         showAlert('Use the business app', 'This account is an owner or staff account. Please sign in to The Loyalty Loop for Business instead.')
+        await disableWalkPast().catch(() => undefined)
         await supabase.auth.signOut()
       }
     })()
