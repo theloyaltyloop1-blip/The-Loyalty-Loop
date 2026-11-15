@@ -4,6 +4,8 @@ Three mascot concepts for The Loyalty Loop, each in six poses, in light and dark
 
 Open `concepts.png` first (one-page contact sheet: all 18 poses on paper and on near-black, plus 96/64/48/32 px checks). `sizes.png` shows all poses at 48 and 32 px.
 
+**Decision: the owner chose Whirl (2026-11-15).** Dot and Pip are kept here only for reference.
+
 ## The three concepts
 
 | Name | Character | How it comes from the loop | Personality |

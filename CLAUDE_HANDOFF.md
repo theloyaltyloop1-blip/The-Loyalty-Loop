@@ -14,7 +14,8 @@ need Claude's sign-off before the next one starts.
 - **Files:** `brand/mascot/concepts.png` (contact sheet, open this first), `brand/mascot/README.md`, `brand/mascot/svg/` and `png/` (+ `dark/`), `brand/mascot/sizes.png`, `brand/mascot/src/build.py` + `render.py`, `docs/onboarding-voice.md`.
 - **Checks done:** all 36 SVGs generated and rendered in headless Chrome; looked at the contact sheet and individual PNGs; 96/64/48/32 px check on paper and on `#121714`. Recommendation in the README is Dot.
 - **Not done / not verified:** no app or website code changed, no build or OTA. Not tried in an app, splash or icon. Pip's hands/thumb are the roughest drawings. Copy is proposed, not reviewed; old lines were copied from the code, not seen on screen.
-- **Next (owner):** pick a concept (or ask for a redraw of one), then say if the new onboarding lines can go in. **Then (Claude):** wire the chosen mascot and copy into both apps and the website, by OTA where JS-only.
+- **Decision (owner, 2026-11-15): Whirl is the mascot.** Dot and Pip are dropped.
+- **Next (Claude):** make a simple small-size Whirl (plain face, fewer blade outlines) so it holds at 32 px, then wait for the owner's yes on the onboarding lines before wiring the mascot and copy into both apps and the website (OTA where JS-only).
 
 ## 2026-11-15 - New app icons wired in, NO build started - Claude
 - **Owner approved the redrawn brand mark.** Copied `brand/png/` into both apps' `assets/`: `icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`, `splash-icon.png`, `favicon.png`. Both app.json adaptive icons now use `android-icon-foreground.png` as `foregroundImage` (was `icon.png`) with background `#F8E4C6` (Business was `#FDF8EA`). The two apps now share one icon (the old Business icon lacked the orange leaves).
