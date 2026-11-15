@@ -1,6 +1,6 @@
 import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { AppAlertHost, showAlert } from "./src/components/AppAlert";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
 import { ShopOnboarding, clearPendingShop, type OnboardingDestination } from "./src/shop-onboarding";
 import {
@@ -65,7 +65,9 @@ import { colors, fonts } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
-import { hasSupabaseConfig, supabase } from "./src/supabase";
+import { hasSupabaseConfig, readStoredSession, supabase } from "./src/supabase";
+import { clearLaunchCache, launchCacheTicket, readLaunchCache, writeLaunchCache } from "./src/launch-cache";
+import { isSessionRejection } from "./src/launch-cache-core";
 import { SkeletonScreen } from "./src/components/Skeleton";
 import { OutageBanner, simulatedOutage, useServiceStatus } from "./src/service-status";
 import Storage from "expo-sqlite/kv-store";
@@ -2173,11 +2175,23 @@ function Dashboard({
   preview?: boolean;
   canCreateBusiness?: boolean;
 }) {
+  // Last good snapshot saved on this phone (per user, 7 days, wiped on sign-out):
+  // the dashboard paints from it at once and refreshes quietly behind it.
+  const [snap] = useState(() => {
+    if (preview) return null;
+    const uid = session.user.id;
+    const saved = readLaunchCache<{ shops: Business[]; ownedIds: string[] }>("shops", uid)?.data;
+    if (!saved?.shops?.length) return null;
+    const first = saved.shops[0];
+    const stats = readLaunchCache<{ shopId: string; stats: DashboardStats }>("stats", uid)?.data;
+    const configured = readLaunchCache<{ ids: string[] }>("configured", uid)?.data?.ids ?? [];
+    return { shops: saved.shops, ownedIds: saved.ownedIds ?? [], first, stats: stats?.shopId === first.id ? stats.stats : null, configured };
+  });
   const [shops, setShops] = useState<Business[]>(
-      preview ? [PREVIEW_BUSINESS] : [],
+      preview ? [PREVIEW_BUSINESS] : snap?.shops ?? [],
     ),
     [selected, setSelected] = useState<Business | null>(
-      preview ? PREVIEW_BUSINESS : null,
+      preview ? PREVIEW_BUSINESS : snap?.first ?? null,
     ),
     _country = setActiveCountry(selected?.country_code),
     [tab, setTab] = useState<
@@ -2189,7 +2203,7 @@ function Dashboard({
     [stats, setStats] = useState<DashboardStats>(
       preview
         ? PREVIEW_STATS
-        : {
+        : snap?.stats ?? {
             members: 0,
             stamps: 0,
             rewards: 0,
@@ -2199,12 +2213,15 @@ function Dashboard({
             dormantMembers: 0,
           },
     ),
-    [loading, setLoading] = useState(!preview);
-  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
-  const [needsLoyaltySetup, setNeedsLoyaltySetup] = useState<boolean | null>(null);
+    [loading, setLoading] = useState(!preview && !snap);
+  const [ownedIds, setOwnedIds] = useState<Set<string>>(() => new Set(snap?.ownedIds ?? []));
+  // Shops already known to have a programme: skip the full-screen check for them.
+  const configuredShops = useRef<Set<string>>(new Set(snap?.configured ?? []));
+  const [needsLoyaltySetup, setNeedsLoyaltySetup] = useState<boolean | null>(
+    snap && snap.configured.includes(snap.first.id) ? false : null,
+  );
   const [platformNotices, setPlatformNotices] = useState<{ id: string; title: string; body: string | null }[]>([]);
   const serviceStatus = useServiceStatus("business");
-  const shopsCacheKey = `loyalty-loop:business-shops:v1:${session.user.id}`;
   const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (preview) return;
@@ -2238,6 +2255,7 @@ function Dashboard({
   async function load(silent = false) {
     if (preview) return;
     if (!silent) setLoading(true);
+    const ticket = launchCacheTicket();
     try {
       if (simulatedOutage()) throw new Error("Simulated outage");
       const [
@@ -2276,17 +2294,11 @@ function Dashboard({
           : all[0] || null,
       );
       // Saved on the phone so the app still opens on your shop during an outage.
-      try {
-        Storage.setItemSync(shopsCacheKey, JSON.stringify({ shops: all, ownedIds: (owned || []).map((b) => b.id) }));
-      } catch {}
+      writeLaunchCache("shops", session.user.id, { shops: all, ownedIds: (owned || []).map((b) => b.id) }, ticket);
       if (serviceStatus.level !== "ok") serviceStatus.recheck();
     } catch (e) {
       serviceStatus.recheck();
-      let saved: { shops: Business[]; ownedIds: string[] } | null = null;
-      try {
-        const raw = Storage.getItemSync(shopsCacheKey);
-        saved = raw ? JSON.parse(raw) : null;
-      } catch {}
+      const saved = readLaunchCache<{ shops: Business[]; ownedIds: string[] }>("shops", session.user.id)?.data ?? null;
       if (saved?.shops?.length) {
         setShops((current) => (current.length ? current : saved!.shops));
         setOwnedIds((current) => (current.size ? current : new Set(saved!.ownedIds)));
@@ -2302,7 +2314,7 @@ function Dashboard({
     }
   }
   useEffect(() => {
-    if (!preview) load();
+    if (!preview) load(Boolean(snap));
   }, [preview]);
   // When our servers come back, reload quietly.
   const wasDown = useRef(false);
@@ -2315,33 +2327,45 @@ function Dashboard({
   }, [serviceStatus.level, serviceStatus.checkedAt]);
   // Force the first-run loyalty programme wizard for an owner (never staff)
   // whose shop has no reward defined yet — see LoyaltyProgramSetup above.
+  const selectedId = selected?.id ?? null;
+  const selectedRewardModel = selected?.reward_model;
+  const selectedIsOwned = selectedId ? ownedIds.has(selectedId) : false;
   useEffect(() => {
     // A custom (AI-designed) programme is complete from creation: its rules hold everything.
-    if (preview || !selected || !ownedIds.has(selected.id) || selected.reward_model === "custom") {
+    if (preview || !selectedId || !selectedIsOwned || selectedRewardModel === "custom") {
       setNeedsLoyaltySetup(false);
       return;
     }
     let active = true;
-    setNeedsLoyaltySetup(null);
+    const ticket = launchCacheTicket();
+    // A shop already known to be set up is re-checked quietly (no spinner); only an unknown one waits.
+    setNeedsLoyaltySetup(configuredShops.current.has(selectedId) ? false : null);
     // Setup is done once the shop has rewards (stamps, £ spend, points) or
     // membership levels (tiers). A missing tiers table (migration not applied
     // yet) counts as "no tiers".
     void Promise.all([
-      supabase.from("reward_catalog").select("id").eq("business_id", selected.id).limit(1),
-      supabase.from("membership_tiers").select("id").eq("business_id", selected.id).limit(1),
+      supabase.from("reward_catalog").select("id").eq("business_id", selectedId).limit(1),
+      supabase.from("membership_tiers").select("id").eq("business_id", selectedId).limit(1),
     ]).then(([rewards, tiers]) => {
       if (!active) return;
       const hasTiers = !tiers.error && (tiers.data || []).length > 0;
-      setNeedsLoyaltySetup(!rewards.error && (rewards.data || []).length === 0 && !hasTiers);
+      const needs = !rewards.error && (rewards.data || []).length === 0 && !hasTiers;
+      setNeedsLoyaltySetup(needs);
+      if (!needs && !rewards.error) {
+        configuredShops.current.add(selectedId);
+        writeLaunchCache("configured", session.user.id, { ids: [...configuredShops.current] }, ticket);
+      } else if (needs) configuredShops.current.delete(selectedId);
     });
     return () => {
       active = false;
     };
-  }, [preview, selected, ownedIds]);
+  }, [preview, selectedId, selectedIsOwned, selectedRewardModel]);
   useEffect(() => {
     if (preview || !selected) return;
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
+    let active = true;
+    const ticket = launchCacheTicket();
     Promise.all([
       supabase
         .from("memberships")
@@ -2381,6 +2405,7 @@ function Dashboard({
         .gte("created_at", new Date(startOfToday.getTime() - 6 * 86400000).toISOString())
         .limit(5000),
     ]).then(([members, stamps, todayActions, rewards, redeemed, reviews, memberRows, weekRows]) => {
+      if (!active) return;
       const week = [0, 0, 0, 0, 0, 0, 0];
       ((weekRows.data || []) as { created_at: string }[]).forEach((row) => {
         const day = new Date(row.created_at);
@@ -2409,6 +2434,10 @@ function Dashboard({
         week: weekRows.error ? undefined : week,
       };
       setStats(nextStats);
+      // Saved only from a clean, fresh answer, so a failed request never overwrites good numbers.
+      if (![members, stamps, rewards, redeemed, reviews, memberRows].some((r) => r.error)) {
+        writeLaunchCache("stats", session.user.id, { shopId: selected.id, stats: nextStats }, ticket);
+      }
       void syncRetailerWidget({
         businessName: selected.name,
         todayActions: todayActions.count || 0,
@@ -2418,6 +2447,9 @@ function Dashboard({
         logoUrl: selected.logo_url || "",
       }).catch(() => undefined);
     });
+    return () => {
+      active = false;
+    };
   }, [selected?.id, loading, widgetRefreshKey]);
   useEffect(() => {
     const openWidgetDestination = ({ url }: { url: string }) => {
@@ -2653,6 +2685,17 @@ export default function App() {
   );
 }
 
+/** Sign-out: forget every locally saved snapshot (launch cache and the old outage copies). */
+function clearAllLaunchData(userId: string | null) {
+  clearLaunchCache();
+  if (userId) {
+    try {
+      Storage.removeItemSync(`loyalty-loop:business-shops:v1:${userId}`);
+      Storage.removeItemSync(`loyalty-loop:business-roles:v1:${userId}`);
+    } catch {}
+  }
+}
+
 function AppRoot() {
   const previewMode =
     __DEV__ &&
@@ -2672,56 +2715,103 @@ function AppRoot() {
     );
   const [session, setSession] = useState<Session | null>(null),
     [checking, setChecking] = useState(true),
-    [allowed, setAllowed] = useState(false),
-    [isOwner, setIsOwner] = useState(false),
+    // Verdict from the server this launch; until it arrives the last verified
+    // verdict (saved on this phone, per user) is used so the app opens at once.
+    [verdict, setVerdict] = useState<{ uid: string; ok: boolean; isOwner: boolean } | null>(null),
     [showAuth, setShowAuth] = useState(false),
     [locked, setLocked] = useState(false),
-    [checkingLock, setCheckingLock] = useState(false);
+    [checkingLock, setCheckingLock] = useState(false),
+    // The biometric check has run for this user (local, so quick). Until then
+    // the app stays hidden so cached data never flashes before the lock.
+    [lockCheckedFor, setLockCheckedFor] = useState<string | null>(null);
   const checkingUpdate = useLaunchUpdate();
+  const lastUserId = useRef<string | null>(null);
+  const optimisticToken = useRef<string | null>(null);
+  const uid = session?.user.id ?? null;
+  if (uid) lastUserId.current = uid;
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    let active = true;
+    // 1. Show the app from the stored session without waiting for the network.
+    void readStoredSession().then((stored) => {
+      if (!active || !stored) return;
+      optimisticToken.current = stored.access_token;
+      setSession((current) => current ?? stored);
       setChecking(false);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, next) =>
-      setSession(next),
-    );
-    return () => data.subscription.unsubscribe();
+    // 2. Confirm in the background. getSession() may refresh an expired token.
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      if (data.session) {
+        optimisticToken.current = null;
+        setSession(data.session);
+      } else if (!error || isSessionRejection(error)) {
+        // Really signed out (or the server rejected it). Offline errors keep the stored session.
+        setSession((current) => (!current || optimisticToken.current === current.access_token ? null : current));
+        if (error) clearAllLaunchData(lastUserId.current);
+      }
+      setChecking(false);
+    });
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === "SIGNED_OUT") {
+        clearAllLaunchData(lastUserId.current);
+        setSession(null);
+      } else if (next) {
+        optimisticToken.current = null;
+        setSession(next);
+      }
+      // INITIAL_SESSION with no session is ignored: a failed offline refresh must not undo the stored session.
+    });
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
   }, []);
+  const cachedVerdict = useMemo(
+    () => {
+      if (!uid) return null;
+      const saved = readLaunchCache<{ ok: boolean; isOwner: boolean }>("role", uid)?.data;
+      if (saved) return saved;
+      // Roles saved by the previous version of the app (only ever written after a verified check).
+      try {
+        const legacy: string[] = JSON.parse(Storage.getItemSync(`loyalty-loop:business-roles:v1:${uid}`) || "[]");
+        const ok = legacy.some((role) => ["admin", "brand_head", "business_owner", "staff"].includes(role));
+        return ok ? { ok, isOwner: legacy.includes("business_owner") } : null;
+      } catch {
+        return null;
+      }
+    },
+    [uid],
+  );
+  const current = uid ? (verdict?.uid === uid ? verdict : cachedVerdict) : null;
+  const allowed = current?.ok === true;
+  const isOwner = current?.isOwner === true;
   useEffect(() => {
-    if (!session) {
-      setAllowed(false);
-      setIsOwner(false);
-      return;
-    }
+    if (!uid) return;
+    let active = true;
+    const ticket = launchCacheTicket();
     (async () => {
       await supabase.rpc("ensure_current_user_bootstrap");
-      const rolesKey = `loyalty-loop:business-roles:v1:${session.user.id}`;
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id);
+      const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+      if (!active) return;
+      if (error && isSessionRejection(error)) {
+        // The server says this session is no good: sign out for real.
+        await supabase.auth.signOut().catch(() => undefined);
+        return;
+      }
       if (error || !data) {
         // Couldn't reach us (outage or no signal): never sign people out for
         // that. Use the roles saved last time; the server still checks every action.
-        let saved: string[] = [];
-        try {
-          saved = JSON.parse(Storage.getItemSync(rolesKey) || "[]");
-        } catch {}
-        setIsOwner(saved.includes("business_owner"));
-        setAllowed(true);
+        setVerdict({ uid, ok: true, isOwner: cachedVerdict?.isOwner === true });
         return;
       }
-      try {
-        Storage.setItemSync(rolesKey, JSON.stringify(data.map((r: any) => r.role)));
-      } catch {}
       const roles = data.map((r: any) => r.role);
       const ok = roles.some((role: string) =>
         ["admin", "brand_head", "business_owner", "staff"].includes(role),
       );
-      setIsOwner(roles.includes("business_owner"));
-      setAllowed(ok);
-      if (!ok) {
+      const owner = roles.includes("business_owner");
+      setVerdict({ uid, ok, isOwner: owner });
+      if (ok) writeLaunchCache("role", uid, { ok: true, isOwner: owner }, ticket);
+      else {
         showAlert(
           "Use the shopper app",
           "This is a customer account. Please sign in to The Loyalty Loop shopper app.",
@@ -2729,21 +2819,29 @@ function AppRoot() {
         await supabase.auth.signOut();
       }
     })();
-  }, [session?.user.id]);
+    return () => {
+      active = false;
+    };
+  }, [uid]);
   async function checkAppLock() {
     if (!session) {
       setLocked(false);
       return;
     }
-    if (!(await biometricLockEnabled())) {
-      setLocked(false);
-      return;
+    const forUser = session.user.id;
+    try {
+      if (!(await biometricLockEnabled())) {
+        setLocked(false);
+        return;
+      }
+      setCheckingLock(true);
+      setLocked(true);
+      const success = await unlockWithBiometrics();
+      setLocked(!success);
+      setCheckingLock(false);
+    } finally {
+      setLockCheckedFor(forUser);
     }
-    setCheckingLock(true);
-    setLocked(true);
-    const success = await unlockWithBiometrics();
-    setLocked(!success);
-    setCheckingLock(false);
   }
   useEffect(() => {
     void checkAppLock();
@@ -2770,7 +2868,7 @@ function AppRoot() {
         </View>
       </SafeAreaView>
     );
-  if (checkingUpdate || checking || (session && (!allowed || checkingLock)))
+  if (checkingUpdate || checking || (session && (!allowed || checkingLock || lockCheckedFor !== session.user.id)))
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>

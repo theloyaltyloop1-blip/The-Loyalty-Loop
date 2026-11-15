@@ -58,7 +58,9 @@ import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument
 import { AppIntro } from './src/components/Poster'
 import { colors, fonts } from './src/theme'
 import { encodeRewardQr } from './src/reward-qr'
-import { hasSupabaseConfig, supabase } from './src/supabase'
+import { hasSupabaseConfig, readStoredSession, supabase } from './src/supabase'
+import { clearLaunchCache, launchCacheTicket, readLaunchCache, writeLaunchCache } from './src/launch-cache'
+import { isSessionRejection } from './src/launch-cache-core'
 import { OutageBanner, setSimulatedOutage, simulatedOutage, useServiceStatus } from './src/service-status'
 import { clearHomeCache, readHomeCache, writeHomeCache } from './src/home-cache'
 import { biometricLockEnabled, setBiometricLock, unlockWithBiometrics } from './src/biometric'
@@ -2514,7 +2516,7 @@ function AppHome({ session }: { session: Session }) {
       if (simulatedOutage()) throw new Error('Simulated outage')
       const platformTargetColumn = Platform.OS === 'ios' ? 'target_shopper_ios' : 'target_shopper_android'
       const twelveMonthsAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
-      const [shops, memberRows, earned, news, favs, profile, notices, catalogRows, levelRows, pointsRows, spendRows] = await Promise.all([
+      const [shops, memberRows, earned, news, favs, profile, notices, catalogRows, levelRows, pointsRows, spendRows, ratings] = await Promise.all([
         supabase.from('businesses').select('*').eq('is_active', true).order('created_at'),
         supabase.from('memberships').select('*').eq('user_id', userId),
         supabase
@@ -2541,6 +2543,8 @@ function AppHome({ session }: { session: Session }) {
         supabase.from('membership_tiers').select('business_id,name,spend_threshold_pence'),
         supabase.from('reward_catalog').select('business_id,title,points_cost').gt('points_cost', 0),
         supabase.from('transactions').select('business_id,value').eq('user_id', userId).eq('type', 'spend').is('voided_at', null).gte('created_at', twelveMonthsAgo),
+        // Star summaries for every shop, so people can see them before joining.
+        supabase.from('reviews').select('business_id,rating'),
       ])
       if (shops.error) throw shops.error
       if (memberRows.error) throw memberRows.error
@@ -2562,8 +2566,6 @@ function AppHome({ session }: { session: Session }) {
           rollingByShop.set(row.business_id, (rollingByShop.get(row.business_id) ?? 0) + (row.value || 0))
         }
       }
-      // Star summaries for every shop, so people can see them before joining.
-      const ratings = await supabase.from('reviews').select('business_id,rating')
       const stats = ratingStats(ratings.error ? [] : ratings.data || [])
       setBusinesses((shops.data || []).map((shop: Business) => ({ ...shop, ...stats.get(shop.id) })))
       setMemberships((memberRows.data || []).map((m: any) => ({ ...m, rolling_spend_pence: spendRows.error ? null : rollingByShop.get(m.business_id) ?? 0 })))
@@ -2939,54 +2941,109 @@ export default function App() {
   )
 }
 
+/** Sign-out: forget every locally saved snapshot (launch cache and the home screen copy). */
+async function clearAllLaunchData(userId: string | null) {
+  clearLaunchCache()
+  if (userId) clearHomeCache(userId)
+}
+
 function AppRoot() {
   const [session, setSession] = useState<Session | null>(null)
   const [checking, setChecking] = useState(true)
-  const [allowed, setAllowed] = useState(false)
+  // Verdict from the server this launch; until it arrives the last verified
+  // verdict (saved on this phone, per user) is used so the app opens at once.
+  const [verdict, setVerdict] = useState<{ uid: string; ok: boolean } | null>(null)
   const [auth, setAuth] = useState<{ mode: 'signIn' | 'signUp'; reason?: string } | null>(null)
   const [locked, setLocked] = useState(false)
   const [checkingLock, setCheckingLock] = useState(false)
+  // The biometric check has run for this user (it is local, so it is quick).
+  // Until then the app stays hidden so cached data never flashes before the lock.
+  const [lockCheckedFor, setLockCheckedFor] = useState<string | null>(null)
   const checkingUpdate = useLaunchUpdate()
-
+  const lastUserId = useRef<string | null>(null)
+  const optimisticToken = useRef<string | null>(null)
+  const uid = session?.user.id ?? null
+  if (uid) lastUserId.current = uid
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
+    let active = true
+    // 1. Show the app from the stored session without waiting for the network.
+    void readStoredSession().then((stored) => {
+      if (!active || !stored) return
+      optimisticToken.current = stored.access_token
+      setSession((current) => current ?? stored)
       setChecking(false)
     })
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next))
-    return () => data.subscription.unsubscribe()
+    // 2. Confirm in the background. getSession() may refresh an expired token.
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return
+      if (data.session) {
+        optimisticToken.current = null
+        setSession(data.session)
+      } else if (!error || isSessionRejection(error)) {
+        // Really signed out (or the server rejected it). Offline errors keep the stored session.
+        setSession((current) => (!current || optimisticToken.current === current.access_token ? null : current))
+        if (error) void clearAllLaunchData(lastUserId.current)
+      }
+      setChecking(false)
+    })
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === 'SIGNED_OUT') {
+        void clearAllLaunchData(lastUserId.current)
+        setSession(null)
+      } else if (next) {
+        optimisticToken.current = null
+        setSession(next)
+      }
+      // INITIAL_SESSION with no session is ignored: a failed offline refresh must not undo the stored session.
+    })
+    return () => { active = false; data.subscription.unsubscribe() }
   }, [])
 
+  const cachedVerdict = useMemo(() => (uid ? readLaunchCache<{ ok: boolean }>('role', uid)?.data.ok === true : false), [uid])
+  const allowed = uid ? (verdict?.uid === uid ? verdict.ok : cachedVerdict) : false
+
   useEffect(() => {
-    if (!session) {
-      setAllowed(false)
-      return
-    }
+    if (!uid) return
+    let active = true
+    const ticket = launchCacheTicket()
     ;(async () => {
       await supabase.rpc('ensure_current_user_bootstrap')
-      const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id)
+      const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', uid)
+      if (!active) return
+      if (error && isSessionRejection(error)) {
+        // The server says this session is no good: sign out for real.
+        await supabase.auth.signOut().catch(() => undefined)
+        return
+      }
       // Couldn't reach us (outage or no signal): keep them signed in and show
       // the saved home screen. Row-level security still guards every read.
-      if (error || !data) { setAllowed(true); return }
+      if (error || !data) { setVerdict({ uid, ok: true }); return }
       const ok = isShopper(data.map((row: any) => row.role))
-      setAllowed(ok)
-      if (!ok) {
+      setVerdict({ uid, ok })
+      if (ok) writeLaunchCache('role', uid, { ok: true }, ticket)
+      else {
         showAlert('Use the business app', 'This account is an owner or staff account. Please sign in to The Loyalty Loop for Business instead.')
         await supabase.auth.signOut()
       }
     })()
-  }, [session?.user.id])
+    return () => { active = false }
+  }, [uid])
 
   async function checkAppLock() {
     if (!session) { setLocked(false); return }
-    const enabled = await biometricLockEnabled()
-    if (!enabled) { setLocked(false); return }
-    setCheckingLock(true)
-    setLocked(true)
-    const success = await unlockWithBiometrics()
-    setLocked(!success)
-    setCheckingLock(false)
+    const forUser = session.user.id
+    try {
+      const enabled = await biometricLockEnabled()
+      if (!enabled) { setLocked(false); return }
+      setCheckingLock(true)
+      setLocked(true)
+      const success = await unlockWithBiometrics()
+      setLocked(!success)
+      setCheckingLock(false)
+    } finally {
+      setLockCheckedFor(forUser)
+    }
   }
 
   useEffect(() => { void checkAppLock() }, [session?.user.id])
@@ -3007,12 +3064,10 @@ function AppRoot() {
       </SafeAreaView>
     )
   }
-  if (checkingUpdate || checking || (session && (!allowed || checkingLock))) {
+  if (checkingUpdate || checking || (session && (!allowed || checkingLock || lockCheckedFor !== session.user.id))) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={primary} />
-        </View>
+        <View style={{ padding: 20 }}><SkeletonScreen cards={3} cardHeight={150} /></View>
       </SafeAreaView>
     )
   }
