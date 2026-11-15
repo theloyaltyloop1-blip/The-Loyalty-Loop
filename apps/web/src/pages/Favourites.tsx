@@ -1,3 +1,4 @@
+import { WhirlOrIcon } from '@/components/whirl-kit'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { Link, Navigate } from 'react-router-dom'
@@ -38,7 +39,7 @@ export function FavouritesPage() {
         <div role="status" aria-live="polite" className="grid gap-5 sm:grid-cols-2"><span className="sr-only">Loading favourite shops</span><SkeletonBlock className="h-28" /><SkeletonBlock className="h-28" /></div>
       ) : businesses.length === 0 ? (
         <div className="rounded-3xl bg-peach px-6 py-12 text-center text-peach-ink">
-          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-card"><Heart className="h-7 w-7 text-primary" /></span>
+          <WhirlOrIcon pose="think" size={112} className="mx-auto mb-2" fallback={<span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-card"><Heart className="h-7 w-7 text-primary" /></span>} />
           <p className="mx-auto max-w-sm">
             No favourites yet. Tap the heart on any shop you like and it’ll live here.
           </p>

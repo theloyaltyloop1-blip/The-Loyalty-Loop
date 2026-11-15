@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
+import { Whirl } from '../Whirl'
 import { NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, STONE } from './Poster'
 import { themed, colors, schemeColor } from '@loyalty-loop/design-tokens'
 
@@ -72,6 +73,7 @@ export function RewardCelebration({ reward, onUse, onLater }: {
       <View style={s.screen}>
         <Animated.View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[s.ring, { opacity: ring, transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]} />
         {PIECES.map((p, i) => <Animated.View key={i} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[s.piece, p, { opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0, p.alpha] }), transform: [{ rotate: p.rot }, { translateY: ring.interpolate({ inputRange: [0, 1], outputRange: [-40, 0] }) }] }]} />)}
+        <Whirl pose="celebrate" size={150} variant="dark" effect="celebrate" style={{ position: 'absolute', right: 14, bottom: 150 }} />
         <Animated.View style={[s.badge, rise(ring)]}><Text style={s.label}>Reward unlocked</Text></Animated.View>
         <Animated.Text accessibilityRole="header" style={[s.title, rise(text)]} numberOfLines={4} adjustsFontSizeToFit>{title}.</Animated.Text>
         {reward.business?.name ? <Animated.Text style={[s.copy, rise(text)]}>From {reward.business.name}. This one’s on them.</Animated.Text> : null}

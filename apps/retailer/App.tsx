@@ -1,3 +1,5 @@
+import { WhirlSpinner, useWhirlSlot } from '../../packages/whirl/native'
+import { AppWhirlProvider, Whirl, WhirlEmpty, WhirlOrMark } from './src/Whirl'
 import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { AppAlertHost, showAlert } from "./src/components/AppAlert";
 import { ThemeProvider, useTheme, statusBarStyle } from "./src/theme";
@@ -5,7 +7,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
 import { ShopOnboarding, clearPendingShop, type OnboardingDestination } from "./src/shop-onboarding";
 import {
-  ActivityIndicator,
   AppState,
   Image,
   Linking,
@@ -513,9 +514,7 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
         contentContainerStyle={styles.auth}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.mark}>
-          <Text style={styles.markText}>↻</Text>
-        </View>
+        <WhirlOrMark pose="wave" mark={<View style={styles.mark}><Text style={styles.markText}>↻</Text></View>} />
         <Text style={styles.eyebrow}>THE LOYALTY LOOP FOR BUSINESS</Text>
         <Text style={styles.hero}>Welcome back</Text>
         <Text style={styles.copy}>
@@ -1178,7 +1177,7 @@ function StampsScreen({
       </View>
       {hasReward === null ? (
         <View style={styles.card}>
-          <ActivityIndicator color={colors.primary} />
+          <WhirlSpinner size={28} />
         </View>
       ) : !hasReward ? (
         <View style={styles.card}>
@@ -1484,6 +1483,7 @@ function DashboardHome({
   onOpenGuide: () => void;
   onWinBack?: () => void;
 }) {
+  const greeting = useWhirlSlot("home", "greeting");
   const checklist = [
     { label: "Add your address", done: Boolean(business.address) },
     { label: "Add your postcode", done: Boolean(business.postcode) },
@@ -1506,8 +1506,10 @@ function DashboardHome({
             <Text style={styles.homeHeaderLetter}>{business.name.charAt(0).toUpperCase()}</Text>
           </View>
         )}
-        <Text style={styles.homeHeaderName} numberOfLines={1}>{business.name}</Text>
+        <Text style={[styles.homeHeaderName, { flexShrink: 1 }]} numberOfLines={1}>{business.name}</Text>
+        {greeting ? <Whirl pose="peek" size={76} effect="peek" style={{ marginLeft: "auto" }} /> : null}
       </View>
+      {/* Clean spot for the future "Ask Whirl" card (one 72 px row, under this header). Intentionally empty until the assistant exists. */}
 
       <View style={styles.homePanel}>
         <Text style={styles.homePanelLabel}>Last 30 days</Text>
@@ -1681,7 +1683,7 @@ function CustomersHome({ business }: { business: Business }) {
       <Text style={styles.pageTitle}>Bring them back</Text>
       <Text style={styles.pageIntro}>See who has gone quiet, then send them a push notification or an email.</Text>
       {members === null ? (
-        <ActivityIndicator color={colors.foreground} style={{ marginTop: 30 }} />
+        <WhirlSpinner size={28} style={{ marginTop: 30 }} />
       ) : (
         <>
           <Text style={styles.fieldLabel}>
@@ -1770,7 +1772,7 @@ function MembersPage({ business }: { business: Business }) {
         placeholderTextColor={schemeColor("#000000", 'fg')}
       />
       {loading ? (
-        <ActivityIndicator color={colors.foreground} style={{ marginTop: 30 }} />
+        <WhirlSpinner size={28} style={{ marginTop: 30 }} />
       ) : shown.length ? (
         shown.map((member) => {
           const name =
@@ -1816,11 +1818,13 @@ function MembersPage({ business }: { business: Business }) {
           );
         })
       ) : (
-        <Text style={styles.emptyState}>
-          {searchTerm.trim()
-            ? `No members match "${searchTerm.trim()}". Check the spelling or try just a first name.`
-            : "No members yet. Customers appear here once they join your shop."}
-        </Text>
+        <WhirlEmpty pose="sleepy" show={!searchTerm.trim()}>
+          <Text style={styles.emptyState}>
+            {searchTerm.trim()
+              ? `No members match "${searchTerm.trim()}". Check the spelling or try just a first name.`
+              : "No members yet. Customers appear here once they join your shop."}
+          </Text>
+        </WhirlEmpty>
       )}
     </View>
   );
@@ -2164,9 +2168,11 @@ function NewsPage({ business }: { business: Business }) {
           </Pressable>
         ))
       ) : (
-        <Text style={styles.emptyState}>
-          No announcements yet. Your first one can be ready in seconds.
-        </Text>
+        <WhirlEmpty pose="sleepy">
+          <Text style={styles.emptyState}>
+            No announcements yet. Your first one can be ready in seconds.
+          </Text>
+        </WhirlEmpty>
       )}
     </View>
   );
@@ -2520,7 +2526,7 @@ function Dashboard({
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.foreground} />
+          <WhirlSpinner size={40} />
         </View>
       </SafeAreaView>
     );
@@ -2712,9 +2718,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppRoot />
-          <AppAlertHost />
-          <AppIntro />
+          <AppWhirlProvider>
+            <AppRoot />
+            <AppAlertHost />
+            <AppIntro />
+          </AppWhirlProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -2912,7 +2920,7 @@ function AppRoot() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.foreground} />
+          <WhirlSpinner size={40} />
         </View>
       </SafeAreaView>
     );
@@ -2920,7 +2928,7 @@ function AppRoot() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.lockScreen}>
-          <View style={styles.mark}><Text style={styles.markText}>↻</Text></View>
+          <WhirlOrMark pose="sleepy" mark={<View style={styles.mark}><Text style={styles.markText}>↻</Text></View>} />
           <Text style={styles.title}>App locked</Text>
           <Text style={styles.copy}>Use Face ID, Touch ID or your fingerprint to continue.</Text>
           <Button title="Unlock app" onPress={() => void checkAppLock()} />

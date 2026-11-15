@@ -40,6 +40,6 @@ export async function offerPushPrompt(userId: string) {
     setTimeout(() => showAlert('Want a nudge when something happens in your shop?', 'We’ll tell you when customers join and when a reward is claimed. Nothing else. You can change this any time in your phone’s settings.', [
       { text: 'Not now', style: 'cancel' },
       { text: 'Turn on', onPress: () => void registerPushToken(userId, { ask: true }).catch(() => undefined) },
-    ]), 4000)
+    ], { whirl: 'wave' }), 4000)
   } catch { /* never block the app on this */ }
 }

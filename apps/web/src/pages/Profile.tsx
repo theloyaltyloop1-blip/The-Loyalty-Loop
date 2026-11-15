@@ -1,3 +1,4 @@
+import { WhirlSwitch } from '@/components/whirl-kit'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -198,6 +199,7 @@ export function ProfilePage() {
               <User className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
             </button>
           </SectionCard>
+          <SectionCard title="Whirl"><WhirlSwitch /></SectionCard>
 
           {settings && (
             <SectionCard title="Notifications">

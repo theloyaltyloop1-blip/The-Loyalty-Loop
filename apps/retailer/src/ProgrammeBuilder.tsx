@@ -1,5 +1,6 @@
+import { WhirlSpinner } from '../../../packages/whirl/native'
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ArrowUp, Info, Sparkles } from "lucide-react-native";
 import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import { describeRules, type ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
@@ -135,7 +136,7 @@ export function ProgrammeBuilder({
       )}
       {busy && (
         <View style={[styles.row, { alignItems: "center" }]}>
-          <View style={styles.avatar}><ActivityIndicator size="small" color={schemeColor("#fff", 'fg')} /></View>
+          <View style={styles.avatar}><WhirlSpinner size={20} color={schemeColor("#fff", 'fg')} /></View>
           <Text style={styles.thinking}>Working it out…</Text>
         </View>
       )}

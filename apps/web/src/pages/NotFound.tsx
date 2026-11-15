@@ -1,3 +1,4 @@
+import { WhirlOrIcon } from '@/components/whirl-kit'
 import { Link } from 'react-router-dom'
 import { LoopMark } from '@/components/loop-mark'
 import { Button } from '@/components/ui/button'
@@ -13,9 +14,7 @@ export function NotFound() {
   return (
     <div className="grid min-h-dvh place-items-center bg-background px-4 py-10">
       <div className="w-full min-w-0 max-w-lg rounded-3xl [overflow-wrap:anywhere] bg-sage px-6 py-12 text-center text-sage-ink sm:px-12">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-card">
-          <LoopMark className="h-11 w-11" />
-        </span>
+        <WhirlOrIcon pose="oops" effect="oops" size={120} className="mx-auto" fallback={<span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-card"><LoopMark className="h-11 w-11" /></span>} />
         <h1 className="mt-6 font-display text-3xl font-bold tracking-tight sm:text-4xl">Page not found</h1>
         <p className="mx-auto mt-3 max-w-sm text-sage-ink/80">
           That page doesn’t exist or may have moved. Let’s get you back on track.

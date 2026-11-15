@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useWhirlSettings } from '../../../../packages/whirl/native'
+import { Whirl } from '../Whirl'
+import type { WhirlPose } from '../../../../packages/whirl/native'
 import { Alert, Pressable, StyleSheet, Text, View, type AlertButton } from 'react-native'
 import { colors as c, fonts, useTheme } from '../theme'
 import { Sheet } from './Sheet'
@@ -9,17 +12,18 @@ import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 // the app's colours. <AppAlertHost /> must be mounted once near the root;
 // until it is, calls fall back to the system Alert so nothing is ever lost.
 
-type Request = { title: string; message?: string; buttons: AlertButton[]; cancelable: boolean }
+type Request = { title: string; message?: string; buttons: AlertButton[]; cancelable: boolean; whirl?: WhirlPose }
 
 let show: ((request: Request) => void) | null = null
 
-export function showAlert(title: string, message?: string, buttons?: AlertButton[], options?: { cancelable?: boolean }) {
+export function showAlert(title: string, message?: string, buttons?: AlertButton[], options?: { cancelable?: boolean; /** Show Whirl in this pop-up (e.g. 'wave' for a friendly ask). Errors get 'oops' automatically. */ whirl?: WhirlPose }) {
   const request: Request = {
     title,
     message,
     buttons: buttons?.length ? buttons : [{ text: 'OK' }],
     // Matches the system: a single OK button can always be dismissed.
     cancelable: options?.cancelable ?? true,
+    whirl: options?.whirl,
   }
   if (show) show(request)
   else Alert.alert(title, message, buttons, options)
@@ -28,9 +32,15 @@ export function showAlert(title: string, message?: string, buttons?: AlertButton
 /** A warm tint per kind of message, picked from the words in the title. */
 function tone(title: string, buttons: AlertButton[]) {
   if (buttons.some((button) => button.style === 'destructive')) return { bg: c.peach, ink: c.destructive, glyph: '!' }
-  if (/could not|couldn|error|failed|try again|check|problem/i.test(title)) return { bg: c.peach, ink: c.peachInk, glyph: '!' }
+  if (/could not|couldn|error|failed|try again|check|problem/i.test(title)) return { bg: c.peach, ink: c.peachInk, glyph: '!', oops: true }
   if (/saved|thank|done|added|sent|welcome|success/i.test(title)) return { bg: c.sage, ink: c.funGreen, glyph: '✓' }
   return { bg: c.peach, ink: c.primaryText, glyph: '?' }
+}
+
+function AlertWhirl({ pose, fallback }: { pose: WhirlPose; fallback: React.ReactElement }) {
+  const { showWhirl } = useWhirlSettings()
+  if (!showWhirl) return fallback
+  return <Whirl pose={pose} size={64} style={{ marginBottom: 8 }} />
 }
 
 export function AppAlertHost() {
@@ -63,7 +73,8 @@ export function AppAlertHost() {
   }
 
   if (!current) return null
-  const { bg, ink, glyph } = tone(current.title, current.buttons)
+  const { bg, ink, glyph, oops } = tone(current.title, current.buttons) as { bg: string; ink: string; glyph: string; oops?: boolean }
+  const pose: WhirlPose | undefined = current.whirl ?? (oops ? 'oops' : undefined)
   const cancel = current.buttons.find((button) => button.style === 'cancel')
   // The system Alert puts the main action last; here it goes on top as the
   // filled button, the other choices under it and Cancel at the bottom.
@@ -83,9 +94,14 @@ export function AppAlertHost() {
       dragArea="full"
     >
       <View style={styles.handle} />
-      <View style={[styles.badge, { backgroundColor: bg }]}>
-        <Text style={[styles.badgeText, { color: ink }]}>{glyph}</Text>
-      </View>
+      {pose ? (
+        // Errors get a small calm Whirl instead of the round "!" (hidden when "Show Whirl" is off: the "!" returns).
+        <AlertWhirl pose={pose} fallback={<View style={[styles.badge, { backgroundColor: bg }]}><Text style={[styles.badgeText, { color: ink }]}>{glyph}</Text></View>} />
+      ) : (
+        <View style={[styles.badge, { backgroundColor: bg }]}>
+          <Text style={[styles.badgeText, { color: ink }]}>{glyph}</Text>
+        </View>
+      )}
       <Text style={styles.title}>{current.title}</Text>
       {!!current.message && <Text style={styles.message}>{current.message}</Text>}
       <View style={styles.buttons}>

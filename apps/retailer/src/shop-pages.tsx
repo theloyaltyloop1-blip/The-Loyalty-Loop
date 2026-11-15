@@ -1,5 +1,6 @@
 import { showAlert } from "./components/AppAlert";
 import { useTheme } from "./theme";
+import { useWhirlSettings } from "../../../packages/whirl/native";
 import { money } from "./money";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -951,6 +952,7 @@ function AccountPage({
   onOpenClosure: () => void;
 }) {
   const theme = useTheme();
+  const whirlSettings = useWhirlSettings();
   const [biometricEnabled, setBiometricEnabled] = useState(false),
     [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   useEffect(() => {
@@ -1002,6 +1004,13 @@ function AccountPage({
               { text: "Cancel", style: "cancel" as const },
             ])
           }
+        />
+        <SettingsRow
+          icon={Moon}
+          tile="blue"
+          title="Show Whirl"
+          detail="Our mascot on welcome screens, empty pages and tips. Loading spinners stay."
+          right={<Switch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.foreground }} />}
           last
         />
       </View>

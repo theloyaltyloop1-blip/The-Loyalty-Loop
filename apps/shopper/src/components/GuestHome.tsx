@@ -1,5 +1,7 @@
+import { Whirl } from '../Whirl'
+import { WhirlSpinner, WhirlRefreshIndicator, useWhirlSlot, whirlRefreshControlProps } from '../../../../packages/whirl/native'
 import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import { supabase } from '../supabase'
@@ -94,6 +96,7 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
 }) {
   const [shops, setShops] = useState<GuestShop[]>([])
   const [loading, setLoading] = useState(true)
+  const greeting = useWhirlSlot('guest-home', 'greeting')
   const [filter, setFilter] = useState<string | null>(null)
   const [open, setOpen] = useState<GuestShop | null>(null)
 
@@ -126,8 +129,9 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={loading && shops.length > 0} onRefresh={load} tintColor={colors.primaryText} />}
+        refreshControl={<RefreshControl refreshing={loading && shops.length > 0} onRefresh={load} {...whirlRefreshControlProps} />}
       >
+        <WhirlRefreshIndicator refreshing={loading && shops.length > 0} />
         <View style={s.topBar}>
           <Text style={s.brand}>The Loyalty Loop</Text>
           <Pressable accessibilityRole="button" onPress={onSignIn} hitSlop={10} style={({ pressed }) => [s.signIn, pressed && s.pressed]}>
@@ -136,7 +140,10 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
         </View>
 
         <FadeUp>
-          <Text accessibilityRole="header" style={s.title}>Rewards from{'\n'}shops near you</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <Text accessibilityRole="header" style={[s.title, { flexShrink: 1 }]}>Rewards from{'\n'}shops near you</Text>
+            {greeting ? <Whirl pose="wave" size={84} /> : null}
+          </View>
           <Text style={s.copy}>Tap a card to see the reward. Joining is free.</Text>
         </FadeUp>
 
@@ -153,7 +160,7 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
           </ScrollView>
         ) : <View style={{ height: 22 }} />}
 
-        {loading && !shops.length ? <ActivityIndicator color={colors.primaryText} style={{ marginTop: 48 }} /> : null}
+        {loading && !shops.length ? <WhirlSpinner size={28} style={{ marginTop: 48 }} /> : null}
         {!loading && !shops.length ? <Text style={s.empty}>No shops yet. Pull down to check again.</Text> : null}
 
         {shown.map((shop, i) => (

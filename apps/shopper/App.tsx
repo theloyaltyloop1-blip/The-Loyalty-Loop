@@ -3,7 +3,6 @@ import { ShopBackdrop, ShopSkinProvider, shopSkin, skinStyles } from "../../pack
 import { PassRow, ShopPass } from "../../packages/card-design/ShopPass";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
-  ActivityIndicator,
   AppState,
   Dimensions,
   FlatList,
@@ -46,7 +45,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Svg, { Circle, Path } from 'react-native-svg'
-import { Whirl } from './src/Whirl'
+import { Whirl, AppWhirlProvider } from './src/Whirl'
+import { WhirlSpinner, WhirlRefreshIndicator, whirlRefreshControlProps, useWhirlSettings } from '../../packages/whirl/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import Constants from 'expo-constants'
 import * as Updates from 'expo-updates'
@@ -696,6 +696,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   const [showRequests, setShowRequests] = useState(false)
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
+  const whirlSettings = useWhirlSettings()
   const [blocks, setBlocks] = useState<{ blocked_id: string; created_at: string }[]>([])
   const firstName: string = session.user.user_metadata?.first_name || 'Shopper'
   const email = session.user.email || ''
@@ -833,6 +834,13 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                       { text: 'Cancel', style: 'cancel' as const },
                     ])
                   }
+                />
+                <SettingsRow
+                  tile="orange"
+                  icon={(c) => <HelpIcon color={c} size={18} />}
+                  title="Show Whirl"
+                  detail="Our mascot on welcome screens, empty pages and rewards. Loading spinners stay."
+                  right={<Switch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.primary }} />}
                   last
                 />
               </SettingsGroup>
@@ -1686,7 +1694,7 @@ function ShopDetail({
           )}
 
           {reviewsLoading ? (
-            <ActivityIndicator color={colors.primaryText} style={{ marginTop: 20 }} />
+            <WhirlSpinner size={28} style={{ marginTop: 20 }} />
           ) : reviews.length === 0 ? (
             <Text style={ss.reviewHint}>Be the first to review this shop.</Text>
           ) : (
@@ -2081,7 +2089,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
         <View style={styles.mapBottom} pointerEvents="box-none">
           {canLocate && (
             <Pressable accessibilityRole="button" accessibilityLabel="Show my location" onPress={goToMe} style={({ pressed }) => [styles.mapLocate, pressed && styles.pressed]}>
-              {locationStatus === 'locating' && !coords ? <ActivityIndicator color={colors.primaryText} /> : <LocateIcon color={colors.primaryText} />}
+              {locationStatus === 'locating' && !coords ? <WhirlSpinner size={18} color={colors.primaryText} /> : <LocateIcon color={colors.primaryText} />}
             </Pressable>
           )}
           <FlatList
@@ -2299,7 +2307,7 @@ function DiscoverTab({
       </Pressable>
       {loading ? (
         <View style={[styles.discoverEmpty, { height: feedHeight }]}>
-          <ActivityIndicator color={colors.primaryText} />
+          <WhirlSpinner size={28} />
         </View>
       ) : photos.length === 0 ? (
         <View style={[styles.discoverEmpty, { height: feedHeight }]}>
@@ -2930,7 +2938,8 @@ function AppHome({ session }: { session: Session }) {
       ) : tab === 'map' ? (
         <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />
       ) : (
-        <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primaryText} />}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} {...whirlRefreshControlProps} />}>
+          <WhirlRefreshIndicator refreshing={loading} />
           {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
@@ -2975,9 +2984,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppRoot />
-          <AppAlertHost />
-          <AppIntro />
+          <AppWhirlProvider>
+            <AppRoot />
+            <AppAlertHost />
+            <AppIntro />
+          </AppWhirlProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,3 +1,4 @@
+import { Whirl } from '../Whirl'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
 import { themed, colors, schemeColor } from '@loyalty-loop/design-tokens'
@@ -59,6 +60,7 @@ export function AppIntro() {
   const line = width - 48
   return (
     <Animated.View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[s.intro, { transform: [{ translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -height] }) }] }]}>
+      <Whirl pose="wave" size={96} style={{ marginBottom: 14 }} />
       <Text style={s.introWord}>The Loyalty <Text style={s.introSerif}>Loop</Text></Text>
       <View style={[s.introTrack, { width: line }]}>
         <Animated.View style={[s.introFill, { width: line, transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-line, 0] }) }] }]} />

@@ -50,6 +50,24 @@ greeting, drawn only from the chest up so it can sit on the top edge of a card).
     `progressbar` with a label and busy state.
 13. **Small sizes.** Below 48 px the plain `mini` face is used automatically. Below 32 px use the logo mark, not Whirl.
 
+## Where Whirl is wired (Phase 2, branch `claude/whirl-everywhere`)
+
+- **Spinners:** every `ActivityIndicator` in both apps is now `WhirlSpinner` (on coloured buttons it takes the button's text colour, in four strengths). Web: the upload drop zone and the toast loading icon.
+- **Bars:** Business app AI research report, AI summary and card-designer photo upload show `WhirlProgress`.
+- **Skeletons:** both apps' `SkeletonBlock`/`SkeletonScreen` and the website's `PageSkeleton` use the warm breathing shapes; a tiny Whirl appears only after 2.5 s.
+- **Pull-to-refresh:** iOS shows the turning loop (native wheel hidden); Android keeps the native control tinted in the brand colours.
+- **Intro:** a waving Whirl above the wordmark in both apps' `AppIntro` (already skipped with reduced motion).
+- **Home:** shopper signed-in home (peek beside the greeting), guest home (wave), Business home (peek beside the shop name). Each leaves an empty marked spot for the future "Ask Whirl" row; nothing fake is drawn.
+- **Celebration:** shopper reward-unlocked screen (dark art, once per new reward via the existing seen-reward memory).
+- **Errors and offline:** `showAlert` error pop-ups show an oops Whirl in place of the "!" badge (both apps); outage banner shows a 32 px oops Whirl instead of its dot; website 404 and owner load error.
+- **Permission pop-up:** Business push prompt shows a wave via `showAlert(..., { whirl: 'wave' })`.
+- **Empty states:** Business members, announcements and rewards (sleepy); website Rewards (sleepy) and Favourites (think). The shopper empty tabs, sign-up, onboarding and "you're live" screens were wired earlier by the mascot branch and now go through the kit (switch, dark art, animation).
+- **Tips:** Business tour tips get a small pointing Whirl unless the screen already has its one moment.
+- **Sign-in / lock screen (Business):** the "↻" badge becomes Whirl; it returns when the switch is off.
+- **Settings:** "Show Whirl" switch in both apps, the website profile and the owner Settings help tab.
+- Status banners use their own slot (`status-banner`), because they are a system strip and not screen content.
+- Not touched on purpose: stamp card, scan and stamp-award screens, SumUp/payment flows, card designer and QR poster artwork, admin pages, shop pages, map.
+
 ## Using it (for the next session)
 
 ```tsx

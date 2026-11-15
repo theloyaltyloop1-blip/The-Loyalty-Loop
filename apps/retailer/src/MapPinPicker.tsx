@@ -1,6 +1,6 @@
+import { WhirlSpinner } from '../../../packages/whirl/native'
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Keyboard,
   Modal,
@@ -171,7 +171,7 @@ export function MapPinPicker({
             autoCorrect={false}
             onSubmitEditing={() => void lookUp(search)}
           />
-          {finding ? <ActivityIndicator color={schemeColor('#1A2138', 'fg')} /> : null}
+          {finding ? <WhirlSpinner size={28} /> : null}
         </View>
 
         <View style={styles.map} onLayout={(event) => setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })} {...drag.panHandlers}>
@@ -210,7 +210,7 @@ export function MapPinPicker({
             onPress={() => void save(center)}
             style={({ pressed }) => [styles.save, (!closeEnough || busy) && styles.saveDisabled, pressed && styles.pressed]}
           >
-            {saving === "save" ? <ActivityIndicator color={schemeColor("#fff", 'fg')} /> : <Text style={styles.saveText}>{pin ? "Move pin here" : "Save pin"}</Text>}
+            {saving === "save" ? <WhirlSpinner size={20} color={schemeColor("#fff", 'fg')} /> : <Text style={styles.saveText}>{pin ? "Move pin here" : "Save pin"}</Text>}
           </Pressable>
           {pin ? (
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => void save(null)} style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>

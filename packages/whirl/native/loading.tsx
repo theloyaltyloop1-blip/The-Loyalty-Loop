@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import Animated, {
   Easing,
@@ -26,7 +26,7 @@ const CLICK = Easing.inOut(Easing.cubic)
  * loads never flash it; the space is reserved so nothing jumps. With reduced motion it sits still.
  * Replaces ActivityIndicator. It does not depend on the "Show Whirl" setting (it is a loading indicator, not a moment).
  */
-export function WhirlSpinner({ size = 32, delayMs = WHIRL_TIMING.SPINNER_DELAY_MS, label = 'Loading', style }: { size?: number; delayMs?: number; label?: string; style?: StyleProp<ViewStyle> }) {
+export function WhirlSpinner({ size = 32, delayMs = WHIRL_TIMING.SPINNER_DELAY_MS, label = 'Loading', color, style }: { size?: number; delayMs?: number; label?: string; /** One colour for all four parts (different strengths), for use on a coloured button. Default: the brand colours. */ color?: string; style?: StyleProp<ViewStyle> }) {
   const variant = useWhirlVariant()
   const reduce = useReduceMotion()
   const [shown, setShown] = useState(delayMs <= 0)
@@ -65,12 +65,12 @@ export function WhirlSpinner({ size = 32, delayMs = WHIRL_TIMING.SPINNER_DELAY_M
   const turn = useAnimatedStyle(() => ({ opacity: fade.get(), transform: [{ rotate: `${angle.get()}deg` }] }))
   const blades = WHIRL_ART[variant].blades
   return (
-    <View style={[{ width: size, height: size }, style]} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}>
+    <View style={[{ width: size, height: size, alignSelf: 'center' }, style]} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}>
       {shown ? (
         <Animated.View style={[{ width: size, height: size }, turn]}>
           <Svg width={size} height={size} viewBox="0 0 256 256">
             {blades.map((b, i) => (
-              <Path key={i} d={b.d} fill={b.fill} />
+              <Path key={i} d={b.d} fill={color ?? b.fill} fillOpacity={color ? MONO_OPACITY[i] : 1} />
             ))}
           </Svg>
         </Animated.View>
@@ -78,6 +78,8 @@ export function WhirlSpinner({ size = 32, delayMs = WHIRL_TIMING.SPINNER_DELAY_M
     </View>
   )
 }
+
+const MONO_OPACITY = [1, 0.72, 0.5, 0.72] as const
 
 const TRACK = { light: 'rgba(94, 104, 57, 0.16)', dark: 'rgba(180, 195, 134, 0.18)' } as const
 
@@ -198,10 +200,11 @@ export function WhirlSkeleton({ cards = 3, cardHeight = 120, label = 'Loading', 
 }
 
 /**
- * Pull-to-refresh: native RefreshControl cannot be re-drawn, so keep it (tint it with the brand olive/orange) and, while
- * `refreshing`, show this small turning loop pinned at the top, after the 300 ms delay. Put it inside the scroll view's parent.
+ * Pull-to-refresh. iOS: the native wheel is made invisible (`whirlRefreshControlProps`) and this small turning loop shows in the
+ * space the pull reveals, after the usual 300 ms. Android has no overscroll space, so there the native control stays, tinted in the
+ * brand colours, and this renders nothing. Put it as the FIRST child inside the scroll view's content.
  */
-export function WhirlRefreshIndicator({ refreshing, top = 8 }: { refreshing: boolean; top?: number }) {
+export function WhirlRefreshIndicator({ refreshing, top = -44 }: { refreshing: boolean; top?: number }) {
   const [show, setShow] = useState(false)
   useEffect(() => {
     if (!refreshing) {
@@ -211,10 +214,16 @@ export function WhirlRefreshIndicator({ refreshing, top = 8 }: { refreshing: boo
     const id = setTimeout(() => setShow(true), WHIRL_TIMING.SPINNER_DELAY_MS)
     return () => clearTimeout(id)
   }, [refreshing])
-  if (!show) return null
+  if (Platform.OS !== 'ios' || !show) return null
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', top, left: 0, right: 0, alignItems: 'center' }}>
-      <WhirlSpinner size={26} delayMs={0} label="Refreshing" />
+    <View pointerEvents="none" style={{ height: 0, overflow: 'visible', zIndex: 5 }}>
+      <View style={{ position: 'absolute', top, left: 0, right: 0, alignItems: 'center' }}>
+        <WhirlSpinner size={26} delayMs={0} label="Refreshing" />
+      </View>
     </View>
   )
 }
+
+/** Props for RefreshControl: hides the iOS wheel (ours shows instead) and tints the Android one in the brand colours. */
+export const whirlRefreshControlProps: { tintColor?: string; colors?: string[]; progressBackgroundColor?: string } =
+  Platform.OS === 'ios' ? { tintColor: 'transparent' } : { colors: ['#5E6839', '#CF7A37', '#AA521E'], progressBackgroundColor: '#FFF8EA' }

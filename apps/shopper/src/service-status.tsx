@@ -10,6 +10,8 @@
 //
 // A hidden "Simulate outage" switch (Settings: long-press the version line)
 // fakes a Supabase failure on this phone so the whole thing can be tested.
+import { Whirl } from './Whirl'
+import { useWhirlSlot } from '../../../packages/whirl/native'
 import { useEffect, useRef, useState } from 'react'
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native'
 import Storage from 'expo-sqlite/kv-store'
@@ -144,12 +146,13 @@ export function useServiceStatus(app: 'shopper' | 'business'): ServiceStatus & {
 
 export function OutageBanner({ status, savedAt }: { status: ServiceStatus & { recheck: () => void }; savedAt?: number | null }) {
   const [open, setOpen] = useState(false)
+  const mascot = useWhirlSlot('status-banner', 'oops')
   if (status.level === 'ok') return null
   const offline = status.level === 'offline'
   return (
     <Pressable onPress={() => setOpen((v) => !v)} style={[s.banner, offline ? s.offline : s.degraded]} accessibilityRole="button" accessibilityLabel={`${status.title}. ${status.message}`}>
       <View style={s.row}>
-        <View style={[s.dot, offline ? s.dotOffline : s.dotDegraded]} />
+        {mascot ? <Whirl pose="oops" size={32} effect="oops" /> : <View style={[s.dot, offline ? s.dotOffline : s.dotDegraded]} />}
         <Text style={s.title} numberOfLines={1}>{status.title}</Text>
         <Text style={s.more}>{open ? 'Less' : 'More'}</Text>
       </View>

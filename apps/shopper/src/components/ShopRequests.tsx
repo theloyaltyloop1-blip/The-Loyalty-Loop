@@ -1,5 +1,6 @@
+import { WhirlSpinner } from '../../../../packages/whirl/native'
 import {useCallback,useEffect,useRef,useState} from 'react'
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native'
+import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native'
 import {colors} from '../theme'
 import {supabase} from '../supabase'
 import {Sheet} from './Sheet'
@@ -41,7 +42,7 @@ export function AskShopSheet({visible,onClose,initialQuery='',location,onViewSho
   <View style={s.handle}/><View style={s.header}><Text style={s.title}>Ask them to join</Text><Pressable accessibilityLabel="Close shop requests" onPress={onClose} hitSlop={12}><Text style={s.action}>Close</Text></Pressable></View>
   <Text style={s.copy}>We'll let them know local shoppers want them. If they join, we'll tell you.</Text>
   <TextInput accessibilityLabel="Find a shop to request" placeholder="Shop name and town" placeholderTextColor={schemeColor("#000000", 'fg')} value={query} onChangeText={setQuery} style={s.input} autoCorrect={false}/>
-  {loading&&<ActivityIndicator color={colors.primaryText}/>}{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
+  {loading&&<WhirlSpinner size={28} />}{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
   <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.rows}>
    {listed.map(row=><View key={row.business_id} style={s.row}><View style={s.details}><Text style={s.name}>{row.name}</Text><Text style={s.copy}>{row.address}</Text></View><Pressable accessibilityRole="button" onPress={()=>{onClose();onViewShop(row.business_id)}}><Text style={s.action}>View shop</Text></Pressable></View>)}
    {results.map(row=><View key={row.place.place_id} style={s.row}><View style={s.details}><Text style={s.name}>{row.place.name}</Text><Text style={s.copy}>{row.place.address}</Text>{row.requested&&<Text style={s.copy}>{row.count} {row.count===1?'person has':'people have'} asked</Text>}</View><Pressable accessibilityRole="button" disabled={row.requested||busy!==null||loading} onPress={()=>void request(row)} style={[s.button,(row.requested||busy!==null)&&s.disabled]}><Text style={s.buttonText}>{busy===row.place.place_id?'Requesting…':row.requested?'Requested ✓':'Request'}</Text></Pressable></View>)}
@@ -69,7 +70,7 @@ export function RequestedShopsSheet({visible,onClose,onViewShop}:{visible:boolea
  return <Sheet visible={visible} onClose={onClose} sheetStyle={s.sheet}>
   <View style={s.handle}/><View style={s.header}><Text style={s.title}>Shops you've asked for</Text><Pressable accessibilityLabel="Close shops you've asked for" onPress={onClose} hitSlop={12}><Text style={s.action}>Close</Text></Pressable></View>
   <Text style={s.copy}>We'll tell you when a shop you asked for joins.</Text>
-  {loading&&!rows.length&&<ActivityIndicator color={colors.primaryText} style={{marginTop:16}}/>}{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
+  {loading&&!rows.length&&<WhirlSpinner size={28} style={{marginTop:16}} />}{error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
   <ScrollView contentContainerStyle={s.rows}>
    {!loading&&!rows.length&&!error&&<View style={s.empty}><Text style={s.emptyTitle}>No requests yet</Text><Text style={s.copy}>When you ask a shop to join, it will appear here.</Text></View>}
    {rows.map(row=><View style={s.row} key={row.place_id}><View style={s.details}><Text style={s.name}>{row.name??'A shop you asked for'}</Text>{row.address&&<Text style={s.copy}>{row.address}</Text>}<View style={[s.badge,row.status==='joined'&&s.badgeJoined]}><Text style={[s.badgeText,row.status==='joined'&&s.badgeTextJoined]}>{labels[row.status]??'Request recorded'}</Text></View><Text style={s.copy}>{row.count} {row.count===1?'person has':'people have'} asked</Text>{row.business_id&&onViewShop&&<Pressable accessibilityRole="button" onPress={()=>onViewShop(row.business_id!)}><Text style={s.action}>View shop</Text></Pressable>}</View><Pressable accessibilityRole="button" disabled={busy!==null} onPress={()=>void withdraw(row.place_id)}><Text style={s.action}>{busy===row.place_id?'Withdrawing…':'Withdraw'}</Text></Pressable></View>)}

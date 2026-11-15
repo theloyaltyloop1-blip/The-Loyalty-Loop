@@ -92,3 +92,18 @@ export function WhirlMoment({ screenId, momentId, pose, line, subline, once = fa
   )
   return reduce ? content : <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(120)}>{content}</Animated.View>
 }
+
+/**
+ * For a Whirl that has no text of its own (a greeting peek, a wave on a welcome screen): true when the "Show Whirl" switch is on
+ * and nothing else has claimed this screen's one decorative slot. Releases the slot when the screen goes away.
+ */
+export function useWhirlSlot(screenId: string, momentId: string): boolean {
+  const { settings, ready } = useWhirlSettings()
+  const [ok, setOk] = useState(false)
+  useEffect(() => {
+    if (!ready) return
+    setOk(decideMoment({ settings, screenId, momentId }))
+    return () => whirlBudget.release(screenId, momentId)
+  }, [ready, settings.showWhirl, screenId, momentId])
+  return ok
+}

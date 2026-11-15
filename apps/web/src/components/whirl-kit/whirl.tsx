@@ -104,12 +104,15 @@ export interface WhirlProps {
   label?: string
   /** Hidden when "Show Whirl" is off. Pass false only for things that carry meaning. */
   decorative?: boolean
+  /** Force the light or dark art. Default: follows the site's html.dark switch. */
+  variant?: WhirlVariant
   className?: string
   style?: CSSProperties
 }
 
-export function Whirl({ pose, size = 96, effect = 'none', playKey, label, decorative = true, className, style }: WhirlProps) {
-  const variant = useWhirlVariant()
+export function Whirl({ pose, size = 96, effect = 'none', playKey, label, decorative = true, variant: forced, className, style }: WhirlProps) {
+  const themeVariant = useWhirlVariant()
+  const variant = forced ?? themeVariant
   const { showWhirl } = useWhirlSettings()
   const art = WHIRL_ART[variant][artKindForSize(size)][pose]
   const [x, y, vw, vh] = art.vb
@@ -147,14 +150,14 @@ export function Whirl({ pose, size = 96, effect = 'none', playKey, label, decora
 // ---------- loading ----------
 
 /** Loading spinner: the loop mark turning in four eased quarter turns (1.1 s per turn), hidden for the first 300 ms. */
-export function WhirlSpinner({ size = 32, delayMs = WHIRL_TIMING.SPINNER_DELAY_MS, label = 'Loading', className }: { size?: number; delayMs?: number; label?: string; className?: string }) {
+export function WhirlSpinner({ size = 32, delayMs = WHIRL_TIMING.SPINNER_DELAY_MS, label = 'Loading', color, className }: { size?: number; delayMs?: number; label?: string; color?: string; className?: string }) {
   const variant = useWhirlVariant()
   const blades = WHIRL_ART[variant].blades
   return (
     <span className={['whirl-spinner', className].filter(Boolean).join(' ')} style={{ ['--whirl-delay' as string]: `${delayMs}ms`, width: size, height: size }} role="progressbar" aria-label={label} aria-busy="true">
       <svg width={size} height={size} viewBox="0 0 256 256" aria-hidden="true" focusable="false">
         {blades.map((b, i) => (
-          <path key={i} d={b.d} fill={b.fill} />
+          <path key={i} d={b.d} fill={color ?? b.fill} fillOpacity={color ? [1, 0.72, 0.5, 0.72][i] : 1} />
         ))}
       </svg>
     </span>
@@ -290,5 +293,40 @@ export function WhirlMoment({ screenId, momentId, pose, line, subline, once = fa
         </button>
       ) : null}
     </div>
+  )
+}
+
+/** Shows Whirl, or `fallback` (the old icon) when "Show Whirl" is off. */
+export function WhirlOrIcon({ fallback, ...props }: WhirlProps & { fallback: ReactNode }) {
+  const { showWhirl } = useWhirlSettings()
+  return showWhirl ? <Whirl {...props} /> : <>{fallback}</>
+}
+
+/** A tiny Whirl that peeks in only if a page is still loading after 2.5 s (once per page, only if allowed). */
+export function SlowLoadWhirl({ screenId = 'page-loading' }: { screenId?: string }) {
+  const { showWhirl } = useWhirlSettings()
+  const [granted, setGranted] = useState(false)
+  useEffect(() => {
+    if (!showWhirl) return
+    const id = window.setTimeout(() => setGranted(whirlBudget.claim(screenId, 'slow-load')), 2500)
+    return () => {
+      window.clearTimeout(id)
+      whirlBudget.release(screenId, 'slow-load')
+    }
+  }, [showWhirl, screenId])
+  return granted ? <Whirl pose="sleepy" size={44} effect="pop" className="mx-auto mt-2" /> : null
+}
+
+/** The "Show Whirl" switch for Settings pages. */
+export function WhirlSwitch({ className }: { className?: string }) {
+  const { showWhirl, setShowWhirl } = useWhirlSettings()
+  return (
+    <label className={['flex min-h-11 cursor-pointer items-center justify-between gap-4', className].filter(Boolean).join(' ')}>
+      <span>
+        <span className="block font-semibold">Show Whirl</span>
+        <span className="block text-sm text-muted-foreground">Our mascot on welcome screens, empty pages and tips. Loading spinners stay.</span>
+      </span>
+      <input type="checkbox" role="switch" checked={showWhirl} onChange={(e) => setShowWhirl(e.target.checked)} className="h-6 w-11 shrink-0 cursor-pointer accent-primary" />
+    </label>
   )
 }

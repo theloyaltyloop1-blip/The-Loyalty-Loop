@@ -1,7 +1,9 @@
+import { SlowLoadWhirl } from '@/components/whirl-kit'
+import '@/components/whirl-kit/whirl.css'
 import { DashboardLayout } from '@/components/dashboard-layout'
 
 export function SkeletonBlock({ className = '' }: { className?: string }) {
-  return <div aria-hidden="true" className={`rounded-xl bg-foreground/[0.08] motion-safe:animate-pulse ${className}`} />
+  return <div aria-hidden="true" className={`whirl-skel rounded-xl ${className}`} />
 }
 
 export function PageSkeleton({ variant = 'cards' }: { variant?: 'cards' | 'detail' | 'feed' | 'owner' }) {
@@ -10,6 +12,7 @@ export function PageSkeleton({ variant = 'cards' }: { variant?: 'cards' | 'detai
     <DashboardLayout>
       <div role="status" aria-live="polite" aria-label="Loading page" className="space-y-6">
         <span className="sr-only">Loading page</span>
+        <SlowLoadWhirl />
         <div className="space-y-3"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-9 w-52" /><SkeletonBlock className="h-4 w-80 max-w-full" /></div>
         {variant === 'feed' ? <SkeletonBlock className="h-[60vh] w-full rounded-3xl" /> : (
           <div className={variant === 'detail' ? 'space-y-5' : 'grid gap-5 sm:grid-cols-2'}>
@@ -22,5 +25,5 @@ export function PageSkeleton({ variant = 'cards' }: { variant?: 'cards' | 'detai
 }
 
 export function BarePageSkeleton() {
-  return <div role="status" aria-live="polite" aria-label="Loading page" className="min-h-dvh bg-background p-6 md:p-10"><span className="sr-only">Loading page</span><div className="mx-auto max-w-6xl space-y-6"><SkeletonBlock className="h-4 w-28" /><SkeletonBlock className="h-10 w-64 max-w-full" /><div className="grid gap-5 sm:grid-cols-2"><SkeletonBlock className="h-64" /><SkeletonBlock className="h-64" /></div></div></div>
+  return <div role="status" aria-live="polite" aria-label="Loading page" className="min-h-dvh bg-background p-6 md:p-10"><span className="sr-only">Loading page</span><div className="mx-auto max-w-6xl space-y-6"><SlowLoadWhirl /><SkeletonBlock className="h-4 w-28" /><SkeletonBlock className="h-10 w-64 max-w-full" /><div className="grid gap-5 sm:grid-cols-2"><SkeletonBlock className="h-64" /><SkeletonBlock className="h-64" /></div></div></div>
 }

@@ -42,6 +42,8 @@ export interface WhirlProps {
   label?: string
   /** Hides Whirl when the user has switched "Show Whirl" off. Set false only for things that carry meaning, never for loading. */
   decorative?: boolean
+  /** Force the light or dark art (e.g. the always-dark reward screen). Default: the app theme via useWhirlVariant(). */
+  variant?: 'light' | 'dark'
   style?: StyleProp<ViewStyle>
 }
 
@@ -49,9 +51,10 @@ export interface WhirlProps {
  * Whirl, the Loyalty Loop mascot. Light or dark art comes from `useWhirlVariant()`. Animations are one-shots (never loops)
  * and are skipped when the OS asks for reduced motion. Limb layers are real (the wave moves the arm, not the body).
  */
-export function Whirl({ pose, size = 96, effect = 'none', playKey, label, decorative = true, style }: WhirlProps) {
-  const variant = useWhirlVariant()
-  const { showWhirl } = useWhirlSettings()
+export function Whirl({ pose, size = 96, effect = 'none', playKey, label, decorative = true, variant: forced, style }: WhirlProps) {
+  const themeVariant = useWhirlVariant()
+  const variant = forced ?? themeVariant
+  const { showWhirl, ready } = useWhirlSettings()
   const reduce = useReduceMotion()
   const art = WHIRL_ART[variant][artKindForSize(size)][pose]
   const [, , vw, vh] = art.vb
@@ -111,7 +114,7 @@ export function Whirl({ pose, size = 96, effect = 'none', playKey, label, decora
   const single = useMemo(() => xmlFor(art), [art])
   const layers = useMemo(() => art.layers.map((l) => ({ id: l.id, pivot: l.pivot, xml: xmlFor(art, [l.id]) })), [art])
 
-  if (decorative && !showWhirl) return null
+  if (decorative && (!showWhirl || !ready)) return null // until the saved switch is read, assume off: no flash for people who turned him off
   const a11y = label
     ? ({ accessible: true, accessibilityRole: 'image', accessibilityLabel: label } as const)
     : ({ accessible: false, importantForAccessibility: 'no-hide-descendants', accessibilityElementsHidden: true } as const)

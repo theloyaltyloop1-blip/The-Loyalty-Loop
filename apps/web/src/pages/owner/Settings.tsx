@@ -1,3 +1,4 @@
+import { WhirlSwitch } from '@/components/whirl-kit'
 import * as React from 'react'
 import { rewardWords } from '@/lib/shop-types'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
@@ -1894,6 +1895,7 @@ function HelpTab() {
 
   return (
     <>
+      <SectionCard title="Whirl"><WhirlSwitch /></SectionCard>
       <SectionCard title="Help & support">
         <p className="text-sm text-muted-foreground">Send a message straight to the Loyalty Loop team. You can choose a priority and follow replies from the same place.</p>
         <Link to="/owner/support" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors px-5 py-3 text-sm font-semibold text-primary-foreground">

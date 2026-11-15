@@ -1,3 +1,5 @@
+import { Whirl } from '../Whirl'
+import { useWhirlSlot } from '../../../../packages/whirl/native'
 import { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
@@ -62,6 +64,7 @@ export function HomeFeed<T extends FeedShop>({
   quickIds?: string[]; onQuickChange?: (ids: string[]) => void
 }) {
   const [editingQuick, setEditingQuick] = useState(false)
+  const greeting = useWhirlSlot('home', 'greeting')
   const hour = new Date().getHours()
   const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'
   const name = firstName?.trim().split(/\s+/)[0]
@@ -80,8 +83,12 @@ export function HomeFeed<T extends FeedShop>({
           <Text style={s.avatarText}>{name ? name.charAt(0).toUpperCase() : '·'}</Text>
         </Pressable>
       </View>
-      <Text accessibilityRole="header" style={s.title}>{name ? `${part},\n${name}.` : `Good\n${part.toLowerCase()}.`}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+        <Text accessibilityRole="header" style={[s.title, { flexShrink: 1 }]}>{name ? `${part},\n${name}.` : `Good\n${part.toLowerCase()}.`}</Text>
+        {greeting ? <Whirl pose="peek" size={92} effect="peek" /> : null}
+      </View>
     </FadeUp>
+    {/* Clean spot for the future "Ask Whirl" entry (a single 72 px row). Intentionally empty: no assistant exists yet. */}
 
     <FadeUp delay={100}><NextRewardHero shops={shops} memberships={memberships} catalog={catalog} onSelect={onSelect} quickIds={quickIds} onEditQuick={onQuickChange ? () => setEditingQuick(true) : undefined} /></FadeUp>
 

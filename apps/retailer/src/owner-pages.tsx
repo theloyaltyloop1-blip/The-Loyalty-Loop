@@ -1,3 +1,5 @@
+import { WhirlEmpty } from "./Whirl";
+import { WhirlProgress, WhirlSpinner } from '../../../packages/whirl/native'
 import { CardDesigner } from "./CardDesigner";
 import { showAlert } from "./components/AppAlert";
 import { Explainer, type ExplainerKind } from "./components/Explainers";
@@ -12,7 +14,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ActivityIndicator,
   Image,
   Linking,
   Pressable,
@@ -246,7 +247,7 @@ function PrimaryButton({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={secondary ? schemeColor('#1A2138', 'fg') : schemeColor("#fff", 'fg')} />
+        <WhirlSpinner size={20} color={secondary ? schemeColor('#1A2138', 'fg') : schemeColor("#fff", 'fg')} />
       ) : (
         <Text
           style={[
@@ -577,7 +578,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
         ))}
       </View>
       {loading || !stats ? (
-        <ActivityIndicator color={schemeColor('#2B3A67', 'fg')} style={styles.loader} />
+        <WhirlSpinner size={28} style={styles.loader} />
       ) : (
         <>
           <Text style={styles.sectionTitle}>What changed</Text>
@@ -620,6 +621,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
               onPress={generateSummary}
               busy={aiBusy}
             />
+            {aiBusy ? <WhirlProgress label="Writing your summary" height={8} style={{ marginTop: 10 }} /> : null}
           </Section>
           <Section>
             <View style={styles.iconHeading}>
@@ -652,6 +654,12 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
               onPress={researchShop}
               busy={reportBusy}
             />
+            {reportBusy ? (
+              <View style={{ marginTop: 10 }}>
+                <WhirlProgress label="Researching your shop" />
+                <Text style={styles.muted}>This one takes a little while. You can keep using the app.</Text>
+              </View>
+            ) : null}
           </Section>
           <Section>
             <View style={styles.iconHeading}>
@@ -707,7 +715,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                 ]}
               >
                 {coachBusy ? (
-                  <ActivityIndicator color={schemeColor("#fff", 'fg')} />
+                  <WhirlSpinner size={20} color={schemeColor("#fff", 'fg')} />
                 ) : (
                   <Send size={19} color={schemeColor("#fff", 'fg')} />
                 )}
@@ -1235,11 +1243,13 @@ function RewardsPage({
           </View>
         ))
       ) : (
+        <WhirlEmpty pose="sleepy">
         <Text style={styles.empty}>
           {spendShop
             ? `No rewards yet. Until you add one, customers get a generic "Free reward" each time they spend ${pounds(business.reward_threshold_pence ?? 2000)}.`
             : `No rewards yet. Until you add one, customers get a generic "Free reward" after ${business.loyalty_config?.stamps_required || 10} ${unit}.`}
         </Text>
+        </WhirlEmpty>
       )}
       </>)}
       <Section>
@@ -1930,7 +1940,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
               <View style={styles.aiNote}><Sparkles size={15} color={schemeColor('#2B3A67', 'fg')} /><Text style={styles.aiNoteText}>AI suggested this reply. Check it, edit it if you like, then post it.</Text></View>
             ) : null}
             {generating ? (
-              <View style={styles.aiNote}><ActivityIndicator size="small" color={schemeColor('#2B3A67', 'fg')} /><Text style={styles.aiNoteText}>AI is writing a reply…</Text></View>
+              <View style={styles.aiNote}><WhirlSpinner size={20} /><Text style={styles.aiNoteText}>AI is writing a reply…</Text></View>
             ) : null}
             <Field value={drafts[review.id] || ""} onChangeText={(value) => { edited.current.add(review.id); setDrafts((current) => ({ ...current, [review.id]: value })); }} placeholder="Thank them for their feedback…" multiline />
             <PrimaryButton label={reply ? "Update reply" : "Post reply"} onPress={() => void saveReply(review)} busy={busyId === review.id} />
@@ -2337,7 +2347,7 @@ function PosterPage({ business, onBack, onBusinessChanged, preview = false }: Pa
         <Text style={posterStyles.name} numberOfLines={2} adjustsFontSizeToFit>{business.name}</Text>
         <Text style={posterStyles.sub}>{business.category ? `${business.category} · ` : ""}Collect rewards when you visit</Text>
         <View style={posterStyles.qr}>
-          {joinUrl ? <QRCode value={joinUrl} size={190} ecl="H" /> : <ActivityIndicator color={schemeColor('#1A2138', 'fg')} />}
+          {joinUrl ? <QRCode value={joinUrl} size={190} ecl="H" /> : <WhirlSpinner size={28} />}
         </View>
         <Text style={posterStyles.scan}>{whatsapp ? "Scan to join with WhatsApp" : "Scan to join and start collecting"}</Text>
         <Text style={posterStyles.sub}>{whatsapp ? "No app download required · Start in WhatsApp" : "No app download required · Your rewards stay in one place"}</Text>

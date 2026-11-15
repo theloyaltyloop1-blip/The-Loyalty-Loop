@@ -1,6 +1,6 @@
+import { WhirlProgress, WhirlSpinner } from '../../../packages/whirl/native'
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -350,6 +350,7 @@ export function CardDesigner({
                   : "Choose photo"}
             </Text>
           </Pressable>
+          {uploading ? <WhirlProgress label="Uploading photo" height={8} style={{ marginTop: 8 }} /> : null}
           {draft.photo && (
             <Pressable
               accessibilityRole="button"
@@ -441,7 +442,7 @@ export function CardDesigner({
         style={[s.save, (locked || !dirty) && { opacity: 0.5 }]}
       >
         {busy ? (
-          <ActivityIndicator color={schemeColor("#FFFFFF", 'fg')} />
+          <WhirlSpinner size={20} color={schemeColor("#FFFFFF", 'fg')} />
         ) : (
           <Text style={s.saveText}>
             {dirty ? "Save card design" : "Design saved"}

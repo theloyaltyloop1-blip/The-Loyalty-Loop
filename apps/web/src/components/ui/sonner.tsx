@@ -1,5 +1,6 @@
+import { WhirlSpinner } from '@/components/whirl-kit'
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon } from "lucide-react"
 import { useTheme } from "@/components/theme-toggle"
 
 const Toaster = ({ ...props }: ToasterProps) => {
@@ -23,7 +24,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <OctagonXIcon className="size-4" />
         ),
         loading: (
-          <Loader2Icon className="size-4 animate-spin" />
+          <WhirlSpinner size={16} delayMs={0} color="currentColor" />
         ),
       }}
       style={

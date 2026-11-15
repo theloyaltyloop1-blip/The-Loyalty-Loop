@@ -1,5 +1,6 @@
+import { WhirlSpinner } from '../../../../packages/whirl/native'
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import Animated, {
   Easing,
@@ -151,7 +152,7 @@ export function ReceiptPrinter({
                   <Svg width={10} height={10} viewBox="0 0 24 24"><Path d="M5 12.5l4.5 4.5L19 7.5" stroke="#FFFFFF" strokeWidth={4} fill="none" strokeLinecap="round" strokeLinejoin="round" /></Svg>
                 </View>
               ) : (
-                <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={{ transform: [{ scale: 0.7 }] }} />
+                <WhirlSpinner size={20} color="rgba(255,255,255,0.7)" style={{ transform: [{ scale: 0.7 }] }} />
               )}
               <Text style={styles.statusText}>{printed ? "Saved to your card" : "Printing your receipt"}</Text>
             </View>

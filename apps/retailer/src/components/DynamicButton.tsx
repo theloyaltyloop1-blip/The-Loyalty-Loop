@@ -1,5 +1,6 @@
+import { WhirlSpinner } from '../../../../packages/whirl/native'
 import { useEffect } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -82,7 +83,7 @@ export function DynamicButton({
           </Animated.View>
         ) : status === "busy" ? (
           <Animated.View key="busy" entering={entering} exiting={exiting} style={styles.row}>
-            <ActivityIndicator color={textColor} size="small" />
+            <WhirlSpinner size={20} color={textColor} />
             <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>{busyLabel}</Text>
           </Animated.View>
         ) : (

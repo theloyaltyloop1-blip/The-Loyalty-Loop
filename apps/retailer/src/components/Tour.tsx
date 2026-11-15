@@ -37,6 +37,8 @@ import {
   type TourStopId,
 } from '../tour-logic'
 import { schemeColor, themed } from '@loyalty-loop/design-tokens'
+import { Whirl } from '../Whirl'
+import { useWhirlSlot } from '../../../../packages/whirl/native'
 
 /**
  * One-time tips on the real screens (tips, not a tour): a ring around a real
@@ -341,17 +343,26 @@ export function TourOverlay() {
             : { bottom: Math.max(size.height - target.y + 12, 0) },
         ]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${copy} Tap to hide`}
-          onPress={state.advance}
-          style={({ pressed }) => [styles.bubble, pressed && { opacity: 0.85 }]}
-        >
-          <Text style={styles.copy}>{copy}</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TourWhirl screen={current.stop.screen} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${copy} Tap to hide`}
+            onPress={state.advance}
+            style={({ pressed }) => [styles.bubble, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={styles.copy}>{copy}</Text>
+          </Pressable>
+        </View>
       </Animated.View>
     </View>
   )
+}
+
+/** A small pointing Whirl beside a tip, unless this screen already has its one Whirl moment or "Show Whirl" is off. */
+function TourWhirl({ screen }: { screen: string }) {
+  const ok = useWhirlSlot(screen, 'tour-tip')
+  return ok ? <Whirl pose="point" size={52} effect="pop" /> : null
 }
 
 const styles = themed(() => StyleSheet.create({

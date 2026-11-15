@@ -1,3 +1,4 @@
+import { WhirlOrIcon } from '@/components/whirl-kit'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { Link, Navigate } from 'react-router-dom'
@@ -61,7 +62,7 @@ export function RewardsPage() {
       <p className="text-muted-foreground mt-2 mb-8">Your earned rewards are ready to use here.</p>
       {available.length === 0 ? (
         <div className="rounded-3xl bg-sage px-6 py-12 text-center text-sage-ink">
-          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-card"><Ticket className="h-7 w-7 text-primary" /></span>
+          <WhirlOrIcon pose="sleepy" size={112} className="mx-auto mb-2" fallback={<span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-card"><Ticket className="h-7 w-7 text-primary" /></span>} />
           <h2 className="font-display text-2xl font-semibold tracking-tight">No rewards yet</h2>
           <p className="mx-auto mt-2 max-w-sm text-sage-ink/80">Keep shopping at your favourite shops. Your reward will appear here automatically.</p>
           <Link to="/dashboard" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover">See your cards</Link>

@@ -1,5 +1,6 @@
+import { WhirlSpinner } from '@/components/whirl-kit'
 import * as React from 'react'
-import { ImageIcon, Loader2 } from 'lucide-react'
+import { ImageIcon } from 'lucide-react'
 
 /**
  * A file drop area that reacts while a file is dragged over it: it lifts,
@@ -118,7 +119,7 @@ export function MagneticDropZone({
               }}
               aria-hidden
             >
-              {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
+              {uploading ? <WhirlSpinner size={20} color="currentColor" label="Uploading" /> : <ImageIcon className="h-5 w-5" />}
             </span>
             <span className="font-medium">{uploading ? 'Uploading…' : over ? 'Drop to upload' : hint}</span>
             {!uploading && !over && <span className="text-xs opacity-70">PNG, JPG, WebP or GIF</span>}
