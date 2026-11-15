@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { onBrandColor } from '@/lib/utils'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
+import { OwnerSearchPill } from '@/components/owner-command-palette'
 import { OwnerWalkthrough } from '@/components/owner-walkthrough'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { BarePageSkeleton } from '@/components/page-skeleton'
@@ -23,6 +24,9 @@ const OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Customers', to: '/owner/analytics', icon: Users, group: CUSTOMERS_PATHS },
   { label: 'Shop', to: '/owner/settings', icon: Store, group: SHOP_PATHS },
 ]
+
+// Small uppercase group labels above the desktop sidebar items.
+const NAV_GROUP_LABEL: Record<string, string> = { Scan: 'Daily', Customers: 'Grow', Shop: 'Manage' }
 
 const SUB_TABS: Record<string, { label: string; to: string }[]> = {
   customers: [
@@ -146,8 +150,11 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
 
         <nav aria-label="Business navigation" className="flex gap-1 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
           {navItems.map(({ label, to, icon: Icon, end, group }) => (
+            <React.Fragment key={to}>
+            {isOwner && NAV_GROUP_LABEL[label] && (
+              <p className="hidden px-3.5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-olive-ink/55 md:block">{NAV_GROUP_LABEL[label]}</p>
+            )}
             <NavLink
-              key={to}
               to={to}
               end={end}
               className={({ isActive: routeActive }) => {
@@ -161,6 +168,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               <Icon className="h-5 w-5" />
               {label}
             </NavLink>
+            </React.Fragment>
           ))}
           <button data-press-feedback onClick={signOut} className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-olive-ink/70 hover:bg-olive-ink/10 md:hidden">
             <LogOut className="h-4 w-4" /> Sign out
@@ -189,6 +197,11 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
 
       <main id="main-content" tabIndex={-1} className="w-full min-w-0 flex-1 px-4 py-6 sm:px-6 md:max-w-6xl md:px-10 md:py-10">
         {isOwner && business && <OwnerWalkthrough businessId={business.id} />}
+        {isOwner && (
+          <div className="sticky top-0 z-20 -mx-4 mb-4 flex justify-end px-4 py-2 sm:-mx-6 sm:px-6 md:-mx-10 md:px-10 md:bg-background/70 md:backdrop-blur-md">
+            <OwnerSearchPill />
+          </div>
+        )}
         {isOwner && <SubTabs pathname={pathname} />}
         {isOwner && business?.approval_status === 'pending' && !pathname.startsWith('/owner/settings') && (
           <Link
