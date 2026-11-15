@@ -3,7 +3,7 @@ import { WhirlSpinner, WhirlRefreshIndicator, useWhirlSlot, whirlRefreshControlP
 import { useEffect, useMemo, useState } from 'react'
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import * as Haptics from 'expo-haptics'
+import { haptic } from '../haptics'
 import { supabase } from '../supabase'
 import { Sheet } from './Sheet'
 import { FadeUp, INK, MUTED, NIGHT, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SLATE, STONE } from './Poster'
@@ -115,12 +115,12 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
   const shown = filter ? shops.filter(s => s.category === filter) : shops
 
   function pick(cat: string | null) {
-    void Haptics.selectionAsync().catch(() => undefined)
+    haptic.tap()
     setFilter(cat)
   }
 
   function openShop(shop: GuestShop) {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined)
+    haptic.tap()
     setOpen(shop)
   }
 

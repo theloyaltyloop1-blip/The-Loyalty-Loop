@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptic } from '../haptics'
 import Animated, {
   Easing,
   cancelAnimation,
@@ -76,17 +76,17 @@ export function HoldButton({
     stopTicks();
     setHolding(false);
     setDone(true);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptic.reward();
     onConfirm();
   }
 
   function start() {
     if (disabled || busy || done) return;
     setHolding(true);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptic.tap();
     // Gentle ticks while filling, so the hold feels physical.
     stopTicks();
-    ticks.current = setInterval(() => void Haptics.selectionAsync(), Math.max(120, duration / 6));
+    ticks.current = setInterval(() => haptic.tick(), Math.max(120, duration / 6));
     progress.set(
       withTiming(1, { duration: duration * (1 - progress.get()), easing: Easing.linear }, (finished) => {
         if (finished) scheduleOnRN(complete);

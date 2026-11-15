@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
-import * as Haptics from 'expo-haptics'
+import { haptic } from '../haptics'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -23,7 +23,7 @@ export function StampThump({ children, delay = 0, ringColor, size = 44, radius =
 
   useEffect(() => {
     if (reducedMotion) return
-    const timer = setTimeout(() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), delay + 170)
+    const timer = setTimeout(() => haptic.select(), delay + 170)
     press.set(withDelay(delay, withTiming(1, { duration: 180, easing: Easing.in(Easing.cubic) })))
     ring.set(withDelay(delay + 170, withSequence(withTiming(0.01, { duration: 0 }), withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }))))
     return () => clearTimeout(timer)

@@ -70,6 +70,7 @@ import * as SecureStore from 'expo-secure-store'
 import { GuestHome, type GuestShop } from './src/components/GuestHome'
 import { Tip } from './src/components/Tip'
 import { addPassFromBase64 } from './modules/expo-wallet-pass'
+import { haptic, getHapticsEnabled, setHapticsEnabled } from './src/haptics'
 import { signInWithGoogle } from './src/google-auth'
 import { signInWithApple, signInWithAppleWeb } from './src/apple-auth'
 import * as AppleAuthentication from 'expo-apple-authentication'
@@ -495,11 +496,12 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
           options: { data: { first_name: name.trim(), intent: 'consumer', legal_accepted: true } },
         })
         if (error) throw error
-        if (data.session) onSession(data.session)
+        if (data.session) { haptic.success(); onSession(data.session) }
         else showAlert(name.trim() ? `Nearly there, ${name.trim()}.` : 'Check your email', 'Pop over to your inbox, tap the link, then come back and sign in. Your first stamp is waiting.')
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw error
+        haptic.success()
         onSession(data.session)
       }
     } catch (e) {
@@ -513,7 +515,7 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
     setBusy(true)
     try {
       const session = await signInWithGoogle()
-      if (session) onSession(session)
+      if (session) { haptic.success(); onSession(session) }
     } catch (e) {
       showAlert('Could not sign in with Google', e instanceof Error ? e.message : 'Please try again.')
     } finally {
@@ -525,7 +527,7 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
     setBusy(true)
     try {
       const session = await signInWithApple()
-      if (session) onSession(session)
+      if (session) { haptic.success(); onSession(session) }
     } catch (e) {
       // The user cancelling the Apple sheet isn't an error worth alerting on.
       if (e instanceof Error && e.message.includes('ERR_REQUEST_CANCELED')) return
@@ -539,7 +541,7 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
     setBusy(true)
     try {
       const session = await signInWithAppleWeb()
-      if (session) onSession(session)
+      if (session) { haptic.success(); onSession(session) }
     } catch (e) {
       showAlert('Could not sign in with Apple', e instanceof Error ? e.message : 'Please try again.')
     } finally {
@@ -697,6 +699,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
   const whirlSettings = useWhirlSettings()
+  const [hapticsOn, setHapticsOn] = useState(true)
   const [blocks, setBlocks] = useState<{ blocked_id: string; created_at: string }[]>([])
   const firstName: string = session.user.user_metadata?.first_name || 'Shopper'
   const email = session.user.email || ''
@@ -715,6 +718,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
     setShowRequests(false)
     biometricLockEnabled().then(setBiometricEnabled)
     getUsageAnalyticsConsent().then(setAnalyticsEnabled)
+    void getHapticsEnabled().then(setHapticsOn)
     void loadBlocks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
@@ -748,6 +752,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
     if (!result.success) return showAlert('Could not update app lock', result.error)
     setBiometricEnabled(next)
   }
+  async function toggleHaptics(next: boolean) { setHapticsOn(next); await setHapticsEnabled(next); if (next) haptic.reward() }
   async function toggleUsageAnalytics(next: boolean) { await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next) }
   async function saveName() {
     const trimmed = name.trim()
@@ -863,6 +868,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
 
               <SettingsGroup title="Security & privacy">
                 <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: colors.primary }} />} />
+                <SettingsRow tile="orange" icon={(c) => <BellIcon color={c} size={18} />} title="Haptics" detail="Vibrate when you earn stamps, rewards and more" right={<Switch value={hapticsOn} onValueChange={(v) => void toggleHaptics(v)} trackColor={{ true: colors.primary }} />} />
                 <SettingsRow tile="purple" icon={(c) => <ChartIcon color={c} size={18} />} title="Anonymous analytics" detail="Helps us improve the app. Never your email, code or messages" right={<Switch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: colors.primary }} />} />
                 <SettingsRow tile="rose" icon={(c) => <BanIcon color={c} size={18} />} title="Blocked people" detail={blocks.length ? `${blocks.length} blocked` : 'Nobody blocked'} onPress={() => setView('blocked')} last />
               </SettingsGroup>
@@ -1734,6 +1740,7 @@ function ShopDetail({
         receipt={receipt}
         onFinished={() => {
           if (landed && passStamps) setThump({ count: landed, key: Date.now() })
+          if (landed && value >= threshold) haptic.celebrate()
           setLanded(null)
         }}
       />
@@ -2740,7 +2747,7 @@ function AppHome({ session }: { session: Session }) {
       if (!earned.error) {
         const rewardList: Reward[] = (earned.data || []).map((r: any) => ({ ...r, business: Array.isArray(r.business) ? r.business[0] : r.business }))
         setRewards(rewardList)
-        void unseenReward(rewardList).then(fresh => { if (active && fresh) setCelebrate(fresh) })
+        void unseenReward(rewardList).then(fresh => { if (active && fresh) { haptic.celebrate(); setCelebrate(fresh) } })
       }
     }
     const schedule = () => {
@@ -2790,6 +2797,7 @@ function AppHome({ session }: { session: Session }) {
         return next
       })
     apply(!isFav)
+    haptic.select()
     try {
       const { error } = isFav
         ? await supabase.from('favourites').delete().eq('user_id', userId).eq('business_id', business.id)

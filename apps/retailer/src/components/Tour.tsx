@@ -10,7 +10,7 @@ import {
   type RefObject,
 } from 'react'
 import { Dimensions, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
-import * as Haptics from 'expo-haptics'
+import { haptic } from '../haptics'
 import * as SecureStore from 'expo-secure-store'
 import Animated, {
   Easing,
@@ -184,7 +184,7 @@ export function TourProvider({
   }, [enabled, businessId, loadedFor, current, screen, seen, registered, skipped, markSeen])
 
   const advance = useCallback(() => {
-    Haptics.selectionAsync().catch(() => {})
+    haptic.tap()
     if (current) markSeen([current.stop.id])
     setCurrent(null)
   }, [current, markSeen])

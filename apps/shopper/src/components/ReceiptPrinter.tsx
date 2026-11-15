@@ -1,7 +1,7 @@
 import { WhirlSpinner } from '../../../../packages/whirl/native'
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptic } from '../haptics'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -107,7 +107,7 @@ export function ReceiptPrinter({
     if (reducedMotion) {
       feed.set(1);
     } else {
-      ticks.current = setInterval(() => void Haptics.selectionAsync(), 110);
+      ticks.current = setInterval(() => haptic.tick(), 110);
       feed.set(withDelay(220, withTiming(1, { duration: PRINT_MS, easing: Easing.out(Easing.cubic) })));
     }
     const printDone = (reducedMotion ? 0 : 220 + PRINT_MS);
@@ -115,7 +115,7 @@ export function ReceiptPrinter({
       if (ticks.current) clearInterval(ticks.current);
       ticks.current = null;
       setPrinted(true);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptic.reward();
     }, printDone));
     timers.current.push(setTimeout(close, printDone + HOLD_MS));
     // eslint-disable-next-line react-hooks/exhaustive-deps

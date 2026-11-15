@@ -27,7 +27,7 @@ import { HelpFaq } from "./src/HelpFaq";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as Haptics from "expo-haptics";
+import { haptic } from './src/haptics'
 import Svg, { Polyline } from "react-native-svg";
 import {
   AtSign,
@@ -497,6 +497,7 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
         password,
       });
       if (error) throw error;
+      haptic.success();
       onSession(data.session);
     } catch (e) {
       const raw = e instanceof Error ? e.message : "";
@@ -712,6 +713,7 @@ function StampsScreen({
   // afterwards; a typed short code stays on the code entry (otherwise awarding
   // after a code lookup unexpectedly opened the camera).
   const lookupVia = useRef<"camera" | "code" | null>(null);
+  const lastScanBuzz = useRef(0);
   const unit =
     business.loyalty_type === "points"
       ? "points"
@@ -845,7 +847,7 @@ function StampsScreen({
       });
       const refusal = spendRefusal(error);
       if (refusal) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        haptic.warning()
         showAlert("Can’t add this purchase", refusal);
         spendRef.current = null;
         void loadSpendSummary(matched.id);
@@ -869,7 +871,7 @@ function StampsScreen({
       setShowSuccess(true);
     } catch (e) {
       // spendRef is kept, so trying again cannot credit the purchase twice.
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptic.error()
       showAlert("Could not add purchase", e instanceof Error ? e.message : "Check the connection and try again.");
     } finally {
       setBusy(false);
@@ -914,7 +916,7 @@ function StampsScreen({
   // after ~0.65s (the old full-screen tick took ~0.75s), so the till is never slower.
   useEffect(() => {
     if (!showSuccess) return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptic.reward()
     const timer = setTimeout(finishAfterSuccess, 650);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1017,7 +1019,7 @@ function StampsScreen({
         });
         if (error) throw new Error(winbackCouponError(error.message));
         const userId = (data as { user_id: string }).user_id;
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        haptic.success()
         showAlert("Win-back code accepted", "Give the customer their welcome-back extra. The code is now used up.");
         setMatched({ id: userId });
         setCode("");
@@ -1084,7 +1086,7 @@ function StampsScreen({
       const error = alreadySaved ? null : inserted.error;
       const refusal = manualEntryRefusal(error);
       if (refusal) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        haptic.warning()
         showAlert("Can’t add this entry", refusal);
         if (error?.message?.includes("linked_customer_payment_method_required")) {
           setLinkStatus((current) => ({ manualToday: 0, nextAllowedAt: null, ...current, linked: true }));
@@ -1110,7 +1112,7 @@ function StampsScreen({
       // once that confirmation has finished.
       setShowSuccess(true);
     } catch (e) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptic.error()
       showAlert(
         "Could not award",
         e instanceof Error
@@ -1139,7 +1141,7 @@ function StampsScreen({
       });
       setShowSuccess(true);
     } catch (e) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptic.error()
       showAlert(
         "Could not redeem",
         e instanceof Error && e.message.includes("business is inactive")
@@ -1240,6 +1242,8 @@ function StampsScreen({
                 facing="back"
                 barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
                 onBarcodeScanned={({ data }) => {
+                  const now = Date.now();
+                  if (now - lastScanBuzz.current > 1500) { lastScanBuzz.current = now; haptic.select(); }
                   lookupVia.current = "camera";
                   void parse(data);
                 }}

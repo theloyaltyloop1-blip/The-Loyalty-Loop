@@ -1,5 +1,5 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import * as Haptics from 'expo-haptics'
+import { haptic } from '../haptics'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Sheet } from './Sheet'
 import { INK, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, STONE } from './Poster'
@@ -44,8 +44,8 @@ export function QuickCardsSheet<T extends HomeShop>({ visible, onClose, shops, m
                 accessibilityLabel={`${shop.name}. ${progress.label}`}
                 accessibilityHint={disabled ? `You can pick up to ${QUICK_CARDS_MAX}. Remove one first.` : undefined}
                 onPress={() => {
-                  if (disabled) { void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); return }
-                  void Haptics.selectionAsync()
+                  if (disabled) { haptic.warning(); return }
+                  haptic.select()
                   onChange(toggleQuickCard(selected, shop.id))
                 }}
                 style={({ pressed }) => [s.row, on && s.rowOn, disabled && s.rowDisabled, pressed && s.pressed]}

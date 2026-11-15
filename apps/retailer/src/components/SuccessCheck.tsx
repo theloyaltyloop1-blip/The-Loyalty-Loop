@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Modal, StyleSheet, View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptic } from '../haptics'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -38,7 +38,7 @@ export function SuccessCheck({
 
   useEffect(() => {
     if (!visible) return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptic.success()
     scale.set(0);
     opacity.set(1);
     scale.set(reducedMotion ? withTiming(1, { duration: 150 }) : withSpring(1, POP_SPRING));

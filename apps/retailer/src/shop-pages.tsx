@@ -1,4 +1,5 @@
 import { showAlert } from "./components/AppAlert";
+import { haptic, getHapticsEnabled, setHapticsEnabled } from "./haptics";
 import { useTheme } from "./theme";
 import { useWhirlSettings } from "../../../packages/whirl/native";
 import { money } from "./money";
@@ -954,8 +955,10 @@ function AccountPage({
   const theme = useTheme();
   const whirlSettings = useWhirlSettings();
   const [biometricEnabled, setBiometricEnabled] = useState(false),
-    [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+    [analyticsEnabled, setAnalyticsEnabled] = useState(false),
+    [hapticsOn, setHapticsOn] = useState(true);
   useEffect(() => {
+    void getHapticsEnabled().then(setHapticsOn);
     biometricLockEnabled().then(setBiometricEnabled);
     getUsageAnalyticsConsent().then(setAnalyticsEnabled);
   }, []);
@@ -964,6 +967,7 @@ function AccountPage({
     if (result.success) setBiometricEnabled(!biometricEnabled);
     else showAlert("Could not update app lock", result.error);
   };
+  const toggleHaptics = async () => { const next = !hapticsOn; setHapticsOn(next); await setHapticsEnabled(next); if (next) haptic.reward(); };
   const toggleUsageAnalytics = async () => { const next = !analyticsEnabled; await setUsageAnalyticsConsent(next); setAnalyticsEnabled(next); };
   const toggleActive = () =>
     showAlert(
@@ -1038,6 +1042,19 @@ function AccountPage({
             <Switch
               value={analyticsEnabled}
               onValueChange={() => void toggleUsageAnalytics()}
+              trackColor={{ true: colors.foreground }}
+            />
+          }
+        />
+        <SettingsRow
+          icon={Bell}
+          tile="amber"
+          title="Haptics"
+          detail="Vibrate when you award stamps, redeem rewards and more"
+          right={
+            <Switch
+              value={hapticsOn}
+              onValueChange={() => void toggleHaptics()}
               trackColor={{ true: colors.foreground }}
             />
           }
