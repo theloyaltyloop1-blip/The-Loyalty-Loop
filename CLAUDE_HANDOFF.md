@@ -9,6 +9,12 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - New app icons wired in, NO build started - Claude
+- **Owner approved the redrawn brand mark.** Copied `brand/png/` into both apps' `assets/`: `icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`, `splash-icon.png`, `favicon.png`. Both app.json adaptive icons now use `android-icon-foreground.png` as `foregroundImage` (was `icon.png`) with background `#F8E4C6` (Business was `#FDF8EA`). The two apps now share one icon (the old Business icon lacked the orange leaves).
+- **Not built, not shipped.** Icons/splash are native, so nothing changes on phones until a store build; the owner will say when to start it (current: shopper 1.0.2 iOS 15 / Android 133; Business 1.0.1 iOS 13 / Android 132 - bump before building). Website icons were already updated in the release.
+- **Checks:** both app.json files parse; no render or device check. **Still open:** wallet logo edge-function deploy (`create-wallet-pass`, `logo-mark.png` is live on web); App Store / Play listing icons are separate uploads; Business splash background is still `#FDF8EA` (shopper `#F8E4C6`).
+- **Next (Claude, on the owner's go):** bump build numbers, EAS build both apps, submit.
+
 ## 2026-11-15 — Reel-lessons release: apps by OTA, website pushed to main (main 5ae5034) - Claude
 **What went out**
 - Business app OTA, runtime 1.0.1, branch production, android 01a1dcb6 / ios 01a1dcb8. Shopper OTA, runtime 1.0.2, branch production, android 01a1dcba / ios 01a1dcbb. All published with `--environment production`; each uploaded bundle was downloaded and contains the project ref (checked 2026-11-15).
