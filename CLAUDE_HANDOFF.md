@@ -9,6 +9,16 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Shopper Home layout fix (branch `fix-shopper-home`, JS only, not OTA'd) - Claude
+
+Owner screenshot of Play 1.0.1 showed a broken Home. Fixes (apps/shopper):
+- Greeting: 56px -> 44px with `numberOfLines={2}` + `adjustsFontSizeToFit` (min 0.7), so "Afternoon," never breaks mid-word; first name kept. HomeFeed.tsx.
+- Whirl: the cropped `peek` pose is gone from beside the greeting and from the Ask Whirl bar. A whole `wave` pose (44px) now sits left of the profile avatar; the bar uses `wave` at 48px. Shown only while "Show Whirl" is on.
+- Ask Whirl bar now has 16px below it before the points card.
+- Points card: "21 pts / FOR FREE COFFEE." read like a balance with an empty bar. It now says "21 pts TO GO FOR FREE COFFEE." and a caption under the bar shows "0 / 21 pts" (or spend "£x / £y"). HomeCollection.tsx.
+- Tab bar: inactive icons #B3AF8F -> #D5D9E8 (about 7:1 on #2B3A67 light and #34457F dark; WCAG AA needs 3:1 for icons). App.tsx.
+- Checks: `tsc --noEmit` clean for apps/shopper. NOT checked: no simulator/browser preview was run, so nothing has been seen on a phone, in dark mode, or at 360dp/large widths; the `wave` art being fully uncropped at 44-48px is assumed from the pose list. The bar fill is truthful (0% at 0 points). No EAS build/OTA, nothing pushed.
+
 ## 2026-11-15 - Whirl leftovers + Ask Whirl BACKEND LIVE (branch `claude/whirl-moments`; apps not yet OTA'd) - Claude
 - **Owner:** the user ("I approve all of this"). **Added:** first-join pop-up in the shopper app (once ever, Whirl celebrate; the notification ask waits until it is dismissed), Whirl thumbs on the confirm-email pop-up, web Help header (peek) and landing help-centre row (think), Whirl in the visit thank-you email (thumbs) and release email (wave) as PNGs in `apps/web/public/mascot/email/`. Ask Whirl commits were already on main (0c97b0c, 2d60638, Privacy Notice 94e7cc0); I dropped my duplicate cherry-picks when rebasing.
 - **Left out on purpose:** stamp-collected moment (only place is the shop-branded receipt/card page, excluded by rule 10 in `docs/whirl-usage-rules.md`). Art trim: dark and light sets are not a pure colour swap, so no loss-free saving; stays about 224 KB per bundle.

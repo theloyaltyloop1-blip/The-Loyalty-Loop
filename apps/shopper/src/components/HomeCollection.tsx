@@ -154,7 +154,7 @@ function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, wi
   const reward = progress.title ? lowerFirst(progress.title) : 'your next reward'
   // A chosen card can belong to a shop with no reward target to count down to.
   const big = threshold == null ? 'Your card' : ready ? 'Ready!' : progress.spend ? money(left) : progress.unit === 'points' ? `${left} pts` : `${left} more`
-  const line = threshold == null ? `${progress.offer || progress.label}.`.replace(/\.\.$/, '.') : ready ? `${progress.title || 'Your reward'} is waiting.` : progress.spend ? `to go for ${reward}.` : `for ${reward}.`
+  const line = threshold == null ? `${progress.offer || progress.label}.`.replace(/\.\.$/, '.') : ready ? `${progress.title || 'Your reward'} is waiting.` : progress.spend || progress.unit === 'points' ? `to go for ${reward}.` : `for ${reward}.`
   const dots = threshold != null && !progress.spend && progress.unit !== 'points' && threshold <= 12
   return <View style={[s.nextCard, width != null && { width, marginBottom: 0 }]}>
     <View style={s.nextShop}>
@@ -172,6 +172,7 @@ function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, wi
     {threshold == null ? null : dots
       ? <View style={s.nextDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{Array.from({ length: threshold }, (_, i) => <View key={i} style={[s.nextDot, i < progress.value && s.nextDotOn]} />)}</View>
       : <View style={s.nextTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={[s.nextFill, { width: `${Math.round(Math.min(1, progress.fraction) * 100)}%` }]} /></View>}
+    {threshold != null && !dots && <Text style={s.nextCount} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{progress.spend ? `${money(progress.value)} / ${money(threshold)}` : `${progress.value} / ${threshold}${progress.unit === 'points' ? ' pts' : ''}`}</Text>}
     <Pressable accessibilityRole="button" accessibilityLabel={`Show my ${shop.name} card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.nextButton, pressed && s.pressed]}>
       <Text style={s.nextButtonText}>{ready ? 'Use it now' : 'Show my card'}</Text><Arrow color={PAPER} />
     </Pressable>
@@ -351,6 +352,7 @@ const s = themed(() => StyleSheet.create({
   nextDots: { flexDirection: 'row', gap: 6 },
   nextDot: { flex: 1, aspectRatio: 1, maxWidth: 26, borderRadius: 999, borderWidth: 1.5, borderColor: schemeColor('rgba(26,33,56,0.2)', 'border') },
   nextDotOn: { backgroundColor: schemeColor('#1A2138', 'bg'), borderColor: schemeColor('#1A2138', 'bg') },
+  nextCount: { marginTop: -10, color: schemeColor('rgba(26,33,56,0.65)', 'fg'), fontSize: 13, fontWeight: '600' },
   nextTrack: { height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(26,33,56,0.1)', 'bg'), overflow: 'hidden' },
   nextFill: { height: '100%', backgroundColor: schemeColor('#1A2138', 'bg') },
   nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 50, paddingHorizontal: 22, borderRadius: 999, backgroundColor: colors.olive, shadowColor: NIGHT, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },

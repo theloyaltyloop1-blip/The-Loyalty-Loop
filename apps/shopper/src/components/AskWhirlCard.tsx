@@ -22,7 +22,7 @@ export function AskWhirlCard({ onPress, mode }: { onPress: () => void; mode: 'sh
       onPress={onPress}
       style={({ pressed }) => [s.row, { backgroundColor: bg, borderColor: border }, pressed && { opacity: 0.8 }]}
     >
-      <Whirl pose="peek" size={56} effect="none" />
+      <Whirl pose="wave" size={48} effect="none" />
       <View style={s.text}>
         <Text style={[s.title, { color: ink }]}>Ask Whirl anything</Text>
         <Text style={[s.sub, { color: muted }]} numberOfLines={1}>{mode === 'shopper' ? 'Stamps, rewards, finding a shop…' : 'Your programme, your numbers, the app…'}</Text>

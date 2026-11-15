@@ -2452,7 +2452,7 @@ const SHOW_DISCOVER_TAB = false
 
 // Floating indigo pill: the open tab is a paper pill with its name, the rest are icons.
 const TAB_ON = '#1A2138'
-const TAB_OFF = '#B3AF8F'
+const TAB_OFF = '#D5D9E8' // 7:1+ on the indigo bar in light (#2B3A67) and dark (#34457F)
 const TABS: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
   { id: 'home', label: 'Home', icon: (active) => <HomeIcon color={active ? TAB_ON : TAB_OFF} /> },
   { id: 'discover', label: 'Discover', icon: (active) => <ReelsIcon color={active ? TAB_ON : TAB_OFF} filled={active} /> },

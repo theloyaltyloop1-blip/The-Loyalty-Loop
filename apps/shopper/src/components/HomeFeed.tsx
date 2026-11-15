@@ -82,16 +82,16 @@ export function HomeFeed<T extends FeedShop>({
     <FadeUp>
       <View style={s.topRow}>
         <Text style={s.date}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}</Text>
+        <View style={s.topRight}>
+        {greeting ? <Whirl pose="wave" size={44} effect="none" /> : null}
         <Pressable accessibilityRole="button" accessibilityLabel="Your profile and settings" onPress={onOpenProfile} hitSlop={8} style={({ pressed }) => [s.avatar, pressed && s.pressed]}>
           <Text style={s.avatarText}>{name ? name.charAt(0).toUpperCase() : '·'}</Text>
         </Pressable>
+        </View>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
-        <Text accessibilityRole="header" style={[s.title, { flexShrink: 1 }]}>{name ? `${part},\n${name}.` : `Good\n${part.toLowerCase()}.`}</Text>
-        {greeting ? <Whirl pose="peek" size={92} effect="peek" /> : null}
-      </View>
+      <Text accessibilityRole="header" style={s.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{name ? `${part},\n${name}.` : `Good\n${part.toLowerCase()}.`}</Text>
     </FadeUp>
-    {onAskWhirl ? <FadeUp delay={60}><AskWhirlCard mode="shopper" onPress={onAskWhirl} /></FadeUp> : null}
+    {onAskWhirl ? <FadeUp delay={60} style={s.askWrap}><AskWhirlCard mode="shopper" onPress={onAskWhirl} /></FadeUp> : null}
 
     <FadeUp delay={100}><NextRewardHero shops={shops} memberships={memberships} catalog={catalog} onSelect={onSelect} quickIds={quickIds} onEditQuick={onQuickChange ? () => setEditingQuick(true) : undefined} /></FadeUp>
 
@@ -151,7 +151,9 @@ const s = themed(() => StyleSheet.create({
   date: { fontSize: 11, fontWeight: '500', letterSpacing: 1.8, color: colors.muted },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.olive, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: PAPER, fontSize: 16, fontWeight: '700' },
-  title: { marginTop: 14, marginBottom: 26, fontFamily: SANS_HEAVY, fontSize: 56, lineHeight: 56, letterSpacing: -3, color: colors.ink },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  askWrap: { marginBottom: 16 },
+  title: { marginTop: 14, marginBottom: 20, fontFamily: SANS_HEAVY, fontSize: 44, lineHeight: 48, letterSpacing: -2, color: colors.ink },
   section: { marginTop: 12, marginBottom: 24 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40, marginBottom: 12 },
   // Huge or tiny: section labels are small caps under the poster-sized greeting.
