@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native'
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
 
-const BASE = 'rgba(20, 20, 30, 0.08)'
+import { schemeColor } from '@loyalty-loop/design-tokens'
 
 export function SkeletonBlock({ width = '100%', height, radius = 14, style }: { width?: DimensionValue; height: number; radius?: number; style?: StyleProp<ViewStyle> }) {
   const reducedMotion = useReducedMotion()
@@ -14,7 +14,7 @@ export function SkeletonBlock({ width = '100%', height, radius = 14, style }: { 
     pulse.set(withRepeat(withTiming(0.45, { duration: 750, easing: Easing.inOut(Easing.quad) }), -1, true))
   }, [reducedMotion])
   const animated = useAnimatedStyle(() => ({ opacity: pulse.get() }))
-  return <Animated.View style={[{ width, height, borderRadius: radius, borderCurve: 'continuous', backgroundColor: BASE }, animated, style]} />
+  return <Animated.View style={[{ width, height, borderRadius: radius, borderCurve: 'continuous', backgroundColor: schemeColor('rgba(20, 20, 30, 0.08)', 'bg') }, animated, style]} />
 }
 
 /** A screen-shaped stack of placeholders: a heading, then `cards` card shapes. */

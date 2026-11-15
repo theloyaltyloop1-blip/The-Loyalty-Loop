@@ -9,6 +9,175 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Dark mode contrast audit (owner requirement) - Claude, branch `claude/dark-mode`
+**Method:** (1) every semantic colour pair in `docs/design/website-palette.json` for light, dark, admin light, admin dark computed with the WCAG formula (table below); (2) computed-style scan in the browser pane of every visible text node (colour vs the actual stacked background), AA 4.5:1, 3:1 for large text. Script was a temporary dev file, removed. Not covered by script: icons/borders drawn as SVG or images, focus ring on live elements (checked via token pair), placeholders and disabled states (same tokens as muted text; disabled controls are exempt from AA).
+**Admin panel:** `.admin-panel` used to force light. It now has its own dark role set (generator `admin_dark`, selector `html.dark .admin-panel`) and the hard-coded #dbe2ec / #e9eef5 / #EDECF2 / #DDEED3 in `admin-panel.css`, `admin-reference.css` now follow the switch. A later admin redesign should keep using the `--color-*` tokens and `html.dark .admin-panel`.
+**Other web checks:** QR code backgrounds forced white; logo mark inverted on dark landing; native controls get `color-scheme: dark`; scrollbar/selection/focus use tokens; sonner reads the same theme; Google map has a dark style; shadows are heavier in dark on the landing cards (`rgba(0,0,0,.4-.5)`) but ordinary app-page shadows (`shadow-sticker`) are faint on near-black and rely on the card border instead.
+**Failures found and fixed:** landing muted text on the stone panel 4.10:1 (light) -> #5F5B54; landing footer small text under 4.5 in dark -> raised opacity; owner walkthrough card (black text on a dark card) -> tokens; onboarding preview chips; QR wrappers.
+**Failures NOT fixed / limits:** Customer dashboard, owner and real admin pages were not opened (no login), so only token pairs and code greps cover them; the video posters on the landing are light by nature; chart axis/gridline/tooltip colours on live Analytics/Admin charts were not measured (they use `--color-chart-*` and `muted-foreground`, which pass in the table); Admin Jade accent (active nav pill) is bright by design.
+**Contrast table (WCAG ratios from the token values; Need = 4.5 text, 3 UI/large):**
+
+#### Website light (app pages)
+| Element | Foreground | Background | Ratio | Need | Result |
+|---|---|---|---|---|---|
+| Body text | #0F1C33 | #F3F7FC | 15.82 | 4.5 | pass |
+| Body text on card | #0F1C33 | #FDFDFE | 16.74 | 4.5 | pass |
+| Muted text on page | #50627C | #F3F7FC | 5.78 | 4.5 | pass |
+| Muted text on card | #50627C | #FDFDFE | 6.11 | 4.5 | pass |
+| Muted text on muted fill | #50627C | #E4ECF6 | 5.22 | 4.5 | pass |
+| Primary button text | #FDFDFE | #0042AC | 8.70 | 4.5 | pass |
+| Primary as link on page | #0042AC | #F3F7FC | 8.22 | 4.5 | pass |
+| Primary as link on card | #0042AC | #FDFDFE | 8.70 | 4.5 | pass |
+| Secondary button text | #0F1C33 | #E4ECF6 | 14.28 | 4.5 | pass |
+| Sage tile | #032F42 | #CCF8FF | 12.38 | 4.5 | pass |
+| Peach tile | #053107 | #B9FEB7 | 12.37 | 4.5 | pass |
+| Amber tile | #451A03 | #F2B544 | 8.18 | 4.5 | pass |
+| Orange tile | #04183D | #00D3FB | 9.73 | 4.5 | pass |
+| Olive tile / owner sidebar | #EEF4FF | #00358A | 10.14 | 4.5 | pass |
+| Accent chip | #04183D | #00D3FB | 9.73 | 4.5 | pass |
+| Destructive text on subtle | #BE123C | #FFF1F2 | 5.72 | 4.5 | pass |
+| Destructive button text | #FDFDFE | #BE123C | 6.18 | 4.5 | pass |
+| Success text on subtle | #166534 | #F0FDF4 | 6.81 | 4.5 | pass |
+| Warning text on subtle | #92400E | #FFFBEB | 6.84 | 4.5 | pass |
+| Info text on subtle | #1D4ED8 | #EFF6FF | 6.16 | 4.5 | pass |
+| Popover/dialog text | #0F1C33 | #FDFDFE | 16.74 | 4.5 | pass |
+| Input border vs page (UI 3:1) | #6D809A | #F3F7FC | 3.75 | 3 | pass |
+| Input border vs card (UI 3:1) | #6D809A | #FDFDFE | 3.97 | 3 | pass |
+| Focus ring vs page (UI 3:1) | #0042AC | #F3F7FC | 8.22 | 3 | pass |
+| Focus ring vs card (UI 3:1) | #0042AC | #FDFDFE | 8.70 | 3 | pass |
+| Card border vs page (decor, info) | #CDD9E8 | #F3F7FC | 1.33 | info | - |
+| Chart 1 vs card (3:1) | #2563EB | #FDFDFE | 5.08 | 3 | pass |
+| Chart 2 vs card | #0E7490 | #FDFDFE | 5.27 | 3 | pass |
+| Chart 3 vs card | #7C3AED | #FDFDFE | 5.61 | 3 | pass |
+| Chart 4 vs card | #B45309 | #FDFDFE | 4.94 | 3 | pass |
+| Chart 5 vs card | #15803D | #FDFDFE | 4.93 | 3 | pass |
+| Fun green text on page | #176B17 | #F3F7FC | 6.19 | 4.5 | pass |
+
+#### Website dark (app pages)
+| Element | Foreground | Background | Ratio | Need | Result |
+|---|---|---|---|---|---|
+| Body text | #F2EFE8 | #121214 | 16.29 | 4.5 | pass |
+| Body text on card | #F2EFE8 | #1B1B1F | 14.95 | 4.5 | pass |
+| Muted text on page | #B0ABA3 | #121214 | 8.20 | 4.5 | pass |
+| Muted text on card | #B0ABA3 | #1B1B1F | 7.52 | 4.5 | pass |
+| Muted text on muted fill | #B0ABA3 | #26262B | 6.60 | 4.5 | pass |
+| Primary button text | #04183D | #5A8CF0 | 5.36 | 4.5 | pass |
+| Primary as link on page | #5A8CF0 | #121214 | 5.74 | 4.5 | pass |
+| Primary as link on card | #5A8CF0 | #1B1B1F | 5.27 | 4.5 | pass |
+| Secondary button text | #F2EFE8 | #26262B | 13.11 | 4.5 | pass |
+| Sage tile | #9EF1FE | #032F42 | 11.06 | 4.5 | pass |
+| Peach tile | #B9FEB7 | #053107 | 12.37 | 4.5 | pass |
+| Amber tile | #451A03 | #F2B544 | 8.18 | 4.5 | pass |
+| Orange tile | #04183D | #00D3FB | 9.73 | 4.5 | pass |
+| Olive tile / owner sidebar | #EEF4FF | #062B6B | 12.15 | 4.5 | pass |
+| Accent chip | #053107 | #83FD80 | 11.27 | 4.5 | pass |
+| Destructive text on subtle | #FDA4AF | #4C0519 | 8.27 | 4.5 | pass |
+| Destructive button text | #4C0519 | #FDA4AF | 8.27 | 4.5 | pass |
+| Success text on subtle | #86EFAC | #052E16 | 10.62 | 4.5 | pass |
+| Warning text on subtle | #FCD34D | #451A03 | 10.39 | 4.5 | pass |
+| Info text on subtle | #93C5FD | #172554 | 8.15 | 4.5 | pass |
+| Popover/dialog text | #F2EFE8 | #1B1B1F | 14.95 | 4.5 | pass |
+| Input border vs page (UI 3:1) | #7C7C85 | #121214 | 4.53 | 3 | pass |
+| Input border vs card (UI 3:1) | #7C7C85 | #1B1B1F | 4.15 | 3 | pass |
+| Focus ring vs page (UI 3:1) | #8FB4FA | #121214 | 8.98 | 3 | pass |
+| Focus ring vs card (UI 3:1) | #8FB4FA | #1B1B1F | 8.24 | 3 | pass |
+| Card border vs page (decor, info) | #36363C | #121214 | 1.56 | info | - |
+| Chart 1 vs card (3:1) | #60A5FA | #1B1B1F | 6.75 | 3 | pass |
+| Chart 2 vs card | #67E8F9 | #1B1B1F | 11.84 | 3 | pass |
+| Chart 3 vs card | #C4B5FD | #1B1B1F | 9.30 | 3 | pass |
+| Chart 4 vs card | #FCD34D | #1B1B1F | 11.91 | 3 | pass |
+| Chart 5 vs card | #86EFAC | #1B1B1F | 12.23 | 3 | pass |
+| Fun green text on page | #83FD80 | #121214 | 14.55 | 4.5 | pass |
+
+#### Admin panel light
+| Element | Foreground | Background | Ratio | Need | Result |
+|---|---|---|---|---|---|
+| Body text | #172033 | #F8FAFC | 15.55 | 4.5 | pass |
+| Body text on card | #172033 | #FFFFFF | 16.27 | 4.5 | pass |
+| Muted text on page | #475569 | #F8FAFC | 7.24 | 4.5 | pass |
+| Muted text on card | #475569 | #FFFFFF | 7.58 | 4.5 | pass |
+| Muted text on muted fill | #475569 | #F1F5F9 | 6.92 | 4.5 | pass |
+| Primary button text | #FFFFFF | #2563EB | 5.17 | 4.5 | pass |
+| Primary as link on page | #2563EB | #F8FAFC | 4.94 | 4.5 | pass |
+| Primary as link on card | #2563EB | #FFFFFF | 5.17 | 4.5 | pass |
+| Secondary button text | #172033 | #F1F5F9 | 14.85 | 4.5 | pass |
+| Sage tile | #1E40AF | #EFF6FF | 8.01 | 4.5 | pass |
+| Peach tile | #1E40AF | #EFF6FF | 8.01 | 4.5 | pass |
+| Amber tile | #451A03 | #F2B544 | 8.18 | 4.5 | pass |
+| Orange tile | #04183D | #00D3FB | 9.73 | 4.5 | pass |
+| Olive tile / owner sidebar | #FFFFFF | #2563EB | 5.17 | 4.5 | pass |
+| Accent chip | #04183D | #00D3FB | 9.73 | 4.5 | pass |
+| Destructive text on subtle | #BE123C | #FFF1F2 | 5.72 | 4.5 | pass |
+| Destructive button text | #FDFDFE | #BE123C | 6.18 | 4.5 | pass |
+| Success text on subtle | #166534 | #F0FDF4 | 6.81 | 4.5 | pass |
+| Warning text on subtle | #92400E | #FFFBEB | 6.84 | 4.5 | pass |
+| Info text on subtle | #1D4ED8 | #EFF6FF | 6.16 | 4.5 | pass |
+| Popover/dialog text | #172033 | #FFFFFF | 16.27 | 4.5 | pass |
+| Input border vs page (UI 3:1) | #64748B | #F8FAFC | 4.55 | 3 | pass |
+| Input border vs card (UI 3:1) | #64748B | #FFFFFF | 4.76 | 3 | pass |
+| Focus ring vs page (UI 3:1) | #2563EB | #F8FAFC | 4.94 | 3 | pass |
+| Focus ring vs card (UI 3:1) | #2563EB | #FFFFFF | 5.17 | 3 | pass |
+| Card border vs page (decor, info) | #E2E8F0 | #F8FAFC | 1.18 | info | - |
+| Chart 1 vs card (3:1) | #2563EB | #FFFFFF | 5.17 | 3 | pass |
+| Chart 2 vs card | #0E7490 | #FFFFFF | 5.36 | 3 | pass |
+| Chart 3 vs card | #7C3AED | #FFFFFF | 5.70 | 3 | pass |
+| Chart 4 vs card | #B45309 | #FFFFFF | 5.02 | 3 | pass |
+| Chart 5 vs card | #15803D | #FFFFFF | 5.02 | 3 | pass |
+| Fun green text on page | #176B17 | #F8FAFC | 6.37 | 4.5 | pass |
+
+#### Admin panel dark
+| Element | Foreground | Background | Ratio | Need | Result |
+|---|---|---|---|---|---|
+| Body text | #F2EFE8 | #0F1218 | 16.33 | 4.5 | pass |
+| Body text on card | #F2EFE8 | #171B23 | 15.02 | 4.5 | pass |
+| Muted text on page | #A9B2C0 | #0F1218 | 8.76 | 4.5 | pass |
+| Muted text on card | #A9B2C0 | #171B23 | 8.06 | 4.5 | pass |
+| Muted text on muted fill | #A9B2C0 | #222833 | 6.92 | 4.5 | pass |
+| Primary button text | #172554 | #60A5FA | 5.78 | 4.5 | pass |
+| Primary as link on page | #60A5FA | #0F1218 | 7.37 | 4.5 | pass |
+| Primary as link on card | #60A5FA | #171B23 | 6.78 | 4.5 | pass |
+| Secondary button text | #F2EFE8 | #222833 | 12.88 | 4.5 | pass |
+| Sage tile | #BFDBFE | #172554 | 10.34 | 4.5 | pass |
+| Peach tile | #BFDBFE | #172554 | 10.34 | 4.5 | pass |
+| Amber tile | #451A03 | #F2B544 | 8.18 | 4.5 | pass |
+| Orange tile | #04183D | #00D3FB | 9.73 | 4.5 | pass |
+| Olive tile / owner sidebar | #EFF6FF | #1E3A8A | 9.52 | 4.5 | pass |
+| Accent chip | #053107 | #83FD80 | 11.27 | 4.5 | pass |
+| Destructive text on subtle | #FDA4AF | #4C0519 | 8.27 | 4.5 | pass |
+| Destructive button text | #4C0519 | #FDA4AF | 8.27 | 4.5 | pass |
+| Success text on subtle | #86EFAC | #052E16 | 10.62 | 4.5 | pass |
+| Warning text on subtle | #FCD34D | #451A03 | 10.39 | 4.5 | pass |
+| Info text on subtle | #93C5FD | #16233F | 8.65 | 4.5 | pass |
+| Popover/dialog text | #F2EFE8 | #171B23 | 15.02 | 4.5 | pass |
+| Input border vs page (UI 3:1) | #7C8696 | #0F1218 | 5.10 | 3 | pass |
+| Input border vs card (UI 3:1) | #7C8696 | #171B23 | 4.69 | 3 | pass |
+| Focus ring vs page (UI 3:1) | #93C5FD | #0F1218 | 10.40 | 3 | pass |
+| Focus ring vs card (UI 3:1) | #93C5FD | #171B23 | 9.57 | 3 | pass |
+| Card border vs page (decor, info) | #2F3744 | #0F1218 | 1.56 | info | - |
+| Chart 1 vs card (3:1) | #60A5FA | #171B23 | 6.78 | 3 | pass |
+| Chart 2 vs card | #67E8F9 | #171B23 | 11.90 | 3 | pass |
+| Chart 3 vs card | #C4B5FD | #171B23 | 9.34 | 3 | pass |
+| Chart 4 vs card | #FCD34D | #171B23 | 11.96 | 3 | pass |
+| Chart 5 vs card | #86EFAC | #171B23 | 12.28 | 3 | pass |
+| Fun green text on page | #83FD80 | #0F1218 | 14.58 | 4.5 | pass |
+
+**Live page scan:**
+
+| Page (live, computed styles, every visible text node) | Mode | Text nodes | Lowest ratio | Failures |
+|---|---|---|---|---|
+| Landing `/` | light | 92 | 4.10 -> fixed (muted ink #6F6B64 -> #5F5B54) | 2 found, 0 after fix (not re-measured after the one-line colour change; token maths: #5F5B54 on #E7E2D8 = 5.0) |
+| Landing `/` | dark | 92 | 5.21 | 0 |
+| Login `/login` | light / dark | 18 / 17 | 6.11 / 5.36 | 0 / 0 |
+| Signup `/signup` | dark | 20 | 5.36 | 0 (light not re-run) |
+| Help `/help` | light / dark | 30 / 30 | 5.78 / 8.20 | 0 / 0 |
+| Admin panel (`/access` needs an admin login, so a harness with the real admin CSS and class names: sidebar, active nav, badge, metrics + icon tiles, segment control, bars, error, health cards, table) | light / dark | 46 / 46 | 5.17 / 5.78 | 0 / 0 |
+
+**Apps: hard-coded colours converted (no device check was possible; static audit only):**
+- Shopper converted: `App.tsx` (629 changed lines: all styles, icons, tab bar kept indigo with paper pill, settings tiles, dark map style), `src/components/` AppAlert, ExternalCards, GuestHome, HoldButton, HomeCollection, HomeFeed, Poster (palette constants rewritten at each use by role), QuickCardsSheet, RewardCelebration, Sheet, ShopRequests, StampThump, SuccessCheck, Ticket, Tip, Skeleton, `src/service-status.tsx`, `src/shop-profile.tsx`.
+- Business converted: `App.tsx`, `src/` CardDesigner, CashOff, HelpFaq, MapPinPicker, ProgrammeBuilder, owner-pages, shop-onboarding, shop-pages, service-status, `src/components/` AppAlert, DynamicButton, Explainers, HoldButton, Poster, Sheet, SuccessCheck, Tour, Skeleton.
+- NOT converted on purpose: shopper `ReceiptPrinter.tsx` (a printed receipt stays paper and ink); shop pages wearing a shop's own card design (`packages/card-design`, read in light so they look as before); shop brand colours and tier colours (user data); Google "G" logo paths; Business address picker OSM tiles; Android home-screen widgets (`src/widgets/`, separate runtime); native alerts, keyboard, navigation bar (need the store build with `userInterfaceStyle: automatic`).
+- Evidence: tsc clean; light-evaluated colours identical to before for both apps; static dark audit of every style object: 0 text/background pairs below 3:1, 0 text colours unreadable on page/card (remaining flags are intended bright fills and the receipt). Real contrast on rendered screens is unmeasured.
+
 ## 2026-11-15 - Dark mode: website + both apps, branch `claude/dark-mode` (3 commits), NOTHING shipped - Claude
 **Where:** branch `claude/dark-mode` cut from `claude/reel-release` (5736301); worktree `.claude/worktrees/dark-mode`. Commits: bd350db web, 159cbb7 shopper (+ shared `packages/design-tokens`), 2e2fd76 Business. Not pushed, no EAS build, no OTA, no DB change.
 **Website:** palette generator `scripts/build-website-palette.py` dark roles now warm near-black (#121214 / cards #1B1B1F, Sapphire lifted); `color-system.css` regenerated. Landing (`landing.css`) has its own `html.dark .lp` variables (stone panels tinted indigo). On a first visit the site follows the system setting (nothing saved until the toggle is used; `theme-toggle.tsx`, `main.tsx`). The sun/moon toggle is back on the landing nav, the customer header and the owner sidebar (it had been hidden on purpose; the PAUSED_FEATURES entry in AccessPanel was removed). Fixed: QR code backgrounds forced white (they would not scan on dark), owner walkthrough card, onboarding previews, `bg-white/NN` fills, Google map dark style.
