@@ -73,7 +73,7 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 5. Work that is not on main
 
-- **Main folder** (`C:\Users\zahih\Downloads\The Loyalty Loop - for Claude`): branch `owner-redesign-on-origin-main`, far behind `origin/main`. It holds work that exists nowhere else: local trades directory mode (`apps/shopper/src/components/Directory.tsx`, `apps/web/src/pages/admin/Directory.tsx`, migration `20261031120000`), retailer country picker, card designer, migrations `20261022100247` and `20261105100000`, `marketing/outreach-bot/`, `marketing/london-leads/`, `plan.md` (90-day plan) and `handoff.md`. Snapshot: local branch `backup/pre-sync-2026-11-15` (`ff61505`), not pushed; it does not include `marketing/`, `logocreator/` or `artifacts/`.
+- **Main folder** (`C:\Users\zahih\Downloads\The Loyalty Loop - for Claude`): moved to `main` on 2026-11-15. Its earlier state (21 edited files, 348 files in all) is saved in local branch `backup/main-folder-full-2026-11-15` (`a73869a`), not pushed because it holds lead contact details. Work that exists only in that snapshot: local trades directory mode (edits to `AccessPanel.tsx` and the shopper app) and the retailer country picker. Still loose in the folder, not in git: `plan.md` (90-day plan), `handoff.md`, `marketing/outreach-bot/`, `marketing/london-leads/`, `artifacts/`, three logo tool folders, the `watch` and `video-edit` skills, two orphan `Directory.tsx` files and migration `20261031120000`. The 5 old commits from local `main` are in `backup/local-main-2026-11-15`.
 - **Branches with work whose status the owner has not confirmed:** `claude/reel-preview`, `claude/integration-review`, `claude/whirl-audit`, `business-verification`, `claude/reel-pitch-80b83f` (owner-pitch landing copy and pitch scripts, uncommitted, conflicts with the live landing page).
 - About 50 worktrees exist under `.claude/worktrees/`; around 14 had uncommitted files on 2026-11-15.
 - Cold outreach bot (`marketing/outreach-bot/`): built, 63 shops emailed in earlier batches, nothing sent by the bot. Two outreach designs disagree; `plan.md` task T8 is a stop gate for all outreach.
@@ -116,6 +116,15 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
+
+### 2026-11-15 - Main folder moved to `main` - done locally, nothing to ship
+
+- **What:** the main folder was on `owner-redesign-on-origin-main`, 189 commits behind, with 21 edited and 29 loose items. A full snapshot was taken first (`backup/main-folder-full-2026-11-15`, `a73869a`), then the folder was switched to `main` at 978b667.
+- **Checks run:** all 348 edited and loose files compared by hash against the snapshot before the switch, 0 mismatches. After: no tracked changes, and the folder is level with `origin/main`.
+- **Not in the snapshot:** `logocreator/`, `logo-design-skill/`, `logo-generator-skill/` (each is its own git repo) and ignored files such as `.env`. All are still on disk, untouched.
+- **Not run:** `npm ci` in the folder. Its `node_modules` predate `main`, so install before running anything there.
+- **Open:** the two loose `Directory.tsx` files belong to the unmerged trades directory work and may fail a type-check in this folder. The folder will drift behind again unless it is pulled.
+- **Next:** (owner) decide whether trades directory mode and the country picker should be merged from the snapshot or dropped.
 
 ### 2026-11-15 - Handoff replaced with this short file - LIVE on main
 
