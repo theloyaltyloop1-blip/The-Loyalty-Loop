@@ -117,6 +117,15 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-15 - Local clean-up: duplicate files, merged worktrees and branches - done locally, nothing to ship
+
+- **What:** removed 26 worktrees whose commits are all in `origin/main`, had no uncommitted files and no session using them. Deleted 51 local branches already merged into `main` (`git branch -d`). Deleted `handoff.md` and the two root preview images (byte-identical copies are in `backup/main-folder-full-2026-11-15`). Sent the `claude/zen-maxwell-8qh7zl` zip and its unzipped folder in Downloads to the Recycle Bin (all 116 files matched the branch on GitHub).
+- **Kept on purpose:** every `backup/` and `snap/` branch, every unmerged branch and its worktree, every worktree with uncommitted files, the two worktrees with sessions (`v2-speed-aabb87`, `v2-dashboard-23f22a`), and `instruction-rewrite`. Nothing on GitHub was deleted.
+- **Checks run:** per worktree `git status --porcelain` (0 lines), `merge-base --is-ancestor HEAD origin/main`, ignored files listed (only `.env` copies, skills copies, `node_modules`). Git itself refused nothing in the removed set.
+- **Not finished:** `%TEMP%\release-dark`, `release-wa` and `whirl-moments` are unregistered from git but 2 to 3 files each are locked by a running process (old dev servers). Delete the folders after a restart.
+- **Open:** seven `%TEMP%` worktrees show about 700 changed files each (cause not checked): `card-release`, `integ`, `ll-main-wt`, `prog`, `rel3`, `release`, `shop-release`. 12 git stashes are untouched. About 46 remote branches on GitHub are untouched.
+- **Next:** (owner) say whether to check the seven `%TEMP%` worktrees and prune merged branches on GitHub.
+
 ### 2026-11-15 - Main folder moved to `main` - done locally, nothing to ship
 
 - **What:** the main folder was on `owner-redesign-on-origin-main`, 189 commits behind, with 21 edited and 29 loose items. A full snapshot was taken first (`backup/main-folder-full-2026-11-15`, `a73869a`), then the folder was switched to `main` at 978b667.
