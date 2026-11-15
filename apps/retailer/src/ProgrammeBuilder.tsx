@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ArrowUp, Info, Sparkles } from "lucide-react-native";
-import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import { describeRules, type ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
 import { supabase } from "./supabase";
 
@@ -9,7 +9,7 @@ import { supabase } from "./supabase";
 // apps/web/src/components/programme-builder.tsx). The AI only ever returns a
 // rules document; the database checks it again when the owner saves.
 
-const { foreground: green, primary: orange } = colors;
+
 
 type Message = { role: "user" | "assistant"; content: string };
 type Unsupported = { request: string; closest: string };
@@ -112,7 +112,7 @@ export function ProgrammeBuilder({
   return (
     <View>
       <View style={styles.row}>
-        <View style={styles.avatar}><Sparkles size={16} color="#fff" /></View>
+        <View style={styles.avatar}><Sparkles size={16} color={schemeColor("#fff", 'fg')} /></View>
         <View style={styles.aiBubble}>
           <Text style={styles.bubbleText}>
             {initialRules
@@ -124,18 +124,18 @@ export function ProgrammeBuilder({
       {messages.map((m, i) =>
         m.role === "user" ? (
           <View key={i} style={[styles.row, { justifyContent: "flex-end" }]}>
-            <View style={styles.userBubble}><Text style={[styles.bubbleText, { color: "#fff" }]}>{m.content}</Text></View>
+            <View style={styles.userBubble}><Text style={[styles.bubbleText, { color: schemeColor("#fff", 'fg') }]}>{m.content}</Text></View>
           </View>
         ) : (
           <View key={i} style={styles.row}>
-            <View style={styles.avatar}><Sparkles size={16} color="#fff" /></View>
+            <View style={styles.avatar}><Sparkles size={16} color={schemeColor("#fff", 'fg')} /></View>
             <View style={styles.aiBubble}><Text style={styles.bubbleText}>{m.content}</Text></View>
           </View>
         ),
       )}
       {busy && (
         <View style={[styles.row, { alignItems: "center" }]}>
-          <View style={styles.avatar}><ActivityIndicator size="small" color="#fff" /></View>
+          <View style={styles.avatar}><ActivityIndicator size="small" color={schemeColor("#fff", 'fg')} /></View>
           <Text style={styles.thinking}>Working it out…</Text>
         </View>
       )}
@@ -158,7 +158,7 @@ export function ProgrammeBuilder({
           multiline
           maxLength={2000}
           placeholder={messages.length ? "Reply or ask for a change…" : "e.g. 3 points is £1 off"}
-          placeholderTextColor="rgba(0,0,0,0.45)"
+          placeholderTextColor={schemeColor("rgba(0,0,0,0.45)", 'fg')}
           accessibilityLabel="Describe your programme"
         />
         <Pressable
@@ -168,7 +168,7 @@ export function ProgrammeBuilder({
           accessibilityLabel="Send"
           style={[styles.send, (busy || !input.trim()) && { opacity: 0.4 }]}
         >
-          <ArrowUp size={20} color="#fff" />
+          <ArrowUp size={20} color={schemeColor("#fff", 'fg')} />
         </Pressable>
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -178,7 +178,7 @@ export function ProgrammeBuilder({
       {notes.length > 0 && (
         <View style={styles.notes}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Info size={16} color={orange} />
+            <Info size={16} color={colors.primary} />
             <Text style={styles.notesTitle}>Not possible yet</Text>
           </View>
           {notes.map((n, i) => (
@@ -193,27 +193,27 @@ export function ProgrammeBuilder({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   row: { flexDirection: "row", gap: 8, marginTop: 10 },
-  avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: orange, alignItems: "center", justifyContent: "center" },
-  aiBubble: { flex: 1, backgroundColor: "#fff", borderRadius: 18, borderTopLeftRadius: 6, paddingHorizontal: 14, paddingVertical: 11 },
-  userBubble: { maxWidth: "85%", backgroundColor: green, borderRadius: 18, borderTopRightRadius: 6, paddingHorizontal: 14, paddingVertical: 11 },
-  bubbleText: { color: "#000", fontSize: 15, lineHeight: 21 },
-  thinking: { color: "#000", fontSize: 14 },
+  avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  aiBubble: { flex: 1, backgroundColor: schemeColor("#fff", 'bg'), borderRadius: 18, borderTopLeftRadius: 6, paddingHorizontal: 14, paddingVertical: 11 },
+  userBubble: { maxWidth: "85%", backgroundColor: schemeColor('#1A2138', 'bg'), borderRadius: 18, borderTopRightRadius: 6, paddingHorizontal: 14, paddingVertical: 11 },
+  bubbleText: { color: schemeColor("#000", 'fg'), fontSize: 15, lineHeight: 21 },
+  thinking: { color: schemeColor("#000", 'fg'), fontSize: 14 },
   examples: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
-  example: { borderWidth: 1.5, borderColor: "#eee0cc", backgroundColor: "#fff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  exampleText: { color: "#000", fontSize: 13, fontWeight: "700" },
-  composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, backgroundColor: "#fff", borderRadius: 18, borderWidth: 1.5, borderColor: "#eee0cc", padding: 8, marginTop: 14 },
-  composerInput: { flex: 1, minHeight: 44, maxHeight: 140, color: "#000", fontSize: 16, paddingHorizontal: 8, paddingVertical: 8 },
-  send: { width: 40, height: 40, borderRadius: 20, backgroundColor: orange, alignItems: "center", justifyContent: "center" },
-  error: { color: "#B42318", fontSize: 14, fontWeight: "700", marginTop: 8 },
+  example: { borderWidth: 1.5, borderColor: schemeColor("#eee0cc", 'border'), backgroundColor: schemeColor("#fff", 'bg'), borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  exampleText: { color: schemeColor("#000", 'fg'), fontSize: 13, fontWeight: "700" },
+  composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, backgroundColor: schemeColor("#fff", 'bg'), borderRadius: 18, borderWidth: 1.5, borderColor: schemeColor("#eee0cc", 'border'), padding: 8, marginTop: 14 },
+  composerInput: { flex: 1, minHeight: 44, maxHeight: 140, color: schemeColor("#000", 'fg'), fontSize: 16, paddingHorizontal: 8, paddingVertical: 8 },
+  send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  error: { color: schemeColor("#B42318", 'fg'), fontSize: 14, fontWeight: "700", marginTop: 8 },
   card: { borderRadius: 20, padding: 18 },
-  cardEyebrow: { color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: "800", letterSpacing: 1.1 },
-  cardSummary: { color: "#fff", fontSize: 18, lineHeight: 24, fontFamily: fonts.nativeDisplay, marginTop: 4 },
-  cardLine: { color: "#fff", fontSize: 14, fontWeight: "700", lineHeight: 20, marginTop: 3 },
-  cardSmall: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 12 },
-  notes: { backgroundColor: "#FFF3DC", borderRadius: 18, padding: 14, marginTop: 12, gap: 6 },
-  notesTitle: { color: "#000", fontSize: 15, fontWeight: "800" },
-  notesLine: { color: "#000", fontSize: 14, lineHeight: 20 },
-  notesSmall: { color: "rgba(0,0,0,0.6)", fontSize: 12 },
-});
+  cardEyebrow: { color: schemeColor("rgba(255,255,255,0.8)", 'fg'), fontSize: 11, fontWeight: "800", letterSpacing: 1.1 },
+  cardSummary: { color: schemeColor("#fff", 'fg'), fontSize: 18, lineHeight: 24, fontFamily: fonts.nativeDisplay, marginTop: 4 },
+  cardLine: { color: schemeColor("#fff", 'fg'), fontSize: 14, fontWeight: "700", lineHeight: 20, marginTop: 3 },
+  cardSmall: { color: schemeColor("rgba(255,255,255,0.8)", 'fg'), fontSize: 12, marginTop: 12 },
+  notes: { backgroundColor: schemeColor("#FFF3DC", 'bg'), borderRadius: 18, padding: 14, marginTop: 12, gap: 6 },
+  notesTitle: { color: schemeColor("#000", 'fg'), fontSize: 15, fontWeight: "800" },
+  notesLine: { color: schemeColor("#000", 'fg'), fontSize: 14, lineHeight: 20 },
+  notesSmall: { color: schemeColor("rgba(0,0,0,0.6)", 'fg'), fontSize: 12 },
+}));

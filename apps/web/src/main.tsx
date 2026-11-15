@@ -14,12 +14,16 @@ if (sentryDsn) {
   })
 }
 
-// Apply a saved preference before React renders, so returning visitors do not
-// briefly see the opposite colour scheme while the page starts up.
-if (window.localStorage.getItem('loyalty-loop-theme') === 'dark') {
-  document.documentElement.classList.add('dark')
-  document.documentElement.style.colorScheme = 'dark'
-}
+// Apply the saved preference (or, on a first visit, the system setting) before React
+// renders, so nobody briefly sees the wrong colour scheme while the page starts up.
+try {
+  const saved = window.localStorage.getItem('loyalty-loop-theme')
+  const dark = saved === 'dark' || (saved !== 'light' && window.matchMedia?.('(prefers-color-scheme: dark)').matches)
+  if (dark) {
+    document.documentElement.classList.add('dark')
+    document.documentElement.style.colorScheme = 'dark'
+  }
+} catch { /* storage blocked: stay on the default */ }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

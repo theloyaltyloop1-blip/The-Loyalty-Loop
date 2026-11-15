@@ -36,6 +36,7 @@ import {
   type TourStop,
   type TourStopId,
 } from '../tour-logic'
+import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 /**
  * One-time tips on the real screens (tips, not a tour): a ring around a real
@@ -327,7 +328,7 @@ export function TourOverlay() {
     >
       {size.width > 0 && (
         <Svg width={size.width} height={size.height} style={StyleSheet.absoluteFill} pointerEvents="none">
-          <AnimatedRect animatedProps={holeProps} rx={18} ry={18} fill="none" stroke={RING} strokeWidth={2.5} />
+          <AnimatedRect animatedProps={holeProps} rx={18} ry={18} fill="none" stroke={schemeColor('#2B3A67', 'border')} strokeWidth={2.5} />
         </Svg>
       )}
       <Animated.View
@@ -353,10 +354,10 @@ export function TourOverlay() {
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   callout: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   bubble: {
-    backgroundColor: '#1D1C1A',
+    backgroundColor: schemeColor('#1D1C1A', 'bg'),
     borderRadius: 14,
     paddingVertical: 11,
     paddingHorizontal: 16,
@@ -367,5 +368,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  copy: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 20, textAlign: 'center' },
-})
+  copy: { color: schemeColor('#fff', 'fg'), fontSize: 15, fontWeight: '700', lineHeight: 20, textAlign: 'center' },
+}))

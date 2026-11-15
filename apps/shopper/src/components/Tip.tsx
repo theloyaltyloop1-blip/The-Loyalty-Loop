@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { INK, PAPER, SANS_MEDIUM } from './Poster'
+import { themed, colors, schemeColor } from '@loyalty-loop/design-tokens'
 
 // One-time tips, shown where a feature is used instead of an up-front tour.
 // A tip counts as seen the first time it appears, so it never comes back.
@@ -37,9 +38,9 @@ export function Tip({ id, text, align = 'center' }: { id: string; text: string; 
   )
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   wrap: { marginTop: 6, marginBottom: 4 },
-  arrow: { width: 12, height: 12, backgroundColor: INK, transform: [{ rotate: '45deg' }], marginBottom: -6 },
-  bubble: { backgroundColor: INK, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 14, maxWidth: 280 },
+  arrow: { width: 12, height: 12, backgroundColor: schemeColor('#1A2138', 'bg'), transform: [{ rotate: '45deg' }], marginBottom: -6 },
+  bubble: { backgroundColor: schemeColor('#1A2138', 'bg'), borderRadius: 12, paddingVertical: 9, paddingHorizontal: 14, maxWidth: 280 },
   text: { color: PAPER, fontSize: 14, fontFamily: SANS_MEDIUM },
-})
+}))

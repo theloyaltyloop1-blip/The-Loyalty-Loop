@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MapPin, Minus, Plus, Search, X } from "lucide-react-native";
-import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import {
   MAX_ZOOM,
   MIN_PIN_ZOOM,
@@ -154,24 +154,24 @@ export function MapPinPicker({
         <View style={styles.header}>
           <Text style={styles.title}>Put your shop on the map</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={10} style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
-            <X size={20} color={ink} />
+            <X size={20} color={schemeColor('#1A2138', 'fg')} />
           </Pressable>
         </View>
 
         <View style={styles.searchBar}>
-          <Search size={19} color={ink} />
+          <Search size={19} color={schemeColor('#1A2138', 'fg')} />
           <TextInput
             accessibilityLabel="Search for a street, town or postcode"
             style={styles.searchInput}
             placeholder="Search street, town or postcode"
-            placeholderTextColor="#6B6A66"
+            placeholderTextColor={schemeColor("#6B6A66", 'fg')}
             value={search}
             onChangeText={setSearch}
             returnKeyType="search"
             autoCorrect={false}
             onSubmitEditing={() => void lookUp(search)}
           />
-          {finding ? <ActivityIndicator color={ink} /> : null}
+          {finding ? <ActivityIndicator color={schemeColor('#1A2138', 'fg')} /> : null}
         </View>
 
         <View style={styles.map} onLayout={(event) => setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })} {...drag.panHandlers}>
@@ -185,16 +185,16 @@ export function MapPinPicker({
           ))}
           {size.width > 0 && (
             <View pointerEvents="none" style={[styles.pin, { left: size.width / 2 - 22, top: size.height / 2 - 42 }]}>
-              <MapPin size={44} color="#fff" fill={colors.primary} strokeWidth={1.6} />
+              <MapPin size={44} color={schemeColor("#fff", 'fg')} fill={colors.primary} strokeWidth={1.6} />
             </View>
           )}
           {size.width > 0 && <View pointerEvents="none" style={[styles.pinShadow, { left: size.width / 2 - 7, top: size.height / 2 - 3 }]} />}
           <View style={styles.zoom}>
             <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" disabled={zoom >= MAX_ZOOM} onPress={() => setZoom((z) => Math.min(MAX_ZOOM, z + 1))} style={({ pressed }) => [styles.zoomButton, styles.zoomDivider, pressed && styles.pressed, zoom >= MAX_ZOOM && styles.faded]}>
-              <Plus size={22} color={ink} />
+              <Plus size={22} color={schemeColor('#1A2138', 'fg')} />
             </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" disabled={zoom <= MIN_ZOOM} onPress={() => setZoom((z) => Math.max(MIN_ZOOM, z - 1))} style={({ pressed }) => [styles.zoomButton, pressed && styles.pressed, zoom <= MIN_ZOOM && styles.faded]}>
-              <Minus size={22} color={ink} />
+              <Minus size={22} color={schemeColor('#1A2138', 'fg')} />
             </Pressable>
           </View>
           <Text style={styles.credit}>© OpenStreetMap</Text>
@@ -210,7 +210,7 @@ export function MapPinPicker({
             onPress={() => void save(center)}
             style={({ pressed }) => [styles.save, (!closeEnough || busy) && styles.saveDisabled, pressed && styles.pressed]}
           >
-            {saving === "save" ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>{pin ? "Move pin here" : "Save pin"}</Text>}
+            {saving === "save" ? <ActivityIndicator color={schemeColor("#fff", 'fg')} /> : <Text style={styles.saveText}>{pin ? "Move pin here" : "Save pin"}</Text>}
           </Pressable>
           {pin ? (
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => void save(null)} style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
@@ -223,11 +223,11 @@ export function MapPinPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, marginBottom: 12 },
-  title: { flex: 1, fontSize: 22, fontFamily: fonts.nativeDisplay, color: ink, letterSpacing: -0.4 },
-  close: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(20,20,18,.07)", alignItems: "center", justifyContent: "center" },
+  title: { flex: 1, fontSize: 22, fontFamily: fonts.nativeDisplay, color: schemeColor('#1A2138', 'fg'), letterSpacing: -0.4 },
+  close: { width: 40, height: 40, borderRadius: 20, backgroundColor: schemeColor("rgba(20,20,18,.07)", 'bg'), alignItems: "center", justifyContent: "center" },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -237,21 +237,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     minHeight: 52,
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.1)",
+    borderColor: schemeColor("rgba(20,20,18,.1)", 'border'),
   },
-  searchInput: { flex: 1, fontSize: 15.5, color: ink, paddingVertical: 12 },
-  map: { flex: 1, overflow: "hidden", backgroundColor: "#E6E2D8" },
+  searchInput: { flex: 1, fontSize: 15.5, color: schemeColor('#1A2138', 'fg'), paddingVertical: 12 },
+  map: { flex: 1, overflow: "hidden", backgroundColor: schemeColor("#E6E2D8", 'bg') },
   tile: { position: "absolute", width: TILE_SIZE, height: TILE_SIZE },
   pin: { position: "absolute", width: 44, height: 44, shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 5, shadowOffset: { width: 0, height: 3 } },
-  pinShadow: { position: "absolute", width: 14, height: 6, borderRadius: 7, backgroundColor: "rgba(0,0,0,.28)" },
+  pinShadow: { position: "absolute", width: 14, height: 6, borderRadius: 7, backgroundColor: schemeColor("rgba(0,0,0,.28)", 'bg') },
   zoom: {
     position: "absolute",
     right: 14,
     top: 14,
     borderRadius: 16,
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
     shadowColor: "#1A2138",
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -259,15 +259,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   zoomButton: { width: 46, height: 46, alignItems: "center", justifyContent: "center" },
-  zoomDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(20,20,18,.18)" },
+  zoomDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: schemeColor("rgba(20,20,18,.18)", 'border') },
   faded: { opacity: 0.3 },
-  credit: { position: "absolute", left: 8, bottom: 6, fontSize: 10.5, color: "#3B3A36", backgroundColor: "rgba(255,255,255,.8)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: "hidden" },
+  credit: { position: "absolute", left: 8, bottom: 6, fontSize: 10.5, color: schemeColor("#3B3A36", 'fg'), backgroundColor: schemeColor("rgba(255,255,255,.8)", 'bg'), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: "hidden" },
   footer: { paddingHorizontal: 20, paddingTop: 14, backgroundColor: colors.background },
-  hint: { fontSize: 14, lineHeight: 20, color: ink, textAlign: "center", marginBottom: 12, fontWeight: "600" },
-  save: { minHeight: 54, borderRadius: 18, backgroundColor: ink, alignItems: "center", justifyContent: "center" },
+  hint: { fontSize: 14, lineHeight: 20, color: schemeColor('#1A2138', 'fg'), textAlign: "center", marginBottom: 12, fontWeight: "600" },
+  save: { minHeight: 54, borderRadius: 18, backgroundColor: schemeColor('#1A2138', 'bg'), alignItems: "center", justifyContent: "center" },
   saveDisabled: { opacity: 0.35 },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "900" },
+  saveText: { color: schemeColor("#fff", 'fg'), fontSize: 16, fontWeight: "900" },
   remove: { alignItems: "center", paddingVertical: 14 },
-  removeText: { color: "#B73B32", fontSize: 14, fontWeight: "800" },
+  removeText: { color: schemeColor("#B73B32", 'fg'), fontSize: 14, fontWeight: "800" },
   pressed: { opacity: 0.72 },
-});
+}));

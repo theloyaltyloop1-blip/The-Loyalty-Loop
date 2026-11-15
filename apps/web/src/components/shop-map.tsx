@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 import type { Business } from '@/lib/businesses'
+import { useTheme } from '@/components/theme-toggle'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
 const PIN_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL as string | undefined}/functions/v1/map-pin`
@@ -8,6 +9,20 @@ const PIN_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL as string | undefined}
 /** Balham, London — used as a sane default map center before an owner has
  * entered/confirmed a real address. */
 export const DEFAULT_MAP_CENTER = { lat: 51.4514, lng: -0.1447 }
+
+/** Google map styling for dark mode: warm near-black land, muted roads and labels. */
+const DARK_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry', stylers: [{ color: '#1d1d21' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#a8a39b' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#121214' }] },
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#36363c' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2c32' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1d1d21' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a3a42' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f1a2e' }] },
+]
 
 function initialsOf(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '').join('') || '?'
@@ -69,6 +84,8 @@ export function ShopMap({
     }
   }, [isLoaded, color])
 
+  const { theme } = useTheme()
+  const mapStyles = theme === 'dark' ? DARK_MAP_STYLES : undefined
   if (!GOOGLE_MAPS_API_KEY) {
     return (
       <div
@@ -104,6 +121,7 @@ export function ShopMap({
           zoomControl: editable,
           gestureHandling: editable ? 'greedy' : 'cooperative',
           clickableIcons: false,
+          styles: mapStyles,
         }}
         onClick={editable && onChange ? (e) => e.latLng && onChange(e.latLng.lat(), e.latLng.lng()) : undefined}
       >
@@ -128,10 +146,11 @@ export function ShopMap({
 export function BusinessesMap({ businesses, onSelect, height = 560 }: { businesses: Business[]; onSelect: (business: Business) => void; height?: number }) {
   const { isLoaded, loadError } = useGoogleMapsLoader()
   const locatedBusinesses = businesses.filter((business) => business.lat != null && business.lng != null)
+  const { theme } = useTheme()
   if (!GOOGLE_MAPS_API_KEY) return <MapUnavailable height={height} message="Map unavailable. No Google Maps API key is configured." />
   if (loadError) return <MapUnavailable height={height} message="Could not load the map." />
   if (!isLoaded) return <div style={{ height }} className="rounded-2xl bg-secondary animate-pulse" />
-  return <div style={{ height, borderRadius: 16, overflow: 'hidden' }} className="border border-border"><GoogleMap mapContainerStyle={{ height: '100%', width: '100%' }} center={DEFAULT_MAP_CENTER} zoom={13} options={{ clickableIcons: false, gestureHandling: 'greedy', streetViewControl: false, mapTypeControl: false }} onLoad={(map) => { if (!locatedBusinesses.length) return; if (locatedBusinesses.length === 1) { map.setCenter({ lat: locatedBusinesses[0].lat!, lng: locatedBusinesses[0].lng! }); map.setZoom(15); return }; const bounds = new google.maps.LatLngBounds(); locatedBusinesses.forEach((business) => bounds.extend({ lat: business.lat!, lng: business.lng! })); map.fitBounds(bounds, 56) }}>{locatedBusinesses.map((business) => <Marker key={business.id} position={{ lat: business.lat!, lng: business.lng! }} icon={businessPinIcon(business)} title={business.name} onClick={() => onSelect(business)} />)}</GoogleMap></div>
+  return <div style={{ height, borderRadius: 16, overflow: 'hidden' }} className="border border-border"><GoogleMap mapContainerStyle={{ height: '100%', width: '100%' }} center={DEFAULT_MAP_CENTER} zoom={13} options={{ clickableIcons: false, gestureHandling: 'greedy', streetViewControl: false, mapTypeControl: false, styles: theme === 'dark' ? DARK_MAP_STYLES : undefined }} onLoad={(map) => { if (!locatedBusinesses.length) return; if (locatedBusinesses.length === 1) { map.setCenter({ lat: locatedBusinesses[0].lat!, lng: locatedBusinesses[0].lng! }); map.setZoom(15); return }; const bounds = new google.maps.LatLngBounds(); locatedBusinesses.forEach((business) => bounds.extend({ lat: business.lat!, lng: business.lng! })); map.fitBounds(bounds, 56) }}>{locatedBusinesses.map((business) => <Marker key={business.id} position={{ lat: business.lat!, lng: business.lng! }} icon={businessPinIcon(business)} title={business.name} onClick={() => onSelect(business)} />)}</GoogleMap></div>
 }
 
 function MapUnavailable({ height, message }: { height: number; message: string }) {

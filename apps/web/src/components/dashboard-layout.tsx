@@ -3,6 +3,7 @@ import { NavLink, Navigate, Link } from 'react-router-dom'
 import { Home, Map, Megaphone, Gift, Heart, User, LogOut, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 
@@ -55,6 +56,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           >
             <Bell className="h-5 w-5" aria-hidden="true" />
           </NavLink>
+          <ThemeToggle compact />
           <button
             data-press-feedback
             onClick={signOut}

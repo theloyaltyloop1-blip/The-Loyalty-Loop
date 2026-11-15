@@ -13,6 +13,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets'
 import Svg, { Path } from 'react-native-svg'
 import { colors } from '../theme'
+import { themed } from '@loyalty-loop/design-tokens'
 
 /** Brief (~0.5s) success confirmation: a green checkmark that pops in with a
  * spring, holds briefly, then fades. Shown when a shopper's stamp count (or
@@ -70,7 +71,7 @@ export function SuccessCheck({ visible, onFinished }: { visible: boolean; onFini
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   circle: {
     width: 84,
@@ -85,4 +86,4 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-})
+}))

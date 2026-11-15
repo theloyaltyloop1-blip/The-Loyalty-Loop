@@ -6,6 +6,7 @@ import { INK, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM, STONE } from './Post
 import { homeProgress, type HomeMember, type HomeShop, type HomeTier } from '../home-progress'
 import { shopMoney } from '../money'
 import { QUICK_CARDS_MAX, toggleQuickCard } from '../quick-cards'
+import { schemeColor, themed, colors } from '@loyalty-loop/design-tokens'
 
 /** Pick which of your cards sit at the top of home. Numbers show the order
  * they'll appear in; picking none keeps the automatic "closest to a reward". */
@@ -80,28 +81,28 @@ export function QuickCardsSheet<T extends HomeShop>({ visible, onClose, shops, m
   )
 }
 
-const s = StyleSheet.create({
-  sheet: { backgroundColor: PAPER, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, maxHeight: '85%' },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 18 },
-  title: { fontFamily: SANS_HEAVY, fontSize: 30, letterSpacing: -1.2, color: INK },
-  intro: { marginTop: 6, marginBottom: 16, fontSize: 15, lineHeight: 21, color: MUTED },
+const s = themed(() => StyleSheet.create({
+  sheet: { backgroundColor: colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, maxHeight: '85%' },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(0,0,0,0.15)', 'bg'), alignSelf: 'center', marginBottom: 18 },
+  title: { fontFamily: SANS_HEAVY, fontSize: 30, letterSpacing: -1.2, color: colors.ink },
+  intro: { marginTop: 6, marginBottom: 16, fontSize: 15, lineHeight: 21, color: colors.muted },
   list: { flexGrow: 0 },
   listContent: { gap: 8, paddingBottom: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#FFFFFF', borderRadius: 20, padding: 10, paddingRight: 14, borderWidth: 2, borderColor: 'transparent' },
-  rowOn: { borderColor: NIGHT },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: schemeColor('#FFFFFF', 'bg'), borderRadius: 20, padding: 10, paddingRight: 14, borderWidth: 2, borderColor: 'transparent' },
+  rowOn: { borderColor: colors.olive },
   rowDisabled: { opacity: 0.45 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
-  logo: { width: 48, height: 48, borderRadius: 14, backgroundColor: STONE, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  logoText: { color: INK, fontSize: 18, fontWeight: '700' },
+  logo: { width: 48, height: 48, borderRadius: 14, backgroundColor: schemeColor('#E7E2D8', 'bg'), alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  logoText: { color: colors.ink, fontSize: 18, fontWeight: '700' },
   copy: { flex: 1, minWidth: 0, gap: 3 },
-  name: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: INK },
-  meta: { fontSize: 13, color: MUTED },
-  check: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: 'rgba(26,33,56,0.25)', alignItems: 'center', justifyContent: 'center' },
-  checkOn: { backgroundColor: NIGHT, borderColor: NIGHT },
+  name: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: colors.ink },
+  meta: { fontSize: 13, color: colors.muted },
+  check: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: schemeColor('rgba(26,33,56,0.25)', 'border'), alignItems: 'center', justifyContent: 'center' },
+  checkOn: { backgroundColor: colors.olive, borderColor: colors.olive },
   checkText: { color: PAPER, fontSize: 13, fontWeight: '800' },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  clear: { color: NIGHT, fontFamily: SANS_MEDIUM, fontSize: 15 },
-  auto: { color: MUTED, fontSize: 14 },
-  done: { height: 50, paddingHorizontal: 30, borderRadius: 999, backgroundColor: NIGHT, alignItems: 'center', justifyContent: 'center' },
+  clear: { color: colors.primaryText, fontFamily: SANS_MEDIUM, fontSize: 15 },
+  auto: { color: colors.muted, fontSize: 14 },
+  done: { height: 50, paddingHorizontal: 30, borderRadius: 999, backgroundColor: colors.olive, alignItems: 'center', justifyContent: 'center' },
   doneText: { color: PAPER, fontFamily: SANS_MEDIUM, fontSize: 16 },
-})
+}))

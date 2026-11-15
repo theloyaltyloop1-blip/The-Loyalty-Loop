@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from "@loyalty-loop/design-tokens";
+import { colors, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import type { SnapshotStanding } from "@loyalty-loop/loyalty";
 import { showAlert } from "./components/AppAlert";
 import { supabase } from "./supabase";
@@ -8,7 +8,7 @@ import { supabase } from "./supabase";
 // Custom programmes with a cash value ("3 points = £1 off"): staff choose how
 // much to take off and the database moves the points (redeem_points_for_cash).
 
-const { primary: orange } = colors;
+
 
 // Idempotency key (not a secret): a retry after a dropped connection reuses it.
 function newRef(): string {
@@ -95,14 +95,14 @@ export function CashOff({
   );
 }
 
-const styles = StyleSheet.create({
-  box: { backgroundColor: "#FFF3DC", borderRadius: 16, padding: 14, marginTop: 10 },
-  title: { color: "#000", fontSize: 15, fontWeight: "800" },
+const styles = themed(() => StyleSheet.create({
+  box: { backgroundColor: schemeColor("#FFF3DC", 'bg'), borderRadius: 16, padding: 14, marginTop: 10 },
+  title: { color: schemeColor("#000", 'fg'), fontSize: 15, fontWeight: "800" },
   row: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
-  step: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
-  stepText: { color: "#000", fontSize: 22, fontWeight: "800" },
-  value: { flex: 1, textAlign: "center", color: "#000", fontSize: 18, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  step: { width: 40, height: 40, borderRadius: 20, backgroundColor: schemeColor("#fff", 'bg'), alignItems: "center", justifyContent: "center" },
+  stepText: { color: schemeColor("#000", 'fg'), fontSize: 22, fontWeight: "800" },
+  value: { flex: 1, textAlign: "center", color: schemeColor("#000", 'fg'), fontSize: 18, fontWeight: "800", fontVariant: ["tabular-nums"] },
   sub: { fontSize: 13, fontWeight: "500" },
-  button: { backgroundColor: orange, borderRadius: 999, minHeight: 46, alignItems: "center", justifyContent: "center", marginTop: 10 },
-  buttonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
-});
+  button: { backgroundColor: colors.primary, borderRadius: 999, minHeight: 46, alignItems: "center", justifyContent: "center", marginTop: 10 },
+  buttonText: { color: schemeColor("#fff", 'fg'), fontSize: 15, fontWeight: "800" },
+}));

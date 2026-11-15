@@ -16,6 +16,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets'
 
 import { useKeyboardHeight } from './KeyboardAware'
+import { themed, schemeColor } from '@loyalty-loop/design-tokens'
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
 const BACKDROP_INTENSITY = 40
@@ -168,7 +169,7 @@ export function Sheet({
   )
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   host: { flex: 1, justifyContent: 'flex-end' },
-  backdropTint: { backgroundColor: 'rgba(0,0,0,0.25)' },
-})
+  backdropTint: { backgroundColor: schemeColor('rgba(0,0,0,0.25)', 'bg') },
+}))

@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native'
 import Storage from 'expo-sqlite/kv-store'
+import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 export const STATUS_URL = 'https://www.the-loyalty-loop.com/status.json'
 const SIMULATE_KEY = 'loyalty-loop:simulate-outage'
@@ -173,18 +174,18 @@ function timeAgo(at: number): string {
   return new Date(at).toLocaleDateString()
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   banner: { marginHorizontal: 12, marginTop: 6, marginBottom: 4, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
-  degraded: { backgroundColor: '#FFF1E0', borderWidth: 1, borderColor: '#F5C58F' },
-  offline: { backgroundColor: '#EEF0F4', borderWidth: 1, borderColor: '#CBD1DB' },
+  degraded: { backgroundColor: schemeColor('#FFF1E0', 'bg'), borderWidth: 1, borderColor: schemeColor('#F5C58F', 'border') },
+  offline: { backgroundColor: schemeColor('#EEF0F4', 'bg'), borderWidth: 1, borderColor: schemeColor('#CBD1DB', 'border') },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  dotDegraded: { backgroundColor: '#E8820C' },
-  dotOffline: { backgroundColor: '#6B7280' },
-  title: { flex: 1, color: '#2B2118', fontSize: 14, fontWeight: '700' },
-  more: { color: '#8A5A1F', fontSize: 13, fontWeight: '600' },
+  dotDegraded: { backgroundColor: schemeColor('#E8820C', 'bg') },
+  dotOffline: { backgroundColor: schemeColor('#6B7280', 'bg') },
+  title: { flex: 1, color: schemeColor('#2B2118', 'fg'), fontSize: 14, fontWeight: '700' },
+  more: { color: schemeColor('#8A5A1F', 'fg'), fontSize: 13, fontWeight: '600' },
   body: { marginTop: 8, gap: 4 },
-  message: { color: '#3D3127', fontSize: 13, lineHeight: 18 },
-  small: { color: '#6B5E52', fontSize: 12 },
-  retry: { color: '#B45F06', fontSize: 13, fontWeight: '700', marginTop: 4 },
-})
+  message: { color: schemeColor('#3D3127', 'fg'), fontSize: 13, lineHeight: 18 },
+  small: { color: schemeColor('#6B5E52', 'fg'), fontSize: 12 },
+  retry: { color: schemeColor('#B45F06', 'fg'), fontSize: 13, fontWeight: '700', marginTop: 4 },
+}))

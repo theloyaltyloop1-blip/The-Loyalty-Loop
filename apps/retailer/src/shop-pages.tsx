@@ -1,4 +1,5 @@
 import { showAlert } from "./components/AppAlert";
+import { useTheme } from "./theme";
 import { money } from "./money";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -24,6 +25,7 @@ import {
   EyeOff,
   FileText,
   Fingerprint,
+  Moon,
   Gift,
   Image as ImageIcon,
   LifeBuoy,
@@ -40,7 +42,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
-import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import { PROGRAMMES, programmeIdFor } from "@loyalty-loop/loyalty";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./shop-features";
 import { supabase } from "./supabase";
@@ -52,7 +54,7 @@ import { getUsageAnalyticsConsent, setUsageAnalyticsConsent } from "./usage-anal
 import type { NativeOwnerPage } from "./owner-pages";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
-const { foreground: green, primary: orange } = colors;
+
 const ink = "#1A2138";
 
 export type ShopBusiness = {
@@ -103,16 +105,16 @@ function poundsWhole(pence: number): string {
 }
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
-const SETTINGS_TILES = {
-  blue: { bg: "#DBE7FF", fg: "#2B3A67" },
-  purple: { bg: "#F3E3D3", fg: "#8A4A2B" },
-  amber: { bg: "#FBE7BF", fg: "#8A5A00" },
-  green: { bg: "#DCEBD9", fg: "#2F7A3F" },
-  teal: { bg: "#D7E6E0", fg: "#2E6656" },
-  slate: { bg: "#EFEBE3", fg: "#6F6B64" },
-  orange: { bg: "#FDE2D2", fg: "#C4531F" },
-  red: { bg: "#F8DCD8", fg: "#B73B32" },
-} as const;
+const SETTINGS_TILES = themed(() => ({
+  blue: { bg: schemeColor("#DBE7FF", 'bg'), fg: schemeColor("#2B3A67", 'fg') },
+  purple: { bg: schemeColor("#F3E3D3", 'bg'), fg: schemeColor("#8A4A2B", 'fg') },
+  amber: { bg: schemeColor("#FBE7BF", 'bg'), fg: schemeColor("#8A5A00", 'fg') },
+  green: { bg: schemeColor("#DCEBD9", 'bg'), fg: schemeColor("#2F7A3F", 'fg') },
+  teal: { bg: schemeColor("#D7E6E0", 'bg'), fg: schemeColor("#2E6656", 'fg') },
+  slate: { bg: schemeColor("#EFEBE3", 'bg'), fg: schemeColor("#6F6B64", 'fg') },
+  orange: { bg: schemeColor("#FDE2D2", 'bg'), fg: schemeColor("#C4531F", 'fg') },
+  red: { bg: schemeColor("#F8DCD8", 'bg'), fg: schemeColor("#B73B32", 'fg') },
+}) as const);
 type SettingsTile = keyof typeof SETTINGS_TILES;
 
 function SettingsRow({
@@ -159,7 +161,7 @@ function SettingsRow({
       </View>
       {right ??
         (onPress ? (
-          <ChevronRight size={20} color={danger ? "#B73B32" : "#A2A49D"} />
+          <ChevronRight size={20} color={danger ? schemeColor("#B73B32", 'fg') : schemeColor("#A2A49D", 'fg')} />
         ) : null)}
     </Pressable>
   );
@@ -316,7 +318,7 @@ function ShopHome({
   onOpenDetails: () => void;
   onOpenAccount: () => void;
 }) {
-  const brand = business.brand_color || green;
+  const brand = business.brand_color || colors.foreground;
   const programme = PROGRAMMES[programmeIdFor(business)];
   const items = completenessOf(business);
   const missing = items.filter((item) => !item.done);
@@ -356,7 +358,7 @@ function ShopHome({
           <View style={styles.heroMeta}>
             {business.category ? <Text style={styles.heroCategory}>{business.category}</Text> : null}
             <View style={[styles.pill, live ? styles.pillLive : styles.pillHidden]}>
-              <View style={[styles.pillDot, { backgroundColor: live ? "#2F8A4C" : "#B73B32" }]} />
+              <View style={[styles.pillDot, { backgroundColor: live ? schemeColor("#2F8A4C", 'bg') : schemeColor("#B73B32", 'bg') }]} />
               <Text style={styles.pillText}>{live ? "Live" : "Hidden"}</Text>
             </View>
           </View>
@@ -380,14 +382,14 @@ function ShopHome({
                     onPress={() => (item.action === "branding" ? onOpenPage("branding") : onOpenDetails())}
                     style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
                   >
-                    <Plus size={14} color="#fff" strokeWidth={3} />
+                    <Plus size={14} color={schemeColor("#fff", 'fg')} strokeWidth={3} />
                     <Text style={styles.addButtonText}>Add</Text>
                   </Pressable>
                 </View>
               ))}
               {!missing.length ? (
                 <View style={styles.completeRow}>
-                  <Check size={16} color="#2F8A4C" strokeWidth={3} />
+                  <Check size={16} color={schemeColor("#2F8A4C", 'fg')} strokeWidth={3} />
                   <Text style={styles.completeText}>Customers see everything they need.</Text>
                 </View>
               ) : null}
@@ -442,13 +444,13 @@ function ShopHome({
           style={({ pressed }) => [styles.posterRow, pressed && styles.pressed]}
         >
           <View style={styles.posterIcon}>
-            <QrCode size={24} color="#fff" strokeWidth={2.2} />
+            <QrCode size={24} color={schemeColor("#fff", 'fg')} strokeWidth={2.2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.posterTitle}>QR poster</Text>
             <Text style={styles.posterDetail}>Print it so customers can join</Text>
           </View>
-          <ChevronRight size={20} color={ink} />
+          <ChevronRight size={20} color={schemeColor('#1A2138', 'fg')} />
         </Pressable>
       ) : null}
 
@@ -539,7 +541,7 @@ function PageHeader({ title, onBack }: { title: string; onBack: () => void }) {
         onPress={onBack}
         style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
       >
-        <ArrowLeft size={20} color={ink} />
+        <ArrowLeft size={20} color={schemeColor('#1A2138', 'fg')} />
       </Pressable>
       <Text style={styles.pageTitle}>{title}</Text>
     </View>
@@ -697,7 +699,7 @@ function ShopDetailsPage({
               style={styles.settingsInput}
               value={name}
               onChangeText={setName}
-              placeholderTextColor="#000000"
+              placeholderTextColor={schemeColor("#000000", 'fg')}
             />
             <Text style={styles.fieldLabel}>Category</Text>
             <TextInput
@@ -705,7 +707,7 @@ function ShopDetailsPage({
               value={category}
               onChangeText={setCategory}
               placeholder="Cafe, salon, restaurant…"
-              placeholderTextColor="#000000"
+              placeholderTextColor={schemeColor("#000000", 'fg')}
             />
             <Text style={styles.fieldLabel}>Description</Text>
             <TextInput
@@ -713,7 +715,7 @@ function ShopDetailsPage({
               value={description}
               onChangeText={setDescription}
               placeholder="Tell customers what makes you special"
-              placeholderTextColor="#000000"
+              placeholderTextColor={schemeColor("#000000", 'fg')}
               multiline
               textAlignVertical="top"
             />
@@ -761,7 +763,7 @@ function ShopDetailsPage({
               style={styles.settingsInput}
               value={address}
               onChangeText={setAddress}
-              placeholderTextColor="#000000"
+              placeholderTextColor={schemeColor("#000000", 'fg')}
             />
             <View style={styles.twoColumns}>
               <View style={{ flex: 1 }}>
@@ -770,7 +772,7 @@ function ShopDetailsPage({
                   style={styles.settingsInput}
                   value={postcode}
                   onChangeText={setPostcode}
-                  placeholderTextColor="#000000"
+                  placeholderTextColor={schemeColor("#000000", 'fg')}
                   autoCapitalize="characters"
                 />
               </View>
@@ -780,7 +782,7 @@ function ShopDetailsPage({
                   style={styles.settingsInput}
                   value={phone}
                   onChangeText={setPhone}
-                  placeholderTextColor="#000000"
+                  placeholderTextColor={schemeColor("#000000", 'fg')}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -791,8 +793,8 @@ function ShopDetailsPage({
               onPress={() => setPinOpen(true)}
               style={({ pressed }) => [styles.pinRow, pressed && styles.pressed]}
             >
-              <View style={[styles.settingsIcon, { backgroundColor: pin ? "#DDEBDD" : "#FBE7BF" }]}>
-                <MapPin size={19} color={ink} />
+              <View style={[styles.settingsIcon, { backgroundColor: pin ? schemeColor("#DDEBDD", 'bg') : schemeColor("#FBE7BF", 'bg') }]}>
+                <MapPin size={19} color={schemeColor('#1A2138', 'fg')} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingsRowTitle}>{pin ? "Your shop is on the map" : "Put your shop on the map"}</Text>
@@ -800,7 +802,7 @@ function ShopDetailsPage({
                   {pin ? "Tap to move the pin." : "Shoppers nearby can't see you on the map until you add a pin."}
                 </Text>
               </View>
-              <ChevronRight size={18} color={ink} />
+              <ChevronRight size={18} color={schemeColor('#1A2138', 'fg')} />
             </Pressable>
             <MapPinPicker
               visible={pinOpen}
@@ -843,7 +845,7 @@ function ShopDetailsPage({
               style={({ pressed }) => [styles.catalogueLink, pressed && styles.pressed]}
             >
               <View style={styles.tierBadge}>
-                <Gift size={18} color="#2F8A4C" />
+                <Gift size={18} color={schemeColor("#2F8A4C", 'fg')} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.tierTitle}>Rewards catalogue</Text>
@@ -857,7 +859,7 @@ function ShopDetailsPage({
                         : `Add what customers unlock and at how many ${unit}`}
                 </Text>
               </View>
-              <ChevronRight size={18} color="#2F8A4C" />
+              <ChevronRight size={18} color={schemeColor("#2F8A4C", 'fg')} />
             </Pressable>
           </View>
           <Pressable
@@ -928,6 +930,9 @@ function ShopDetailsPage({
   );
 }
 
+// "Same as my phone" needs the next store build (userInterfaceStyle automatic); until then this installed app cannot see the phone's setting, so only Light/Dark are offered.
+const APPEARANCE_LABELS = { light: "Light", dark: "Dark", system: "Light" } as const;
+
 function AccountPage({
   business,
   session,
@@ -945,6 +950,7 @@ function AccountPage({
   onOpenHelp: () => void;
   onOpenClosure: () => void;
 }) {
+  const theme = useTheme();
   const [biometricEnabled, setBiometricEnabled] = useState(false),
     [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   useEffect(() => {
@@ -983,6 +989,22 @@ function AccountPage({
   return (
     <View>
       <PageHeader title="Settings & account" onBack={onBack} />
+      <Text style={styles.groupLabel}>APPEARANCE</Text>
+      <View style={styles.settingsGroupNoPadding}>
+        <SettingsRow
+          icon={Moon}
+          tile="blue"
+          title="Light or dark"
+          detail={APPEARANCE_LABELS[theme.preference]}
+          onPress={() =>
+            showAlert("Appearance", "Choose how The Loyalty Loop Business looks. “Same as my phone” arrives with the next app update.", [
+              ...(["light", "dark"] as const).map((option) => ({ text: ((theme.preference === option || (option === "light" && theme.preference === "system")) ? "✓ " : "") + APPEARANCE_LABELS[option], onPress: () => theme.setPreference(option) })),
+              { text: "Cancel", style: "cancel" as const },
+            ])
+          }
+          last
+        />
+      </View>
       <Text style={styles.groupLabel}>SECURITY & PRIVACY</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
@@ -994,7 +1016,7 @@ function AccountPage({
             <Switch
               value={biometricEnabled}
               onValueChange={() => void toggleBiometricLock()}
-              trackColor={{ true: green }}
+              trackColor={{ true: colors.foreground }}
             />
           }
         />
@@ -1007,7 +1029,7 @@ function AccountPage({
             <Switch
               value={analyticsEnabled}
               onValueChange={() => void toggleUsageAnalytics()}
-              trackColor={{ true: green }}
+              trackColor={{ true: colors.foreground }}
             />
           }
           last
@@ -1137,19 +1159,19 @@ function AccountPage({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.5 },
   fill: { width: "100%", height: "100%" },
-  copy: { fontSize: 13, lineHeight: 19, color: "#000000", marginBottom: 6 },
+  copy: { fontSize: 13, lineHeight: 19, color: schemeColor("#000000", 'fg'), marginBottom: 6 },
   hero: {
     marginTop: 18,
     marginBottom: 16,
     borderRadius: 28,
     overflow: "hidden",
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
   },
   cover: { height: 130, width: "100%" },
   heroBody: { paddingHorizontal: 18, paddingBottom: 18 },
@@ -1159,22 +1181,22 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginTop: -38,
     borderWidth: 4,
-    borderColor: "#fff",
+    borderColor: schemeColor("#fff", 'border'),
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  logoLetter: { color: "#fff", fontSize: 30, fontFamily: FONT_DISPLAY },
+  logoLetter: { color: schemeColor("#fff", 'fg'), fontSize: 30, fontFamily: FONT_DISPLAY },
   heroName: {
     fontSize: 27,
     lineHeight: 32,
     fontFamily: FONT_DISPLAY,
-    color: ink,
+    color: schemeColor('#1A2138', 'fg'),
     letterSpacing: -0.6,
     marginTop: 12,
   },
   heroMeta: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" },
-  heroCategory: { fontSize: 14, fontWeight: "700", color: "#000000" },
+  heroCategory: { fontSize: 14, fontWeight: "700", color: schemeColor("#000000", 'fg') },
   pill: {
     flexDirection: "row",
     alignItems: "center",
@@ -1183,35 +1205,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 5,
   },
-  pillLive: { backgroundColor: "#DCEBD9" },
-  pillHidden: { backgroundColor: "#F8DCD8" },
+  pillLive: { backgroundColor: schemeColor("#DCEBD9", 'bg') },
+  pillHidden: { backgroundColor: schemeColor("#F8DCD8", 'bg') },
   pillDot: { width: 7, height: 7, borderRadius: 4 },
-  pillText: { fontSize: 12, fontWeight: "900", color: "#000000" },
+  pillText: { fontSize: 12, fontWeight: "900", color: schemeColor("#000000", 'fg') },
   meter: {
     marginTop: 18,
     borderRadius: 20,
-    backgroundColor: "#FBE7BF",
+    backgroundColor: schemeColor("#FBE7BF", 'bg'),
     padding: 15,
   },
   meterTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  meterTitle: { fontSize: 15, fontWeight: "900", color: "#000000" },
-  meterCount: { fontSize: 13, fontWeight: "800", color: "#000000", fontVariant: ["tabular-nums"] },
+  meterTitle: { fontSize: 15, fontWeight: "900", color: schemeColor("#000000", 'fg') },
+  meterCount: { fontSize: 13, fontWeight: "800", color: schemeColor("#000000", 'fg'), fontVariant: ["tabular-nums"] },
   meterTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(0,0,0,.12)",
+    backgroundColor: schemeColor("rgba(0,0,0,.12)", 'bg'),
     marginTop: 10,
     marginBottom: 6,
     overflow: "hidden",
   },
-  meterFill: { height: 8, borderRadius: 4, backgroundColor: "#2F8A4C" },
+  meterFill: { height: 8, borderRadius: 4, backgroundColor: schemeColor("#2F8A4C", 'bg') },
   missingRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     minHeight: 44,
   },
-  missingLabel: { fontSize: 14, fontWeight: "700", color: "#000000" },
+  missingLabel: { fontSize: 14, fontWeight: "700", color: schemeColor("#000000", 'fg') },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1219,11 +1241,11 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 14,
     borderRadius: 17,
-    backgroundColor: ink,
+    backgroundColor: schemeColor('#1A2138', 'bg'),
   },
-  addButtonText: { color: "#fff", fontSize: 13, fontWeight: "900" },
+  addButtonText: { color: schemeColor("#fff", 'fg'), fontSize: 13, fontWeight: "900" },
   completeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  completeText: { fontSize: 13, fontWeight: "700", color: "#000000" },
+  completeText: { fontSize: 13, fontWeight: "700", color: schemeColor("#000000", 'fg') },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 12 },
   tile: {
     width: "47.9%",
@@ -1241,12 +1263,12 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,.7)",
+    backgroundColor: schemeColor("rgba(255,255,255,.7)", 'bg'),
     alignItems: "center",
     justifyContent: "center",
   },
-  tileTitle: { fontSize: 18, fontFamily: FONT_DISPLAY, color: "#000000", letterSpacing: -0.3 },
-  tileDetail: { fontSize: 12, lineHeight: 17, color: "#000000", marginTop: 3 },
+  tileTitle: { fontSize: 18, fontFamily: FONT_DISPLAY, color: schemeColor("#000000", 'fg'), letterSpacing: -0.3 },
+  tileDetail: { fontSize: 12, lineHeight: 17, color: schemeColor("#000000", 'fg'), marginTop: 3 },
   posterRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1254,83 +1276,83 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 16,
     marginBottom: 20,
-    backgroundColor: "#F3E3D3",
+    backgroundColor: schemeColor("#F3E3D3", 'bg'),
   },
   posterIcon: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: orange,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-  posterTitle: { fontSize: 17, fontFamily: FONT_DISPLAY, color: "#000000" },
-  posterDetail: { fontSize: 13, color: "#000000", marginTop: 2 },
+  posterTitle: { fontSize: 17, fontFamily: FONT_DISPLAY, color: schemeColor("#000000", 'fg') },
+  posterDetail: { fontSize: 13, color: schemeColor("#000000", 'fg'), marginTop: 2 },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 20, marginBottom: 18 },
   backButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,.82)",
+    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
     alignItems: "center",
     justifyContent: "center",
   },
-  pageTitle: { fontSize: 24, fontFamily: FONT_DISPLAY, color: ink, letterSpacing: -0.5, flex: 1 },
+  pageTitle: { fontSize: 24, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg'), letterSpacing: -0.5, flex: 1 },
   groupLabel: {
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.3,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginLeft: 4,
     marginTop: 8,
     marginBottom: 9,
   },
   settingsGroup: {
-    backgroundColor: "rgba(255,255,255,.82)",
+    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
     borderRadius: 22,
     padding: 17,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
   },
   settingsGroupNoPadding: {
-    backgroundColor: "rgba(255,255,255,.82)",
+    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
     borderRadius: 22,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
     overflow: "hidden",
   },
-  fieldLabel: { fontSize: 13, fontWeight: "800", color: "#000000", marginTop: 12, marginBottom: 7 },
+  fieldLabel: { fontSize: 13, fontWeight: "800", color: schemeColor("#000000", 'fg'), marginTop: 12, marginBottom: 7 },
   settingsInput: {
     minHeight: 50,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.12)",
+    borderColor: schemeColor("rgba(20,20,18,.12)", 'border'),
     paddingHorizontal: 14,
     fontSize: 15,
-    color: "#000000",
-    backgroundColor: "#fff",
+    color: schemeColor("#000000", 'fg'),
+    backgroundColor: schemeColor("#fff", 'bg'),
   },
   textArea: { minHeight: 96, paddingTop: 12 },
-  readOnlyNotice: { borderRadius: 14, backgroundColor: "#FBE7BF", padding: 12, marginBottom: 4 },
-  readOnlyNoticeText: { fontSize: 13, lineHeight: 19, color: "#000000" },
-  readOnlyValue: { fontSize: 15, lineHeight: 22, color: "#000000", fontWeight: "600" },
-  fieldHelp: { fontSize: 12, lineHeight: 18, color: "#000000", marginTop: 8 },
+  readOnlyNotice: { borderRadius: 14, backgroundColor: schemeColor("#FBE7BF", 'bg'), padding: 12, marginBottom: 4 },
+  readOnlyNoticeText: { fontSize: 13, lineHeight: 19, color: schemeColor("#000000", 'fg') },
+  readOnlyValue: { fontSize: 15, lineHeight: 22, color: schemeColor("#000000", 'fg'), fontWeight: "600" },
+  fieldHelp: { fontSize: 12, lineHeight: 18, color: schemeColor("#000000", 'fg'), marginTop: 8 },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   categoryChip: {
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.12)",
+    borderColor: schemeColor("rgba(20,20,18,.12)", 'border'),
   },
-  categoryChipActive: { backgroundColor: ink, borderColor: ink },
-  categoryChipText: { fontSize: 13, fontWeight: "800", color: "#000000" },
-  categoryChipTextActive: { color: "#fff" },
+  categoryChipActive: { backgroundColor: schemeColor('#1A2138', 'bg'), borderColor: schemeColor('#1A2138', 'border') },
+  categoryChipText: { fontSize: 13, fontWeight: "800", color: schemeColor("#000000", 'fg') },
+  categoryChipTextActive: { color: schemeColor("#fff", 'fg') },
   catalogueLink: {
     flexDirection: "row",
     alignItems: "center",
@@ -1338,39 +1360,39 @@ const styles = StyleSheet.create({
     marginTop: 14,
     padding: 13,
     borderRadius: 18,
-    backgroundColor: "#DCEBD9",
+    backgroundColor: schemeColor("#DCEBD9", 'bg'),
   },
   tierBadge: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,.75)",
+    backgroundColor: schemeColor("rgba(255,255,255,.75)", 'bg'),
     alignItems: "center",
     justifyContent: "center",
   },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: ink },
-  tierMeta: { fontSize: 12, color: "#000000", marginTop: 2 },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: schemeColor('#1A2138', 'fg') },
+  tierMeta: { fontSize: 12, color: schemeColor("#000000", 'fg'), marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",
     borderRadius: 16,
-    backgroundColor: "#EFEBE3",
+    backgroundColor: schemeColor("#EFEBE3", 'bg'),
     padding: 4,
     gap: 4,
   },
   segmentButton: { flex: 1, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  segmentActive: { backgroundColor: "#fff" },
-  segmentText: { fontSize: 13, fontWeight: "800", color: "#000000" },
-  segmentTextActive: { color: "#000000" },
+  segmentActive: { backgroundColor: schemeColor("#fff", 'bg') },
+  segmentText: { fontSize: 13, fontWeight: "800", color: schemeColor("#000000", 'fg') },
+  segmentTextActive: { color: schemeColor("#000000", 'fg') },
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: ink,
+    backgroundColor: schemeColor('#1A2138', 'bg'),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
   },
-  saveSettingsText: { color: "#fff", fontSize: 16, fontWeight: "900" },
+  saveSettingsText: { color: schemeColor("#fff", 'fg'), fontSize: 16, fontWeight: "900" },
   settingsRow: {
     minHeight: 72,
     flexDirection: "row",
@@ -1379,7 +1401,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(20,20,18,.07)",
+    borderBottomColor: schemeColor("rgba(20,20,18,.07)", 'border'),
   },
   settingsRowLast: { borderBottomWidth: 0 },
   pinRow: {
@@ -1389,8 +1411,8 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.12)",
-    backgroundColor: "#fff",
+    borderColor: schemeColor("rgba(20,20,18,.12)", 'border'),
+    backgroundColor: schemeColor("#fff", 'bg'),
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -1401,16 +1423,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: ink },
-  settingsRowDetail: { fontSize: 12, lineHeight: 17, color: "#000000", marginTop: 3 },
-  dangerText: { color: "#B73B32" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: schemeColor('#1A2138', 'fg') },
+  settingsRowDetail: { fontSize: 12, lineHeight: 17, color: schemeColor("#000000", 'fg'), marginTop: 3 },
+  dangerText: { color: schemeColor("#B73B32", 'fg') },
   settingsFootnote: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     textAlign: "center",
     paddingHorizontal: 18,
     marginTop: -8,
     marginBottom: 14,
   },
-});
+}));

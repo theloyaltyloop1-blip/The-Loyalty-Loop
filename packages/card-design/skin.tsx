@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
+import { withScheme } from "@loyalty-loop/design-tokens";
 import { typeface } from "./LoyaltyCard";
 import {
   cardAccent,
@@ -88,6 +89,16 @@ export function skinStyles<T extends Record<string, any>>(
   { keep = [], clear = [] }: { keep?: string[]; clear?: string[] } = {},
 ): T {
   if (!skin) return styles;
+  // The shop's own design replaces the app's colours, so read the base styles in light:
+  // the page looks the same whether the app is in light or dark mode.
+  return withScheme("light", () => skinStylesLight(styles, skin, { keep, clear }));
+}
+
+function skinStylesLight<T extends Record<string, any>>(
+  styles: T,
+  skin: ShopSkin,
+  { keep = [], clear = [] }: { keep?: string[]; clear?: string[] },
+): T {
   const out: Record<string, any> = {};
   for (const key of Object.keys(styles)) {
     const st = StyleSheet.flatten(styles[key]) || {};

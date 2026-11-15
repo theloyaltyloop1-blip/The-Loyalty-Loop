@@ -95,9 +95,6 @@ function App() {
         <AuthProvider>
           <OwnerProvider>
             <BrowserRouter>
-              {/* Theme toggle intentionally hidden for now — dark mode still
-                  works via ThemeProvider/localStorage, just no UI to switch it.
-                  Re-add <ThemeToggle compact /> here (see git history) to bring it back. */}
               <PlatformAnnouncementBanner />
               <Toaster position="top-center" richColors closeButton />
               <Suspense fallback={<BarePageSkeleton />}>

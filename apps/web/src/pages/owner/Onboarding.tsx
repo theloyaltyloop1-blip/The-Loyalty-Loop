@@ -79,7 +79,7 @@ function CardPreview({
           {Array.from({ length: total }, (_, i) => (
             <span
               key={i}
-              className={'h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ' + (i < 3 ? 'bg-white text-black' : 'bg-white/25 text-white')}
+              className={'h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ' + (i < 3 ? 'bg-[#FFFFFF] text-black' : 'bg-white/25 text-white')}
             >
               {i < 3 ? <Check className="h-3 w-3" /> : ''}
             </span>
@@ -115,7 +115,7 @@ function CardPreview({
   } else {
     body = (
       <>
-        <div className="h-2.5 rounded-full bg-white/25 mb-2 overflow-hidden"><div className="h-full w-1/3 rounded-full bg-white" /></div>
+        <div className="h-2.5 rounded-full bg-white/25 mb-2 overflow-hidden"><div className="h-full w-1/3 rounded-full bg-[#FFFFFF]" /></div>
         <p className="text-sm font-semibold text-white">
           {draft.rewards[0] ? `${draft.rewards[0].title || 'Your reward'} at ${money(currency, draft.rewards[0].amount)} spent` : 'Earn rewards as you spend'}
         </p>
@@ -284,7 +284,7 @@ export function OwnerOnboarding() {
                       key={k.key}
                       type="button"
                       onClick={() => pickKind(k)}
-                      className={cardClass + (active ? 'border-primary bg-card' : 'border-border bg-white/40')}
+                      className={cardClass + (active ? 'border-primary bg-card' : 'border-border bg-card/40')}
                     >
                       <span className="flex items-center gap-3">
                         <Icon className="h-6 w-6 text-primary shrink-0" />
@@ -300,7 +300,7 @@ export function OwnerOnboarding() {
                   data-press-feedback
                   type="button"
                   onClick={() => { setKind(null); pickCustom() }}
-                  className={cardClass + (custom && !kind ? 'border-primary bg-card' : 'border-dashed border-border bg-white/40')}
+                  className={cardClass + (custom && !kind ? 'border-primary bg-card' : 'border-dashed border-border bg-card/40')}
                 >
                   <span className="flex items-center gap-3">
                     <Sparkles className="h-6 w-6 text-primary shrink-0" />
@@ -342,7 +342,7 @@ export function OwnerOnboarding() {
                           key={id}
                           type="button"
                           onClick={() => pickProgramme(id)}
-                          className={'rounded-xl border-2 p-3 text-left ' + (programme === id ? 'border-primary bg-card' : 'border-border bg-white/60')}
+                          className={'rounded-xl border-2 p-3 text-left ' + (programme === id ? 'border-primary bg-card' : 'border-border bg-card/60')}
                         >
                           <span className="block font-bold text-sm text-foreground">{id === 'spend' ? '£ Spend rewards' : PROGRAMMES[id].name}</span>
                           <span className="block text-xs text-foreground/70">{PROGRAMMES[id].pitch}</span>
@@ -352,7 +352,7 @@ export function OwnerOnboarding() {
                         data-press-feedback
                         type="button"
                         onClick={pickCustom}
-                        className="rounded-xl border-2 border-dashed border-border bg-white/60 p-3 text-left"
+                        className="rounded-xl border-2 border-dashed border-border bg-card/60 p-3 text-left"
                       >
                         <span className="flex items-center gap-1.5 font-bold text-sm text-foreground"><Sparkles className="h-4 w-4 text-primary" /> Design my own with AI</span>
                         <span className="block text-xs text-foreground/70">None of these fit? Describe it and our AI builds it.</span>

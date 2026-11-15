@@ -152,7 +152,7 @@ export function ProfilePage() {
             <p className="mt-2 text-sm text-olive-ink/75">
               Show this QR code or manual code to staff at any shop if they can't scan it directly.
             </p>
-            <div className="mt-5 inline-block rounded-2xl bg-white p-3">
+            <div className="mt-5 inline-block rounded-2xl bg-[#FFFFFF] p-3">
               <QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={132} title="Your loyalty card QR code" />
             </div>
             <p className="mt-5 text-sm text-olive-ink/75">Manual code</p>

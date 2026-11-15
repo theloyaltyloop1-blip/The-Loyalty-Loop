@@ -1,6 +1,7 @@
 /* Screenshot-led admin treatment. Shared colours remain in color-system.css. */
 .admin-shell { margin:24px; min-height:calc(100dvh - 48px); border:1px solid var(--color-border); border-radius:30px; background:var(--color-card); box-shadow:0 12px 44px rgb(39 35 49 / .04); }
 body:has(.admin-shell) { background:#EDECF2; }
+html.dark body:has(.admin-shell) { background:#080A0E; }
 .admin-sidebar { width:232px; height:calc(100dvh - 48px); padding:30px 16px 22px; background:var(--color-card); border-radius:30px 0 0 30px; border-right:0; overflow-y:auto; }
 .admin-brand { gap:10px; padding:0 8px 28px; font-size:13px; letter-spacing:-.03em; }
 .admin-brand small { font-size:11px; letter-spacing:0; color:var(--color-muted-foreground); margin-top:5px; }
@@ -33,6 +34,7 @@ body:has(.admin-shell) { background:#EDECF2; }
 .admin-metric:nth-child(2) .admin-metric-icon { background:var(--color-accent); color:var(--color-accent-foreground); }
 .admin-metric:nth-child(3) .admin-metric-icon { background:var(--color-peach); color:var(--color-peach-ink); }
 .admin-metric:nth-child(4) .admin-metric-icon { background:#DDEED3; color:#304229; }
+html.dark .admin-metric:nth-child(4) .admin-metric-icon { background:#1F3A22; color:#BBF7D0; }
 .admin-metric .admin-metric-content { display:block; min-width:0; }
 .admin-metric-content>span { font-size:11px; color:var(--color-muted-foreground); }
 .admin-metric strong { display:block; color:var(--color-foreground); font-size:29px; margin:8px 0 7px; font-weight:550; line-height:1.1; letter-spacing:-.05em; overflow-wrap:anywhere; }

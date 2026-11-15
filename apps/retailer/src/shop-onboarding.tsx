@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BadgeCheck, Check, Gem, Plus, QrCode, ScanLine, Sparkles, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
 import Storage from "expo-sqlite/kv-store";
 import { Whirl } from "./Whirl";
-import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import {
   PROGRAMMES,
   SHOP_KINDS,
@@ -25,7 +25,7 @@ import { supabase } from "./supabase";
 import type { ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
 import { ProgrammeBuilder, RulesCard } from "./ProgrammeBuilder";
 
-const { foreground: green, primary: orange, background: cream } = colors;
+
 const BRAND_COLOR = "#8B7355";
 const STEP_COUNT = 4;
 const PROGRAMME_ORDER: ProgrammeId[] = ["stamps", "tiers", "points", "spend"];
@@ -95,7 +95,7 @@ function PrimaryButton({ title, onPress, disabled, secondary, icon }: { title: s
       style={({ pressed }) => [styles.button, secondary && styles.buttonSecondary, pressed && !disabled && { opacity: 0.72 }, disabled && { opacity: 0.5 }]}
     >
       {icon}
-      <Text style={[styles.buttonText, secondary && { color: green }]}>{title}</Text>
+      <Text style={[styles.buttonText, secondary && { color: colors.foreground }]}>{title}</Text>
     </Pressable>
   );
 }
@@ -111,7 +111,7 @@ function CardPreview({ programme, name, draft, symbol }: { programme: ProgrammeI
         <View style={styles.stampRow}>
           {Array.from({ length: total }, (_, i) => (
             <View key={i} style={[styles.stamp, i < 3 && styles.stampFilled]}>
-              {i < 3 ? <Check size={12} color="#000" /> : null}
+              {i < 3 ? <Check size={12} color={schemeColor("#000", 'fg')} /> : null}
             </View>
           ))}
         </View>
@@ -125,7 +125,7 @@ function CardPreview({ programme, name, draft, symbol }: { programme: ProgrammeI
       <>
         <View style={styles.stampRow}>
           {draft.tiers.map((tier, i) => (
-            <View key={i} style={[styles.tierPill, { backgroundColor: tier.colour || "#fff" }]}>
+            <View key={i} style={[styles.tierPill, { backgroundColor: tier.colour || schemeColor("#fff", 'bg') }]}>
               <Text style={styles.tierPillText}>{tier.name || "Level"}</Text>
             </View>
           ))}
@@ -249,7 +249,7 @@ export function ShopOnboarding({
         _category: kind?.category ?? "Other",
         _country_code: country.code,
         _rules: rules,
-        _brand_color: BRAND_COLOR,
+        _brand_color: schemeColor('#8B7355', 'fg'),
       });
       if (error) throw error;
       clearPendingShop();
@@ -300,7 +300,7 @@ export function ShopOnboarding({
       _category: kind?.category ?? "Retail",
       _country_code: country.code,
       _programme: args._programme,
-      _brand_color: BRAND_COLOR,
+      _brand_color: schemeColor('#8B7355', 'fg'),
       _stamps_required: args._stamps_required,
       _points_per_pound: args._points_per_pound,
       _rewards: args._rewards,
@@ -364,22 +364,22 @@ export function ShopOnboarding({
                 const active = kind?.key === k.key;
                 return (
                   <Pressable key={k.key} onPress={() => chooseKind(k)} style={[styles.optionCard, active && styles.optionCardActive]}>
-                    <Icon size={26} color={active ? "#fff" : orange} />
+                    <Icon size={26} color={active ? schemeColor("#fff", 'fg') : colors.primary} />
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.optionTitle, active && { color: "#fff" }]}>{k.title}</Text>
-                      <Text style={[styles.optionBlurb, active && { color: "#fff" }]}>{k.examples}</Text>
+                      <Text style={[styles.optionTitle, active && { color: schemeColor("#fff", 'fg') }]}>{k.title}</Text>
+                      <Text style={[styles.optionBlurb, active && { color: schemeColor("#fff", 'fg') }]}>{k.examples}</Text>
                     </View>
-                    {active && <View style={styles.checkBadge}><Check size={16} color="#fff" /></View>}
+                    {active && <View style={styles.checkBadge}><Check size={16} color={schemeColor("#fff", 'fg')} /></View>}
                   </Pressable>
                 );
               })}
               <Pressable onPress={() => { setKind(null); chooseCustom(); }} style={[styles.optionCard, styles.optionCardDashed, custom && !kind && styles.optionCardActive]}>
-                <Sparkles size={26} color={custom && !kind ? "#fff" : orange} />
+                <Sparkles size={26} color={custom && !kind ? schemeColor("#fff", 'fg') : colors.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.optionTitle, custom && !kind && { color: "#fff" }]}>Something different</Text>
-                  <Text style={[styles.optionBlurb, custom && !kind && { color: "#fff" }]}>Tell us your idea and our AI sets it up.</Text>
+                  <Text style={[styles.optionTitle, custom && !kind && { color: schemeColor("#fff", 'fg') }]}>Something different</Text>
+                  <Text style={[styles.optionBlurb, custom && !kind && { color: schemeColor("#fff", 'fg') }]}>Tell us your idea and our AI sets it up.</Text>
                 </View>
-                {custom && !kind && <View style={styles.checkBadge}><Check size={16} color="#fff" /></View>}
+                {custom && !kind && <View style={styles.checkBadge}><Check size={16} color={schemeColor("#fff", 'fg')} /></View>}
               </Pressable>
             </View>
             {custom && (
@@ -408,7 +408,7 @@ export function ShopOnboarding({
             {guest && onSignIn && (
               <Pressable onPress={onSignIn} style={styles.back} accessibilityRole="button">
                 <Text style={styles.backText}>
-                  Already have an account? <Text style={{ color: orange, textDecorationLine: "underline" }}>Sign in</Text>
+                  Already have an account? <Text style={{ color: colors.primary, textDecorationLine: "underline" }}>Sign in</Text>
                 </Text>
               </Pressable>
             )}
@@ -425,7 +425,7 @@ export function ShopOnboarding({
               onChangeText={setName}
               maxLength={80}
               placeholder="e.g. Bean & Bird"
-              placeholderTextColor="#000000"
+              placeholderTextColor={schemeColor("#000000", 'fg')}
               autoFocus
             />
             {countryOptions.length > 1 && <View style={styles.chipRow}>
@@ -441,7 +441,7 @@ export function ShopOnboarding({
                     }}
                     style={[styles.chip, active && styles.chipActive]}
                   >
-                    <Text style={[styles.chipText, active && { color: "#fff" }]}>{c.name}</Text>
+                    <Text style={[styles.chipText, active && { color: schemeColor("#fff", 'fg') }]}>{c.name}</Text>
                   </Pressable>
                 );
               })}
@@ -477,7 +477,7 @@ export function ShopOnboarding({
             <ProgrammeBuilder
               shop={{ name: name.trim(), category: kind?.category ?? undefined, currencySymbol: symbol }}
               onRules={setRules}
-              brandColor={BRAND_COLOR}
+              brandColor={schemeColor('#8B7355', 'fg')}
             />
             <PrimaryButton title={saving ? "Setting up…" : "Looks good"} disabled={saving || !rules} onPress={createCustom} />
             <Pressable onPress={() => setStep(1)} style={styles.back}>
@@ -499,16 +499,16 @@ export function ShopOnboarding({
                       <Text style={styles.editTitle}>Level {index + 1}</Text>
                       {draft.tiers.length > 1 && (
                         <Pressable onPress={() => setDraft((d) => d && { ...d, tiers: d.tiers.filter((_, i) => i !== index) })} hitSlop={8} accessibilityLabel="Remove level">
-                          <Trash2 size={18} color="#000" />
+                          <Trash2 size={18} color={schemeColor("#000", 'fg')} />
                         </Pressable>
                       )}
                     </View>
                     <Text style={styles.fieldLabel}>Name</Text>
-                    <TextInput style={styles.input} value={tier.name} maxLength={40} onChangeText={(v) => patchTier(index, { name: v })} placeholderTextColor="#000000" />
+                    <TextInput style={styles.input} value={tier.name} maxLength={40} onChangeText={(v) => patchTier(index, { name: v })} placeholderTextColor={schemeColor("#000000", 'fg')} />
                     <Text style={styles.fieldLabel}>Spend in a year ({symbol})</Text>
-                    <TextInput style={styles.input} value={tier.amount} keyboardType="decimal-pad" onChangeText={(v) => patchTier(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor="#000000" />
+                    <TextInput style={styles.input} value={tier.amount} keyboardType="decimal-pad" onChangeText={(v) => patchTier(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor={schemeColor("#000000", 'fg')} />
                     <Text style={styles.fieldLabel}>Perks (one per line)</Text>
-                    <TextInput style={[styles.input, { height: 92, textAlignVertical: "top" }]} value={tier.perks} multiline onChangeText={(v) => patchTier(index, { perks: v })} placeholderTextColor="#000000" />
+                    <TextInput style={[styles.input, { height: 92, textAlignVertical: "top" }]} value={tier.perks} multiline onChangeText={(v) => patchTier(index, { perks: v })} placeholderTextColor={schemeColor("#000000", 'fg')} />
                   </View>
                 ))
               : draft.rewards.map((reward, index) => (
@@ -517,16 +517,16 @@ export function ShopOnboarding({
                       <Text style={styles.editTitle}>Reward {draft.rewards.length > 1 ? index + 1 : ""}</Text>
                       {draft.rewards.length > 1 && (
                         <Pressable onPress={() => setDraft((d) => d && { ...d, rewards: d.rewards.filter((_, i) => i !== index) })} hitSlop={8} accessibilityLabel="Remove reward">
-                          <Trash2 size={18} color="#000" />
+                          <Trash2 size={18} color={schemeColor("#000", 'fg')} />
                         </Pressable>
                       )}
                     </View>
                     <Text style={styles.fieldLabel}>What do they get?</Text>
-                    <TextInput style={styles.input} value={reward.title} maxLength={80} onChangeText={(v) => patchReward(index, { title: v })} placeholder="e.g. Free coffee" placeholderTextColor="#000000" />
+                    <TextInput style={styles.input} value={reward.title} maxLength={80} onChangeText={(v) => patchReward(index, { title: v })} placeholder="e.g. Free coffee" placeholderTextColor={schemeColor("#000000", 'fg')} />
                     <Text style={styles.fieldLabel}>
                       {activeProgramme === "stamps" ? "Stamps needed" : activeProgramme === "points" ? "Points needed" : `Customer spends (${symbol})`}
                     </Text>
-                    <TextInput style={styles.input} value={reward.amount} keyboardType="decimal-pad" onChangeText={(v) => patchReward(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor="#000000" />
+                    <TextInput style={styles.input} value={reward.amount} keyboardType="decimal-pad" onChangeText={(v) => patchReward(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor={schemeColor("#000000", 'fg')} />
                   </View>
                 ))}
 
@@ -541,7 +541,7 @@ export function ShopOnboarding({
                   )
                 }
               >
-                <Plus size={18} color={orange} />
+                <Plus size={18} color={colors.primary} />
                 <Text style={styles.link}>{activeProgramme === "tiers" ? "Add a level" : "Add another reward"}</Text>
               </Pressable>
             )}
@@ -549,7 +549,7 @@ export function ShopOnboarding({
             {activeProgramme === "points" && (
               <View style={styles.editCard}>
                 <Text style={styles.fieldLabel}>Points earned for every {symbol}1 spent</Text>
-                <TextInput style={styles.input} value={draft.pointsPerPound} keyboardType="number-pad" onChangeText={(v) => setDraft((d) => d && { ...d, pointsPerPound: v.replace(/[^0-9]/g, "") })} placeholderTextColor="#000000" />
+                <TextInput style={styles.input} value={draft.pointsPerPound} keyboardType="number-pad" onChangeText={(v) => setDraft((d) => d && { ...d, pointsPerPound: v.replace(/[^0-9]/g, "") })} placeholderTextColor={schemeColor("#000000", 'fg')} />
               </View>
             )}
 
@@ -582,13 +582,13 @@ export function ShopOnboarding({
             <Text style={[styles.hero, { textAlign: "center" }]}>You're open for stamps!</Text>
             <Text style={[styles.copy, { textAlign: "center", marginBottom: 20 }]}>Customers can join {resume?.name ?? name} now. This is the card they'll see:</Text>
             {isCustom && rules ? (
-              <RulesCard rules={rules} symbol={symbol} brandColor={BRAND_COLOR} />
+              <RulesCard rules={rules} symbol={symbol} brandColor={schemeColor('#8B7355', 'fg')} />
             ) : draft ? (
               <CardPreview programme={activeProgramme} name={resume?.name ?? name} draft={draft} symbol={symbol} />
             ) : null}
             <View style={{ height: 18 }} />
-            <PrimaryButton title="Print your QR poster" icon={<QrCode size={18} color="#fff" />} onPress={() => onFinish("tools")} />
-            <PrimaryButton title="Scan your first customer" secondary icon={<ScanLine size={18} color={green} />} onPress={() => onFinish("scan")} />
+            <PrimaryButton title="Print your QR poster" icon={<QrCode size={18} color={schemeColor("#fff", 'fg')} />} onPress={() => onFinish("tools")} />
+            <PrimaryButton title="Scan your first customer" secondary icon={<ScanLine size={18} color={colors.foreground} />} onPress={() => onFinish("scan")} />
             <Pressable onPress={() => onFinish("home")} style={styles.back}>
               <Text style={styles.backText}>Take me to my dashboard</Text>
             </Pressable>
@@ -604,17 +604,17 @@ export function ShopOnboarding({
             const active = programme === id;
             return (
               <Pressable key={id} onPress={() => chooseProgramme(id)} style={[styles.optionCard, active && styles.optionCardActive]}>
-                <Icon size={24} color={active ? "#fff" : orange} />
+                <Icon size={24} color={active ? schemeColor("#fff", 'fg') : colors.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.optionTitle, active && { color: "#fff" }]}>{id === "spend" ? "£ Spend rewards" : PROGRAMMES[id].name}</Text>
-                  <Text style={[styles.optionBlurb, active && { color: "#fff" }]}>{PROGRAMMES[id].pitch}</Text>
+                  <Text style={[styles.optionTitle, active && { color: schemeColor("#fff", 'fg') }]}>{id === "spend" ? "£ Spend rewards" : PROGRAMMES[id].name}</Text>
+                  <Text style={[styles.optionBlurb, active && { color: schemeColor("#fff", 'fg') }]}>{PROGRAMMES[id].pitch}</Text>
                 </View>
-                {active && <View style={styles.checkBadge}><Check size={16} color="#fff" /></View>}
+                {active && <View style={styles.checkBadge}><Check size={16} color={schemeColor("#fff", 'fg')} /></View>}
               </Pressable>
             );
           })}
           <Pressable onPress={chooseCustom} style={[styles.optionCard, styles.optionCardDashed]}>
-            <Sparkles size={24} color={orange} />
+            <Sparkles size={24} color={colors.primary} />
             <View style={{ flex: 1 }}>
               <Text style={styles.optionTitle}>Design my own with AI</Text>
               <Text style={styles.optionBlurb}>None of these fit? Describe it and our AI builds it.</Text>
@@ -704,7 +704,7 @@ function SaveShopAccount({
         value={email}
         onChangeText={setEmail}
         placeholder="Email address"
-        placeholderTextColor="#000000"
+        placeholderTextColor={schemeColor("#000000", 'fg')}
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
@@ -715,7 +715,7 @@ function SaveShopAccount({
         value={password}
         onChangeText={setPassword}
         placeholder="Password (8+ characters)"
-        placeholderTextColor="#000000"
+        placeholderTextColor={schemeColor("#000000", 'fg')}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
@@ -724,7 +724,7 @@ function SaveShopAccount({
       {onSignIn && (
         <Pressable onPress={onSignIn} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>
-            Already have an account? <Text style={{ color: orange, textDecorationLine: "underline" }}>Sign in</Text>
+            Already have an account? <Text style={{ color: colors.primary, textDecorationLine: "underline" }}>Sign in</Text>
           </Text>
         </Pressable>
       )}
@@ -735,57 +735,57 @@ function SaveShopAccount({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: cream },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, padding: 24, paddingBottom: 48 },
   progress: { marginTop: 6, marginBottom: 26, gap: 8 },
-  progressTrack: { height: 6, borderRadius: 3, backgroundColor: "#DCD6CB", overflow: "hidden" },
-  progressFill: { height: 6, borderRadius: 3, backgroundColor: orange },
-  progressText: { color: "#000000", fontSize: 13, fontWeight: "700" },
-  checkBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.28)", alignItems: "center", justifyContent: "center" },
-  hero: { color: "#000000", fontSize: 36, lineHeight: 42, letterSpacing: -1, fontFamily: fonts.nativeDisplay },
-  copy: { color: "#000000", fontSize: 16, lineHeight: 24, marginTop: 8 },
+  progressTrack: { height: 6, borderRadius: 3, backgroundColor: schemeColor("#DCD6CB", 'bg'), overflow: "hidden" },
+  progressFill: { height: 6, borderRadius: 3, backgroundColor: colors.primary },
+  progressText: { color: schemeColor("#000000", 'fg'), fontSize: 13, fontWeight: "700" },
+  checkBadge: { width: 26, height: 26, borderRadius: 13, backgroundColor: schemeColor("rgba(255,255,255,0.28)", 'bg'), alignItems: "center", justifyContent: "center" },
+  hero: { color: schemeColor("#000000", 'fg'), fontSize: 36, lineHeight: 42, letterSpacing: -1, fontFamily: fonts.nativeDisplay },
+  copy: { color: schemeColor("#000000", 'fg'), fontSize: 16, lineHeight: 24, marginTop: 8 },
   stack: { gap: 12, marginTop: 22, marginBottom: 16 },
-  optionCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#fff", borderRadius: 20, borderWidth: 2, borderColor: "#eee0cc", padding: 18 },
-  optionCardActive: { backgroundColor: orange, borderColor: orange },
+  optionCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: schemeColor("#fff", 'bg'), borderRadius: 20, borderWidth: 2, borderColor: schemeColor("#eee0cc", 'border'), padding: 18 },
+  optionCardActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   optionCardDashed: { borderStyle: "dashed" },
-  optionTitle: { color: "#000000", fontSize: 17, fontWeight: "800" },
-  optionBlurb: { color: "#000000", fontSize: 13, marginTop: 2 },
-  suggestion: { backgroundColor: "#FFF3DC", borderRadius: 18, padding: 16, marginBottom: 18, gap: 4 },
-  suggestionTitle: { color: "#000000", fontSize: 15, fontWeight: "800" },
-  suggestionText: { color: "#000000", fontSize: 14, lineHeight: 20 },
-  link: { color: orange, fontSize: 15, fontWeight: "800", marginTop: 4, textDecorationLine: "underline" },
-  input: { backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: "#000000", fontSize: 16, marginTop: 6, borderWidth: 1, borderColor: "#eee0cc" },
+  optionTitle: { color: schemeColor("#000000", 'fg'), fontSize: 17, fontWeight: "800" },
+  optionBlurb: { color: schemeColor("#000000", 'fg'), fontSize: 13, marginTop: 2 },
+  suggestion: { backgroundColor: schemeColor("#FFF3DC", 'bg'), borderRadius: 18, padding: 16, marginBottom: 18, gap: 4 },
+  suggestionTitle: { color: schemeColor("#000000", 'fg'), fontSize: 15, fontWeight: "800" },
+  suggestionText: { color: schemeColor("#000000", 'fg'), fontSize: 14, lineHeight: 20 },
+  link: { color: colors.primary, fontSize: 15, fontWeight: "800", marginTop: 4, textDecorationLine: "underline" },
+  input: { backgroundColor: schemeColor("#fff", 'bg'), borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, color: schemeColor("#000000", 'fg'), fontSize: 16, marginTop: 6, borderWidth: 1, borderColor: schemeColor("#eee0cc", 'border') },
   chipRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14, marginBottom: 20 },
-  chipLabel: { color: "#000000", fontSize: 14 },
-  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5, borderColor: "rgba(0,0,0,0.15)", backgroundColor: "#fff" },
-  chipActive: { backgroundColor: orange, borderColor: orange },
-  chipText: { color: "#000000", fontWeight: "800", fontSize: 13 },
-  editCard: { backgroundColor: "#fff", borderRadius: 18, padding: 16, marginTop: 14, gap: 2 },
+  chipLabel: { color: schemeColor("#000000", 'fg'), fontSize: 14 },
+  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5, borderColor: schemeColor("rgba(0,0,0,0.15)", 'border'), backgroundColor: schemeColor("#fff", 'bg') },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: schemeColor("#000000", 'fg'), fontWeight: "800", fontSize: 13 },
+  editCard: { backgroundColor: schemeColor("#fff", 'bg'), borderRadius: 18, padding: 16, marginTop: 14, gap: 2 },
   editHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  editTitle: { flex: 1, color: "#000000", fontSize: 15, fontWeight: "800" },
+  editTitle: { flex: 1, color: schemeColor("#000000", 'fg'), fontSize: 15, fontWeight: "800" },
   swatch: { width: 14, height: 14, borderRadius: 7 },
-  fieldLabel: { color: "#000000", fontSize: 13, fontWeight: "700", marginTop: 10 },
+  fieldLabel: { color: schemeColor("#000000", 'fg'), fontSize: 13, fontWeight: "700", marginTop: 10 },
   addRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14 },
-  problem: { color: "#000000", fontSize: 14, fontWeight: "700", marginTop: 12 },
-  preview: { backgroundColor: BRAND_COLOR, borderRadius: 20, padding: 18 },
-  previewEyebrow: { color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
-  previewName: { color: "#fff", fontSize: 22, fontFamily: fonts.nativeDisplay, marginTop: 4, marginBottom: 12 },
-  previewLine: { color: "#fff", fontSize: 14, fontWeight: "700", marginTop: 6 },
-  previewBig: { color: "#fff", fontSize: 30, fontWeight: "800" },
+  problem: { color: schemeColor("#000000", 'fg'), fontSize: 14, fontWeight: "700", marginTop: 12 },
+  preview: { backgroundColor: schemeColor('#8B7355', 'bg'), borderRadius: 20, padding: 18 },
+  previewEyebrow: { color: schemeColor("rgba(255,255,255,0.85)", 'fg'), fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  previewName: { color: schemeColor("#fff", 'fg'), fontSize: 22, fontFamily: fonts.nativeDisplay, marginTop: 4, marginBottom: 12 },
+  previewLine: { color: schemeColor("#fff", 'fg'), fontSize: 14, fontWeight: "700", marginTop: 6 },
+  previewBig: { color: schemeColor("#fff", 'fg'), fontSize: 30, fontWeight: "800" },
   stampRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  stamp: { width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
-  stampFilled: { backgroundColor: "#fff" },
+  stamp: { width: 26, height: 26, borderRadius: 13, backgroundColor: schemeColor("rgba(255,255,255,0.25)", 'bg'), alignItems: "center", justifyContent: "center" },
+  stampFilled: { backgroundColor: schemeColor("#fff", 'bg') },
   tierPill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  tierPillText: { color: "#000000", fontSize: 12, fontWeight: "800" },
-  bar: { height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.25)", overflow: "hidden" },
-  barFill: { height: 10, width: "33%", borderRadius: 5, backgroundColor: "#fff" },
-  button: { backgroundColor: green, borderRadius: 999, minHeight: 54, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", padding: 15, marginTop: 16 },
-  buttonSecondary: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: green },
-  buttonText: { color: "#fff", fontWeight: "800", fontSize: 16, textAlign: "center" },
+  tierPillText: { color: schemeColor("#000000", 'fg'), fontSize: 12, fontWeight: "800" },
+  bar: { height: 10, borderRadius: 5, backgroundColor: schemeColor("rgba(255,255,255,0.25)", 'bg'), overflow: "hidden" },
+  barFill: { height: 10, width: "33%", borderRadius: 5, backgroundColor: schemeColor("#fff", 'bg') },
+  button: { backgroundColor: schemeColor('#1A2138', 'bg'), borderRadius: 999, minHeight: 54, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", padding: 15, marginTop: 16 },
+  buttonSecondary: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: colors.foreground },
+  buttonText: { color: schemeColor("#fff", 'fg'), fontWeight: "800", fontSize: 16, textAlign: "center" },
   back: { alignItems: "center", padding: 16 },
-  backText: { color: "#000000", fontSize: 15, fontWeight: "700" },
-  liveBadge: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#3FA34D", alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 14 },
+  backText: { color: schemeColor("#000000", 'fg'), fontSize: 15, fontWeight: "700" },
+  liveBadge: { width: 64, height: 64, borderRadius: 32, backgroundColor: schemeColor("#3FA34D", 'bg'), alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 14 },
   sheetBody: { padding: 20, paddingBottom: 32, gap: 12 },
-  sheetTitle: { color: "#000000", fontSize: 20, fontWeight: "800", marginBottom: 4 },
-});
+  sheetTitle: { color: schemeColor("#000000", 'fg'), fontSize: 20, fontWeight: "800", marginBottom: 4 },
+}));

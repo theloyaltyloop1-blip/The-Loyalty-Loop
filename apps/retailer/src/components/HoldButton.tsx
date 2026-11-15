@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { colors } from "@loyalty-loop/design-tokens";
+import { colors, themed, schemeColor } from "@loyalty-loop/design-tokens";
 
 /** Press-and-hold confirmation for actions that can't be taken back
  * (redeeming a reward, spending points). A darker fill sweeps across the
@@ -128,7 +128,7 @@ export function HoldButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   button: {
     minHeight: 58,
     borderRadius: 999,
@@ -141,11 +141,11 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.28)",
+    backgroundColor: schemeColor("rgba(0,0,0,0.28)", 'bg'),
   },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
   label: { fontSize: 17, fontWeight: "800", letterSpacing: -0.2 },
   compact: { minHeight: 40, paddingHorizontal: 16 },
   compactLabel: { fontSize: 14 },
   off: { opacity: 0.45 },
-});
+}));

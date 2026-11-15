@@ -1,5 +1,6 @@
 import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { AppAlertHost, showAlert } from "./src/components/AppAlert";
+import { ThemeProvider, useTheme, statusBarStyle } from "./src/theme";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
 import { ShopOnboarding, clearPendingShop, type OnboardingDestination } from "./src/shop-onboarding";
@@ -61,7 +62,7 @@ import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } 
 import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from "@expo-google-fonts/inter";
 import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument-serif";
 import { AppIntro, INK, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM } from "./src/components/Poster";
-import { colors, fonts } from "@loyalty-loop/design-tokens";
+import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
@@ -295,7 +296,7 @@ function MiniLineChart({
     </View>
   );
 }
-const { foreground: green, primary: orange, background: cream } = colors;
+
 
 function Button({
   title,
@@ -400,7 +401,7 @@ function DiscountCharge({
         value={billTotal}
         onChangeText={onBillTotalChange}
         placeholder="Bill total, e.g. 20.00"
-        placeholderTextColor="#000000"
+        placeholderTextColor={schemeColor("#000000", 'fg')}
         keyboardType="decimal-pad"
         style={styles.input}
         accessibilityLabel="Bill total in pounds"
@@ -526,7 +527,7 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
             value={email}
             onChangeText={setEmail}
             placeholder="Email address"
-            placeholderTextColor="#000000"
+            placeholderTextColor={schemeColor("#000000", 'fg')}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -537,7 +538,7 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
             value={password}
             onChangeText={setPassword}
             placeholder="Password"
-            placeholderTextColor="#000000"
+            placeholderTextColor={schemeColor("#000000", 'fg')}
             secureTextEntry
             autoComplete="current-password"
             textContentType="password"
@@ -561,11 +562,11 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
           <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
         </Pressable>
         <Modal visible={helpOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setHelpOpen(false)}>
-          <SafeAreaView style={{ flex: 1, backgroundColor: "#F6F1E8" }} edges={["top", "bottom"]}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: schemeColor("#F6F1E8", 'bg') }} edges={["top", "bottom"]}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 12 }}>
-              <Text style={{ fontSize: 28, fontWeight: "900", color: "#1A2138" }}>Help &amp; FAQ</Text>
+              <Text style={{ fontSize: 28, fontWeight: "900", color: schemeColor("#1A2138", 'fg') }}>Help &amp; FAQ</Text>
               <Pressable accessibilityRole="button" onPress={() => setHelpOpen(false)} style={{ padding: 10 }}>
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#2B3A67" }}>Done</Text>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: schemeColor("#2B3A67", 'fg') }}>Done</Text>
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
@@ -610,7 +611,7 @@ function ShopPicker({
           style={({ pressed }) => [
             styles.shopChip,
             selected?.id === shop.id && {
-              backgroundColor: shop.brand_color || green,
+              backgroundColor: shop.brand_color || colors.foreground,
             },
             pressed && styles.pressed,
           ]}
@@ -624,7 +625,7 @@ function ShopPicker({
           <Text
             style={[
               styles.chipText,
-              selected?.id === shop.id && { color: "#fff" },
+              selected?.id === shop.id && { color: schemeColor("#fff", 'fg') },
             ]}
           >
             {shop.name}
@@ -1177,7 +1178,7 @@ function StampsScreen({
       </View>
       {hasReward === null ? (
         <View style={styles.card}>
-          <ActivityIndicator color={orange} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       ) : !hasReward ? (
         <View style={styles.card}>
@@ -1254,12 +1255,12 @@ function StampsScreen({
           <View style={styles.card}>
             <Text style={styles.section}>{mode === "reward" ? "Or enter their reward or customer code" : "Or enter their code"}</Text>
             <TextInput
-              placeholderTextColor="#000000"
+              placeholderTextColor={schemeColor("#000000", 'fg')}
               style={[styles.input, styles.customerCodeInput]}
               value={code}
               onChangeText={setCode}
               placeholder={mode === "reward" ? "Reward or customer short code" : "Customer short code"}
-              selectionColor="#1A2138"
+              selectionColor={schemeColor("#1A2138", 'fg')}
               autoCapitalize="characters"
             />
             <Button
@@ -1316,7 +1317,7 @@ function StampsScreen({
                     doneLabel="Added"
                     onPress={() => void submitSpend()}
                     disabled={amountPence < 1}
-                    color={orange}
+                    color={colors.primary}
                     style={styles.dynamicAction}
                   />
                 </View>
@@ -1327,7 +1328,7 @@ function StampsScreen({
                   busyLabel="Awarding…"
                   doneLabel="Awarded"
                   onPress={() => void award()}
-                  color={orange}
+                  color={colors.primary}
                   style={styles.dynamicAction}
                 />
               ) : activeReward ? (
@@ -1351,7 +1352,7 @@ function StampsScreen({
                   duration={600}
                   onConfirm={() => void redeem()}
                   accessibilityLabel={activeReward.discount_pence || activeReward.discount_percent ? "Customer paid, use reward" : `Redeem ${activeReward.title}`}
-                  color={showSuccess ? colors.funGreen : orange}
+                  color={showSuccess ? colors.funGreen : colors.primary}
                   style={styles.dynamicAction}
                 />
                 </View>
@@ -1501,7 +1502,7 @@ function DashboardHome({
         {business.logo_url ? (
           <Image source={{ uri: business.logo_url }} style={styles.homeHeaderLogo} />
         ) : (
-          <View style={[styles.homeHeaderLogo, { backgroundColor: NIGHT, alignItems: "center", justifyContent: "center" }]}>
+          <View style={[styles.homeHeaderLogo, { backgroundColor: colors.olive, alignItems: "center", justifyContent: "center" }]}>
             <Text style={styles.homeHeaderLetter}>{business.name.charAt(0).toUpperCase()}</Text>
           </View>
         )}
@@ -1521,7 +1522,7 @@ function DashboardHome({
           <View accessible accessibilityLabel={`${weekTotal} ${spendShop ? "purchases" : "stamps"} in the last 7 days`} style={styles.homeBars}>
             {days.map((d, i) => (
               <View key={i} style={styles.homeBarCol}>
-                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? INK : "rgba(26,33,56,0.16)" }]} />
+                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? schemeColor('#1A2138', 'bg') : schemeColor("rgba(26,33,56,0.16)", 'bg') }]} />
                 <Text style={styles.homeBarDay}>{d.day}</Text>
               </View>
             ))}
@@ -1537,7 +1538,7 @@ function DashboardHome({
           onPress={onWinBack}
           style={({ pressed }) => [styles.homePill, { alignSelf: "stretch" }, pressed && styles.pressed]}
         >
-          <Users size={19} strokeWidth={1.8} color={NIGHT} />
+          <Users size={19} strokeWidth={1.8} color={colors.primaryText} />
           <Text style={styles.homePillText}>Win back {stats.dormantMembers} {stats.dormantMembers === 1 ? "customer" : "customers"}</Text>
         </Pressable>
       ) : null}
@@ -1552,16 +1553,16 @@ function DashboardHome({
           <Text style={styles.homeScanTitle}>Scan a customer</Text>
           <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : "Stamp, spend or reward"}</Text>
         </View>
-        <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={NIGHT} /></View>
+        <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={colors.primaryText} /></View>
       </Pressable>
 
       <View style={styles.homePills}>
         <Pressable accessibilityRole="button" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, pressed && styles.pressed]}>
-          <Gift size={19} strokeWidth={1.8} color={NIGHT} />
+          <Gift size={19} strokeWidth={1.8} color={colors.primaryText} />
           <Text style={styles.homePillText}>Redeem</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.homePill, pressed && styles.pressed]}>
-          <Sparkles size={19} strokeWidth={1.8} color={NIGHT} />
+          <Sparkles size={19} strokeWidth={1.8} color={colors.primaryText} />
           <Text style={styles.homePillText}>Report</Text>
         </Pressable>
       </View>
@@ -1600,7 +1601,7 @@ function DashboardHome({
       ) : (
         <Pressable accessibilityRole="button" onPress={onOpenGuide} style={({ pressed }) => [styles.homeGuideLink, pressed && styles.pressed]}>
           <Text style={styles.homeGuideLinkText}>Setup guide</Text>
-          <ChevronRight size={18} color={INK} />
+          <ChevronRight size={18} color={colors.ink} />
         </Pressable>
       )}
     </View>
@@ -1680,7 +1681,7 @@ function CustomersHome({ business }: { business: Business }) {
       <Text style={styles.pageTitle}>Bring them back</Text>
       <Text style={styles.pageIntro}>See who has gone quiet, then send them a push notification or an email.</Text>
       {members === null ? (
-        <ActivityIndicator color={green} style={{ marginTop: 30 }} />
+        <ActivityIndicator color={colors.foreground} style={{ marginTop: 30 }} />
       ) : (
         <>
           <Text style={styles.fieldLabel}>
@@ -1706,13 +1707,13 @@ function CustomersHome({ business }: { business: Business }) {
             <Pressable
               key={value}
               onPress={() => setAudience(value)}
-              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? orange : "#EFE9DF" }}
+              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? colors.primary : schemeColor("#EFE9DF", 'bg') }}
             >
-              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? "#fff" : "#6F6B64" }}>{label}</Text>
+              <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? schemeColor("#fff", 'fg') : schemeColor("#6F6B64", 'fg') }}>{label}</Text>
             </Pressable>
           ))}
         </View>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor="#000000" />
+        <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor={schemeColor("#000000", 'fg')} />
         <TextInput
           style={[styles.input, { height: 96, textAlignVertical: "top", marginTop: 10 }]}
           value={body}
@@ -1720,7 +1721,7 @@ function CustomersHome({ business }: { business: Business }) {
           maxLength={1000}
           multiline
           placeholder="Come in this week and we'll have something waiting."
-          placeholderTextColor="#000000"
+          placeholderTextColor={schemeColor("#000000", 'fg')}
         />
         <Button title={sending ? "Sending…" : "Send push notification"} onPress={() => void send()} />
       </View>
@@ -1766,10 +1767,10 @@ function MembersPage({ business }: { business: Business }) {
         value={search}
         onChangeText={setSearch}
         placeholder="Search members"
-        placeholderTextColor="#000000"
+        placeholderTextColor={schemeColor("#000000", 'fg')}
       />
       {loading ? (
-        <ActivityIndicator color={green} style={{ marginTop: 30 }} />
+        <ActivityIndicator color={colors.foreground} style={{ marginTop: 30 }} />
       ) : shown.length ? (
         shown.map((member) => {
           const name =
@@ -1788,7 +1789,7 @@ function MembersPage({ business }: { business: Business }) {
               <View
                 style={[
                   styles.memberAvatar,
-                  { backgroundColor: business.brand_color || orange },
+                  { backgroundColor: business.brand_color || colors.primary },
                 ]}
               >
                 <Text style={styles.memberAvatarText}>{name.charAt(0)}</Text>
@@ -1836,7 +1837,7 @@ function FoldSection({ title, children }: { title: string; children: ReactNode }
         style={({ pressed }) => [styles.accordionHeader, pressed && styles.pressed]}
       >
         <Text style={styles.accordionTitle}>{title}</Text>
-        <ChevronRight size={18} color="#59615A" style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }} />
+        <ChevronRight size={18} color={schemeColor("#59615A", 'fg')} style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }} />
       </Pressable>
       {open ? children : null}
     </View>
@@ -2017,8 +2018,8 @@ function AnalyticsPage({
           bKey="visits"
           aLabel="Purchases"
           bLabel="Visitors"
-          aColor={orange}
-          bColor="#2B3A67"
+          aColor={colors.primary}
+          bColor={schemeColor("#2B3A67", 'fg')}
         />
       </View>
       <View style={styles.chartCard}>
@@ -2029,8 +2030,8 @@ function AnalyticsPage({
           bKey="oldCustomers"
           aLabel="New"
           bLabel="Returning"
-          aColor="#3FA34D"
-          bColor="#1A2138"
+          aColor={schemeColor("#3FA34D", 'fg')}
+          bColor={schemeColor("#1A2138", 'fg')}
         />
       </View>
       </FoldSection>
@@ -2108,7 +2109,7 @@ function NewsPage({ business }: { business: Business }) {
           value={title}
           onChangeText={setTitle}
           placeholder="Headline"
-          placeholderTextColor="#000000"
+          placeholderTextColor={schemeColor("#000000", 'fg')}
           maxLength={120}
         />
         <TextInput
@@ -2116,7 +2117,7 @@ function NewsPage({ business }: { business: Business }) {
           value={body}
           onChangeText={setBody}
           placeholder="What would you like customers to know?"
-          placeholderTextColor="#000000"
+          placeholderTextColor={schemeColor("#000000", 'fg')}
           multiline
           textAlignVertical="top"
           maxLength={2000}
@@ -2206,6 +2207,7 @@ function Dashboard({
   preview?: boolean;
   canCreateBusiness?: boolean;
 }) {
+  const { isDark } = useTheme();
   // Last good snapshot saved on this phone (per user, 7 days, wiped on sign-out):
   // the dashboard paints from it at once and refreshes quietly behind it.
   const [snap] = useState(() => {
@@ -2518,7 +2520,7 @@ function Dashboard({
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color={green} />
+          <ActivityIndicator size="large" color={colors.foreground} />
         </View>
       </SafeAreaView>
     );
@@ -2537,7 +2539,7 @@ function Dashboard({
       onRestart={() => { setOwnerPage(null); setTab("home"); }}
     >
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={statusBarStyle(isDark)} />
       {!preview && <OutageBanner status={serviceStatus} />}
       {platformNotices.filter((notice) => !dismissedNoticeIds.has(notice.id)).map((notice) => (
         <View key={notice.id} style={styles.platformBanner}>
@@ -2546,7 +2548,7 @@ function Dashboard({
             {notice.body ? <Text style={styles.platformBannerBody}>: {notice.body}</Text> : null}
           </Text>
           <Pressable onPress={() => setDismissedNoticeIds((prev) => new Set(prev).add(notice.id))} hitSlop={8}>
-            <X size={16} color="#fff" />
+            <X size={16} color={schemeColor("#fff", 'fg')} />
           </Pressable>
         </View>
       ))}
@@ -2591,10 +2593,10 @@ function Dashboard({
                         paddingHorizontal: 14,
                         paddingVertical: 8,
                         borderRadius: 999,
-                        backgroundColor: tab === sub.id ? orange : "#EFE9DF",
+                        backgroundColor: tab === sub.id ? colors.primary : schemeColor("#EFE9DF", 'bg'),
                       }}
                     >
-                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? "#fff" : "#6F6B64" }}>{sub.label}</Text>
+                      <Text style={{ fontWeight: "700", fontSize: 13, color: tab === sub.id ? schemeColor("#fff", 'fg') : schemeColor("#6F6B64", 'fg') }}>{sub.label}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -2610,19 +2612,19 @@ function Dashboard({
                     padding: 14,
                     borderRadius: 18,
                     marginBottom: 14,
-                    backgroundColor: "#FFF4E0",
+                    backgroundColor: schemeColor("#FFF4E0", 'bg'),
                     borderWidth: 1.5,
-                    borderColor: "#E8B866",
+                    borderColor: schemeColor("#E8B866", 'border'),
                     opacity: pressed ? 0.85 : 1,
                   })}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "900", fontSize: 15, color: "#1A2138" }}>Your shop is hidden from customers</Text>
-                    <Text style={{ fontSize: 13, color: "#4A4A4A", marginTop: 2 }}>
+                    <Text style={{ fontWeight: "900", fontSize: 15, color: schemeColor("#1A2138", 'fg') }}>Your shop is hidden from customers</Text>
+                    <Text style={{ fontSize: 13, color: schemeColor("#4A4A4A", 'fg'), marginTop: 2 }}>
                       {selected.verification_status === "pending" ? "We're checking your document." : "Verify your business to put it live. It takes a few minutes."}
                     </Text>
                   </View>
-                  <ChevronRight size={20} color="#1A2138" />
+                  <ChevronRight size={20} color={schemeColor("#1A2138", 'fg')} />
                 </Pressable>
               ) : null}
               {tab === "home" && (
@@ -2688,7 +2690,7 @@ function Dashboard({
               setTab(id);
             }}
           >
-            {active && <Icon size={20} strokeWidth={2.3} color="#fff" />}
+            {active && <Icon size={20} strokeWidth={2.3} color={schemeColor("#fff", 'fg')} />}
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.tabText, active && styles.tabActive]}>
               {label}
             </Text>
@@ -2709,9 +2711,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AppRoot />
-        <AppAlertHost />
-        <AppIntro />
+        <ThemeProvider>
+          <AppRoot />
+          <AppAlertHost />
+          <AppIntro />
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -2729,6 +2733,7 @@ function clearAllLaunchData(userId: string | null) {
 }
 
 function AppRoot() {
+  const { isDark } = useTheme(); // re-renders the whole app when the scheme changes
   const previewMode =
     __DEV__ &&
     Platform.OS === "web" &&
@@ -2907,7 +2912,7 @@ function AppRoot() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color={green} />
+          <ActivityIndicator size="large" color={colors.foreground} />
         </View>
       </SafeAreaView>
     );
@@ -2933,94 +2938,94 @@ function AppRoot() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: cream },
-  platformBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: orange, paddingHorizontal: 16, paddingVertical: 10 },
-  platformBannerText: { flex: 1, color: "#fff", fontSize: 13, fontWeight: "700" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  platformBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10 },
+  platformBannerText: { flex: 1, color: schemeColor("#fff", 'fg'), fontSize: 13, fontWeight: "700" },
   platformBannerBody: { fontWeight: "400", opacity: 0.9 },
   auth: { flexGrow: 1, padding: 28, justifyContent: "center" },
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   onboarding: { flexGrow: 1, padding: 28, justifyContent: "center" },
-  onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: green, alignItems: "center", justifyContent: "center", marginBottom: 42 },
-  onboardingTitle: { color: '#1D1C1A', fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
+  onboardingMark: { width: 64, height: 64, borderRadius: 32, backgroundColor: schemeColor('#1A2138', 'bg'), alignItems: "center", justifyContent: "center", marginBottom: 42 },
+  onboardingTitle: { color: schemeColor('#1D1C1A', 'fg'), fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: "row", gap: 8, marginTop: 34, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#DCD6CB" },
-  onboardingDotActive: { width: 26, backgroundColor: orange },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: schemeColor("#DCD6CB", 'bg') },
+  onboardingDotActive: { width: 26, backgroundColor: colors.primary },
   onboardingConsent: { marginTop: 26 },
   onboardingSkip: { alignItems: "center", padding: 16 },
-  onboardingSkipText: { color: green, fontSize: 15, fontWeight: "700", textAlign: "center" },
+  onboardingSkipText: { color: colors.foreground, fontSize: 15, fontWeight: "700", textAlign: "center" },
   lockScreen: { flex: 1, padding: 28, alignItems: "center", justifyContent: "center" },
   mark: {
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: green,
+    backgroundColor: schemeColor('#1A2138', 'bg'),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
   },
-  markText: { color: "#e4b666", fontSize: 34, fontFamily: FONT_DISPLAY },
+  markText: { color: schemeColor("#e4b666", 'fg'), fontSize: 34, fontFamily: FONT_DISPLAY },
   eyebrow: {
-    color: orange,
+    color: colors.primary,
     fontWeight: "800",
     fontSize: 12,
     letterSpacing: 1.4,
     marginBottom: 10,
   },
   hero: {
-    color: green,
+    color: colors.foreground,
     fontSize: 37,
     fontFamily: FONT_DISPLAY,
     lineHeight: 44,
     letterSpacing: -1,
   },
   title: {
-    color: green,
+    color: colors.foreground,
     fontSize: 30,
     fontFamily: FONT_DISPLAY,
     lineHeight: 36,
     letterSpacing: -0.7,
   },
-  copy: { color: "#000000", fontSize: 16, lineHeight: 24, marginTop: 9 },
+  copy: { color: schemeColor("#000000", 'fg'), fontSize: 16, lineHeight: 24, marginTop: 9 },
   setupOptionCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: "#eee0cc",
+    borderColor: schemeColor("#eee0cc", 'border'),
     padding: 16,
   },
-  setupOptionCardActive: { backgroundColor: orange, borderColor: orange },
-  setupOptionTitle: { color: green, fontSize: 16, fontWeight: "800" },
-  setupOptionTitleActive: { color: "#fff" },
-  setupOptionBlurb: { color: "#000000", fontSize: 13, marginTop: 2 },
-  setupOptionBlurbActive: { color: "rgba(255,255,255,0.85)" },
+  setupOptionCardActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  setupOptionTitle: { color: colors.foreground, fontSize: 16, fontWeight: "800" },
+  setupOptionTitleActive: { color: schemeColor("#fff", 'fg') },
+  setupOptionBlurb: { color: schemeColor("#000000", 'fg'), fontSize: 13, marginTop: 2 },
+  setupOptionBlurbActive: { color: schemeColor("rgba(255,255,255,0.85)", 'fg') },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   categoryChip: {
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1.5,
-    borderColor: "rgba(0,0,0,0.12)",
-    backgroundColor: "#fff",
+    borderColor: schemeColor("rgba(0,0,0,0.12)", 'border'),
+    backgroundColor: schemeColor("#fff", 'bg'),
   },
-  categoryChipActive: { backgroundColor: orange, borderColor: orange },
-  categoryChipText: { color: green, fontWeight: "800", fontSize: 13 },
-  categoryChipTextActive: { color: "#fff" },
+  categoryChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  categoryChipText: { color: colors.foreground, fontWeight: "800", fontSize: 13 },
+  categoryChipTextActive: { color: schemeColor("#fff", 'fg') },
   small: {
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
     marginTop: 22,
   },
   authHelpLink: { alignSelf: "center", marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
-  authHelpLinkText: { color: "#000000", fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  authHelpLinkText: { color: schemeColor("#000000", 'fg'), fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
     borderRadius: 18,
     padding: 18,
     marginTop: 24,
@@ -3031,16 +3036,16 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
   },
   input: {
-    backgroundColor: "#f4f1eb",
+    backgroundColor: schemeColor("#f4f1eb", 'bg'),
     borderRadius: 11,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    color: "#243021",
+    color: schemeColor("#243021", 'fg'),
     fontSize: 16,
   },
-  customerCodeInput: { color: "#1A2138" },
+  customerCodeInput: { color: schemeColor("#1A2138", 'fg') },
   button: {
-    backgroundColor: green,
+    backgroundColor: schemeColor('#1A2138', 'bg'),
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -3050,8 +3055,8 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 3,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
-    shadowColor: green,
+    borderColor: schemeColor("rgba(255,255,255,0.72)", 'border'),
+    shadowColor: colors.foreground,
     shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
@@ -3060,10 +3065,10 @@ const styles = StyleSheet.create({
   secondary: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: green,
+    borderColor: colors.foreground,
   },
-  buttonText: { color: "#fff", fontWeight: "800", fontSize: 15, textAlign: "center" },
-  secondaryText: { color: green },
+  buttonText: { color: schemeColor("#fff", 'fg'), fontWeight: "800", fontSize: 15, textAlign: "center" },
+  secondaryText: { color: colors.foreground },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
   shopPicker: { gap: 9, paddingTop: 18, paddingBottom: 5 },
@@ -3071,58 +3076,58 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 13,
     borderRadius: 21,
-    backgroundColor: "#fff",
+    backgroundColor: schemeColor("#fff", 'bg'),
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
   },
   chipLogo: { width: 22, height: 22, borderRadius: 11 },
-  chipText: { color: green, fontWeight: "800", fontSize: 13 },
+  chipText: { color: colors.foreground, fontWeight: "800", fontSize: 13 },
   overview: { borderRadius: 21, padding: 22, marginTop: 24 },
   overviewLabel: {
-    color: "#e6ecdd",
+    color: schemeColor("#e6ecdd", 'fg'),
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 1.1,
   },
   overviewNumber: {
-    color: "#fff",
+    color: schemeColor("#fff", 'fg'),
     fontSize: 48,
     fontFamily: FONT_DISPLAY,
     marginVertical: 9,
   },
-  section: { fontSize: 19, fontWeight: "800", color: green, marginTop: 8 },
+  section: { fontSize: 19, fontWeight: "800", color: colors.foreground, marginTop: 8 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 18 },
   match: {
     marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#e7e3da",
+    borderTopColor: schemeColor("#e7e3da", 'border'),
     paddingTop: 14,
   },
-  matchTitle: { fontSize: 17, fontWeight: "800", color: green },
+  matchTitle: { fontSize: 17, fontWeight: "800", color: colors.foreground },
   cameraSheet: { flex: 1 },
-  spendBanner: { backgroundColor: "#e0f2e4", borderRadius: 18, padding: 14, marginTop: 16 },
-  spendBannerText: { color: "#1f5c33", fontSize: 15, fontWeight: "800", textAlign: "center" },
-  spendProgress: { color: "#000000", fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
-  spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: green, textAlign: "center", marginTop: 4, fontVariant: ["tabular-nums"] },
-  spendCap: { color: "#000000", fontSize: 13, textAlign: "center", marginBottom: 12 },
+  spendBanner: { backgroundColor: schemeColor("#e0f2e4", 'bg'), borderRadius: 18, padding: 14, marginTop: 16 },
+  spendBannerText: { color: schemeColor("#1f5c33", 'fg'), fontSize: 15, fontWeight: "800", textAlign: "center" },
+  spendProgress: { color: schemeColor("#000000", 'fg'), fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 6 },
+  spendAmount: { fontSize: 46, fontFamily: FONT_DISPLAY, color: colors.foreground, textAlign: "center", marginTop: 4, fontVariant: ["tabular-nums"] },
+  spendCap: { color: schemeColor("#000000", 'fg'), fontSize: 13, textAlign: "center", marginBottom: 12 },
   keypad: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginBottom: 14 },
-  keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center" },
-  keypadKeyText: { fontSize: 24, fontFamily: FONT_DISPLAY, color: green },
-  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.12)" },
-  recentAmount: { fontSize: 16, fontWeight: "800", color: green, minWidth: 80, fontVariant: ["tabular-nums"] },
-  recentTime: { flex: 1, color: "#000000", fontSize: 14 },
-  recentUndo: { color: orange, fontSize: 14, fontWeight: "800" },
-  paySheet: { backgroundColor: cream, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
-  paySheetHandle: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.18)", marginBottom: 16 },
-  paySheetTitle: { fontSize: 21, fontFamily: FONT_DISPLAY, color: green },
-  paySheetCopy: { color: "#000000", fontSize: 15.5, lineHeight: 22, marginTop: 8 },
-  paySheetQuestion: { fontSize: 16, fontWeight: "800", color: green, marginTop: 18 },
+  keypadKey: { width: "31%", minHeight: 58, borderRadius: 18, backgroundColor: schemeColor("rgba(0,0,0,0.05)", 'bg'), alignItems: "center", justifyContent: "center" },
+  keypadKeyText: { fontSize: 24, fontFamily: FONT_DISPLAY, color: colors.foreground },
+  recentRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: schemeColor("rgba(0,0,0,0.12)", 'border') },
+  recentAmount: { fontSize: 16, fontWeight: "800", color: colors.foreground, minWidth: 80, fontVariant: ["tabular-nums"] },
+  recentTime: { flex: 1, color: schemeColor("#000000", 'fg'), fontSize: 14 },
+  recentUndo: { color: colors.primary, fontSize: 14, fontWeight: "800" },
+  paySheet: { backgroundColor: colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 12 },
+  paySheetHandle: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: schemeColor("rgba(0,0,0,0.18)", 'bg'), marginBottom: 16 },
+  paySheetTitle: { fontSize: 21, fontFamily: FONT_DISPLAY, color: colors.foreground },
+  paySheetCopy: { color: schemeColor("#000000", 'fg'), fontSize: 15.5, lineHeight: 22, marginTop: 8 },
+  paySheetQuestion: { fontSize: 16, fontWeight: "800", color: colors.foreground, marginTop: 18 },
   paySheetButtons: { gap: 10, marginTop: 12 },
-  paySheetNote: { color: "#000000", fontSize: 13, textAlign: "center", marginTop: 12 },
-  cameraWrap: { flex: 1, padding: 20, backgroundColor: "#111" },
+  paySheetNote: { color: schemeColor("#000000", 'fg'), fontSize: 13, textAlign: "center", marginTop: 12 },
+  cameraWrap: { flex: 1, padding: 20, backgroundColor: schemeColor("#111", 'bg') },
   cameraTitle: {
-    color: "#fff",
+    color: schemeColor("#fff", 'fg'),
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
     marginBottom: 18,
@@ -3132,17 +3137,17 @@ const styles = StyleSheet.create({
     width: "31%",
     minHeight: 132,
     borderWidth: 2,
-    borderColor: "#2A2A2A",
+    borderColor: schemeColor("#2A2A2A", 'border'),
     borderRadius: 20,
     padding: 14,
-    backgroundColor: "rgba(255,255,255,.52)",
+    backgroundColor: schemeColor("rgba(255,255,255,.52)", 'bg'),
     justifyContent: "space-between",
     marginBottom: 12,
   },
-  statIcon: { fontSize: 20, color: orange, fontFamily: FONT_DISPLAY },
+  statIcon: { fontSize: 20, color: colors.primary, fontFamily: FONT_DISPLAY },
   statValue: {
     fontSize: 28,
-    color: "#171815",
+    color: schemeColor("#171815", 'fg'),
     fontFamily: FONT_DISPLAY,
     marginTop: 12,
     letterSpacing: -0.5,
@@ -3150,39 +3155,39 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     fontWeight: "700",
   },
-  homeHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(17,17,17,0.14)" },
+  homeHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: schemeColor("rgba(17,17,17,0.14)", 'border') },
   homeHeaderLogo: { width: 34, height: 34, borderRadius: 17 },
   homeHeaderLetter: { color: PAPER, fontSize: 14, fontWeight: "700" },
-  homeHeaderName: { flex: 1, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: INK },
-  homePanel: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 24, paddingBottom: 54, gap: 6, shadowColor: INK, shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
-  homePanelLabel: { color: MUTED, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase" },
+  homeHeaderName: { flex: 1, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: colors.ink },
+  homePanel: { backgroundColor: schemeColor("#FFFFFF", 'bg'), borderRadius: 28, padding: 24, paddingBottom: 54, gap: 6, shadowColor: INK, shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
+  homePanelLabel: { color: colors.muted, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase" },
   homeBigRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6 },
-  homeBig: { color: INK, fontFamily: SANS_HEAVY, fontSize: 104, lineHeight: 104, letterSpacing: -6, includeFontPadding: false, flexShrink: 1 },
-  homeBadge: { height: 28, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: "rgba(26,33,56,0.2)", justifyContent: "center" },
-  homeBadgeText: { color: MUTED, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" },
-  homeBigLabel: { color: MUTED, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase" },
+  homeBig: { color: colors.ink, fontFamily: SANS_HEAVY, fontSize: 104, lineHeight: 104, letterSpacing: -6, includeFontPadding: false, flexShrink: 1 },
+  homeBadge: { height: 28, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: schemeColor("rgba(26,33,56,0.2)", 'border'), justifyContent: "center" },
+  homeBadgeText: { color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" },
+  homeBigLabel: { color: colors.muted, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase" },
   homeBars: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 96, marginTop: 18 },
   homeBarCol: { flex: 1, alignItems: "center", gap: 6 },
   homeBar: { width: "100%", borderRadius: 4 },
-  homeBarDay: { color: MUTED, fontSize: 11, fontWeight: "600" },
-  homeWeek: { color: MUTED, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", marginTop: 10 },
+  homeBarDay: { color: colors.muted, fontSize: 11, fontWeight: "600" },
+  homeWeek: { color: colors.muted, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", marginTop: 10 },
   // Top plane: overlaps the stats card's lower edge.
-  homeScan: { minHeight: 104, marginTop: -54, marginHorizontal: 10, borderRadius: 28, backgroundColor: NIGHT, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14, shadowColor: NIGHT, shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
+  homeScan: { minHeight: 104, marginTop: -54, marginHorizontal: 10, borderRadius: 28, backgroundColor: colors.olive, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14, shadowColor: NIGHT, shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
   homeScanTitle: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 30, lineHeight: 34, letterSpacing: -1.2 },
-  homeScanSub: { color: "rgba(244,241,234,0.7)", fontSize: 11, fontWeight: "600", letterSpacing: 1.4, textTransform: "uppercase" },
-  homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: PAPER, alignItems: "center", justifyContent: "center" },
+  homeScanSub: { color: schemeColor("rgba(244,241,234,0.7)", 'fg'), fontSize: 11, fontWeight: "600", letterSpacing: 1.4, textTransform: "uppercase" },
+  homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" },
   homePills: { flexDirection: "row", gap: 10 },
-  homePill: { flex: 1, height: 54, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "rgba(43,58,103,0.25)" },
-  homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM, color: NIGHT },
-  homeTiles: { flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: "rgba(17,17,17,0.14)" },
+  homePill: { flex: 1, height: 54, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: schemeColor("#FFFFFF", 'bg'), borderWidth: 1.5, borderColor: schemeColor("rgba(43,58,103,0.25)", 'border') },
+  homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM, color: colors.primaryText },
+  homeTiles: { flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: schemeColor("rgba(17,17,17,0.14)", 'border') },
   homeTile: { flex: 1, paddingVertical: 18, gap: 4 },
-  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 44, lineHeight: 46, letterSpacing: -2, color: INK, fontVariant: ['tabular-nums'] },
-  homeTileLabel: { fontSize: 11, fontWeight: "500", letterSpacing: 1.4, textTransform: "uppercase", color: MUTED },
+  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 44, lineHeight: 46, letterSpacing: -2, color: colors.ink, fontVariant: ['tabular-nums'] },
+  homeTileLabel: { fontSize: 11, fontWeight: "500", letterSpacing: 1.4, textTransform: "uppercase", color: colors.muted },
   homeGuideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 48 },
-  homeGuideLinkText: { color: INK, fontFamily: SANS_MEDIUM, fontSize: 15 },
+  homeGuideLinkText: { color: colors.ink, fontFamily: SANS_MEDIUM, fontSize: 15 },
   welcomeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -3194,13 +3199,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.7,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
   },
   welcomeTitle: {
     fontSize: 34,
     lineHeight: 40,
     fontFamily: FONT_DISPLAY,
-    color: "#151613",
+    color: schemeColor("#151613", 'fg'),
     letterSpacing: -1,
   },
   homeLogo: {
@@ -3210,19 +3215,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  homeLogoText: { fontSize: 18, color: "#fff", fontWeight: "900" },
+  homeLogoText: { fontSize: 18, color: schemeColor("#fff", 'fg'), fontWeight: "900" },
   setupCard: {
     borderWidth: 2,
-    borderColor: "#2A2A2A",
+    borderColor: schemeColor("#2A2A2A", 'border'),
     borderRadius: 22,
     padding: 18,
-    backgroundColor: "rgba(255,255,255,.55)",
+    backgroundColor: schemeColor("rgba(255,255,255,.55)", 'bg'),
     marginBottom: 20,
   },
   setupTitle: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#191A17",
+    color: schemeColor("#191A17", 'fg'),
     marginBottom: 13,
   },
   checkRow: {
@@ -3236,17 +3241,17 @@ const styles = StyleSheet.create({
     height: 23,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#31322E",
+    borderColor: schemeColor("#31322E", 'border'),
     alignItems: "center",
     justifyContent: "center",
   },
-  checkDone: { borderColor: orange, backgroundColor: "#F8C9B6" },
-  checkMark: { fontSize: 13, fontWeight: "900", color: "#2B3A67" },
-  checkText: { fontSize: 14, fontWeight: "700", color: "#000000" },
-  checkTextDone: { color: "#000000", textDecorationLine: "line-through" },
-  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: "#1A2138", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
-  setupGuideText: { color: "#fff", fontSize: 14, fontWeight: "900" },
-  setupGuideArrow: { color: "#fff", fontSize: 25, lineHeight: 25, fontWeight: "600" },
+  checkDone: { borderColor: colors.primary, backgroundColor: schemeColor("#F8C9B6", 'bg') },
+  checkMark: { fontSize: 13, fontWeight: "900", color: schemeColor("#2B3A67", 'fg') },
+  checkText: { fontSize: 14, fontWeight: "700", color: schemeColor("#000000", 'fg') },
+  checkTextDone: { color: schemeColor("#000000", 'fg'), textDecorationLine: "line-through" },
+  setupGuideButton: { minHeight: 46, borderRadius: 15, backgroundColor: schemeColor("#1A2138", 'bg'), flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 15, marginTop: 12 },
+  setupGuideText: { color: schemeColor("#fff", 'fg'), fontSize: 14, fontWeight: "900" },
+  setupGuideArrow: { color: schemeColor("#fff", 'fg'), fontSize: 25, lineHeight: 25, fontWeight: "600" },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -3254,68 +3259,68 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statTileWide: { width: "48%" },
-  sectionCaption: { fontSize: 11, fontWeight: "900", letterSpacing: 1.7, color: "#59615A", marginTop: 8, marginBottom: 8 },
-  reportButtonLight: { minHeight: 52, borderRadius: 26, borderWidth: 1, borderColor: "rgba(38,48,42,.25)", backgroundColor: "rgba(255,255,255,.55)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 },
-  reportButtonLightText: { color: "#171815", fontWeight: "800", fontSize: 14 },
+  sectionCaption: { fontSize: 11, fontWeight: "900", letterSpacing: 1.7, color: schemeColor("#59615A", 'fg'), marginTop: 8, marginBottom: 8 },
+  reportButtonLight: { minHeight: 52, borderRadius: 26, borderWidth: 1, borderColor: schemeColor("rgba(38,48,42,.25)", 'border'), backgroundColor: schemeColor("rgba(255,255,255,.55)", 'bg'), flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 },
+  reportButtonLightText: { color: schemeColor("#171815", 'fg'), fontWeight: "800", fontSize: 14 },
   accordionHeader: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, marginTop: 6 },
-  accordionTitle: { fontSize: 13, fontWeight: "800", color: "#59615A" },
+  accordionTitle: { fontSize: 13, fontWeight: "800", color: schemeColor("#59615A", 'fg') },
   pillRow: { flexDirection: "row", gap: 10, marginTop: 6, marginBottom: 12 },
   pillButton: {
     flex: 1,
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#2B3A67",
+    backgroundColor: schemeColor("#2B3A67", 'bg'),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
-  pillButtonText: { color: "#fff", fontWeight: "900", fontSize: 14 },
+  pillButtonText: { color: schemeColor("#fff", 'fg'), fontWeight: "900", fontSize: 14 },
   reportButtonBlack: {
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#1A2138",
+    backgroundColor: schemeColor("#1A2138", 'bg'),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
     marginBottom: 8,
   },
-  reportButtonBlackText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  reportButtonBlackText: { color: schemeColor("#fff", 'fg'), fontWeight: "900", fontSize: 15 },
   cameraStartButton: {
     minHeight: 52,
     borderRadius: 26,
-    backgroundColor: "#1A2138",
+    backgroundColor: schemeColor("#1A2138", 'bg'),
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,
     marginBottom: 16,
   },
-  cameraStartText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  cameraStartText: { color: schemeColor("#fff", 'fg'), fontWeight: "900", fontSize: 15 },
   memberInfoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(20,20,18,.07)",
+    borderBottomColor: schemeColor("rgba(20,20,18,.07)", 'border'),
   },
-  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: "#000000", flexShrink: 0, marginRight: 12 },
-  memberInfoValue: { flex: 1, fontSize: 13, color: "#1A2138", fontWeight: "700", textAlign: "right" },
+  memberInfoLabel: { fontSize: 13, fontWeight: "800", color: schemeColor("#000000", 'fg'), flexShrink: 0, marginRight: 12 },
+  memberInfoValue: { flex: 1, fontSize: 13, color: schemeColor("#1A2138", 'fg'), fontWeight: "700", textAlign: "right" },
   bigActionButton: {
     minHeight: 64,
     borderRadius: 32,
-    backgroundColor: orange,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
   },
-  bigActionButtonText: { color: "#fff", fontWeight: "900", fontSize: 18 },
+  bigActionButtonText: { color: schemeColor("#fff", 'fg'), fontWeight: "900", fontSize: 18 },
   dynamicAction: { minHeight: 64, borderRadius: 32 },
   pageKicker: {
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.7,
-    color: orange,
+    color: colors.primary,
     marginTop: 28,
     marginBottom: 7,
   },
@@ -3324,12 +3329,12 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     fontFamily: FONT_DISPLAY,
     letterSpacing: -0.8,
-    color: "#171815",
+    color: schemeColor("#171815", 'fg'),
   },
   pageIntro: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginTop: 7,
     marginBottom: 20,
   },
@@ -3337,19 +3342,19 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.1)",
-    backgroundColor: "rgba(255,255,255,.72)",
+    borderColor: schemeColor("rgba(20,20,18,.1)", 'border'),
+    backgroundColor: schemeColor("rgba(255,255,255,.72)", 'bg'),
     paddingHorizontal: 15,
     fontSize: 15,
-    color: "#111",
+    color: schemeColor("#111", 'fg'),
     marginBottom: 14,
   },
   memberCard: {
     minHeight: 76,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.09)",
+    borderColor: schemeColor("rgba(20,20,18,.09)", 'border'),
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,.7)",
+    backgroundColor: schemeColor("rgba(255,255,255,.7)", 'bg'),
     padding: 13,
     flexDirection: "row",
     alignItems: "center",
@@ -3363,26 +3368,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  memberAvatarText: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  memberName: { fontSize: 16, fontWeight: "900", color: "#1A2138" },
-  memberMeta: { fontSize: 12, color: "#000000", marginTop: 3 },
+  memberAvatarText: { color: schemeColor("#fff", 'fg'), fontSize: 17, fontWeight: "900" },
+  memberName: { fontSize: 16, fontWeight: "900", color: schemeColor("#1A2138", 'fg') },
+  memberMeta: { fontSize: 12, color: schemeColor("#000000", 'fg'), marginTop: 3 },
   memberProgress: {
     fontSize: 20,
     fontFamily: FONT_DISPLAY,
-    color: "#1A2138",
+    color: schemeColor("#1A2138", 'fg'),
     textAlign: "right",
   },
-  memberUnit: { fontSize: 10, color: "#000000", textAlign: "right" },
+  memberUnit: { fontSize: 10, color: schemeColor("#000000", 'fg'), textAlign: "right" },
   emptyState: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     textAlign: "center",
     paddingVertical: 36,
   },
   periodSwitch: {
     flexDirection: "row",
-    backgroundColor: "#E6DFD3",
+    backgroundColor: schemeColor("#E6DFD3", 'bg'),
     borderRadius: 15,
     padding: 4,
     marginBottom: 24,
@@ -3394,13 +3399,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  periodActive: { backgroundColor: "#1A2138" },
-  periodText: { fontSize: 12, fontWeight: "800", color: "#000000" },
-  periodTextActive: { color: "#fff" },
+  periodActive: { backgroundColor: schemeColor("#1A2138", 'bg') },
+  periodText: { fontSize: 12, fontWeight: "800", color: schemeColor("#000000", 'fg') },
+  periodTextActive: { color: schemeColor("#fff", 'fg') },
   analyticsHeading: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#1A1B18",
+    color: schemeColor("#1A1B18", 'fg'),
     marginTop: 8,
     marginBottom: 13,
   },
@@ -3408,32 +3413,32 @@ const styles = StyleSheet.create({
   chartsHeading: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginTop: 18,
     marginBottom: 10,
   },
   chartCard: {
     borderWidth: 2,
-    borderColor: "#2A2A2A",
+    borderColor: schemeColor("#2A2A2A", 'border'),
     borderRadius: 20,
     padding: 16,
-    backgroundColor: "rgba(255,255,255,.6)",
+    backgroundColor: schemeColor("rgba(255,255,255,.6)", 'bg'),
     marginBottom: 14,
   },
   chartTitle: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#1A2138",
+    color: schemeColor("#1A2138", 'fg'),
     marginBottom: 10,
   },
   chartWrap: { height: 80, width: "100%" },
   chartLegendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   chartLegendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11, fontWeight: "800", color: "#000000" },
+  legendLabel: { fontSize: 11, fontWeight: "800", color: schemeColor("#000000", 'fg') },
   insightCard: {
     borderRadius: 22,
-    backgroundColor: "#1A2138",
+    backgroundColor: schemeColor("#1A2138", 'bg'),
     padding: 20,
     marginTop: 10,
     marginBottom: 15,
@@ -3442,63 +3447,63 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 1.5,
-    color: "#00D3FB",
+    color: schemeColor("#00D3FB", 'fg'),
   },
   insightTitle: {
     fontSize: 20,
     lineHeight: 26,
     fontFamily: FONT_DISPLAY,
-    color: "#fff",
+    color: schemeColor("#fff", 'fg'),
     marginTop: 9,
   },
-  insightCopy: { fontSize: 14, lineHeight: 21, color: "#000000", marginTop: 9 },
+  insightCopy: { fontSize: 14, lineHeight: 21, color: schemeColor("#000000", 'fg'), marginTop: 9 },
   totalCard: {
     borderWidth: 2,
-    borderColor: "#2A2A2A",
+    borderColor: schemeColor("#2A2A2A", 'border'),
     borderRadius: 20,
     padding: 17,
-    backgroundColor: "rgba(255,255,255,.55)",
+    backgroundColor: schemeColor("rgba(255,255,255,.55)", 'bg'),
     marginBottom: 16,
   },
-  totalTitle: { fontSize: 16, fontWeight: "900", color: "#1A2138" },
-  totalLine: { fontSize: 13, color: "#000000", marginTop: 7 },
+  totalTitle: { fontSize: 16, fontWeight: "900", color: schemeColor("#1A2138", 'fg') },
+  totalLine: { fontSize: 13, color: schemeColor("#000000", 'fg'), marginTop: 7 },
   composeCard: {
     borderWidth: 2,
-    borderColor: "#2A2A2A",
+    borderColor: schemeColor("#2A2A2A", 'border'),
     borderRadius: 22,
     padding: 17,
-    backgroundColor: "rgba(255,255,255,.6)",
+    backgroundColor: schemeColor("rgba(255,255,255,.6)", 'bg'),
     gap: 11,
     marginBottom: 22,
   },
   composeTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#191A17",
+    color: schemeColor("#191A17", 'fg'),
     marginBottom: 2,
   },
   newsCard: {
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.1)",
+    borderColor: schemeColor("rgba(20,20,18,.1)", 'border'),
     borderRadius: 19,
     padding: 16,
-    backgroundColor: "rgba(255,255,255,.68)",
+    backgroundColor: schemeColor("rgba(255,255,255,.68)", 'bg'),
     marginBottom: 11,
   },
   newsHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  newsTitle: { fontSize: 16, fontWeight: "900", color: "#1A1B18", flex: 1 },
+  newsTitle: { fontSize: 16, fontWeight: "900", color: schemeColor("#1A1B18", 'fg'), flex: 1 },
   statusPill: {
     borderRadius: 10,
-    backgroundColor: "#D8E8D5",
+    backgroundColor: schemeColor("#D8E8D5", 'bg'),
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  statusDraft: { backgroundColor: "#E5E1D9" },
-  statusText: { fontSize: 9, fontWeight: "900", color: "#000000" },
-  newsBody: { fontSize: 13, lineHeight: 19, color: "#000000", marginTop: 8 },
-  newsDate: { fontSize: 11, color: "#000000", marginTop: 10 },
-  navIcon: { fontSize: 21, lineHeight: 23, color: "#000000" },
-  navIconActive: { color: orange },
+  statusDraft: { backgroundColor: schemeColor("#E5E1D9", 'bg') },
+  statusText: { fontSize: 9, fontWeight: "900", color: schemeColor("#000000", 'fg') },
+  newsBody: { fontSize: 13, lineHeight: 19, color: schemeColor("#000000", 'fg'), marginTop: 8 },
+  newsDate: { fontSize: 11, color: schemeColor("#000000", 'fg'), marginTop: 10 },
+  navIcon: { fontSize: 21, lineHeight: 23, color: schemeColor("#000000", 'fg') },
+  navIconActive: { color: colors.primary },
   tabPressed: { opacity: 0.55, transform: [{ scale: 0.94 }] },
   settingsHero: {
     marginTop: 26,
@@ -3511,21 +3516,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.8,
-    color: orange,
+    color: colors.primary,
     marginBottom: 8,
   },
   settingsTitle: {
     fontSize: 29,
     lineHeight: 34,
     fontFamily: FONT_DISPLAY,
-    color: "#1A2138",
+    color: schemeColor("#1A2138", 'fg'),
     letterSpacing: -0.7,
     maxWidth: 250,
   },
   settingsSubtitle: {
     fontSize: 14,
     lineHeight: 21,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginTop: 9,
     maxWidth: 275,
   },
@@ -3539,59 +3544,59 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
   },
   settingsAvatarImage: { width: "100%", height: "100%" },
-  settingsAvatarLetter: { color: "#fff", fontSize: 21, fontFamily: FONT_DISPLAY },
+  settingsAvatarLetter: { color: schemeColor("#fff", 'fg'), fontSize: 21, fontFamily: FONT_DISPLAY },
   groupLabel: {
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.3,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginLeft: 4,
     marginTop: 8,
     marginBottom: 9,
   },
   settingsGroup: {
-    backgroundColor: "rgba(255,255,255,.82)",
+    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
     borderRadius: 22,
     padding: 17,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
   },
   settingsGroupNoPadding: {
-    backgroundColor: "rgba(255,255,255,.82)",
+    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
     borderRadius: 22,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.07)",
+    borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
     overflow: "hidden",
   },
   fieldLabel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginTop: 8,
     marginBottom: 7,
   },
   settingsInput: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#EFEBE3",
+    backgroundColor: schemeColor("#EFEBE3", 'bg'),
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
+    borderColor: schemeColor("rgba(20,20,18,.08)", 'border'),
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#111",
+    color: schemeColor("#111", 'fg'),
     fontSize: 15,
   },
   textArea: { minHeight: 96 },
   readOnlyNotice: {
-    backgroundColor: "#FDECCD",
+    backgroundColor: schemeColor("#FDECCD", 'bg'),
     borderRadius: 13,
     padding: 12,
     marginBottom: 4,
   },
   readOnlyNoticeText: {
-    color: "#8A5A12",
+    color: schemeColor("#8A5A12", 'fg'),
     fontSize: 12.5,
     lineHeight: 18,
     fontWeight: "700",
@@ -3599,18 +3604,18 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     minHeight: 48,
     borderRadius: 13,
-    backgroundColor: "#EFEBE3",
+    backgroundColor: schemeColor("#EFEBE3", 'bg'),
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
+    borderColor: schemeColor("rgba(20,20,18,.08)", 'border'),
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     fontSize: 15,
   },
   fieldHelp: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginTop: 2,
     marginBottom: 6,
   },
@@ -3622,25 +3627,25 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
-    backgroundColor: "#F8F5EE",
+    borderColor: schemeColor("rgba(20,20,18,.08)", 'border'),
+    backgroundColor: schemeColor("#F8F5EE", 'bg'),
   },
   tierBadge: {
     minWidth: 40,
     height: 40,
     borderRadius: 12,
     paddingHorizontal: 8,
-    backgroundColor: "#E0F2E4",
+    backgroundColor: schemeColor("#E0F2E4", 'bg'),
     alignItems: "center",
     justifyContent: "center",
   },
-  tierBadgeText: { color: "#2F8A4C", fontWeight: "900", fontSize: 15 },
-  tierTitle: { fontSize: 15, fontWeight: "800", color: "#1A2138" },
-  tierMeta: { fontSize: 12, color: "#000000", marginTop: 2 },
+  tierBadgeText: { color: schemeColor("#2F8A4C", 'fg'), fontWeight: "900", fontSize: 15 },
+  tierTitle: { fontSize: 15, fontWeight: "800", color: schemeColor("#1A2138", 'fg') },
+  tierMeta: { fontSize: 12, color: schemeColor("#000000", 'fg'), marginTop: 2 },
   twoColumns: { flexDirection: "row", gap: 10 },
   segment: {
     flexDirection: "row",
-    backgroundColor: "#EAE4D9",
+    backgroundColor: schemeColor("#EAE4D9", 'bg'),
     borderRadius: 14,
     padding: 4,
     marginBottom: 12,
@@ -3652,14 +3657,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: "#1A2138" },
-  segmentText: { fontSize: 13, fontWeight: "800", color: "#000000" },
-  segmentTextActive: { color: "#fff" },
+  segmentActive: { backgroundColor: schemeColor("#1A2138", 'bg') },
+  segmentText: { fontSize: 13, fontWeight: "800", color: schemeColor("#000000", 'fg') },
+  segmentTextActive: { color: schemeColor("#fff", 'fg') },
   stepper: {
     height: 50,
     flexDirection: "row",
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.12)",
+    borderColor: schemeColor("rgba(20,20,18,.12)", 'border'),
     borderRadius: 14,
     overflow: "hidden",
     marginBottom: 12,
@@ -3668,16 +3673,16 @@ const styles = StyleSheet.create({
     width: 52,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EEE8DC",
+    backgroundColor: schemeColor("#EEE8DC", 'bg'),
   },
-  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: "#1A2138" },
+  stepperText: { fontSize: 22, fontFamily: FONT_DISPLAY, color: schemeColor("#1A2138", 'fg') },
   stepperInput: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
     fontWeight: "900",
-    color: "#111",
-    backgroundColor: "#fff",
+    color: schemeColor("#111", 'fg'),
+    backgroundColor: schemeColor("#fff", 'bg'),
   },
   stepperValue: {
     flex: 1,
@@ -3687,18 +3692,18 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     includeFontPadding: false,
     fontWeight: "900",
-    color: "#111",
-    backgroundColor: "#fff",
+    color: schemeColor("#111", 'fg'),
+    backgroundColor: schemeColor("#fff", 'bg'),
   },
   saveSettings: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#1A2138",
+    backgroundColor: schemeColor("#1A2138", 'bg'),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 28,
   },
-  saveSettingsText: { color: "#fff", fontSize: 16, fontWeight: "900" },
+  saveSettingsText: { color: schemeColor("#fff", 'fg'), fontSize: 16, fontWeight: "900" },
   settingsRow: {
     minHeight: 72,
     flexDirection: "row",
@@ -3707,7 +3712,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(20,20,18,.07)",
+    borderBottomColor: schemeColor("rgba(20,20,18,.07)", 'border'),
   },
   settingsRowLast: { borderBottomWidth: 0 },
   settingsIcon: {
@@ -3717,18 +3722,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: "#1A2138" },
+  settingsRowTitle: { fontSize: 15, fontWeight: "800", color: schemeColor("#1A2138", 'fg') },
   settingsRowDetail: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     marginTop: 3,
   },
-  dangerText: { color: "#B73B32" },
+  dangerText: { color: schemeColor("#B73B32", 'fg') },
   settingsFootnote: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#000000",
+    color: schemeColor("#000000", 'fg'),
     textAlign: "center",
     paddingHorizontal: 18,
     marginTop: -8,
@@ -3741,9 +3746,9 @@ const styles = StyleSheet.create({
     bottom: 16,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: schemeColor("#FFFFFF", 'bg'),
     borderWidth: 1,
-    borderColor: "rgba(20,20,18,.08)",
+    borderColor: schemeColor("rgba(20,20,18,.08)", 'border'),
     borderRadius: 999,
     padding: 6,
     gap: 2,
@@ -3763,7 +3768,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderRadius: 999,
   },
-  tabActivePill: { flex: 1.7, paddingHorizontal: 12, backgroundColor: orange },
-  tabText: { color: "#6F6B64", fontWeight: "700", fontSize: 12.5 },
-  tabActive: { color: "#fff", fontWeight: "800" },
-});
+  tabActivePill: { flex: 1.7, paddingHorizontal: 12, backgroundColor: colors.primary },
+  tabText: { color: schemeColor("#6F6B64", 'fg'), fontWeight: "700", fontSize: 12.5 },
+  tabActive: { color: schemeColor("#fff", 'fg'), fontWeight: "800" },
+}));

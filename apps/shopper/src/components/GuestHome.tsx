@@ -6,6 +6,7 @@ import { supabase } from '../supabase'
 import { Sheet } from './Sheet'
 import { FadeUp, INK, MUTED, NIGHT, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SLATE, STONE } from './Poster'
 import { shopMoney } from '../money'
+import { schemeColor, themed, colors } from '@loyalty-loop/design-tokens'
 
 // The app before an account: real shops straight away, shown as the cards
 // people will carry. An account is only asked for when there is a card to save.
@@ -125,7 +126,7 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={loading && shops.length > 0} onRefresh={load} tintColor={NIGHT} />}
+        refreshControl={<RefreshControl refreshing={loading && shops.length > 0} onRefresh={load} tintColor={colors.primaryText} />}
       >
         <View style={s.topBar}>
           <Text style={s.brand}>The Loyalty Loop</Text>
@@ -152,7 +153,7 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
           </ScrollView>
         ) : <View style={{ height: 22 }} />}
 
-        {loading && !shops.length ? <ActivityIndicator color={NIGHT} style={{ marginTop: 48 }} /> : null}
+        {loading && !shops.length ? <ActivityIndicator color={colors.primaryText} style={{ marginTop: 48 }} /> : null}
         {!loading && !shops.length ? <Text style={s.empty}>No shops yet. Pull down to check again.</Text> : null}
 
         {shown.map((shop, i) => (
@@ -191,49 +192,49 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
   )
 }
 
-const c = StyleSheet.create({
+const c = themed(() => StyleSheet.create({
   card: { height: 188, borderRadius: 26, padding: 18, overflow: 'hidden', shadowColor: INK, shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 5 },
   cardBig: { height: 230 },
   ring: { position: 'absolute', right: -60, top: -70, width: 210, height: 210, borderRadius: 105, borderWidth: 26, opacity: 0.08 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logo: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF' },
+  logo: { width: 40, height: 40, borderRadius: 20, backgroundColor: schemeColor('#FFFFFF', 'bg') },
   logoBlank: { alignItems: 'center', justifyContent: 'center' },
   logoText: { fontSize: 14, fontFamily: SANS_HEAVY },
   category: { flex: 1, fontSize: 11, letterSpacing: 1.6, fontFamily: SANS_MEDIUM, opacity: 0.8 },
   name: { fontSize: 26, lineHeight: 30, fontFamily: SANS_HEAVY, letterSpacing: -0.6 },
   nameBig: { fontSize: 32, lineHeight: 36 },
-  rewardPill: { alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: 'rgba(255,255,255,0.94)', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, marginTop: 12 },
-  rewardText: { color: INK, fontSize: 14, lineHeight: 19, fontFamily: SANS_MEDIUM },
-})
+  rewardPill: { alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: schemeColor('rgba(255,255,255,0.94)', 'bg'), borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, marginTop: 12 },
+  rewardText: { color: colors.ink, fontSize: 14, lineHeight: 19, fontFamily: SANS_MEDIUM },
+}))
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PAPER },
+const s = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   pressed: { opacity: 0.75 },
   scroll: { paddingHorizontal: 20, paddingBottom: 130 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 },
-  brand: { color: INK, fontSize: 15, fontFamily: SANS_HEAVY, letterSpacing: -0.2 },
-  signIn: { backgroundColor: STONE, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 },
-  signInText: { color: INK, fontSize: 14, fontFamily: SANS_HEAVY },
-  title: { color: INK, fontSize: 40, lineHeight: 44, fontFamily: SANS_HEAVY, letterSpacing: -1.2, marginTop: 28 },
-  copy: { color: MUTED, fontSize: 16, lineHeight: 22, fontFamily: SANS_MEDIUM, marginTop: 10 },
+  brand: { color: colors.ink, fontSize: 15, fontFamily: SANS_HEAVY, letterSpacing: -0.2 },
+  signIn: { backgroundColor: schemeColor('#E7E2D8', 'bg'), borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 },
+  signInText: { color: colors.ink, fontSize: 14, fontFamily: SANS_HEAVY },
+  title: { color: colors.ink, fontSize: 40, lineHeight: 44, fontFamily: SANS_HEAVY, letterSpacing: -1.2, marginTop: 28 },
+  copy: { color: colors.muted, fontSize: 16, lineHeight: 22, fontFamily: SANS_MEDIUM, marginTop: 10 },
   filterStrip: { marginHorizontal: -20, marginTop: 22, marginBottom: 18 },
   filters: { paddingHorizontal: 20, gap: 8 },
-  filter: { paddingVertical: 9, paddingHorizontal: 16, borderRadius: 999, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: STONE },
-  filterOn: { backgroundColor: NIGHT, borderColor: NIGHT },
-  filterText: { color: INK, fontSize: 14, fontFamily: SANS_MEDIUM },
+  filter: { paddingVertical: 9, paddingHorizontal: 16, borderRadius: 999, backgroundColor: schemeColor('#FFFFFF', 'bg'), borderWidth: 1, borderColor: schemeColor('#E7E2D8', 'border') },
+  filterOn: { backgroundColor: colors.olive, borderColor: colors.olive },
+  filterText: { color: colors.ink, fontSize: 14, fontFamily: SANS_MEDIUM },
   filterTextOn: { color: PAPER },
-  empty: { color: MUTED, fontSize: 15, marginTop: 30, textAlign: 'center' },
+  empty: { color: colors.muted, fontSize: 15, marginTop: 30, textAlign: 'center' },
   cardGap: { marginBottom: 14 },
   saveWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  saveBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 10, backgroundColor: INK, borderRadius: 24, padding: 10, paddingLeft: 20, shadowColor: INK, shadowOpacity: 0.3, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 10 },
-  saveTitle: { color: '#FFFFFF', fontSize: 15, fontFamily: SANS_HEAVY },
-  saveCopy: { color: 'rgba(255,255,255,0.65)', fontSize: 12, fontFamily: SANS_MEDIUM, marginTop: 2 },
-  saveButton: { backgroundColor: '#FFFFFF', borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
-  saveButtonText: { color: INK, fontSize: 15, fontFamily: SANS_HEAVY },
-  sheet: { backgroundColor: PAPER, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 16 },
-  address: { color: MUTED, fontSize: 14, fontFamily: SANS_MEDIUM, marginTop: 14, textAlign: 'center' },
-  primary: { backgroundColor: NIGHT, borderRadius: 999, paddingVertical: 17, paddingHorizontal: 20, alignItems: 'center', marginTop: 18, shadowColor: INK, shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  saveBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 10, backgroundColor: schemeColor('#1A2138', 'bg'), borderRadius: 24, padding: 10, paddingLeft: 20, shadowColor: INK, shadowOpacity: 0.3, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 10 },
+  saveTitle: { color: schemeColor('#FFFFFF', 'fg'), fontSize: 15, fontFamily: SANS_HEAVY },
+  saveCopy: { color: schemeColor('rgba(255,255,255,0.65)', 'fg'), fontSize: 12, fontFamily: SANS_MEDIUM, marginTop: 2 },
+  saveButton: { backgroundColor: schemeColor('#FFFFFF', 'bg'), borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
+  saveButtonText: { color: colors.ink, fontSize: 15, fontFamily: SANS_HEAVY },
+  sheet: { backgroundColor: colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(0,0,0,0.15)', 'bg'), alignSelf: 'center', marginBottom: 16 },
+  address: { color: colors.muted, fontSize: 14, fontFamily: SANS_MEDIUM, marginTop: 14, textAlign: 'center' },
+  primary: { backgroundColor: colors.olive, borderRadius: 999, paddingVertical: 17, paddingHorizontal: 20, alignItems: 'center', marginTop: 18, shadowColor: INK, shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   primaryText: { color: PAPER, fontSize: 17, fontFamily: SANS_HEAVY },
-  sheetSmall: { color: MUTED, fontSize: 13, textAlign: 'center', marginTop: 12 },
-})
+  sheetSmall: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 12 },
+}))

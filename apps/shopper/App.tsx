@@ -57,7 +57,7 @@ import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } 
 import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter'
 import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif'
 import { AppIntro } from './src/components/Poster'
-import { colors, fonts } from './src/theme'
+import { colors, fonts, ThemeProvider, useTheme, statusBarStyle } from './src/theme'
 import { encodeRewardQr } from './src/reward-qr'
 import { hasSupabaseConfig, readStoredSession, supabase } from './src/supabase'
 import { clearLaunchCache, launchCacheTicket, readLaunchCache, writeLaunchCache } from './src/launch-cache'
@@ -88,10 +88,11 @@ import { trendingShops } from './src/trending'
 import { cardLabel, useCardLinking, type CardLinking, type LinkedCard, type LinkOutcome } from './src/card-linking'
 import { ExternalCards } from './src/components/ExternalCards'
 import logo from './assets/brand/loyalty-loop-mark.png'
+import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 const FONT_DISPLAY = fonts.nativeDisplay
 
-const { background, foreground, card, primary, primaryHover, accent, funGreen, ink } = colors
+
 
 // ---------------------------------------------------------------------
 // Icons — small, consistent line icons (stroke-based, 2px, round caps)
@@ -101,7 +102,7 @@ const { background, foreground, card, primary, primaryHover, accent, funGreen, i
 
 type IconProps = { color?: string; size?: number; filled?: boolean }
 
-function HomeIcon({ color = foreground, size = 22 }: IconProps) {
+function HomeIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M3 11.5 12 4l9 7.5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -110,7 +111,7 @@ function HomeIcon({ color = foreground, size = 22 }: IconProps) {
   )
 }
 
-function MapPinIcon({ color = foreground, size = 22 }: IconProps) {
+function MapPinIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
@@ -125,7 +126,7 @@ function MapPinIcon({ color = foreground, size = 22 }: IconProps) {
   )
 }
 
-function MegaphoneIcon({ color = foreground, size = 22 }: IconProps) {
+function MegaphoneIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
@@ -140,7 +141,7 @@ function MegaphoneIcon({ color = foreground, size = 22 }: IconProps) {
   )
 }
 
-function GiftIcon({ color = foreground, size = 22 }: IconProps) {
+function GiftIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M4 9.5h16V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" stroke={color} strokeWidth={2} strokeLinejoin="round" />
@@ -156,7 +157,7 @@ function GiftIcon({ color = foreground, size = 22 }: IconProps) {
   )
 }
 
-function HeartIcon({ color = foreground, size = 22, filled = false }: IconProps) {
+function HeartIcon({ color = colors.foreground, size = 22, filled = false }: IconProps) {
   const d = 'M12 21s-7.8-4.7-10.2-9.4C.3 8.2 2.4 4.5 6.2 4.5c2.2 0 4 1.3 5.8 3.6 1.8-2.3 3.6-3.6 5.8-3.6 3.8 0 5.9 3.7 4.4 7.1C19.8 16.3 12 21 12 21z'
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -165,7 +166,7 @@ function HeartIcon({ color = foreground, size = 22, filled = false }: IconProps)
   )
 }
 
-function SearchIcon({ color = foreground, size = 20 }: IconProps) {
+function SearchIcon({ color = colors.foreground, size = 20 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx={11} cy={11} r={6.5} stroke={color} strokeWidth={2.2} />
@@ -178,18 +179,18 @@ function SearchIcon({ color = foreground, size = 20 }: IconProps) {
 function SearchBar({ value, onChangeText, accessibilityLabel, autoFocus, floating, placeholder = 'Search shops' }: { value: string; onChangeText: (v: string) => void; accessibilityLabel: string; autoFocus?: boolean; floating?: boolean; placeholder?: string }) {
   return (
     <View style={[styles.searchBar, floating && styles.searchBarFloating]}>
-      <SearchIcon color={foreground} size={20} />
-      <TextInput accessibilityLabel={accessibilityLabel} placeholder={placeholder} placeholderTextColor={floating ? '#6B6A66' : '#000000'} value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} autoFocus={autoFocus} />
+      <SearchIcon color={colors.foreground} size={20} />
+      <TextInput accessibilityLabel={accessibilityLabel} placeholder={placeholder} placeholderTextColor={floating ? schemeColor('#6B6A66', 'fg') : schemeColor('#000000', 'fg')} value={value} onChangeText={onChangeText} style={styles.searchInput} returnKeyType="search" autoCorrect={false} autoFocus={autoFocus} />
       {value.length > 0 && (
         <Pressable accessibilityLabel="Clear search" onPress={() => onChangeText('')} hitSlop={10}>
-          <CloseIcon color="#8A857C" size={16} />
+          <CloseIcon color={schemeColor("#8A857C", 'fg')} size={16} />
         </Pressable>
       )}
     </View>
   )
 }
 
-function UserIcon({ color = foreground, size = 22 }: IconProps) {
+function UserIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx={12} cy={8} r={3.6} stroke={color} strokeWidth={2} />
@@ -198,7 +199,7 @@ function UserIcon({ color = foreground, size = 22 }: IconProps) {
   )
 }
 
-function ChevronLeftIcon({ color = foreground, size = 22 }: IconProps) {
+function ChevronLeftIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M15 5.5 8.5 12l6.5 6.5" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
@@ -206,7 +207,7 @@ function ChevronLeftIcon({ color = foreground, size = 22 }: IconProps) {
   )
 }
 
-function ArrowRightIcon({ color = primary, size = 16 }: IconProps) {
+function ArrowRightIcon({ color = colors.primary, size = 16 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M4 12h16M13 5.5 19.5 12 13 18.5" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
@@ -222,7 +223,7 @@ function ArrowLeftIcon({ color = '#fff', size = 22 }: IconProps) {
   )
 }
 
-function CloseIcon({ color = foreground, size = 20 }: IconProps) {
+function CloseIcon({ color = colors.foreground, size = 20 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M6 6l12 12M18 6 6 18" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
@@ -230,43 +231,43 @@ function CloseIcon({ color = foreground, size = 20 }: IconProps) {
   )
 }
 
-function ChevronRightIcon({ color = foreground, size = 22 }: IconProps) {
+function ChevronRightIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M9 6l6 6-6 6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function QrIcon({ color = foreground, size = 18 }: IconProps) {
+function QrIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM18 18h3v3h-3zM14 21h1M21 14v1" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function LockIcon({ color = foreground, size = 18 }: IconProps) {
+function LockIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M7 11V8a5 5 0 0110 0v3M5 11h14v10H5z" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function ChartIcon({ color = foreground, size = 18 }: IconProps) {
+function ChartIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M5 20v-7M11 20V5M17 20v-10M2 20h20" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function BanIcon({ color = foreground, size = 18 }: IconProps) {
+function BanIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} /><Path d="M5.7 5.7l12.6 12.6" stroke={color} strokeWidth={2} strokeLinecap="round" /></Svg>
 }
-function BellIcon({ color = foreground, size = 18 }: IconProps) {
+function BellIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M6 16v-5a6 6 0 0112 0v5l2 2H4l2-2zM10 21h4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function HelpIcon({ color = foreground, size = 18 }: IconProps) {
+function HelpIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} /><Path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.6-2.5 2-2.5 3.6M12 17h.01" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function MailIcon({ color = foreground, size = 18 }: IconProps) {
+function MailIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M3 5h18v14H3zM3 7l9 6 9-6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function DocIcon({ color = foreground, size = 18 }: IconProps) {
+function DocIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M6 2h8l5 5v15H6zM14 2v5h5M9 13h6M9 17h6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function LogOutIcon({ color = foreground, size = 18 }: IconProps) {
+function LogOutIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M10 17l5-5-5-5M15 12H3M13 3h6v18h-6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function TrashIcon({ color = foreground, size = 18 }: IconProps) {
+function TrashIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function CardIcon({ color = foreground, size = 18 }: IconProps) {
+function CardIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M3 6h18v12H3zM3 10h18M7 15h3" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
-function BoltIcon({ color = foreground, size = 14 }: IconProps) {
+function BoltIcon({ color = colors.foreground, size = 14 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12L13 2z" fill={color} /></Svg>
 }
 
@@ -292,7 +293,7 @@ function AppleIcon({ size = 20 }: { size?: number }) {
   )
 }
 
-function ReelsIcon({ color = foreground, size = 22, filled = false }: IconProps) {
+function ReelsIcon({ color = colors.foreground, size = 22, filled = false }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
@@ -302,7 +303,7 @@ function ReelsIcon({ color = foreground, size = 22, filled = false }: IconProps)
         strokeLinejoin="round"
         fill={filled ? color : 'none'}
       />
-      <Path d="M10 9.2v5.6l5-2.8-5-2.8z" fill={filled ? background : color} />
+      <Path d="M10 9.2v5.6l5-2.8-5-2.8z" fill={filled ? colors.background : color} />
     </Svg>
   )
 }
@@ -317,7 +318,7 @@ function ShareIcon({ color = '#fff', size = 22 }: IconProps) {
   )
 }
 
-function CheckBadgeIcon({ color = primary, size = 14 }: IconProps) {
+function CheckBadgeIcon({ color = colors.primary, size = 14 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx={12} cy={12} r={10} fill={color} />
@@ -586,10 +587,10 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
             <View style={styles.dividerLine} />
           </View>
           {mode === 'signUp' && (
-            <TextInput value={name} onChangeText={setName} placeholder="First name" placeholderTextColor="#000000" style={styles.input} autoCapitalize="words" />
+            <TextInput value={name} onChangeText={setName} placeholder="First name" placeholderTextColor={schemeColor("#000000", 'fg')} style={styles.input} autoCapitalize="words" />
           )}
-          <TextInput value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor="#000000" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
-          <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor="#000000" style={styles.input} secureTextEntry />
+          <TextInput value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor={schemeColor("#000000", 'fg')} style={styles.input} keyboardType="email-address" autoCapitalize="none" />
+          <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor={schemeColor("#000000", 'fg')} style={styles.input} secureTextEntry />
           <Button title={busy ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Let’s go'} onPress={submit} disabled={busy} />
           <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
             <Text style={styles.link}>{mode === 'signIn' ? 'New here? Make an account' : 'Been here before? Sign in'}</Text>
@@ -645,17 +646,17 @@ const WEB = 'https://www.the-loyalty-loop.com'
 const openUrl = (url: string) => void Linking.openURL(url)
 
 // Icon tile colours for settings rows: soft background + matching icon tint.
-const TILES = {
-  blue: { bg: '#DBE7FF', fg: '#2B3A67' },
-  purple: { bg: '#F3E3D3', fg: '#8A4A2B' },
-  rose: { bg: '#F8DCCB', fg: '#B5431C' },
-  amber: { bg: '#FBE7BF', fg: '#8A5A00' },
-  green: { bg: '#DCEBD9', fg: '#2F7A3F' },
-  teal: { bg: '#D7E6E0', fg: '#2E6656' },
-  slate: { bg: '#EFEBE3', fg: '#6F6B64' },
-  orange: { bg: '#FDE2D2', fg: primary },
-  red: { bg: '#f8dcd8', fg: '#b54439' },
-} as const
+const TILES = themed(() => ({
+  blue: { bg: schemeColor('#DBE7FF', 'bg'), fg: schemeColor('#2B3A67', 'fg') },
+  purple: { bg: schemeColor('#F3E3D3', 'bg'), fg: schemeColor('#8A4A2B', 'fg') },
+  rose: { bg: schemeColor('#F8DCCB', 'bg'), fg: schemeColor('#B5431C', 'fg') },
+  amber: { bg: schemeColor('#FBE7BF', 'bg'), fg: schemeColor('#8A5A00', 'fg') },
+  green: { bg: schemeColor('#DCEBD9', 'bg'), fg: schemeColor('#2F7A3F', 'fg') },
+  teal: { bg: schemeColor('#D7E6E0', 'bg'), fg: schemeColor('#2E6656', 'fg') },
+  slate: { bg: schemeColor('#EFEBE3', 'bg'), fg: schemeColor('#6F6B64', 'fg') },
+  orange: { bg: schemeColor('#FDE2D2', 'bg'), fg: colors.primaryText },
+  red: { bg: schemeColor('#f8dcd8', 'bg'), fg: schemeColor('#b54439', 'fg') },
+}) as const)
 type Tile = keyof typeof TILES
 
 function SettingsRow({ icon, tile = 'slate', title, detail, onPress, right, danger, last }: { icon: (color: string) => ReactNode; tile?: Tile; title: string; detail?: string; onPress?: () => void; right?: ReactNode; danger?: boolean; last?: boolean }) {
@@ -667,7 +668,7 @@ function SettingsRow({ icon, tile = 'slate', title, detail, onPress, right, dang
         <Text style={[styles.settingsRowTitle, danger && styles.settingsRowTitleDanger]}>{title}</Text>
         {detail ? <Text style={styles.settingsRowDetail} numberOfLines={2}>{detail}</Text> : null}
       </View>
-      {right ?? (onPress ? <ChevronRightIcon color="#A39E95" size={18} /> : null)}
+      {right ?? (onPress ? <ChevronRightIcon color={schemeColor("#A39E95", 'fg')} size={18} /> : null)}
     </Pressable>
   )
 }
@@ -680,6 +681,9 @@ function SettingsGroup({ title, children }: { title?: string; children: ReactNod
     </View>
   )
 }
+
+// 'Same as my phone' needs the next store build (userInterfaceStyle automatic); until then this installed app can't see the phone's setting, so only Light/Dark are offered.
+const APPEARANCE_LABELS = { light: 'Light', dark: 'Dark', system: 'Light' } as const
 
 type SettingsView = 'root' | 'card' | 'name' | 'blocked' | 'cards' | 'externalCards'
 const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Customer card', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards', externalCards: 'My other cards' }
@@ -697,6 +701,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   const email = session.user.email || ''
   const [name, setName] = useState(session.user.user_metadata?.first_name || '')
   const [savingName, setSavingName] = useState(false)
+  const theme = useTheme()
   const version = Constants.expoConfig?.version ?? '1.0.0'
   const updateLabel = Updates.updateId ? `update ${Updates.updateId.slice(0, 8)}` : 'store build'
 
@@ -767,7 +772,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <Text style={styles.sheetTitle}>{SETTINGS_TITLES.root}</Text>
           ) : (
             <Pressable onPress={() => setView('root')} hitSlop={10} style={styles.sheetBack}>
-              <ChevronLeftIcon size={18} color="#8A857C" />
+              <ChevronLeftIcon size={18} color={schemeColor("#8A857C", 'fg')} />
               <Text style={styles.sheetTitle}>{SETTINGS_TITLES[view]}</Text>
             </Pressable>
           )}
@@ -778,22 +783,22 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
         <KeyboardAwareScrollView pad={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.settingsSheetScroll} keyboardShouldPersistTaps="handled">
           {view === 'root' && (
             <>
-              <LinearGradient colors={[primary, '#1F2A4D']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
+              <LinearGradient colors={[colors.primary, schemeColor('#1F2A4D', 'bg')]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.settingsHero}>
                 <Pressable onPress={() => setView('name')} style={styles.settingsHeroRow}>
                   <View style={styles.settingsHeroAvatar}><Text style={styles.settingsHeroAvatarText}>{initialsOf(firstName)}</Text></View>
                   <View style={styles.settingsRowBody}>
                     <Text style={styles.settingsHeroName}>{firstName}</Text>
                     <Text style={styles.settingsHeroEmail} numberOfLines={1}>{email}</Text>
                   </View>
-                  <ChevronRightIcon color="rgba(255,255,255,0.85)" size={18} />
+                  <ChevronRightIcon color={schemeColor("rgba(255,255,255,0.85)", 'fg')} size={18} />
                 </Pressable>
                 <Pressable onPress={() => setView('card')} style={styles.settingsHeroButton}>
-                  <View style={styles.settingsHeroButtonIcon}><QrIcon color="#fff" size={20} /></View>
+                  <View style={styles.settingsHeroButtonIcon}><QrIcon color={schemeColor("#fff", 'fg')} size={20} /></View>
                   <View style={styles.settingsRowBody}>
                     <Text style={styles.settingsHeroButtonTitle}>Show my customer card</Text>
                     <Text style={styles.settingsHeroButtonCopy}>Show it when you pay to earn rewards</Text>
                   </View>
-                  <ChevronRightIcon color={primary} size={18} />
+                  <ChevronRightIcon color={colors.primaryText} size={18} />
                 </Pressable>
               </LinearGradient>
               <SettingsGroup title="Other loyalty cards">
@@ -816,6 +821,22 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                 </SettingsGroup>
               )}
 
+              <SettingsGroup title="Appearance">
+                <SettingsRow
+                  tile="purple"
+                  icon={(c) => <HelpIcon color={c} size={18} />}
+                  title="Light or dark"
+                  detail={APPEARANCE_LABELS[theme.preference]}
+                  onPress={() =>
+                    showAlert('Appearance', 'Choose how The Loyalty Loop looks. “Same as my phone” arrives with the next app update.', [
+                      ...(['light', 'dark'] as const).map((option) => ({ text: ((theme.preference === option || (option === 'light' && theme.preference === 'system')) ? '✓ ' : '') + APPEARANCE_LABELS[option], onPress: () => theme.setPreference(option) })),
+                      { text: 'Cancel', style: 'cancel' as const },
+                    ])
+                  }
+                  last
+                />
+              </SettingsGroup>
+
               {country.countries.length > 1 && <SettingsGroup title="Country">
                 <SettingsRow
                   tile="teal"
@@ -833,8 +854,8 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               </SettingsGroup>}
 
               <SettingsGroup title="Security & privacy">
-                <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: primary }} />} />
-                <SettingsRow tile="purple" icon={(c) => <ChartIcon color={c} size={18} />} title="Anonymous analytics" detail="Helps us improve the app. Never your email, code or messages" right={<Switch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: primary }} />} />
+                <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: colors.primary }} />} />
+                <SettingsRow tile="purple" icon={(c) => <ChartIcon color={c} size={18} />} title="Anonymous analytics" detail="Helps us improve the app. Never your email, code or messages" right={<Switch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: colors.primary }} />} />
                 <SettingsRow tile="rose" icon={(c) => <BanIcon color={c} size={18} />} title="Blocked people" detail={blocks.length ? `${blocks.length} blocked` : 'Nobody blocked'} onPress={() => setView('blocked')} last />
               </SettingsGroup>
 
@@ -887,7 +908,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
             <>
               <View style={styles.settingsCard}>
                 <Text style={styles.settingsFieldLabel}>First name</Text>
-                <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#000000" style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
+                <TextInput value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor={schemeColor("#000000", 'fg')} style={styles.settingsInput} autoCapitalize="words" autoFocus returnKeyType="done" onSubmitEditing={() => void saveName()} />
                 <Text style={styles.settingsFieldHelp}>Shops see this name when they record a purchase or you leave a review.</Text>
               </View>
               <View style={styles.settingsCard}>
@@ -1059,6 +1080,7 @@ function ShopDetail({
   /** Goes up when any shop's programme changes, so this page reloads its rewards. */
   programmeVersion?: number
 }) {
+  const { isDark } = useTheme()
   const [busy, setBusy] = useState(false)
   const [addingToWallet, setAddingToWallet] = useState(false)
   const [catalog, setCatalog] = useState<RewardCatalogItem[]>([])
@@ -1491,12 +1513,12 @@ function ShopDetail({
   // The whole page wears the shop's design; the QR tile stays black on white so it scans.
   const ss = useMemo(() => {
     const skinned = skinStyles(styles, skin, { keep: ['qrText', 'pressed', 'disabled', 'nativeMap', 'mapEmbed', 'shortCard', 'shortImage', 'shortOverlay', 'shortShopName', 'shortIndex', 'favouriteButton'], clear: ['screen'] })
-    return { ...skinned, qrWrap: [styles.qrWrap, { backgroundColor: '#FFFFFF', alignSelf: 'center' as const, padding: 16, borderRadius: 18 }] }
+    return { ...skinned, qrWrap: [styles.qrWrap, { backgroundColor: schemeColor('#FFFFFF', 'bg'), alignSelf: 'center' as const, padding: 16, borderRadius: 18 }] }
   }, [skin])
   return (
     <ShopSkinProvider value={skin}>
     <SafeAreaView style={[styles.safe, { backgroundColor: skin.bg }]}>
-      <StatusBar barStyle={skin.dark ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={statusBarStyle(isDark, skin.dark)} />
       <ShopBackdrop skin={skin} />
       <KeyboardAwareScrollView ref={scrollRef} contentContainerStyle={ss.screen}>
         <View style={{ marginHorizontal: -20, marginTop: -20 }} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
@@ -1519,7 +1541,7 @@ function ShopDetail({
             progressLabel={passLabel}
             code={membership ? <View style={{ alignItems: 'center' }}><QRCode value={`loyaltyloop:customer:${userId}`} size={190} /><Tip id="member-code" text="Show this code when you pay to collect" /></View> : null}
             action={membership ? null : (
-              <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: '#FFFFFF', borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, (busy || pressed) && { opacity: 0.8 }]}>
+              <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: schemeColor('#FFFFFF', 'bg'), borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, (busy || pressed) && { opacity: 0.8 }]}>
                 <Text style={{ color: skin.dark ? skin.bg : skin.ink, fontWeight: '800', fontSize: 17 }}>{busy ? 'Joining…' : 'Join card'}</Text>
               </Pressable>
             )}
@@ -1555,7 +1577,7 @@ function ShopDetail({
           cardLinking.cards.length === 0 ? (
             <View style={ss.autoEarnCard}>
               <View style={ss.autoEarnRow}>
-                <BoltIcon color="#c77c12" size={16} />
+                <BoltIcon color={schemeColor("#c77c12", 'fg')} size={16} />
                 <Text style={ss.autoEarnTitle}>Earn automatically here</Text>
               </View>
               <Text style={ss.autoEarnCopy}>Link the card you pay with. When you use it here, your progress updates by itself.</Text>
@@ -1568,7 +1590,7 @@ function ShopDetail({
             </View>
           ) : (
             <View style={ss.autoEarnChip}>
-              <BoltIcon color="#c77c12" size={14} />
+              <BoltIcon color={schemeColor("#c77c12", 'fg')} size={14} />
               <Text style={ss.autoEarnChipText}>Pay with a linked card to earn automatically</Text>
             </View>
           )
@@ -1653,7 +1675,7 @@ function ShopDetail({
                 value={reviewBody}
                 onChangeText={setReviewBody}
                 placeholder="What did you enjoy?"
-                placeholderTextColor="#000000"
+                placeholderTextColor={schemeColor("#000000", 'fg')}
                 multiline
                 maxLength={2000}
                 style={ss.reviewInput}
@@ -1664,7 +1686,7 @@ function ShopDetail({
           )}
 
           {reviewsLoading ? (
-            <ActivityIndicator color={primary} style={{ marginTop: 20 }} />
+            <ActivityIndicator color={colors.primaryText} style={{ marginTop: 20 }} />
           ) : reviews.length === 0 ? (
             <Text style={ss.reviewHint}>Be the first to review this shop.</Text>
           ) : (
@@ -1678,7 +1700,7 @@ function ShopDetail({
                   <Text style={ss.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</Text>
                   {!!review.body && <Text style={ss.reviewBody}>{review.body}</Text>}
                   {reviewReply(review) && (
-                    <View style={[ss.reviewReply, { borderLeftColor: business.brand_color || primary }]}>
+                    <View style={[ss.reviewReply, { borderLeftColor: business.brand_color || colors.primary }]}>
                       <Text style={ss.reviewReplyTitle}>Reply from {business.name}</Text>
                       <Text style={ss.reviewBody}>{reviewReply(review)?.body}</Text>
                     </View>
@@ -1719,7 +1741,7 @@ function ShopDetail({
 function TrendingCard({ business, onPress }: { business: Business; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.trendingCard, pressed && styles.pressed]}>
-      <View style={[styles.trendingCover, { backgroundColor: business.brand_color || primary }]}>
+      <View style={[styles.trendingCover, { backgroundColor: business.brand_color || colors.primary }]}>
         {business.cover_url && <Image source={{ uri: business.cover_url }} style={StyleSheet.absoluteFill} />}
       </View>
       <View style={styles.trendingContent}>
@@ -1752,16 +1774,16 @@ function FeatureFilter({ selected, onChange }: { selected: string[]; onChange: (
   )
 }
 
-const featureStyles = StyleSheet.create({
+const featureStyles = themed(() => StyleSheet.create({
   filterRow: { gap: 8, paddingVertical: 8, paddingRight: 8 },
-  chip: { borderRadius: 999, borderWidth: 1.5, borderColor: primary, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: card },
-  chipActive: { backgroundColor: primary },
-  chipText: { color: '#000000', fontWeight: '700', fontSize: 13 },
-  chipTextActive: { color: '#fff' },
+  chip: { borderRadius: 999, borderWidth: 1.5, borderColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.card },
+  chipActive: { backgroundColor: colors.primary },
+  chipText: { color: schemeColor('#000000', 'fg'), fontWeight: '700', fontSize: 13 },
+  chipTextActive: { color: schemeColor('#fff', 'fg') },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  badge: { borderRadius: 999, backgroundColor: '#EEF3E6', paddingHorizontal: 12, paddingVertical: 4 },
-  badgeText: { color: '#000000', fontSize: 12, fontWeight: '700' },
-})
+  badge: { borderRadius: 999, backgroundColor: schemeColor('#EEF3E6', 'bg'), paddingHorizontal: 12, paddingVertical: 4 },
+  badgeText: { color: schemeColor('#000000', 'fg'), fontSize: 12, fontWeight: '700' },
+}))
 
 function HomeTab({ userId, businesses, memberships, catalog, announcements, loading, onSelect, onAsk, firstName, onOpenProfile, onSeeNews }: {
   userId: string; firstName?: string; onOpenProfile: () => void; onSeeNews: () => void;
@@ -1796,12 +1818,12 @@ function HomeTab({ userId, businesses, memberships, catalog, announcements, load
     <FeatureFilter selected={features} onChange={setFeatures} />
     <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />
     <Pressable accessibilityRole="button" onPress={() => onAsk(query)} style={({ pressed }) => [styles.askShopCard, pressed && { opacity: 0.85 }]}>
-      <View style={styles.askShopIcon}><MegaphoneIcon color="#fff" size={18} /></View>
+      <View style={styles.askShopIcon}><MegaphoneIcon color={schemeColor("#fff", 'fg')} size={18} /></View>
       <View style={styles.settingsRowBody}>
         <Text style={styles.askShopTitle}>{filtered.length === 0 ? "Can't find your favourite shop?" : 'Ask a shop to join'}</Text>
         <Text style={styles.askShopCopy}>Tell them local shoppers want them on The Loyalty Loop</Text>
       </View>
-      <ChevronRightIcon color={primary} size={18} />
+      <ChevronRightIcon color={colors.primaryText} size={18} />
     </Pressable>
   </>
 }
@@ -1824,6 +1846,21 @@ const QUIET_MAP_STYLE = [
   { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
 ]
 
+// The full-page map in dark mode: warm near-black land, muted roads and labels.
+const DARK_MAP_STYLE = [
+  ...QUIET_MAP_STYLE,
+  { elementType: 'geometry', stylers: [{ color: '#1d1d21' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#a8a39b' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#121214' }] },
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#36363c' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2c32' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1d1d21' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a3a42' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f1a2e' }] },
+]
+
 const PIN_ENDPOINT = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/map-pin`
 
 // Android + React Native's New Architecture never report a custom marker view's
@@ -1840,7 +1877,7 @@ function pinImageUrl(business: Business, color: string) {
 // Brand-coloured map pin: white ring, shop logo (or initials) inside, brand tail,
 // soft halo and a ground shadow. Replaces the stock red Google marker.
 function ShopMarker({ business, description, onPress, onCalloutPress }: { business: Business; description?: string; onPress?: () => void; onCalloutPress?: () => void }) {
-  const color = business.brand_color || primary
+  const color = business.brand_color || colors.primary
   // Android snapshots custom markers to a bitmap; keep tracking view changes until the
   // logo has painted (or a fallback timeout), then freeze it for map performance.
   const [tracksViewChanges, setTracksViewChanges] = useState(true)
@@ -1896,7 +1933,7 @@ function ShopMarker({ business, description, onPress, onCalloutPress }: { busine
   )
 }
 
-function LocateIcon({ color = foreground, size = 22 }: IconProps) {
+function LocateIcon({ color = colors.foreground, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx={12} cy={12} r={6.5} stroke={color} strokeWidth={2} />
@@ -1910,7 +1947,7 @@ function MapShopLogo({ business, size }: { business: Business; size: number }) {
   const shape = { width: size, height: size, borderRadius: size * 0.3 }
   if (business.logo_url) return <Image source={{ uri: business.logo_url }} style={[styles.nearbyLogo, shape]} />
   return (
-    <View style={[styles.nearbyLogo, shape, { backgroundColor: business.brand_color || ink }]}>
+    <View style={[styles.nearbyLogo, shape, { backgroundColor: business.brand_color || colors.ink }]}>
       <Text style={styles.logoLetter}>{initialsOf(business.name)}</Text>
     </View>
   )
@@ -1926,6 +1963,7 @@ const MAP_CARD_STEP = MAP_CARD_WIDTH + MAP_CARD_GAP
 // Whole-page map: the search bar floats on top, shop cards swipe along the bottom.
 // Swiping a card moves the map to that shop; tapping a pin brings its card forward.
 function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSelect: (business: Business) => void; onAsk: (query: string, location?: {lat:number;lng:number}) => void }) {
+  const { isDark } = useTheme()
   const mapRef = useRef<MapView>(null)
   const listRef = useRef<FlatList<{ shop: Business; miles: number | null }>>(null)
   const [query, setQuery] = useState('')
@@ -1988,7 +2026,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
         <MapView
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
-          customMapStyle={QUIET_MAP_STYLE}
+          customMapStyle={isDark ? DARK_MAP_STYLE : QUIET_MAP_STYLE}
           showsPointsOfInterest={false}
           style={StyleSheet.absoluteFill}
           initialRegion={initialRegion}
@@ -2007,7 +2045,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
         </MapView>
       ) : (
         <View style={styles.mapEmpty}>
-          <MapPinIcon color={primary} size={30} />
+          <MapPinIcon color={colors.primaryText} size={30} />
           <Text style={styles.mapPlaceholderText}>No shops have a pinned location yet.</Text>
         </View>
       )}
@@ -2030,7 +2068,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
                 <Pressable accessibilityRole="button" onPress={() => { Keyboard.dismiss(); onAsk(query, center) }} style={({ pressed }) => [styles.mapResultRow, pressed && styles.settingsRowPressed]}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.mapResultName}>No shops match “{query.trim()}”</Text>
-                    <Text style={[styles.mapResultMeta, { color: primary, fontWeight: '700' }]}>Can't find your favourite shop? Ask them to join</Text>
+                    <Text style={[styles.mapResultMeta, { color: colors.primaryText, fontWeight: '700' }]}>Can't find your favourite shop? Ask them to join</Text>
                   </View>
                 </Pressable>
               )}
@@ -2043,7 +2081,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
         <View style={styles.mapBottom} pointerEvents="box-none">
           {canLocate && (
             <Pressable accessibilityRole="button" accessibilityLabel="Show my location" onPress={goToMe} style={({ pressed }) => [styles.mapLocate, pressed && styles.pressed]}>
-              {locationStatus === 'locating' && !coords ? <ActivityIndicator color={primary} /> : <LocateIcon color={primary} />}
+              {locationStatus === 'locating' && !coords ? <ActivityIndicator color={colors.primaryText} /> : <LocateIcon color={colors.primaryText} />}
             </Pressable>
           )}
           <FlatList
@@ -2070,7 +2108,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
                     <Text style={styles.mapCardMeta} numberOfLines={1}>
                       {miles != null && <Text style={styles.mapCardMiles}>{formatMiles(miles)}</Text>}
                       {miles != null && (open || shop.address) ? ' · ' : ''}
-                      {open ? <Text style={{ color: open.open ? '#1E7A46' : '#8A857C' }}>{open.label}</Text> : shop.address ? formatAddress(shop.address) : ''}
+                      {open ? <Text style={{ color: open.open ? schemeColor('#1E7A46', 'fg') : schemeColor('#8A857C', 'fg') }}>{open.label}</Text> : shop.address ? formatAddress(shop.address) : ''}
                     </Text>
                   </View>
                   <ArrowRightIcon />
@@ -2103,7 +2141,7 @@ function PlatformBanner({ notices, dismissedIds, onDismiss }: { notices: Platfor
             </Text>
           </View>
           <Pressable onPress={() => onDismiss(notice.id)} hitSlop={8}>
-            <CloseIcon size={16} color="#fff" />
+            <CloseIcon size={16} color={schemeColor("#fff", 'fg')} />
           </Pressable>
         </View>
       ))}
@@ -2173,7 +2211,7 @@ function DiscoverCard({
       />
       <View style={styles.discoverActionRail}>
         <Pressable onPress={onToggleFavourite} style={({ pressed }) => [styles.discoverActionButton, pressed && styles.pressed]} hitSlop={10}>
-          <HeartIcon color={favourite ? primary : '#fff'} filled={favourite} size={27} />
+          <HeartIcon color={favourite ? colors.primary : schemeColor('#fff', 'fg')} filled={favourite} size={27} />
         </Pressable>
         <Pressable
           onPress={() => {
@@ -2190,7 +2228,7 @@ function DiscoverCard({
           {photo.business.logo_url ? (
             <Image source={{ uri: photo.business.logo_url }} style={styles.discoverLogo} />
           ) : (
-            <View style={[styles.discoverLogo, { backgroundColor: photo.business.brand_color || ink }]} />
+            <View style={[styles.discoverLogo, { backgroundColor: photo.business.brand_color || colors.ink }]} />
           )}
           <Text style={styles.discoverShopName} numberOfLines={1}>
             {photo.business.name}
@@ -2261,11 +2299,11 @@ function DiscoverTab({
       </Pressable>
       {loading ? (
         <View style={[styles.discoverEmpty, { height: feedHeight }]}>
-          <ActivityIndicator color={primary} />
+          <ActivityIndicator color={colors.primaryText} />
         </View>
       ) : photos.length === 0 ? (
         <View style={[styles.discoverEmpty, { height: feedHeight }]}>
-          <ReelsIcon color={primary} size={30} />
+          <ReelsIcon color={colors.primaryText} size={30} />
           <Text style={styles.discoverEmptyText}>No shop photos yet. Check back soon.</Text>
         </View>
       ) : (
@@ -2307,12 +2345,12 @@ function RewardsTab({ rewards }: { rewards: Reward[] }) {
           <Ticket
             key={reward.id}
             index={index}
-            color={reward.business?.brand_color || primary}
+            color={reward.business?.brand_color || colors.primary}
             shopName={reward.business?.name || 'The Loyalty Loop shop'}
             title={reward.title}
             code={reward.short_code}
             expiresAt={reward.expires_at}
-            pageColor={background}
+            pageColor={colors.background}
           >
             <QRCode value={encodeRewardQr(reward.qr_token)} size={150} />
           </Ticket>
@@ -2351,7 +2389,7 @@ function FavouritesTab({
               {b.logo_url ? (
                 <Image source={{ uri: b.logo_url }} style={styles.favouriteLogo} />
               ) : (
-                <View style={[styles.favouriteLogo, { backgroundColor: b.brand_color || ink }]}>
+                <View style={[styles.favouriteLogo, { backgroundColor: b.brand_color || colors.ink }]}>
                   <Text style={styles.logoLetter}>{b.name[0]}</Text>
                 </View>
               )}
@@ -2364,7 +2402,7 @@ function FavouritesTab({
                 <Text style={styles.favouriteStatus}>Member</Text>
               ) : (
                 <Pressable onPress={() => onQuickJoin(b)} style={styles.favouriteTapRow}>
-                  <View style={[styles.favouriteDot, { backgroundColor: b.brand_color || primary }]} />
+                  <View style={[styles.favouriteDot, { backgroundColor: b.brand_color || colors.primary }]} />
                   <Text style={styles.favouriteStatus}>Tap to join</Text>
                 </Pressable>
               )}
@@ -2421,6 +2459,7 @@ function BottomTabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => voi
 // ---------------------------------------------------------------------
 
 function AppHome({ session }: { session: Session }) {
+  const { isDark } = useTheme()
   const [askShop, setAskShop] = useState<{query:string;location?:{lat:number;lng:number}}|null>(null)
   const [tab, setTab] = useState<Tab>('home')
   // Last home screen saved on this phone, so the app never opens blank.
@@ -2871,7 +2910,7 @@ function AppHome({ session }: { session: Session }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
-      <StatusBar barStyle={discovering ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={statusBarStyle(isDark, discovering)} />
       {!discovering && tab !== 'home' && tab !== 'map' && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
       {!discovering && <OutageBanner status={serviceStatus} savedAt={savedAt} />}
       {!discovering && (
@@ -2891,7 +2930,7 @@ function AppHome({ session }: { session: Session }) {
       ) : tab === 'map' ? (
         <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />
       ) : (
-        <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={primary} />}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primaryText} />}>
           {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
           {tab === 'news' && <NewsTab announcements={announcements} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} />}
@@ -2935,9 +2974,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AppRoot />
-        <AppAlertHost />
-        <AppIntro />
+        <ThemeProvider>
+          <AppRoot />
+          <AppAlertHost />
+          <AppIntro />
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
@@ -2950,6 +2991,7 @@ async function clearAllLaunchData(userId: string | null) {
 }
 
 function AppRoot() {
+  const { isDark } = useTheme() // re-renders the whole app when the scheme changes
   const [session, setSession] = useState<Session | null>(null)
   const [checking, setChecking] = useState(true)
   // Verdict from the server this launch; until it arrives the last verified
@@ -3089,310 +3131,310 @@ function AppRoot() {
 // Styles
 // ---------------------------------------------------------------------
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: background },
-  platformBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: primary, paddingHorizontal: 16, paddingVertical: 12 },
-  platformBannerText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  platformBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 12 },
+  platformBannerText: { color: schemeColor('#fff', 'fg'), fontSize: 13, fontWeight: '700' },
   platformBannerBody: { fontWeight: '400', opacity: 0.9 },
   auth: { flexGrow: 1, padding: 28, justifyContent: 'center' },
   screen: { padding: 20, paddingBottom: 130 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  pingSheet: { backgroundColor: '#F4F1EA', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 12, paddingBottom: 16 },
-  pingHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 20 },
-  pingIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#2B3A67', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  pingTitle: { color: '#1A2138', fontSize: 28, lineHeight: 32, fontFamily: 'Inter_800ExtraBold', letterSpacing: -0.6 },
-  pingCopy: { color: '#6F6B64', fontSize: 15, lineHeight: 21, marginTop: 10, marginBottom: 22, fontFamily: 'Inter_500Medium' },
+  pingSheet: { backgroundColor: schemeColor('#F4F1EA', 'bg'), borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 12, paddingBottom: 16 },
+  pingHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(0,0,0,0.15)', 'bg'), alignSelf: 'center', marginBottom: 20 },
+  pingIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: schemeColor('#2B3A67', 'bg'), alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  pingTitle: { color: schemeColor('#1A2138', 'fg'), fontSize: 28, lineHeight: 32, fontFamily: 'Inter_800ExtraBold', letterSpacing: -0.6 },
+  pingCopy: { color: schemeColor('#6F6B64', 'fg'), fontSize: 15, lineHeight: 21, marginTop: 10, marginBottom: 22, fontFamily: 'Inter_500Medium' },
   pingRow: { flexDirection: 'row', gap: 12 },
   pingButton: { flex: 1, borderRadius: 999, paddingVertical: 16, alignItems: 'center' },
-  pingNotNow: { backgroundColor: '#E7E2D8' },
-  pingNotNowText: { color: '#1A2138', fontSize: 16, fontFamily: 'Inter_700Bold' },
-  pingOn: { backgroundColor: '#2B3A67' },
-  pingOnText: { color: '#F4F1EA', fontSize: 16, fontFamily: 'Inter_700Bold' },
+  pingNotNow: { backgroundColor: schemeColor('#E7E2D8', 'bg') },
+  pingNotNowText: { color: schemeColor('#1A2138', 'fg'), fontSize: 16, fontFamily: 'Inter_700Bold' },
+  pingOn: { backgroundColor: schemeColor('#2B3A67', 'bg') },
+  pingOnText: { color: schemeColor('#F4F1EA', 'fg'), fontSize: 16, fontFamily: 'Inter_700Bold' },
   onboarding: { flex: 1, padding: 28, justifyContent: 'center' },
   onboardingLogo: { width: 66, height: 66, resizeMode: 'contain', marginBottom: 44 },
-  onboardingTitle: { color: foreground, fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
+  onboardingTitle: { color: colors.foreground, fontSize: 38, fontFamily: FONT_DISPLAY, lineHeight: 44, letterSpacing: -1.1 },
   onboardingDots: { flexDirection: 'row', gap: 8, marginTop: 36, marginBottom: 36 },
-  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#DCD6CB' },
-  onboardingDotActive: { width: 26, backgroundColor: primary },
+  onboardingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: schemeColor('#DCD6CB', 'bg') },
+  onboardingDotActive: { width: 26, backgroundColor: colors.primary },
   onboardingConsent: { marginTop: 28 },
   onboardingSkip: { alignItems: 'center', padding: 16 },
-  onboardingSkipText: { color: primary, fontSize: 15, fontWeight: '700' },
+  onboardingSkipText: { color: colors.primaryText, fontSize: 15, fontWeight: '700' },
 
-  mark: { width: 64, height: 64, borderRadius: 18, backgroundColor: card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 28, overflow: 'hidden' },
+  mark: { width: 64, height: 64, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.08)', 'border'), alignItems: 'center', justifyContent: 'center', marginBottom: 28, overflow: 'hidden' },
   markImage: { width: 46, height: 46, resizeMode: 'contain' },
 
-  eyebrow: { color: primary, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 12 },
-  hero: { color: foreground, fontSize: 36, fontFamily: FONT_DISPLAY, lineHeight: 42, letterSpacing: -1 },
-  title: { color: foreground, fontSize: 26, fontFamily: FONT_DISPLAY, lineHeight: 31, letterSpacing: -0.5 },
-  copy: { color: '#000000', fontSize: 16, lineHeight: 24, marginTop: 16 },
-  description: { color: '#000000', fontSize: 15, lineHeight: 22, marginTop: 8 },
-  landingTitle: { color: foreground, fontSize: 16, fontWeight: '800', marginTop: 3 },
-  landingCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginBottom: 8 },
+  eyebrow: { color: colors.primaryText, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 12 },
+  hero: { color: colors.foreground, fontSize: 36, fontFamily: FONT_DISPLAY, lineHeight: 42, letterSpacing: -1 },
+  title: { color: colors.foreground, fontSize: 26, fontFamily: FONT_DISPLAY, lineHeight: 31, letterSpacing: -0.5 },
+  copy: { color: schemeColor('#000000', 'fg'), fontSize: 16, lineHeight: 24, marginTop: 16 },
+  description: { color: schemeColor('#000000', 'fg'), fontSize: 15, lineHeight: 22, marginTop: 8 },
+  landingTitle: { color: colors.foreground, fontSize: 16, fontWeight: '800', marginTop: 3 },
+  landingCopy: { color: schemeColor('#000000', 'fg'), fontSize: 13, lineHeight: 19, marginBottom: 8 },
 
-  card: { backgroundColor: card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#1A2138', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
-  input: { backgroundColor: '#EFEBE3', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: foreground, fontSize: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.14)', paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  card: { backgroundColor: colors.card, borderRadius: 20, padding: 20, marginTop: 28, gap: 12, shadowColor: '#1A2138', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
+  input: { backgroundColor: schemeColor('#EFEBE3', 'bg'), borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16, color: colors.foreground, fontSize: 16 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: schemeColor('#fff', 'bg'), borderRadius: 16, borderWidth: 1.5, borderColor: schemeColor('rgba(0,0,0,0.14)', 'border'), paddingHorizontal: 16, marginBottom: 12, shadowColor: '#7a4a22', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   searchBarFloating: { marginBottom: 0, borderRadius: 999, borderWidth: 0, paddingHorizontal: 20, shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
-  searchInput: { flex: 1, paddingVertical: 16, color: foreground, fontSize: 16 },
-  askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: '#fde6d9', borderWidth: 1, borderColor: '#f6c9ae' },
-  askShopIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
-  askShopTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
-  askShopCopy: { color: '#000000', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+  searchInput: { flex: 1, paddingVertical: 16, color: colors.foreground, fontSize: 16 },
+  askShopCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: schemeColor('#fde6d9', 'bg'), borderWidth: 1, borderColor: schemeColor('#f6c9ae', 'border') },
+  askShopIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  askShopTitle: { fontSize: 15.5, fontWeight: '700', color: colors.foreground },
+  askShopCopy: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, marginTop: 2, lineHeight: 17 },
   appleButton: { width: '100%', height: 48, marginBottom: 12 },
-  appleButtonAndroid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#000', borderRadius: 12 },
-  appleButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', paddingVertical: 16 },
-  googleButtonText: { color: foreground, fontWeight: '800', fontSize: 15 },
+  appleButtonAndroid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: schemeColor('#000', 'bg'), borderRadius: 12 },
+  appleButtonText: { color: schemeColor('#fff', 'fg'), fontWeight: '800', fontSize: 15 },
+  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: schemeColor('#fff', 'bg'), borderRadius: 12, borderWidth: 1.5, borderColor: schemeColor('rgba(0,0,0,0.12)', 'border'), paddingVertical: 16 },
+  googleButtonText: { color: colors.foreground, fontWeight: '800', fontSize: 15 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.1)' },
-  dividerText: { color: '#000000', fontSize: 12, fontWeight: '700' },
+  dividerLine: { flex: 1, height: 1, backgroundColor: schemeColor('rgba(0,0,0,0.1)', 'bg') },
+  dividerText: { color: schemeColor('#000000', 'fg'), fontSize: 12, fontWeight: '700' },
 
-  button: { backgroundColor: primary, borderRadius: 999, alignItems: 'center', padding: 16, marginTop: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', shadowColor: primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
-  buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: foreground, marginTop: 20 },
-  buttonText: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  buttonTextSecondary: { color: foreground },
+  button: { backgroundColor: colors.primary, borderRadius: 999, alignItems: 'center', padding: 16, marginTop: 2, borderWidth: 1, borderColor: schemeColor('rgba(255,255,255,0.72)', 'border'), shadowColor: colors.primary, shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.foreground, marginTop: 20 },
+  buttonText: { color: schemeColor('#fff', 'fg'), fontWeight: '800', fontSize: 16 },
+  buttonTextSecondary: { color: colors.foreground },
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.6 },
-  link: { color: primary, textAlign: 'center', fontWeight: '700', marginTop: 8 },
-  small: { color: '#000000', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 24 },
+  link: { color: colors.primaryText, textAlign: 'center', fontWeight: '700', marginTop: 8 },
+  small: { color: schemeColor('#000000', 'fg'), fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 24 },
   authHelpLink: { alignSelf: 'center', marginTop: 16, paddingVertical: 8, paddingHorizontal: 12 },
-  authHelpLinkText: { color: '#000000', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  authHelpLinkText: { color: schemeColor('#000000', 'fg'), fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 
   // Header
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerLogo: { width: 32, height: 32, borderRadius: 8 },
-  headerTitle: { fontSize: 17, fontWeight: '800', color: foreground },
-  headerProfileButton: { width: 40, height: 40, aspectRatio: 1, flexShrink: 0, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: colors.foreground },
+  headerProfileButton: { width: 40, height: 40, aspectRatio: 1, flexShrink: 0, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.08)', 'border') },
 
-  pageTitle: { fontSize: 26, fontFamily: FONT_DISPLAY, color: foreground, letterSpacing: -0.5, marginBottom: 16, marginTop: 4 },
+  pageTitle: { fontSize: 26, fontFamily: FONT_DISPLAY, color: colors.foreground, letterSpacing: -0.5, marginBottom: 16, marginTop: 4 },
 
   // Category pills
   pillRow: { gap: 8, paddingBottom: 24 },
-  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.1)', backgroundColor: card },
-  pillActive: { backgroundColor: primary, borderColor: primary },
-  pillText: { fontSize: 13, fontWeight: '700', color: foreground },
-  pillTextActive: { color: '#fff' },
+  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5, borderColor: schemeColor('rgba(0,0,0,0.1)', 'border'), backgroundColor: colors.card },
+  pillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  pillText: { fontSize: 13, fontWeight: '700', color: colors.foreground },
+  pillTextActive: { color: schemeColor('#fff', 'fg') },
 
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  sectionEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#000000' },
-  sparkle: { color: primary, fontSize: 13 },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: foreground },
+  sectionEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: schemeColor('#000000', 'fg') },
+  sparkle: { color: colors.primaryText, fontSize: 13 },
+  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.foreground },
 
   // Announcements
   announcementRow: { gap: 12, paddingBottom: 28 },
-  announcementCard: { width: 240, backgroundColor: card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  announcementBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(232,112,59,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  announcementFrom: { fontSize: 11, fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: 0.4 },
-  announcementTitle: { fontSize: 15, fontWeight: '800', color: foreground, marginTop: 4 },
-  announcementBody: { fontSize: 13, color: '#000000', marginTop: 4, lineHeight: 18 },
+  announcementCard: { width: 240, backgroundColor: colors.card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
+  announcementBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: schemeColor('rgba(232,112,59,0.12)', 'bg'), alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  announcementFrom: { fontSize: 11, fontWeight: '700', color: schemeColor('#000000', 'fg'), textTransform: 'uppercase', letterSpacing: 0.4 },
+  announcementTitle: { fontSize: 15, fontWeight: '800', color: colors.foreground, marginTop: 4 },
+  announcementBody: { fontSize: 13, color: schemeColor('#000000', 'fg'), marginTop: 4, lineHeight: 18 },
 
   // Trending grid
   trendingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
-  trendingCard: { width: '47%', borderRadius: 18, backgroundColor: card, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  trendingCard: { width: '47%', borderRadius: 18, backgroundColor: colors.card, overflow: 'hidden', borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   trendingCover: { height: 90, width: '100%' },
   trendingContent: { padding: 12 },
-  trendingName: { fontSize: 14, fontWeight: '800', color: foreground },
+  trendingName: { fontSize: 14, fontWeight: '800', color: colors.foreground },
 
   // Nearby list
-  nearbyRow: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: card, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  nearbyRow: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: colors.card, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   nearbyLogo: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  logoLetter: { color: '#fff', fontWeight: '800', fontSize: 17, lineHeight: 20, textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
-  nearbyCategory: { color: '#000000', fontSize: 13, fontWeight: '600', marginTop: 3 },
-  nearbyAddress: { color: '#000000', fontSize: 12, fontWeight: '400', marginTop: 2 },
-  shopName: { fontSize: 16, fontWeight: '800', color: foreground },
-  muted: { color: '#000000', fontSize: 12.5, lineHeight: 18, marginTop: 2 },
-  empty: { color: '#000000', fontSize: 15, lineHeight: 22, marginTop: 12 },
+  logoLetter: { color: schemeColor('#fff', 'fg'), fontWeight: '800', fontSize: 17, lineHeight: 20, textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
+  nearbyCategory: { color: schemeColor('#000000', 'fg'), fontSize: 13, fontWeight: '600', marginTop: 3 },
+  nearbyAddress: { color: schemeColor('#000000', 'fg'), fontSize: 12, fontWeight: '400', marginTop: 2 },
+  shopName: { fontSize: 16, fontWeight: '800', color: colors.foreground },
+  muted: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  empty: { color: schemeColor('#000000', 'fg'), fontSize: 15, lineHeight: 22, marginTop: 12 },
 
   // Map
-  mapPage: { flex: 1, backgroundColor: background },
+  mapPage: { flex: 1, backgroundColor: colors.background },
   mapEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32 },
   mapTop: { position: 'absolute', top: 12, left: 16, right: 16 },
-  mapResults: { marginTop: 8, maxHeight: 320, backgroundColor: '#fff', borderRadius: 22, overflow: 'hidden', shadowColor: '#1A2138', shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  mapResults: { marginTop: 8, maxHeight: 320, backgroundColor: schemeColor('#fff', 'bg'), borderRadius: 22, overflow: 'hidden', shadowColor: '#1A2138', shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
   mapResultRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 60 },
-  mapResultDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
-  mapResultName: { fontSize: 15.5, fontWeight: '800', color: foreground },
-  mapResultMeta: { fontSize: 12.5, color: '#55524C', marginTop: 2 },
+  mapResultDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: schemeColor('rgba(0,0,0,0.12)', 'border') },
+  mapResultName: { fontSize: 15.5, fontWeight: '800', color: colors.foreground },
+  mapResultMeta: { fontSize: 12.5, color: schemeColor('#55524C', 'fg'), marginTop: 2 },
   mapBottom: { position: 'absolute', left: 0, right: 0, bottom: MAP_CARDS_BOTTOM },
-  mapLocate: { alignSelf: 'flex-end', marginRight: MAP_CARD_SIDE, marginBottom: 12, width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
+  mapLocate: { alignSelf: 'flex-end', marginRight: MAP_CARD_SIDE, marginBottom: 12, width: 48, height: 48, borderRadius: 24, backgroundColor: schemeColor('#fff', 'bg'), alignItems: 'center', justifyContent: 'center', shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
   mapCards: { paddingHorizontal: MAP_CARD_SIDE, gap: MAP_CARD_GAP, paddingBottom: 14, paddingTop: 4 },
-  mapCard: { width: MAP_CARD_WIDTH, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff', borderRadius: 24, padding: 14, shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
+  mapCard: { width: MAP_CARD_WIDTH, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: schemeColor('#fff', 'bg'), borderRadius: 24, padding: 14, shadowColor: '#1A2138', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 7 },
   mapCardPressed: { transform: [{ scale: 0.98 }] },
-  mapCardMeta: { color: '#55524C', fontSize: 12.5, fontWeight: '600', marginTop: 3 },
-  mapCardMiles: { color: foreground, fontWeight: '800' },
-  mapPlaceholderText: { textAlign: 'center', color: '#000000', fontSize: 13.5, lineHeight: 19 },
+  mapCardMeta: { color: schemeColor('#55524C', 'fg'), fontSize: 12.5, fontWeight: '600', marginTop: 3 },
+  mapCardMiles: { color: colors.foreground, fontWeight: '800' },
+  mapPlaceholderText: { textAlign: 'center', color: schemeColor('#000000', 'fg'), fontSize: 13.5, lineHeight: 19 },
 
   // News
-  newsCard: { backgroundColor: card, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  newsTitle: { fontSize: 16, fontWeight: '800', color: foreground, marginTop: 4 },
-  newsDate: { color: '#000000', fontSize: 11, marginTop: 8 },
+  newsCard: { backgroundColor: colors.card, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
+  newsTitle: { fontSize: 16, fontWeight: '800', color: colors.foreground, marginTop: 4 },
+  newsDate: { color: schemeColor('#000000', 'fg'), fontSize: 11, marginTop: 8 },
 
   // Shop detail
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 },
-  back: { color: foreground, fontWeight: '700', fontSize: 15 },
+  back: { color: colors.foreground, fontWeight: '700', fontSize: 15 },
   detailCover: { height: 190, width: '100%', borderRadius: 22, overflow: 'hidden', marginBottom: 20 },
-  favouriteButton: { position: 'absolute', top: 14, right: 14, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
+  favouriteButton: { position: 'absolute', top: 14, right: 14, width: 38, height: 38, borderRadius: 19, backgroundColor: schemeColor('rgba(255,255,255,0.92)', 'bg'), alignItems: 'center', justifyContent: 'center' },
 
-  joinCard: { backgroundColor: card, borderRadius: 22, padding: 28, marginTop: 20, alignItems: 'center' },
-  joinTitle: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center', marginBottom: 12 },
-  rewardPill: { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 12 },
-  rewardPillText: { fontSize: 11, fontWeight: '700', color: '#000000' },
-  rewardTitleLarge: { fontSize: 19, fontWeight: '800', color: foreground, textAlign: 'center' },
+  joinCard: { backgroundColor: colors.card, borderRadius: 22, padding: 28, marginTop: 20, alignItems: 'center' },
+  joinTitle: { fontSize: 19, fontWeight: '800', color: colors.foreground, textAlign: 'center', marginBottom: 12 },
+  rewardPill: { backgroundColor: schemeColor('rgba(0,0,0,0.06)', 'bg'), borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 12 },
+  rewardPillText: { fontSize: 11, fontWeight: '700', color: schemeColor('#000000', 'fg') },
+  rewardTitleLarge: { fontSize: 19, fontWeight: '800', color: colors.foreground, textAlign: 'center' },
   rewardTierList: { alignSelf: 'stretch', gap: 8, marginTop: 2 },
-  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EFEBE3', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
-  rewardTierThreshold: { color: foreground, fontSize: 13, fontWeight: '800' },
-  rewardTierTitle: { color: foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 16 },
+  rewardTier: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: schemeColor('#EFEBE3', 'bg'), borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  rewardTierThreshold: { color: colors.foreground, fontSize: 13, fontWeight: '800' },
+  rewardTierTitle: { color: colors.foreground, fontSize: 15, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 16 },
 
   designedCardWrap: { marginTop: 20 },
-  loyaltyCard: { backgroundColor: card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  loyaltyCard: { backgroundColor: colors.card, borderRadius: 22, padding: 20, marginTop: 20, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   loyaltyCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: '#000000', fontVariant: ['tabular-nums'] },
-  bar: { height: 9, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.07)', overflow: 'hidden' },
+  loyaltyCardCount: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: schemeColor('#000000', 'fg'), fontVariant: ['tabular-nums'] },
+  bar: { height: 9, borderRadius: 6, backgroundColor: schemeColor('rgba(0,0,0,0.07)', 'bg'), overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },
-  qrText: { color: '#000000', fontWeight: '600', fontSize: 12.5, marginTop: 12 },
-  manualCodeLabel: { color: '#000000', fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
-  manualCode: { color: foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 4 },
-  securityCard: { backgroundColor: '#EFEBE3', borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
-  securityCopy: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 4 },
-  securityButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(79,100,56,0.12)' },
-  securityButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
+  qrText: { color: schemeColor('#000000', 'fg'), fontWeight: '600', fontSize: 12.5, marginTop: 12 },
+  manualCodeLabel: { color: schemeColor('#000000', 'fg'), fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
+  manualCode: { color: colors.foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 4 },
+  securityCard: { backgroundColor: schemeColor('#EFEBE3', 'bg'), borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.07)', 'border') },
+  securityCopy: { color: schemeColor('#000000', 'fg'), fontSize: 13, lineHeight: 19, marginTop: 4 },
+  securityButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: schemeColor('rgba(79,100,56,0.12)', 'bg') },
+  securityButtonText: { color: colors.primaryText, fontSize: 13, fontWeight: '800' },
   lockScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
   lockLogo: { width: 72, height: 72, borderRadius: 20, marginBottom: 24 },
-  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1A2138', borderRadius: 999, height: 46, marginTop: 20 },
-  walletButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  walletButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: schemeColor('#1A2138', 'bg'), borderRadius: 999, height: 46, marginTop: 20 },
+  walletButtonText: { color: schemeColor('#fff', 'fg'), fontWeight: '700', fontSize: 14 },
 
   // Visit and contact details
   visitSection: { marginTop: 28 },
-  mapEmbed: { height: 150, marginTop: 12, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', backgroundColor: '#E7EAE2' },
+  mapEmbed: { height: 150, marginTop: 12, overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.08)', 'border'), backgroundColor: schemeColor('#E7EAE2', 'bg') },
   nativeMap: { flex: 1 },
-  shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.12)' },
-  shopNotifyTitle: { fontSize: 14, fontWeight: '700', color: foreground },
-  shopNotifyCopy: { color: '#000000', fontSize: 12, marginTop: 1, lineHeight: 16 },
+  shopNotifyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: schemeColor('rgba(0,0,0,0.12)', 'border') },
+  shopNotifyTitle: { fontSize: 14, fontWeight: '700', color: colors.foreground },
+  shopNotifyCopy: { color: schemeColor('#000000', 'fg'), fontSize: 12, marginTop: 1, lineHeight: 16 },
   settingsSheet: { paddingHorizontal: 20, maxHeight: '80%' },
   settingsSheetScroll: { paddingBottom: 20, gap: 20 },
   sheetBack: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  settingsHero: { borderRadius: 24, padding: 16, gap: 16, shadowColor: primary, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
+  settingsHero: { borderRadius: 24, padding: 16, gap: 16, shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4 },
   settingsHeroRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  settingsHeroAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.75)', alignItems: 'center', justifyContent: 'center' },
-  settingsHeroAvatarText: { color: '#fff', fontFamily: FONT_DISPLAY, fontSize: 20 },
-  settingsHeroName: { color: '#fff', fontSize: 20, fontFamily: FONT_DISPLAY },
-  settingsHeroEmail: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 },
-  settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12 },
-  settingsHeroButtonIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' },
-  settingsHeroButtonTitle: { color: foreground, fontWeight: '800', fontSize: 15 },
-  settingsHeroButtonCopy: { color: '#000000', fontSize: 12.5, marginTop: 1 },
+  settingsHeroAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: schemeColor('rgba(255,255,255,0.22)', 'bg'), borderWidth: 2, borderColor: schemeColor('rgba(255,255,255,0.75)', 'border'), alignItems: 'center', justifyContent: 'center' },
+  settingsHeroAvatarText: { color: schemeColor('#fff', 'fg'), fontFamily: FONT_DISPLAY, fontSize: 20 },
+  settingsHeroName: { color: schemeColor('#fff', 'fg'), fontSize: 20, fontFamily: FONT_DISPLAY },
+  settingsHeroEmail: { color: schemeColor('rgba(255,255,255,0.85)', 'fg'), fontSize: 13, marginTop: 2 },
+  settingsHeroButton: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: schemeColor('#fff', 'bg'), borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12 },
+  settingsHeroButtonIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  settingsHeroButtonTitle: { color: colors.foreground, fontWeight: '800', fontSize: 15 },
+  settingsHeroButtonCopy: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, marginTop: 1 },
   settingsGroup: { gap: 8 },
-  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 8 },
-  settingsCard: { backgroundColor: card, borderRadius: 18, overflow: 'hidden' },
+  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 8 },
+  settingsCard: { backgroundColor: colors.card, borderRadius: 18, overflow: 'hidden' },
   settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
-  settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.12)' },
-  settingsRowPressed: { backgroundColor: 'rgba(0,0,0,0.04)' },
+  settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: schemeColor('rgba(0,0,0,0.12)', 'border') },
+  settingsRowPressed: { backgroundColor: schemeColor('rgba(0,0,0,0.04)', 'bg') },
   settingsIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   settingsRowBody: { flex: 1 },
-  settingsRowTitle: { fontSize: 15.5, fontWeight: '700', color: foreground },
-  settingsRowTitleDanger: { color: '#b54439' },
-  settingsRowDetail: { color: '#000000', fontSize: 12.5, marginTop: 2, lineHeight: 17 },
-  settingsFooter: { textAlign: 'center', color: '#000000', fontSize: 12, marginTop: 4 },
-  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 16 },
-  settingsInput: { fontSize: 17, color: foreground, paddingHorizontal: 16, paddingVertical: 12 },
-  settingsFieldHelp: { color: '#000000', fontSize: 12.5, paddingHorizontal: 16, paddingBottom: 16, lineHeight: 17 },
-  settingsEmpty: { color: '#000000', fontSize: 14, lineHeight: 20, padding: 16 },
-  cardScreen: { backgroundColor: card, borderRadius: 24, padding: 24, alignItems: 'center' },
-  cardQr: { backgroundColor: '#fff', padding: 16, borderRadius: 20 },
-  cardName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: foreground, marginTop: 20 },
+  settingsRowTitle: { fontSize: 15.5, fontWeight: '700', color: colors.foreground },
+  settingsRowTitleDanger: { color: schemeColor('#b54439', 'fg') },
+  settingsRowDetail: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, marginTop: 2, lineHeight: 17 },
+  settingsFooter: { textAlign: 'center', color: schemeColor('#000000', 'fg'), fontSize: 12, marginTop: 4 },
+  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 16 },
+  settingsInput: { fontSize: 17, color: colors.foreground, paddingHorizontal: 16, paddingVertical: 12 },
+  settingsFieldHelp: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, paddingHorizontal: 16, paddingBottom: 16, lineHeight: 17 },
+  settingsEmpty: { color: schemeColor('#000000', 'fg'), fontSize: 14, lineHeight: 20, padding: 16 },
+  cardScreen: { backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' },
+  cardQr: { backgroundColor: schemeColor('#fff', 'bg'), padding: 16, borderRadius: 20 },
+  cardName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: colors.foreground, marginTop: 20 },
   pinWrap: { alignItems: 'center', width: 60, height: 66, paddingTop: 8 },
   pinHalo: { position: 'absolute', top: 0, width: 56, height: 56, borderRadius: 28, opacity: 0.22 },
-  pinBody: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-  pinInner: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  pinBody: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: schemeColor('#fff', 'border'), alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  pinInner: { width: 32, height: 32, borderRadius: 16, backgroundColor: schemeColor('#fff', 'bg'), overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   pinLogo: { width: 32, height: 32 },
   pinInitial: { fontWeight: '900', fontSize: 14, letterSpacing: -0.5 },
   pinTail: { width: 0, height: 0, borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 11, borderLeftColor: 'transparent', borderRightColor: 'transparent', marginTop: -4 },
-  pinShadow: { width: 16, height: 5, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.2)', marginTop: 1 },
-  mapAddress: { color: '#000000', fontSize: 13, lineHeight: 19, marginTop: 8 },
-  directionsButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, backgroundColor: 'rgba(79,100,56,0.12)', paddingHorizontal: 16, paddingVertical: 12 },
-  directionsButtonText: { color: primary, fontSize: 13, fontWeight: '800' },
-  contactList: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', borderRadius: 18, overflow: 'hidden', backgroundColor: card },
-  contactRow: { minHeight: 54, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.07)' },
-  contactLabel: { color: foreground, fontSize: 14, fontWeight: '800', flexShrink: 0 },
-  contactValue: { color: primary, fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
+  pinShadow: { width: 16, height: 5, borderRadius: 8, backgroundColor: schemeColor('rgba(0,0,0,0.2)', 'bg'), marginTop: 1 },
+  mapAddress: { color: schemeColor('#000000', 'fg'), fontSize: 13, lineHeight: 19, marginTop: 8 },
+  directionsButton: { alignSelf: 'flex-start', marginTop: 12, borderRadius: 999, backgroundColor: schemeColor('rgba(79,100,56,0.12)', 'bg'), paddingHorizontal: 16, paddingVertical: 12 },
+  directionsButtonText: { color: colors.primaryText, fontSize: 13, fontWeight: '800' },
+  contactList: { marginTop: 12, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.08)', 'border'), borderRadius: 18, overflow: 'hidden', backgroundColor: colors.card },
+  contactRow: { minHeight: 54, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderBottomWidth: 1, borderBottomColor: schemeColor('rgba(0,0,0,0.07)', 'border') },
+  contactLabel: { color: colors.foreground, fontSize: 14, fontWeight: '800', flexShrink: 0 },
+  contactValue: { color: colors.primaryText, fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'right' },
 
   // Shop gallery — a tall, photo-first scrolling feed.
   gallerySection: { marginTop: 32 },
   galleryHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
-  gallerySubheading: { color: '#000000', fontSize: 12.5, marginTop: 3 },
-  galleryCount: { color: primary, fontSize: 12, fontWeight: '800' },
+  gallerySubheading: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, marginTop: 3 },
+  galleryCount: { color: colors.primaryText, fontSize: 12, fontWeight: '800' },
   shortsFeed: { gap: 16, marginTop: 12 },
-  shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: '#DFE3DA', position: 'relative' },
+  shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: schemeColor('#DFE3DA', 'bg'), position: 'relative' },
   shortImage: { width: '100%', height: '100%' },
-  shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 16, justifyContent: 'flex-end', backgroundColor: 'rgba(20,20,18,0.42)' },
-  shortIndex: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  shortShopName: { color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 4 },
+  shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 16, justifyContent: 'flex-end', backgroundColor: schemeColor('rgba(20,20,18,0.42)', 'bg') },
+  shortIndex: { color: schemeColor('rgba(255,255,255,0.8)', 'fg'), fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  shortShopName: { color: schemeColor('#fff', 'fg'), fontSize: 18, fontWeight: '900', marginTop: 4 },
 
   // Reviews
   reviewsSection: { marginTop: 32 },
-  reviewHint: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
-  reviewComposer: { backgroundColor: card, borderRadius: 18, padding: 16, marginTop: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)' },
-  reviewComposerTitle: { fontSize: 15, fontWeight: '800', color: foreground },
+  reviewHint: { color: schemeColor('#000000', 'fg'), fontSize: 13.5, lineHeight: 20, marginTop: 8 },
+  reviewComposer: { backgroundColor: colors.card, borderRadius: 18, padding: 16, marginTop: 12, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.07)', 'border') },
+  reviewComposerTitle: { fontSize: 15, fontWeight: '800', color: colors.foreground },
   starRow: { flexDirection: 'row', gap: 4, marginTop: 8 },
   starButton: { paddingVertical: 3, paddingRight: 3 },
-  star: { fontSize: 29, lineHeight: 34, color: '#000000' },
-  starSelected: { color: accent },
-  reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.12)', backgroundColor: '#fff', color: foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 12, paddingVertical: 12, textAlignVertical: 'top' },
-  deleteReview: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
+  star: { fontSize: 29, lineHeight: 34, color: schemeColor('#000000', 'fg') },
+  starSelected: { color: colors.accent },
+  reviewInput: { minHeight: 92, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.12)', 'border'), backgroundColor: schemeColor('#fff', 'bg'), color: colors.foreground, fontSize: 14, lineHeight: 20, paddingHorizontal: 12, paddingVertical: 12, textAlignVertical: 'top' },
+  deleteReview: { color: schemeColor('#b54439', 'fg'), fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
   reviewList: { marginTop: 20, gap: 16 },
-  reviewItem: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.09)', paddingTop: 16 },
+  reviewItem: { borderTopWidth: 1, borderTopColor: schemeColor('rgba(0,0,0,0.09)', 'border'), paddingTop: 16 },
   reviewHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  reviewAuthor: { fontSize: 14, fontWeight: '800', color: foreground },
-  reviewDate: { color: '#000000', fontSize: 11.5 },
-  reviewStars: { color: accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
-  reviewBody: { color: '#000000', fontSize: 13.5, lineHeight: 20, marginTop: 8 },
+  reviewAuthor: { fontSize: 14, fontWeight: '800', color: colors.foreground },
+  reviewDate: { color: schemeColor('#000000', 'fg'), fontSize: 11.5 },
+  reviewStars: { color: colors.accent, fontSize: 17, letterSpacing: 1, marginTop: 4 },
+  reviewBody: { color: schemeColor('#000000', 'fg'), fontSize: 13.5, lineHeight: 20, marginTop: 8 },
   reviewReply: { marginTop: 12, marginLeft: 8, paddingLeft: 12, borderLeftWidth: 3 },
-  reviewReplyTitle: { color: ink, fontSize: 13, fontWeight: '800' },
+  reviewReplyTitle: { color: colors.ink, fontSize: 13, fontWeight: '800' },
   reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  reviewModLink: { color: '#000000', fontSize: 12, fontWeight: '600' },
-  reviewModDot: { color: '#000000', fontSize: 12 },
+  reviewModLink: { color: schemeColor('#000000', 'fg'), fontSize: 12, fontWeight: '600' },
+  reviewModDot: { color: schemeColor('#000000', 'fg'), fontSize: 12 },
   blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  blockRowText: { color: '#000000', fontSize: 13 },
-  blockRowUnblock: { color: primary, fontSize: 13, fontWeight: '700' },
-  spendHint: { color: '#000000', fontSize: 12.5, lineHeight: 17, marginTop: 8 },
-  cardsExplainer: { backgroundColor: '#e0f2e4', borderRadius: 18, padding: 16, gap: 4 },
-  cardsExplainerTitle: { fontSize: 15, fontWeight: '800', color: '#1f5c33', marginBottom: 2 },
-  cardsExplainerLine: { fontSize: 13.5, color: '#2f5a3b', lineHeight: 19 },
-  cardsHelp: { color: '#000000', fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
-  autoEarnCard: { backgroundColor: '#fdeccd', borderRadius: 18, padding: 16, marginTop: 16, gap: 8 },
+  blockRowText: { color: schemeColor('#000000', 'fg'), fontSize: 13 },
+  blockRowUnblock: { color: colors.primaryText, fontSize: 13, fontWeight: '700' },
+  spendHint: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, lineHeight: 17, marginTop: 8 },
+  cardsExplainer: { backgroundColor: schemeColor('#e0f2e4', 'bg'), borderRadius: 18, padding: 16, gap: 4 },
+  cardsExplainerTitle: { fontSize: 15, fontWeight: '800', color: schemeColor('#1f5c33', 'fg'), marginBottom: 2 },
+  cardsExplainerLine: { fontSize: 13.5, color: schemeColor('#2f5a3b', 'fg'), lineHeight: 19 },
+  cardsHelp: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
+  autoEarnCard: { backgroundColor: schemeColor('#fdeccd', 'bg'), borderRadius: 18, padding: 16, marginTop: 16, gap: 8 },
   autoEarnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  autoEarnTitle: { fontSize: 15, fontWeight: '800', color: '#7a4a0c' },
-  autoEarnCopy: { fontSize: 13.5, color: '#6b4a1c', lineHeight: 19 },
-  autoEarnChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: '#fdeccd', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, marginTop: 12 },
-  autoEarnChipText: { fontSize: 12.5, fontWeight: '700', color: '#7a4a0c' },
+  autoEarnTitle: { fontSize: 15, fontWeight: '800', color: schemeColor('#7a4a0c', 'fg') },
+  autoEarnCopy: { fontSize: 13.5, color: schemeColor('#6b4a1c', 'fg'), lineHeight: 19 },
+  autoEarnChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: schemeColor('#fdeccd', 'bg'), borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, marginTop: 12 },
+  autoEarnChipText: { fontSize: 12.5, fontWeight: '700', color: schemeColor('#7a4a0c', 'fg') },
 
   // Rewards
 
   // Favourites
-  favouriteCard: { backgroundColor: card, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  favouriteCard: { backgroundColor: colors.card, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   favouriteTopRow: { marginBottom: 12 },
   favouriteLogo: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  categoryLabel: { fontSize: 11, fontWeight: '700', color: '#000000', letterSpacing: 0.6, marginTop: 4 },
-  favouriteDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.07)', marginVertical: 16 },
+  categoryLabel: { fontSize: 11, fontWeight: '700', color: schemeColor('#000000', 'fg'), letterSpacing: 0.6, marginTop: 4 },
+  favouriteDivider: { height: 1, backgroundColor: schemeColor('rgba(0,0,0,0.07)', 'bg'), marginVertical: 16 },
   favouriteBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   favouriteTapRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   favouriteDot: { width: 10, height: 10, borderRadius: 5 },
-  favouriteStatus: { fontSize: 13.5, fontWeight: '700', color: foreground },
+  favouriteStatus: { fontSize: 13.5, fontWeight: '700', color: colors.foreground },
   favouriteViewRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  favouriteViewText: { color: primary, fontWeight: '800', fontSize: 13.5 },
+  favouriteViewText: { color: colors.primaryText, fontWeight: '800', fontSize: 13.5 },
 
   // Profile sheet
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { backgroundColor: background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, maxHeight: '90%' },
+  sheetBackdrop: { flex: 1, backgroundColor: schemeColor('rgba(0,0,0,0.4)', 'bg') },
+  sheet: { backgroundColor: colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, maxHeight: '90%' },
   sheetScroll: { paddingBottom: 16 },
-  deleteAccount: { color: '#b54439', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 16 },
+  deleteAccount: { color: schemeColor('#b54439', 'fg'), fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(0,0,0,0.15)', 'bg'), alignSelf: 'center', marginBottom: 16 },
   sheetHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  sheetTitle: { fontSize: 13, fontWeight: '800', color: '#000000', letterSpacing: 0.6, textTransform: 'uppercase' },
+  sheetTitle: { fontSize: 13, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // Bottom tab bar
-  tabs: { position: 'absolute', left: 16, right: 16, bottom: 10, height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#2B3A67', borderRadius: 999, paddingHorizontal: 8, shadowColor: '#000000', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
+  tabs: { position: 'absolute', left: 16, right: 16, bottom: 10, height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.olive, borderRadius: 999, paddingHorizontal: 8, shadowColor: '#000000', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
   tab: { height: 52, minWidth: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, paddingHorizontal: 12 },
   tabActive: { backgroundColor: '#F4F1EA', paddingHorizontal: 16 },
   tabTextActive: { color: '#1A2138', fontFamily: 'Inter_500Medium', fontSize: 14 },
@@ -3403,11 +3445,11 @@ const styles = StyleSheet.create({
   discoverActionButton: { alignItems: 'center', justifyContent: 'center' },
   discoverInfo: { position: 'absolute', left: 18, right: 80, bottom: 34 },
   discoverShopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  discoverLogo: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.8)' },
-  discoverShopName: { color: '#fff', fontWeight: '800', fontSize: 15, flexShrink: 1 },
-  discoverTime: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '600' },
-  discoverCaption: { color: '#fff', fontSize: 13.5, lineHeight: 19, marginTop: 8 },
-  discoverViewShop: { color: '#fff', fontWeight: '800', fontSize: 13, marginTop: 12 },
+  discoverLogo: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: schemeColor('rgba(255,255,255,0.8)', 'border') },
+  discoverShopName: { color: schemeColor('#fff', 'fg'), fontWeight: '800', fontSize: 15, flexShrink: 1 },
+  discoverTime: { color: schemeColor('rgba(255,255,255,0.75)', 'fg'), fontSize: 12, fontWeight: '600' },
+  discoverCaption: { color: schemeColor('#fff', 'fg'), fontSize: 13.5, lineHeight: 19, marginTop: 8 },
+  discoverViewShop: { color: schemeColor('#fff', 'fg'), fontWeight: '800', fontSize: 13, marginTop: 12 },
   discoverBack: {
     position: 'absolute',
     left: 16,
@@ -3417,8 +3459,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: schemeColor('rgba(0,0,0,0.35)', 'bg'),
   },
-  discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: background, paddingHorizontal: 40 },
-  discoverEmptyText: { color: '#000000', fontSize: 14, textAlign: 'center' },
-})
+  discoverEmpty: { alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: colors.background, paddingHorizontal: 40 },
+  discoverEmptyText: { color: schemeColor('#000000', 'fg'), fontSize: 14, textAlign: 'center' },
+}))

@@ -7,8 +7,9 @@ import { HoldButton } from './components/HoldButton'
 import { supabase } from './supabase'
 import { colors } from './theme'
 import { useShopSkin, useSkinStyles } from '../../../packages/card-design/skin'
+import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 
-const { primary } = colors
+
 
 // ---------------------------------------------------------------------
 // Opening hours (businesses.opening_hours, same shape as the website)
@@ -109,7 +110,7 @@ export function ShopHero({
 }) {
   const st = useSkinStyles(styles)
   const skin = useShopSkin()
-  const brand = skin?.accent ?? (business.brand_color || primary)
+  const brand = skin?.accent ?? (business.brand_color || colors.primary)
   const status = openStatus(business.opening_hours)
   const chips = [business.category || 'Local business', ...featureLabels]
   return (
@@ -140,7 +141,7 @@ export function ShopHero({
           ) : null}
           {status ? (
             <View style={[st.statusPill, status.open ? st.statusOpen : st.statusClosed]}>
-              <View style={[st.statusDot, { backgroundColor: status.open ? '#2F8A4C' : '#B73B32' }]} />
+              <View style={[st.statusDot, { backgroundColor: status.open ? schemeColor('#2F8A4C', 'bg') : schemeColor('#B73B32', 'bg') }]} />
               <Text style={st.statusText}>{status.label}</Text>
             </View>
           ) : null}
@@ -225,7 +226,7 @@ export function HowItWorks({
   refresh: () => Promise<void>
 }) {
   const st = useSkinStyles(styles)
-  const brand = business.brand_color || primary
+  const brand = business.brand_color || colors.primary
   const programme = PROGRAMMES[programmeIdFor(business)]
   return (
     <View style={st.how}>
@@ -464,8 +465,8 @@ function PointsHow({ business, membership, catalog, brand, refresh, money }: { b
                   duration={700}
                   onConfirm={() => void redeem(reward)}
                   accessibilityLabel={`Get ${reward.title} for ${reward.points_cost} points`}
-                  color={can ? brand : '#E4E2DA'}
-                  textColor={can ? readableOn(brand) : '#000000'}
+                  color={can ? brand : schemeColor('#E4E2DA', 'fg')}
+                  textColor={can ? readableOn(brand) : schemeColor('#000000', 'fg')}
                 />
               ) : null}
             </View>
@@ -477,57 +478,57 @@ function PointsHow({ business, membership, catalog, brand, refresh, money }: { b
   )
 }
 
-const styles = StyleSheet.create({
-  hero: { backgroundColor: '#fff', borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 16 },
+const styles = themed(() => StyleSheet.create({
+  hero: { backgroundColor: schemeColor('#fff', 'bg'), borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border'), marginBottom: 16 },
   cover: { height: 150, width: '100%' },
   heroBody: { paddingHorizontal: 18, paddingBottom: 18 },
-  logo: { width: 74, height: 74, borderRadius: 24, marginTop: -37, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  logo: { width: 74, height: 74, borderRadius: 24, marginTop: -37, borderWidth: 4, borderColor: schemeColor('#fff', 'border'), alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   logoImage: { width: '100%', height: '100%' },
-  logoLetter: { color: '#fff', fontSize: 30, fontWeight: '800' },
-  name: { fontSize: 27, lineHeight: 32, fontWeight: '800', color: '#000000', letterSpacing: -0.6, marginTop: 12 },
+  logoLetter: { color: schemeColor('#fff', 'fg'), fontSize: 30, fontWeight: '800' },
+  name: { fontSize: 27, lineHeight: 32, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: -0.6, marginTop: 12 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  chip: { backgroundColor: '#EFEBE3', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
-  chipText: { fontSize: 12, fontWeight: '700', color: '#000000' },
+  chip: { backgroundColor: schemeColor('#EFEBE3', 'bg'), borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
+  chipText: { fontSize: 12, fontWeight: '700', color: schemeColor('#000000', 'fg') },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 12 },
-  metaText: { fontSize: 14, fontWeight: '800', color: '#000000' },
+  metaText: { fontSize: 14, fontWeight: '800', color: schemeColor('#000000', 'fg') },
   metaLight: { fontWeight: '400' },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
-  statusOpen: { backgroundColor: '#DCEBD9' },
-  statusClosed: { backgroundColor: '#F8DCD8' },
+  statusOpen: { backgroundColor: schemeColor('#DCEBD9', 'bg') },
+  statusClosed: { backgroundColor: schemeColor('#F8DCD8', 'bg') },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
-  statusText: { fontSize: 12, fontWeight: '800', color: '#000000' },
+  statusText: { fontSize: 12, fontWeight: '800', color: schemeColor('#000000', 'fg') },
   cta: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
   ctaText: { fontSize: 16, fontWeight: '900' },
 
-  how: { backgroundColor: '#fff', borderRadius: 26, padding: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginTop: 24 },
-  howEyebrow: { fontSize: 11, fontWeight: '900', letterSpacing: 1.4, color: '#000000' },
-  howTitle: { fontSize: 22, fontWeight: '800', color: '#000000', letterSpacing: -0.4, marginTop: 6 },
-  howPitch: { fontSize: 14, lineHeight: 20, color: '#000000', marginTop: 4, marginBottom: 16 },
-  howLine: { fontSize: 14, lineHeight: 21, fontWeight: '600', color: '#000000', marginTop: 14 },
+  how: { backgroundColor: schemeColor('#fff', 'bg'), borderRadius: 26, padding: 20, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border'), marginTop: 24 },
+  howEyebrow: { fontSize: 11, fontWeight: '900', letterSpacing: 1.4, color: schemeColor('#000000', 'fg') },
+  howTitle: { fontSize: 22, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: -0.4, marginTop: 6 },
+  howPitch: { fontSize: 14, lineHeight: 20, color: schemeColor('#000000', 'fg'), marginTop: 4, marginBottom: 16 },
+  howLine: { fontSize: 14, lineHeight: 21, fontWeight: '600', color: schemeColor('#000000', 'fg'), marginTop: 14 },
   stampRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  stamp: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.15)', alignItems: 'center', justifyContent: 'center' },
-  stampText: { fontSize: 14, fontWeight: '800', color: '#000000' },
+  stamp: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: schemeColor('rgba(0,0,0,0.15)', 'border'), alignItems: 'center', justifyContent: 'center' },
+  stampText: { fontSize: 14, fontWeight: '800', color: schemeColor('#000000', 'fg') },
   rowList: { gap: 8, marginTop: 4 },
-  listRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: '#EFEBE3', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 13 },
-  listRowStrong: { fontSize: 13, fontWeight: '800', color: '#000000' },
-  listRowText: { fontSize: 15, fontWeight: '700', color: '#000000', flexShrink: 1 },
-  tierCard: { backgroundColor: '#F6F5F0', borderRadius: 18, padding: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  listRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: schemeColor('#EFEBE3', 'bg'), borderRadius: 16, paddingHorizontal: 16, paddingVertical: 13 },
+  listRowStrong: { fontSize: 13, fontWeight: '800', color: schemeColor('#000000', 'fg') },
+  listRowText: { fontSize: 15, fontWeight: '700', color: schemeColor('#000000', 'fg'), flexShrink: 1 },
+  tierCard: { backgroundColor: schemeColor('#F6F5F0', 'bg'), borderRadius: 18, padding: 15, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   tierHead: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   tierDot: { width: 14, height: 14, borderRadius: 7 },
-  tierName: { fontSize: 17, fontWeight: '800', color: '#000000', flex: 1 },
+  tierName: { fontSize: 17, fontWeight: '800', color: schemeColor('#000000', 'fg'), flex: 1 },
   youPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   youPillText: { fontSize: 11, fontWeight: '900' },
-  reachedText: { fontSize: 12, fontWeight: '800', color: '#000000' },
-  tierThreshold: { fontSize: 13, fontWeight: '600', color: '#000000', marginTop: 6 },
+  reachedText: { fontSize: 12, fontWeight: '800', color: schemeColor('#000000', 'fg') },
+  tierThreshold: { fontSize: 13, fontWeight: '600', color: schemeColor('#000000', 'fg'), marginTop: 6 },
   perkList: { marginTop: 8, gap: 4 },
-  perk: { fontSize: 14, lineHeight: 20, color: '#000000' },
-  pointsBox: { backgroundColor: '#FBE7BF', borderRadius: 20, paddingVertical: 18, alignItems: 'center' },
-  pointsBalance: { fontSize: 44, lineHeight: 48, fontWeight: '900', color: '#000000', letterSpacing: -1, fontVariant: ['tabular-nums'] },
-  pointsLabel: { fontSize: 14, fontWeight: '700', color: '#000000', marginTop: 2 },
+  perk: { fontSize: 14, lineHeight: 20, color: schemeColor('#000000', 'fg') },
+  pointsBox: { backgroundColor: schemeColor('#FBE7BF', 'bg'), borderRadius: 20, paddingVertical: 18, alignItems: 'center' },
+  pointsBalance: { fontSize: 44, lineHeight: 48, fontWeight: '900', color: schemeColor('#000000', 'fg'), letterSpacing: -1, fontVariant: ['tabular-nums'] },
+  pointsLabel: { fontSize: 14, fontWeight: '700', color: schemeColor('#000000', 'fg'), marginTop: 2 },
 
   hoursList: { marginTop: 8 },
   hoursRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  hoursDay: { fontSize: 14, color: '#000000' },
-  hoursTime: { fontSize: 14, color: '#000000' },
+  hoursDay: { fontSize: 14, color: schemeColor('#000000', 'fg') },
+  hoursTime: { fontSize: 14, color: schemeColor('#000000', 'fg') },
   hoursToday: { fontWeight: '900' },
-})
+}))

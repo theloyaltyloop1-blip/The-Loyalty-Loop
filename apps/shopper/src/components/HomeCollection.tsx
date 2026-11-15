@@ -11,6 +11,7 @@ import { formatMiles, nearestFirst, pickFeatured, type Coords } from '../distanc
 import { categoryRails, heroSlides, newestShops } from '../home-rails'
 import type { LocationStatus } from '../use-user-location'
 import { Tip } from './Tip'
+import { colors, schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 // Home screen in delivery-app style: a hero carousel, then rows you swipe sideways.
 const ROWS_PER_TAP = 8
@@ -39,7 +40,7 @@ function ShopMark({ shop }: { shop: HomeShop }) {
   const showLogo = !!shop.logo_url && !failed
   return <View style={[s.mark, !showLogo && shop.brand_color ? { backgroundColor: shop.brand_color } : null]}>{showLogo
     ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url! }} style={StyleSheet.absoluteFill} resizeMode="contain" onError={() => setFailed(true)} />
-    : <Text style={[s.markInitial, shop.brand_color ? { color: '#fff' } : null]}>{initialsOf(shop.name)}</Text>}</View>
+    : <Text style={[s.markInitial, shop.brand_color ? { color: schemeColor('#fff', 'fg') } : null]}>{initialsOf(shop.name)}</Text>}</View>
 }
 
 function ShopPhoto({ shop, large = false, distance }: { shop: HomeShop; large?: boolean; distance?: string }) {
@@ -106,12 +107,13 @@ function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { sho
 
 // Your loyalty cards as a swipeable row, the one closest to a reward first.
 // Chunky tiles in the quiet palette: shop name, then the count, big.
-const TILE_TONES = [
+// The last tile is the paper one, so it follows the scheme (read lazily via themed()).
+const TILE_TONES = themed(() => [
   { bg: SLATE, ink: '#FFFFFF', sub: 'rgba(255,255,255,0.65)' },
-  { bg: PACIFIC, ink: INK, sub: 'rgba(26,33,56,0.6)' },
-  { bg: SAGE, ink: INK, sub: 'rgba(26,33,56,0.6)' },
-  { bg: '#FFFFFF', ink: INK, sub: 'rgba(26,33,56,0.5)' },
-]
+  { bg: PACIFIC, ink: colors.ink, sub: 'rgba(26,33,56,0.6)' },
+  { bg: SAGE, ink: colors.ink, sub: 'rgba(26,33,56,0.6)' },
+  { bg: colors.card, ink: colors.ink, sub: 'rgba(128,128,128,0.8)' },
+])
 export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
   const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
     .sort((a, b) => b.progress.fraction - a.progress.fraction)
@@ -138,8 +140,8 @@ type HeroCard<T> = { shop: T; progress: ReturnType<typeof homeProgress> }
 function EditGlyph({ pinned }: { pinned: boolean }) {
   return <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
     {pinned
-      ? <Path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" stroke={NIGHT} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      : <Path d="M12 5v14M5 12h14" stroke={NIGHT} strokeWidth={2.2} strokeLinecap="round" />}
+      ? <Path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" stroke={colors.olive} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      : <Path d="M12 5v14M5 12h14" stroke={colors.olive} strokeWidth={2.2} strokeLinecap="round" />}
   </Svg>
 }
 
@@ -321,44 +323,44 @@ export function HomeCollection<T extends RailShop>({ shops, featured, membership
   </>
 }
 
-export const homeStyles = StyleSheet.create({
+export const homeStyles = themed(() => StyleSheet.create({
   title: { fontFamily: SANS_HEAVY, fontSize: 46, lineHeight: 46, letterSpacing: -2.4, color: c.foreground, marginTop: 22, marginBottom: 24 },
   searchTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 16 },
   searchTitle: { fontFamily: SANS_HEAVY, fontSize: 32, letterSpacing: -1.4, color: c.foreground },
   searchDone: { fontSize: 16, fontFamily: SANS_MEDIUM, color: c.primary },
   sectionHeading: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 23, color: c.foreground, marginTop: 32, marginBottom: 16 },
-})
-const s = StyleSheet.create({
+}))
+const s = themed(() => StyleSheet.create({
   // Ink on white: sapphire is kept for the things you tap (the button, the edit control).
-  nextCard: { backgroundColor: '#FFFFFF', borderRadius: 28, padding: 24, gap: 18, marginBottom: 24, shadowColor: INK, shadowOpacity: 0.1, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 4 },
+  nextCard: { backgroundColor: schemeColor('#FFFFFF', 'bg'), borderRadius: 28, padding: 24, gap: 18, marginBottom: 24, shadowColor: INK, shadowOpacity: 0.1, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 4 },
   nextShop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  nextLogo: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#ECE7DC', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  nextLogoText: { color: INK, fontSize: 13, fontWeight: '700' },
-  nextShopName: { flex: 1, color: 'rgba(26,33,56,0.55)', fontSize: 11, fontWeight: '600', letterSpacing: 1.6, textTransform: 'uppercase' },
-  nextEdit: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(43,58,103,0.1)', alignItems: 'center', justifyContent: 'center' },
+  nextLogo: { width: 30, height: 30, borderRadius: 15, backgroundColor: schemeColor('#ECE7DC', 'bg'), alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  nextLogoText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
+  nextShopName: { flex: 1, color: schemeColor('rgba(26,33,56,0.55)', 'fg'), fontSize: 11, fontWeight: '600', letterSpacing: 1.6, textTransform: 'uppercase' },
+  nextEdit: { width: 34, height: 34, borderRadius: 17, backgroundColor: schemeColor('rgba(43,58,103,0.1)', 'bg'), alignItems: 'center', justifyContent: 'center' },
   quickWrap: { marginBottom: 24 },
-  quickEmpty: { marginBottom: 24, borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(43,58,103,0.35)', paddingVertical: 18, alignItems: 'center' },
-  quickEmptyText: { color: NIGHT, fontFamily: SANS_MEDIUM, fontSize: 15 },
-  nextBig: { color: INK, fontFamily: SANS_HEAVY, fontSize: 88, lineHeight: 88, letterSpacing: -5, includeFontPadding: false },
-  nextLine: { color: 'rgba(26,33,56,0.6)', fontSize: 12, lineHeight: 17, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 8 },
+  quickEmpty: { marginBottom: 24, borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed', borderColor: schemeColor('rgba(43,58,103,0.35)', 'border'), paddingVertical: 18, alignItems: 'center' },
+  quickEmptyText: { color: colors.primaryText, fontFamily: SANS_MEDIUM, fontSize: 15 },
+  nextBig: { color: colors.ink, fontFamily: SANS_HEAVY, fontSize: 88, lineHeight: 88, letterSpacing: -5, includeFontPadding: false },
+  nextLine: { color: schemeColor('rgba(26,33,56,0.6)', 'fg'), fontSize: 12, lineHeight: 17, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 8 },
   cardTile: { width: 156, height: 116, borderRadius: 22, padding: 14, justifyContent: 'space-between' },
-  cardTileLine: { borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(17,17,17,0.18)' },
+  cardTileLine: { borderWidth: StyleSheet.hairlineWidth, borderColor: schemeColor('rgba(17,17,17,0.18)', 'border') },
   cardTileName: { fontFamily: SANS_MEDIUM, fontSize: 14, lineHeight: 17, letterSpacing: -0.2 },
   cardTileCount: { fontFamily: SANS_HEAVY, fontSize: 36, letterSpacing: -2, fontVariant: ['tabular-nums'] },
   cardTileOf: { fontFamily: SANS_MEDIUM, fontSize: 16, letterSpacing: -0.4 },
   nextDots: { flexDirection: 'row', gap: 6 },
-  nextDot: { flex: 1, aspectRatio: 1, maxWidth: 26, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(26,33,56,0.2)' },
-  nextDotOn: { backgroundColor: INK, borderColor: INK },
-  nextTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(26,33,56,0.1)', overflow: 'hidden' },
-  nextFill: { height: '100%', backgroundColor: INK },
-  nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 50, paddingHorizontal: 22, borderRadius: 999, backgroundColor: NIGHT, shadowColor: NIGHT, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  nextDot: { flex: 1, aspectRatio: 1, maxWidth: 26, borderRadius: 999, borderWidth: 1.5, borderColor: schemeColor('rgba(26,33,56,0.2)', 'border') },
+  nextDotOn: { backgroundColor: schemeColor('#1A2138', 'bg'), borderColor: schemeColor('#1A2138', 'bg') },
+  nextTrack: { height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(26,33,56,0.1)', 'bg'), overflow: 'hidden' },
+  nextFill: { height: '100%', backgroundColor: schemeColor('#1A2138', 'bg') },
+  nextButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, height: 50, paddingHorizontal: 22, borderRadius: 999, backgroundColor: colors.olive, shadowColor: NIGHT, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   nextButtonText: { color: PAPER, fontFamily: SANS_MEDIUM, fontSize: 14 },
   pressed: { opacity: 0.78 },
   hero: { borderRadius: 22, overflow: 'hidden', backgroundColor: c.olive },
   photo: { height: 128, backgroundColor: c.sage, overflow: 'hidden' },
   largePhoto: { height: 200 },
   photoFallback: { flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' },
-  initial: { fontFamily: fonts.nativeDisplay, fontSize: 56, color: c.olive },
+  initial: { fontFamily: fonts.nativeDisplay, fontSize: 56, color: c.sageInk },
   fallbackCategory: { fontSize: 13, color: c.sageInk, textAlign: 'center' },
   heroCopy: { padding: 20, gap: 8 },
   heroName: { fontFamily: fonts.nativeDisplay, fontSize: 27, color: c.oliveInk, letterSpacing: -0.6 },
@@ -382,7 +384,7 @@ const s = StyleSheet.create({
   cardFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   cardCount: { fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
   readyPill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: c.primary },
-  readyText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  readyText: { color: schemeColor('#FFFFFF', 'fg'), fontSize: 12, fontWeight: '700' },
   moreText: { color: c.primary, fontSize: 15, fontWeight: '600' },
   locationButton: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
   locationButtonText: { color: c.foreground, fontSize: 14, fontWeight: '600' },
@@ -395,7 +397,7 @@ const s = StyleSheet.create({
   tileCopy: { padding: 12, gap: 3 },
   tileName: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 17, color: c.foreground },
   tileCategory: { fontSize: 13, color: c.muted },
-  distancePill: { position: 'absolute', left: 10, top: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 14, backgroundColor: 'rgba(252,252,250,0.95)' },
+  distancePill: { position: 'absolute', left: 10, top: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 14, backgroundColor: schemeColor('rgba(252,252,250,0.95)', 'bg') },
   distanceText: { color: c.foreground, fontSize: 12, fontWeight: '600' },
   circleItem: { width: 72, alignItems: 'center', gap: 8 },
   circle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent' },
@@ -412,4 +414,4 @@ const s = StyleSheet.create({
   showMore: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 12, minHeight: 48, marginTop: 4, paddingHorizontal: 20, borderRadius: 24, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
   empty: { paddingVertical: 24 },
   emptyText: { color: c.muted, fontSize: 16, lineHeight: 24 },
-})
+}))

@@ -7,6 +7,7 @@ import { StoreBadges } from '@/components/store-badges'
 import { LandingDemo } from '@/components/landing-demo'
 import { ContextCursor, Preloader, useEasterEgg, useMagnetic, useReveal, useScrollProgress } from '@/components/poster-fx'
 import { usePageMeta } from '@/lib/use-page-meta'
+import { ThemeToggle } from '@/components/theme-toggle'
 import './landing.css'
 
 const NAV_LINKS = [
@@ -76,10 +77,13 @@ export function Landing() {
             {NAV_LINKS.map((link) => <a key={link.href} href={link.href} onClick={scrollToSection}>{link.label}</a>)}
             <Link to="/help">Help</Link>
           </nav>
+          <div className="flex items-center gap-2">
+          <ThemeToggle compact />
           <Link to="/login" className="lp-btn lp-btn-quiet" data-magnetic>
             <span className="hidden sm:inline">Sign up or log in</span>
             <span className="sm:hidden">Sign in</span>
           </Link>
+          </div>
         </div>
       </header>
 
