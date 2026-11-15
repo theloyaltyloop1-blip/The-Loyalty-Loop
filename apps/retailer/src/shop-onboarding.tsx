@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BadgeCheck, Check, Gem, Mail, Plus, QrCode, ScanLine, Sparkles, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
+import { BadgeCheck, Check, Gem, Plus, QrCode, ScanLine, Sparkles, Star, Stamp, Trash2, Coffee } from "lucide-react-native";
 import Storage from "expo-sqlite/kv-store";
+import { Whirl } from "./Whirl";
 import { colors, fonts } from "@loyalty-loop/design-tokens";
 import {
   PROGRAMMES,
@@ -349,11 +350,14 @@ export function ShopOnboarding({
     <SafeAreaView style={styles.safe}>
       <KeyboardAwareScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Dots step={step} />
+        {step === 0 && <Whirl pose="wave" size={100} style={{ alignSelf: "flex-start", marginBottom: 2 }} />}
+        {step === 1 && <Whirl pose="think" size={100} style={{ alignSelf: "flex-start", marginBottom: 2 }} />}
+        {step === 2 && <Whirl pose={isCustom ? "think" : "stamp"} size={100} style={{ alignSelf: "flex-start", marginBottom: 2 }} />}
 
         {step === 0 && (
           <>
-            <Text style={styles.hero}>What kind of{"\n"}shop is it?</Text>
-            <Text style={styles.copy}>Pick the closest match. We'll suggest rewards your regulars will actually want.</Text>
+            <Text style={styles.hero}>What kind of shop{"\n"}are we dealing with?</Text>
+            <Text style={styles.copy}>Pick the closest match. We'll suggest rewards your regulars will actually like.</Text>
             <View style={styles.stack}>
               {SHOP_KINDS.map((k) => {
                 const Icon = KIND_ICONS[k.key];
@@ -373,7 +377,7 @@ export function ShopOnboarding({
                 <Sparkles size={26} color={custom && !kind ? "#fff" : orange} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.optionTitle, custom && !kind && { color: "#fff" }]}>Something different</Text>
-                  <Text style={[styles.optionBlurb, custom && !kind && { color: "#fff" }]}>Describe your own programme and our AI sets it up</Text>
+                  <Text style={[styles.optionBlurb, custom && !kind && { color: "#fff" }]}>Tell us your idea and our AI sets it up.</Text>
                 </View>
                 {custom && !kind && <View style={styles.checkBadge}><Check size={16} color="#fff" /></View>}
               </Pressable>
@@ -413,8 +417,8 @@ export function ShopOnboarding({
 
         {step === 1 && (
           <>
-            <Text style={styles.hero}>What's your{"\n"}shop called?</Text>
-            <Text style={styles.copy}>This is what customers see at the top of their loyalty card.</Text>
+            <Text style={styles.hero}>What do we{"\n"}call you?</Text>
+            <Text style={styles.copy}>This goes at the top of your customers' loyalty card.</Text>
             <TextInput
               style={styles.input}
               value={name}
@@ -468,8 +472,8 @@ export function ShopOnboarding({
 
         {step === 2 && isCustom && (
           <>
-            <Text style={styles.hero}>Design your{"\n"}programme</Text>
-            <Text style={styles.copy}>Describe it like you'd explain it to a customer. Keep changing it until it's right.</Text>
+            <Text style={styles.hero}>Tell us how it{"\n"}should work.</Text>
+            <Text style={styles.copy}>Explain it the way you would to a customer. Keep tweaking until you're happy.</Text>
             <ProgrammeBuilder
               shop={{ name: name.trim(), category: kind?.category ?? undefined, currencySymbol: symbol }}
               onRules={setRules}
@@ -484,8 +488,8 @@ export function ShopOnboarding({
 
         {step === 2 && !isCustom && draft && (
           <>
-            <Text style={styles.hero}>{activeProgramme === "tiers" ? "Your membership\nlevels" : "Your rewards"}</Text>
-            <Text style={styles.copy}>{`We've filled these in for ${(resume?.name ?? name).trim() || "your shop"}. Change anything, then tap Looks good.`}</Text>
+            <Text style={styles.hero}>{activeProgramme === "tiers" ? "Your membership\nlevels" : "Here's what\nwe'd give them."}</Text>
+            <Text style={styles.copy}>{`We've filled these in for ${(resume?.name ?? name).trim() || "your shop"}. Change anything you fancy, then tap Looks good.`}</Text>
 
             {activeProgramme === "tiers"
               ? draft.tiers.map((tier, index) => (
@@ -574,11 +578,9 @@ export function ShopOnboarding({
 
         {step === 3 && done && (isCustom ? rules : draft) && (
           <>
-            <View style={styles.liveBadge}>
-              <Check size={32} color="#fff" />
-            </View>
-            <Text style={[styles.hero, { textAlign: "center" }]}>You're live!</Text>
-            <Text style={[styles.copy, { textAlign: "center", marginBottom: 20 }]}>Customers can join {resume?.name ?? name} now. This is their card:</Text>
+            <Whirl pose="celebrate" size={130} style={{ alignSelf: "center", marginBottom: 6 }} />
+            <Text style={[styles.hero, { textAlign: "center" }]}>You're open for stamps!</Text>
+            <Text style={[styles.copy, { textAlign: "center", marginBottom: 20 }]}>Customers can join {resume?.name ?? name} now. This is the card they'll see:</Text>
             {isCustom && rules ? (
               <RulesCard rules={rules} symbol={symbol} brandColor={BRAND_COLOR} />
             ) : draft ? (
@@ -588,7 +590,7 @@ export function ShopOnboarding({
             <PrimaryButton title="Print your QR poster" icon={<QrCode size={18} color="#fff" />} onPress={() => onFinish("tools")} />
             <PrimaryButton title="Scan your first customer" secondary icon={<ScanLine size={18} color={green} />} onPress={() => onFinish("scan")} />
             <Pressable onPress={() => onFinish("home")} style={styles.back}>
-              <Text style={styles.backText}>Go to my dashboard</Text>
+              <Text style={styles.backText}>Take me to my dashboard</Text>
             </Pressable>
           </>
         )}
@@ -675,10 +677,8 @@ function SaveShopAccount({
   if (sentTo)
     return (
       <>
-        <View style={styles.liveBadge}>
-          <Mail size={28} color="#fff" />
-        </View>
-        <Text style={[styles.hero, { textAlign: "center" }]}>Check your email</Text>
+        <Whirl pose="sleepy" size={120} style={{ alignSelf: "center", marginBottom: 6 }} />
+        <Text style={[styles.hero, { textAlign: "center" }]}>Check your email.</Text>
         <Text style={[styles.copy, { textAlign: "center" }]}>
           We've sent a link to {sentTo}. Tap it, then sign in. {shop} is saved on this phone and goes live as soon as you're in.
         </Text>
@@ -691,7 +691,8 @@ function SaveShopAccount({
 
   return (
     <>
-      <Text style={styles.hero}>Save your shop</Text>
+      <Whirl pose="thumbs" size={96} style={{ alignSelf: "flex-start", marginBottom: 4 }} />
+      <Text style={styles.hero}>Nearly done.</Text>
       <Text style={styles.copy}>
         {custom
           ? `A free account keeps ${shopName || "your shop"} safe, and lets our AI design its programme with you.`

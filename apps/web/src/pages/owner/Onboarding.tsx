@@ -271,7 +271,8 @@ export function OwnerOnboarding() {
         <div className="rounded-3xl bg-card ring-1 ring-foreground/8 p-6 shadow-[0_24px_60px_rgb(28_38_32/0.08)] sm:p-9">
           {step === 0 && (
             <>
-              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What kind of shop is it?</h1>
+              <img src="/mascot/whirl-wave.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What kind of shop are we dealing with?</h1>
               <p className="text-foreground/70 mb-6">We'll set up the right kind of rewards for you.</p>
               <div className="grid gap-3 mb-4">
                 {SHOP_KINDS.map((k) => {
@@ -365,8 +366,9 @@ export function OwnerOnboarding() {
 
           {step === 1 && (
             <>
-              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What's your shop called?</h1>
-              <p className="text-foreground/70 mb-6">Customers will see this on their loyalty card.</p>
+              <img src="/mascot/whirl-think.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">What do we call you?</h1>
+              <p className="text-foreground/70 mb-6">This goes at the top of your customers' loyalty card.</p>
               <Field label="Shop name">
                 <input className={inputClass} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bean & Bird" autoFocus />
               </Field>
@@ -398,7 +400,8 @@ export function OwnerOnboarding() {
 
           {step === 2 && isCustom && (
             <>
-              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">Design your programme</h1>
+              <img src="/mascot/whirl-think.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">Tell us how it should work.</h1>
               <p className="text-foreground/70 mb-5">
                 Describe it like you'd explain it to a customer. You can keep changing it until it's right.
               </p>
@@ -412,8 +415,9 @@ export function OwnerOnboarding() {
 
           {step === 2 && !isCustom && draft && (
             <>
+              <img src="/mascot/whirl-stamp.svg" alt="" aria-hidden="true" className="mb-2 h-24 w-24" />
               <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-2">
-                {activeProgramme === 'tiers' ? 'Your membership levels' : 'Your rewards'}
+                {activeProgramme === 'tiers' ? 'Your membership levels' : 'Here’s what we’d give them.'}
               </h1>
               <p className="text-foreground/70 mb-5">
                 We've filled these in for you. Change anything, then tap Looks good.
@@ -501,8 +505,9 @@ export function OwnerOnboarding() {
               <div className="flex items-center justify-center h-14 w-14 rounded-full bg-olive text-olive-ink mx-auto mb-4">
                 <Check className="h-7 w-7" />
               </div>
-              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground text-center mb-2">You're live!</h1>
-              <p className="text-foreground/70 text-center mb-6">Customers can join {activeName} now. This is their card:</p>
+              <img src="/mascot/whirl-celebrate.svg" alt="" aria-hidden="true" className="mx-auto mb-2 h-28 w-28" />
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground text-center mb-2">You're open for stamps!</h1>
+              <p className="text-foreground/70 text-center mb-6">Customers can join {activeName} now. This is the card they'll see:</p>
               {isCustom && rules ? (
                 <div className="mb-6"><RulesPreview rules={rules} currencySymbol={activeCountry.currency.symbol} brandColor={BRAND_COLOR} /></div>
               ) : draft && <div className="mb-6"><CardPreview programme={activeProgramme} name={activeName} draft={draft} currency={activeCountry.currency} /></div>}

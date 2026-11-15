@@ -37,7 +37,7 @@ export async function offerPushPrompt(userId: string) {
     if (current.granted || !current.canAskAgain) return
     if ((await SecureStore.getItemAsync(ASKED_KEY)) === 'yes') return
     await SecureStore.setItemAsync(ASKED_KEY, 'yes')
-    setTimeout(() => showAlert('Get a ping about your shop?', 'We’ll tell you when customers join and when a reward is claimed. Nothing else. You can change this any time in your phone’s settings.', [
+    setTimeout(() => showAlert('Want a nudge when something happens in your shop?', 'We’ll tell you when customers join and when a reward is claimed. Nothing else. You can change this any time in your phone’s settings.', [
       { text: 'Not now', style: 'cancel' },
       { text: 'Turn on', onPress: () => void registerPushToken(userId, { ask: true }).catch(() => undefined) },
     ]), 4000)

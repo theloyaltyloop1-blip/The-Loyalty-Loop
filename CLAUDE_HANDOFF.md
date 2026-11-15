@@ -9,6 +9,13 @@ Do not treat anything in "Done" as a request to redo it. Do not build ahead of "
 action" without checking in — some steps are review checkpoints (ARCH_PLAN.md §7) that
 need Claude's sign-off before the next one starts.
 
+## 2026-11-15 - Whirl mascot and approved onboarding copy wired in, NOT shipped - Claude
+- **Owner approved** the copy in `docs/onboarding-voice.md` and chose Whirl. Branch `claude/mascot-concepts` (not pushed, no OTA, no build).
+- **Changed:** shopper `App.tsx` (sign-up hero/sub-line/button/switch link/confirm-email text, ping sheet, empty Rewards/Favourites/News with Whirl); Business `shop-onboarding.tsx` + `push.ts` (wizard copy, Whirl on each step, live and check-email screens); website `Signup.tsx`, `auth-layout.tsx` (new `mascot` prop), `owner/Onboarding.tsx`, `Favourites.tsx`. New: `src/Whirl.tsx` and generated `src/mascot-whirl.ts` in both apps (react-native-svg already a dependency), `apps/web/public/mascot/`, `brand/mascot/src/export_app.py`.
+- **Checks:** `tsc --noEmit` shopper and retailer show only 2 errors each (missing `@expo-google-fonts/*` packages in the shared node_modules, not from these edits); `tsc -b` web clean. Never run on a device or in a browser.
+- **Open:** not looked at on a phone (mascot size/spacing, ping sheet layout, sign-up screen); web uses the light mascot only (no dark version wired, dark-mode session may need `/mascot/dark/`); the web onboarding copy of "What do we call you?" etc. mirrors the app; the "first reward earned" line and mascot moment were left out; old mascot-less ping bell icon removed from the ping sheet.
+- **Next (owner):** say if I should merge into the release line and ship (apps by OTA with `--environment production`, website via main). I will not do that without a yes.
+
 ## 2026-11-15 - Mascot concepts and warmer onboarding script (concept only) - Claude
 - **What:** three mascot concepts (Dot the round blob, Whirl the cheeky loop with limbs, Pip the logo with a quiet face), six poses each (wave, stamping a card, reward, sleepy, thinking, thumbs-up), light and dark versions, hand-written vector. Plus a rewritten onboarding script and 5-line voice guide. Branch `claude/mascot-concepts` (from `claude/reel-release` 5736301), nothing merged or pushed.
 - **Files:** `brand/mascot/concepts.png` (contact sheet, open this first), `brand/mascot/README.md`, `brand/mascot/svg/` and `png/` (+ `dark/`), `brand/mascot/sizes.png`, `brand/mascot/src/build.py` + `render.py`, `docs/onboarding-voice.md`.

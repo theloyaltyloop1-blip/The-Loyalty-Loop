@@ -46,6 +46,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Svg, { Circle, Path } from 'react-native-svg'
+import { Whirl } from './src/Whirl'
 import { LinearGradient } from 'expo-linear-gradient'
 import Constants from 'expo-constants'
 import * as Updates from 'expo-updates'
@@ -494,7 +495,7 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
         })
         if (error) throw error
         if (data.session) onSession(data.session)
-        else showAlert(name.trim() ? `Nearly there, ${name.trim()}` : 'Check your email', 'Check your email and confirm your address, then sign in to start collecting rewards.')
+        else showAlert(name.trim() ? `Nearly there, ${name.trim()}.` : 'Check your email', 'Pop over to your inbox, tap the link, then come back and sign in. Your first stamp is waiting.')
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw error
@@ -557,8 +558,9 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
           <Image source={logo} style={styles.markImage} />
         </View>
         <Text style={styles.eyebrow}>THE LOYALTY LOOP</Text>
-        <Text style={styles.hero}>{reason ? 'Save your card' : mode === 'signUp' ? 'Collect stamps at your local shops' : 'Welcome back'}</Text>
-        <Text style={styles.copy}>{reason ?? (mode === 'signUp' ? 'A free account keeps your cards, stamps and rewards together. No card to carry.' : 'Sign in to see your cards and rewards.')}</Text>
+        {mode === 'signUp' && <Whirl pose={reason ? 'thumbs' : 'wave'} size={104} style={{ alignSelf: 'flex-start', marginBottom: 4 }} />}
+        <Text style={styles.hero}>{reason ? 'Save your card' : mode === 'signUp' ? 'Your local shops want to say thanks.' : 'Welcome back'}</Text>
+        <Text style={styles.copy}>{reason ?? (mode === 'signUp' ? 'A free account keeps your stamps and rewards in one place. Nothing to carry, nothing to lose in a coat pocket.' : 'Sign in to see your cards and rewards.')}</Text>
         <View style={styles.card}>
           {Platform.OS === 'ios' ? (
             <AppleAuthentication.AppleAuthenticationButton
@@ -588,9 +590,9 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
           )}
           <TextInput value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor="#000000" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
           <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor="#000000" style={styles.input} secureTextEntry />
-          <Button title={busy ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Create shopper account'} onPress={submit} disabled={busy} />
+          <Button title={busy ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Let’s go'} onPress={submit} disabled={busy} />
           <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
-            <Text style={styles.link}>{mode === 'signIn' ? 'New here? Create an account' : 'Already have an account? Sign in'}</Text>
+            <Text style={styles.link}>{mode === 'signIn' ? 'New here? Make an account' : 'Been here before? Sign in'}</Text>
           </Pressable>
         </View>
         <Text style={styles.small}>Business or staff account? Use The Loyalty Loop for Business app.</Text>
@@ -2117,7 +2119,7 @@ function NewsTab({ announcements }: { announcements: Announcement[] }) {
   return (
     <>
       <Text style={styles.pageTitle}>News from your shops</Text>
-      {announcements.length === 0 && <Text style={styles.empty}>No announcements yet. Check back soon.</Text>}
+      {announcements.length === 0 && <View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="sleepy" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>Quiet in here. When your shops have news, you’ll see it first.</Text></View>}
       {announcements.map((a) => (
         <View key={a.id} style={styles.newsCard}>
           <Text style={styles.announcementFrom}>{a.business?.name || 'The Loyalty Loop team'}</Text>
@@ -2316,7 +2318,7 @@ function RewardsTab({ rewards }: { rewards: Reward[] }) {
           </Ticket>
         ))
       ) : (
-        <Text style={styles.empty}>Your unlocked rewards will appear here. Keep collecting!</Text>
+        <View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="sleepy" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>Nothing to claim yet. Get a few stamps and your first reward lands right here.</Text></View>
       )}
     </>
   )
@@ -2340,7 +2342,7 @@ function FavouritesTab({
   return (
     <>
       <Text style={styles.pageTitle}>Favourites</Text>
-      {favourites.length === 0 && <Text style={styles.empty}>Tap the heart on a shop's page to save it here.</Text>}
+      {favourites.length === 0 && <View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="think" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>No favourites yet. Tap the heart on any shop you like and it’ll live here.</Text></View>}
       {favourites.map((b) => {
         const member = memberships.some((m) => m.business_id === b.id)
         return (
@@ -2786,12 +2788,12 @@ function AppHome({ session }: { session: Session }) {
     <Sheet visible={askPing} onClose={() => setAskPing(false)} sheetStyle={styles.pingSheet}>
       <SafeAreaView edges={['bottom']}>
         <View style={styles.pingHandle} />
-        <View style={styles.pingIcon}><BellIcon color="#F4F1EA" size={22} /></View>
-        <Text accessibilityRole="header" style={styles.pingTitle}>Get a ping when you earn a reward?</Text>
-        <Text style={styles.pingCopy}>We’ll tell you when a reward is ready and when your shops post news. Nothing else.</Text>
+        <Whirl pose="wave" size={84} style={{ marginBottom: 6 }} />
+        <Text accessibilityRole="header" style={styles.pingTitle}>Want a nudge when a reward is ready?</Text>
+        <Text style={styles.pingCopy}>We’ll tap you when a reward is ready and when your shops have news. That’s all. Promise.</Text>
         <View style={styles.pingRow}>
           <Pressable accessibilityRole="button" onPress={() => setAskPing(false)} style={({ pressed }) => [styles.pingButton, styles.pingNotNow, pressed && { opacity: 0.75 }]}><Text style={styles.pingNotNowText}>Not now</Text></Pressable>
-          <Pressable accessibilityRole="button" onPress={() => void turnOnPings()} style={({ pressed }) => [styles.pingButton, styles.pingOn, pressed && { opacity: 0.75 }]}><Text style={styles.pingOnText}>Turn on</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => void turnOnPings()} style={({ pressed }) => [styles.pingButton, styles.pingOn, pressed && { opacity: 0.75 }]}><Text style={styles.pingOnText}>Yes please</Text></Pressable>
         </View>
       </SafeAreaView>
     </Sheet>
@@ -3077,7 +3079,7 @@ function AppRoot() {
   if (session) return <AppHome session={session} />
   if (auth) return <AuthScreen key={auth.mode + (auth.reason ?? '')} initialMode={auth.mode} reason={auth.reason} onSession={(next) => { setAuth(null); setSession(next) }} onBack={() => { pendingJoin = null; setAuth(null) }} />
   return <GuestHome
-    onJoin={(shop) => { pendingJoin = shop; setAuth({ mode: 'signUp', reason: `Make a free account to save your ${shop.name} card. We’ll join it for you straight away.` }) }}
+    onJoin={(shop) => { pendingJoin = shop; setAuth({ mode: 'signUp', reason: `One quick account and your ${shop.name} card is yours. We’ll join it for you the moment you’re in.` }) }}
     onSignUp={() => setAuth({ mode: 'signUp' })}
     onSignIn={() => setAuth({ mode: 'signIn' })}
   />

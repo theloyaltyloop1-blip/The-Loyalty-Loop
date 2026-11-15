@@ -40,7 +40,7 @@ export function FavouritesPage() {
         <div className="rounded-3xl bg-peach px-6 py-12 text-center text-peach-ink">
           <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-card"><Heart className="h-7 w-7 text-primary" /></span>
           <p className="mx-auto max-w-sm">
-            No favourites yet. Tap the heart on a shop's page to save it here.
+            No favourites yet. Tap the heart on any shop you like and it’ll live here.
           </p>
           <Link to="/dashboard/discover" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary-hover">Find shops</Link>
         </div>

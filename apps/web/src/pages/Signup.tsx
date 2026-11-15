@@ -66,7 +66,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
 
   if (checkEmailSent) {
     return (
-      <AuthLayout title={firstName.trim() ? `Nearly there, ${firstName.trim()}` : 'Check your email'}>
+      <AuthLayout mascot="think" title={firstName.trim() ? `Nearly there, ${firstName.trim()}.` : 'Check your email'}>
         <p className="text-foreground font-semibold">
           We've sent a confirmation link to {email}. Follow it to finish setting up your account.
         </p>
@@ -76,8 +76,9 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
 
   return (
     <AuthLayout
-      title={asOwner ? 'Set up your shop’s loyalty card' : 'Collect stamps at your local shops'}
-      subtitle={asOwner ? 'Free to start, no hardware needed. Name your shop, pick a reward and you’re live in minutes.' : 'Join a shop’s card for free and earn the rewards it offers. No card to carry.'}
+      mascot="wave"
+      title={asOwner ? 'Give your regulars a reason to come back.' : 'Your local shops want to say thanks.'}
+      subtitle={asOwner ? 'Free to start, no hardware needed. Name your shop, pick a reward, and you’re ready to hand out stamps.' : 'Join a shop’s card for free and earn the rewards it offers. Nothing to carry.'}
     >
       <AppleButton onClick={() => signInWithApple(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.'))} />
       <GoogleButton onClick={() => signInWithGoogle(asOwner ? 'business_owner' : undefined).catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
@@ -139,8 +140,8 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
           <AuthLinkLine prompt="Just here to earn rewards?" linkText="Sign up as a customer" to="/signup" />
         ) : (
           <AuthLinkLine
-            prompt="Signing up as a business?"
-            linkText="Sign up as a Loyalty Loop Retailer"
+            prompt="Running a shop?"
+            linkText="Sign up as a business"
             to="/signup/owner"
           />
         )}
