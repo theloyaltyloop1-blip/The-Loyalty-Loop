@@ -10,7 +10,7 @@ export type AskState = 'idle' | 'thinking' | 'answered' | 'refused' | 'error' | 
 
 /** Pose names the design asks for. `oops` is not drawn yet: see resolvePose. */
 export type AskPose = 'wave' | 'think' | 'thumbs' | 'sleepy' | 'oops'
-export type DrawnPose = 'wave' | 'stamp' | 'celebrate' | 'sleepy' | 'think' | 'thumbs'
+export type DrawnPose = 'wave' | 'stamp' | 'celebrate' | 'sleepy' | 'think' | 'thumbs' | 'oops' | 'point' | 'peek'
 
 export const MAX_HISTORY = 10
 export const MAX_INPUT_CHARS = 500
@@ -48,8 +48,8 @@ export function poseFor(state: AskState, hasMessages: boolean): AskPose {
   }
 }
 
-/** `oops` falls back to the closest drawn pose until the Whirl kit ships it. */
-export function resolvePose(pose: AskPose, available: readonly string[] = ['wave', 'stamp', 'celebrate', 'sleepy', 'think', 'thumbs']): DrawnPose {
+/** Poses the Whirl kit draws. A pose missing from `available` falls back to the closest one. */
+export function resolvePose(pose: AskPose, available: readonly string[] = ['wave', 'stamp', 'celebrate', 'sleepy', 'think', 'thumbs', 'oops', 'point', 'peek']): DrawnPose {
   if (available.includes(pose)) return pose as DrawnPose
   return pose === 'oops' ? 'sleepy' : 'wave'
 }

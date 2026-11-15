@@ -21,9 +21,9 @@ test('poses per state: wave on open, think while waiting, thumbs after an answer
   for (const st of ['offline', 'minute', 'day', 'resting']) assert.equal(poseFor(st, true), 'sleepy');
 });
 
-test('oops falls back to sleepy until the kit draws it, then is used as is', () => {
-  assert.equal(resolvePose('oops'), 'sleepy');
-  assert.equal(resolvePose('oops', ['wave', 'oops']), 'oops');
+test('oops is drawn by the kit; an older kit without it falls back to sleepy', () => {
+  assert.equal(resolvePose('oops'), 'oops');
+  assert.equal(resolvePose('oops', ['wave', 'sleepy']), 'sleepy');
   assert.equal(resolvePose('think'), 'think');
 });
 

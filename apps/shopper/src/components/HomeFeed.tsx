@@ -1,4 +1,5 @@
 import { Whirl } from '../Whirl'
+import { AskWhirlCard } from './AskWhirlCard'
 import { useWhirlSlot } from '../../../../packages/whirl/native'
 import { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
@@ -54,12 +55,14 @@ function ShopMark({ shop, index }: { shop: FeedShop; index: number }) {
 
 export function HomeFeed<T extends FeedShop>({
   firstName, shops, memberships, catalog, news, location, locationStatus, onUseLocation,
-  onSelect, onSearch, onSeeNews, onAsk, onOpenProfile, quickIds = [], onQuickChange,
+  onSelect, onSearch, onSeeNews, onAsk, onOpenProfile, onAskWhirl, quickIds = [], onQuickChange,
 }: {
   firstName?: string
   shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; news: FeedNews[]
   location: Coords | null; locationStatus: LocationStatus; onUseLocation: () => void
   onSelect: (shop: T) => void; onSearch: () => void; onSeeNews: () => void; onAsk: () => void; onOpenProfile: () => void
+  /** Opens Ask Whirl. Left out = no card (guests, or the feature switched off). */
+  onAskWhirl?: () => void
   /** Shopper-picked cards for the top of home; empty means automatic. */
   quickIds?: string[]; onQuickChange?: (ids: string[]) => void
 }) {
@@ -88,7 +91,7 @@ export function HomeFeed<T extends FeedShop>({
         {greeting ? <Whirl pose="peek" size={92} effect="peek" /> : null}
       </View>
     </FadeUp>
-    {/* Clean spot for the future "Ask Whirl" entry (a single 72 px row). Intentionally empty: no assistant exists yet. */}
+    {onAskWhirl ? <FadeUp delay={60}><AskWhirlCard mode="shopper" onPress={onAskWhirl} /></FadeUp> : null}
 
     <FadeUp delay={100}><NextRewardHero shops={shops} memberships={memberships} catalog={catalog} onSelect={onSelect} quickIds={quickIds} onEditQuick={onQuickChange ? () => setEditingQuick(true) : undefined} /></FadeUp>
 

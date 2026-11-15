@@ -1,4 +1,6 @@
 import { WhirlSpinner, useWhirlSlot } from '../../packages/whirl/native'
+import { AskWhirlCard } from './src/components/AskWhirlCard';
+import { AskWhirlSheet } from './src/components/AskWhirlSheet';
 import { AppWhirlProvider, Whirl, WhirlEmpty, WhirlOrMark } from './src/Whirl'
 import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { AppAlertHost, showAlert } from "./src/components/AppAlert";
@@ -1488,6 +1490,7 @@ function DashboardHome({
   onWinBack?: () => void;
 }) {
   const greeting = useWhirlSlot("home", "greeting");
+  const [askWhirl, setAskWhirl] = useState(false);
   const checklist = [
     { label: "Add your address", done: Boolean(business.address) },
     { label: "Add your postcode", done: Boolean(business.postcode) },
@@ -1513,7 +1516,9 @@ function DashboardHome({
         <Text style={[styles.homeHeaderName, { flexShrink: 1 }]} numberOfLines={1}>{business.name}</Text>
         {greeting ? <Whirl pose="peek" size={76} effect="peek" style={{ marginLeft: "auto" }} /> : null}
       </View>
-      {/* Clean spot for the future "Ask Whirl" card (one 72 px row, under this header). Intentionally empty until the assistant exists. */}
+      <AskWhirlCard mode="business" onPress={() => setAskWhirl(true)} />
+      {/* Only aggregate counts are sent to Whirl: never customers' names, emails or numbers. */}
+      <AskWhirlSheet visible={askWhirl} onClose={() => setAskWhirl(false)} mode="business" businessId={business.id} stats={{ period: stats }} />
 
       <View style={styles.homePanel}>
         <Text style={styles.homePanelLabel}>Last 30 days</Text>

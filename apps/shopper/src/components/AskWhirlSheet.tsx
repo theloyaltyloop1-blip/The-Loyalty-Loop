@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store'
 import { colors, fonts } from '@loyalty-loop/design-tokens'
 import { supabase } from '../supabase'
 import { Whirl } from '../Whirl'
+import { useWhirlVariant } from '../../../../packages/whirl/native'
 import { Sheet } from './Sheet'
 import {
   COPY, MAX_INPUT_CHARS, NOTICE_KEY, NOTICE_TEXT, STARTERS, classifyFailure, poseFor, resolvePose, toRequestMessages,
@@ -16,8 +17,7 @@ import {
  * cleared when the sheet closes. Server functions: shopper -> `ask-whirl`,
  * business -> `business-coach-chat` (both rate limited, signed-in only).
  *
- * `dark` picks the dark palette. It is a plain prop so it works before the
- * Whirl kit's variant hook lands; wire it to that hook when it does.
+ * Light or dark comes from the Whirl kit's `useWhirlVariant()` (the app theme).
  */
 export type AskWhirlProps = {
   visible: boolean
@@ -32,12 +32,11 @@ export type AskWhirlProps = {
   /** Shopper mode: turn a shop id from an answer into a chip; return null to hide it. */
   resolveShop?: (id: string) => { name: string } | null
   onOpenShop?: (id: string) => void
-  dark?: boolean
 }
 
 type Turn = ChatMessage & { shopIds?: string[]; failed?: boolean }
 
-const LIGHT = { bg: colors.background, card: colors.card, ink: colors.ink, muted: colors.muted, border: colors.border, accent: colors.primary, onAccent: colors.oliveInk, bubble: colors.sage }
+const light = () => ({ bg: colors.background, card: colors.card, ink: colors.ink, muted: colors.muted, border: colors.border, accent: colors.primary, onAccent: colors.oliveInk, bubble: colors.sage })
 const DARK = { bg: '#121714', card: '#1B221E', ink: '#F2EFE6', muted: '#A9B0A6', border: '#2B342F', accent: '#EE9A52', onAccent: '#1A1208', bubble: '#242D28' }
 
 async function failureFrom(error: unknown): Promise<AskState> {
@@ -51,8 +50,8 @@ async function failureFrom(error: unknown): Promise<AskState> {
   return classifyFailure(null, null)
 }
 
-export function AskWhirlSheet({ visible, onClose, mode, businessId, stats, near, resolveShop, onOpenShop, dark = false }: AskWhirlProps) {
-  const t = dark ? DARK : LIGHT
+export function AskWhirlSheet({ visible, onClose, mode, businessId, stats, near, resolveShop, onOpenShop }: AskWhirlProps) {
+  const t = useWhirlVariant() === 'dark' ? DARK : light()
   const [turns, setTurns] = useState<Turn[]>([])
   const [state, setState] = useState<AskState>('idle')
   const [input, setInput] = useState('')

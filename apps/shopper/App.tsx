@@ -25,6 +25,8 @@ import {
 import { CategoryCircles, HomeCollection, homeStyles } from './src/components/HomeCollection'
 import { RewardCelebration, markRewardsSeen, unseenReward } from './src/components/RewardCelebration'
 import { HomeFeed } from './src/components/HomeFeed'
+import { AskWhirlSheet } from './src/components/AskWhirlSheet'
+import { coarseNear } from './src/ask-whirl-core'
 import { categoryCounts } from './src/home-rails'
 import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
 import { fuzzyFilter } from './src/fuzzy-search'
@@ -1815,12 +1817,19 @@ function HomeTab({ userId, businesses, memberships, catalog, announcements, load
   const filtered = fuzzyFilter(businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features)), searchTerm, b => [b.name, b.category, b.address])
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
+  const [askWhirl, setAskWhirl] = useState(false)
   if (!searching) {
     if (loading && businesses.length === 0) return <SkeletonScreen cards={3} cardHeight={150} label="Finding your local favourites" />
-    return <HomeFeed firstName={firstName} shops={businesses} memberships={memberships} catalog={catalog} news={announcements}
+    return <><HomeFeed firstName={firstName} shops={businesses} memberships={memberships} catalog={catalog} news={announcements}
       location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }}
       onSelect={onSelect} onSearch={() => setSearching(true)} onSeeNews={onSeeNews} onAsk={() => onAsk('')} onOpenProfile={onOpenProfile}
+      onAskWhirl={() => setAskWhirl(true)}
       quickIds={quickCards.ids} onQuickChange={quickCards.save} />
+      <AskWhirlSheet visible={askWhirl} onClose={() => setAskWhirl(false)} mode="shopper"
+        near={coarseNear(userLocation?.lat, userLocation?.lng)}
+        resolveShop={id => { const b = businesses.find(x => x.id === id); return b ? { name: b.name } : null }}
+        onOpenShop={id => { const b = businesses.find(x => x.id === id); if (b) { setAskWhirl(false); onSelect(b) } }} />
+    </>
   }
   const closeSearch = () => { setSearching(false); setQuery(''); setCategory(null); setFeatures([]) }
   return <>
