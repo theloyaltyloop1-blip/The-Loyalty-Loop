@@ -136,7 +136,7 @@ export function ProgrammeBuilder({
               key={ex}
               type="button"
               onClick={() => void send(ex)}
-              className="rounded-full border-2 border-border bg-white/60 px-3 py-1.5 text-xs font-semibold text-foreground text-left hover:border-primary"
+              className="rounded-full border-2 border-border bg-card/60 px-3 py-1.5 text-xs font-semibold text-foreground text-left hover:border-primary"
             >
               {ex}
             </button>
@@ -173,7 +173,7 @@ export function ProgrammeBuilder({
       {rules && <div className="mt-5"><RulesPreview rules={rules} currencySymbol={shop.currencySymbol} brandColor={brandColor} /></div>}
 
       {notes.length > 0 && (
-        <div className="mt-3 rounded-2xl bg-white/70 ring-1 ring-foreground/10 p-4">
+        <div className="mt-3 rounded-2xl bg-card/70 ring-1 ring-foreground/10 p-4">
           <p className="flex items-center gap-1.5 text-sm font-bold text-foreground mb-1">
             <Info className="h-4 w-4 text-primary" /> Not possible yet
           </p>

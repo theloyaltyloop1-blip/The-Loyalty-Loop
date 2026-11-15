@@ -507,7 +507,7 @@ export function ShopDetail() {
           )}
 
           <div ref={loyaltyCardRef} className="flex flex-col sm:flex-row items-start gap-6 rounded-2xl bg-sage p-5 text-sage-ink">
-            <div className="rounded-xl bg-white p-2.5"><QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={112} /></div>
+            <div className="rounded-xl bg-[#FFFFFF] p-2.5"><QRCodeSVG value={`loyaltyloop:customer:${session.user.id}`} size={112} /></div>
             <div>
               <p className="text-sm text-sage-ink/75 mb-0.5">Manual code</p>
               <p className="font-mono font-bold text-xl tracking-widest mb-3">

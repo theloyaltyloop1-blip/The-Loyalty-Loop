@@ -41,12 +41,6 @@ const navGroups: { label: string; tabs: Tab[] }[] = [
 // to bring each one back, rather than that knowledge only living in git log.
 const PAUSED_FEATURES = [
   {
-    name: 'Dark mode toggle',
-    where: 'Site-wide (every page)',
-    detail: 'The floating sun/moon button that let visitors switch themes was removed. Dark mode itself (the theme provider, localStorage persistence and every .dark CSS rule) is untouched and still fully working, there\'s just no UI control to switch it anymore.',
-    toBringBack: 'Re-add <ThemeToggle compact /> in App.tsx (see git history for the exact spot).',
-  },
-  {
     name: 'WhatsApp QR onboarding',
     where: 'Every shop\'s Growth Tools page',
     detail: 'The card that let a shop owner route their printed poster through a WhatsApp join flow (scan → WhatsApp chat → joined) instead of the standard QR join was removed from the Growth Tools page for every shop. The underlying capability (the database flag, the poster\'s conditional QR routing and the /whatsapp/* pages) is untouched, so any shop that had already turned it on keeps working exactly as before.',

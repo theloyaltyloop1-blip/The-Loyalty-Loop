@@ -641,7 +641,7 @@ function StampLoyaltyTab() {
               onClick={() => setLoyaltyType(opt.value)}
               className={
                 'text-left rounded-xl border-2 p-4 transition-colors duration-150 ease-out ' +
-                (loyaltyType === opt.value ? 'border-primary bg-card' : 'border-border bg-white/40')
+                (loyaltyType === opt.value ? 'border-primary bg-card' : 'border-border bg-card/40')
               }
             >
               <p className="font-bold text-foreground mb-1">{opt.title}</p>
@@ -1002,7 +1002,7 @@ function TiersLoyaltyTab() {
         </p>
         <div className="flex flex-col gap-4">
           {levels.map((level, index) => (
-            <div key={level.id ?? `new-${index}`} className="rounded-xl border border-border bg-white/40 p-4 grid gap-3 sm:grid-cols-2">
+            <div key={level.id ?? `new-${index}`} className="rounded-xl border border-border bg-card/40 p-4 grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-semibold text-foreground">Level name
                 <input className={inputClass} maxLength={40} value={level.name} onChange={(e) => update(index, { name: e.target.value })} placeholder="e.g. Gold" />
               </label>
@@ -1140,7 +1140,7 @@ function PointsLoyaltyTab() {
         <p className="text-sm text-muted-foreground mb-4">Customers swap their points for these rewards in the app. Each reward needs its own points cost.</p>
         <div className="flex flex-col gap-3">
           {rewards.map((reward, index) => (
-            <div key={reward.id ?? `new-${index}`} className="rounded-xl border border-border bg-white/40 p-4 grid gap-3 sm:grid-cols-3">
+            <div key={reward.id ?? `new-${index}`} className="rounded-xl border border-border bg-card/40 p-4 grid gap-3 sm:grid-cols-3">
               <label className="text-sm font-semibold text-foreground sm:col-span-2">Reward
                 <input className={inputClass} maxLength={80} value={reward.title} onChange={(e) => setRewards(rewards.map((r, i) => (i === index ? { ...r, title: e.target.value } : r)))} />
               </label>

@@ -100,7 +100,7 @@ export function MagneticDropZone({
           'focus-visible:ring-3 focus-visible:ring-primary/25',
           over
             ? 'border-solid border-primary bg-primary/[0.06] -translate-y-0.5 shadow-[0_10px_30px_-12px_rgb(43_58_103/0.45)] text-primary'
-            : 'border-dashed border-border bg-white/40 text-muted-foreground hover:border-primary/50',
+            : 'border-dashed border-border bg-card/40 text-muted-foreground hover:border-primary/50',
           className,
         ].join(' ')}
         style={showImage ? { backgroundImage: `url(${currentUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}

@@ -28,7 +28,7 @@ function RewardCard({ reward }: { reward: CustomerReward }) {
       </div>
       {!unavailable && (
         <div className="border-t-2 border-dashed border-amber-ink/15 bg-amber p-5 flex items-center gap-4 text-amber-ink">
-          <div className="rounded-xl bg-white p-2 shrink-0"><QRCodeSVG value={encodeRewardQr(reward.qr_token)} size={76} /></div>
+          <div className="rounded-xl bg-[#FFFFFF] p-2 shrink-0"><QRCodeSVG value={encodeRewardQr(reward.qr_token)} size={76} /></div>
           <div>
             <p className="text-sm text-amber-ink/75">Reward code</p>
             <p className="font-display text-3xl font-bold tracking-wider tabular-nums">{reward.short_code}</p>

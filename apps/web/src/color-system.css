@@ -158,32 +158,32 @@
 }
 
 html.dark {
-  --color-background: var(--palette-neutral-950);
-  --color-foreground: var(--palette-neutral-100);
-  --color-card: var(--palette-neutral-900);
-  --color-card-foreground: var(--palette-neutral-100);
-  --color-primary: var(--palette-olive-400);
+  --color-background: #121214;
+  --color-foreground: #F2EFE8;
+  --color-card: #1B1B1F;
+  --color-card-foreground: #F2EFE8;
+  --color-primary: var(--palette-orange-400);
   --color-primary-foreground: var(--palette-orange-950);
-  --color-primary-hover: var(--palette-olive-300);
+  --color-primary-hover: var(--palette-orange-300);
   --color-primary-glow: var(--palette-olive-400);
-  --color-secondary: var(--palette-neutral-800);
-  --color-secondary-foreground: var(--palette-neutral-100);
+  --color-secondary: #26262B;
+  --color-secondary-foreground: #F2EFE8;
   --color-accent: var(--palette-jade-300);
   --color-accent-foreground: var(--palette-jade-950);
-  --color-ink: var(--palette-neutral-100);
+  --color-ink: #F2EFE8;
   --color-fun-green: var(--palette-jade-300);
   --color-fun-violet: var(--palette-olive-300);
   --color-destructive: var(--palette-red-300);
   --color-destructive-foreground: var(--palette-red-950);
   --color-destructive-subtle: var(--palette-red-950);
   --color-destructive-border: var(--palette-red-400);
-  --color-border: var(--palette-neutral-800);
-  --color-input: var(--palette-neutral-500);
-  --color-ring: var(--palette-olive-400);
-  --color-muted: var(--palette-neutral-800);
-  --color-muted-foreground: var(--palette-neutral-400);
-  --color-popover: var(--palette-neutral-900);
-  --color-popover-foreground: var(--palette-neutral-100);
+  --color-border: #36363C;
+  --color-input: #7C7C85;
+  --color-ring: var(--palette-orange-300);
+  --color-muted: #26262B;
+  --color-muted-foreground: #B0ABA3;
+  --color-popover: #1B1B1F;
+  --color-popover-foreground: #F2EFE8;
   --color-olive: var(--palette-orange-900);
   --color-olive-ink: var(--palette-orange-50);
   --color-sage: var(--palette-olive-950);

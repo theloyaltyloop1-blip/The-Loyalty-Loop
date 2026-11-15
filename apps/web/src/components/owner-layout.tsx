@@ -7,6 +7,7 @@ import { onBrandColor } from '@/lib/utils'
 import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 import { OwnerSearchPill } from '@/components/owner-command-palette'
 import { OwnerWalkthrough } from '@/components/owner-walkthrough'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { OwnerLoadError } from '@/components/owner-load-error'
@@ -170,6 +171,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
             </NavLink>
             </React.Fragment>
           ))}
+          <ThemeToggle className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-olive-ink/70 hover:bg-olive-ink/10 md:hidden" />
           <button data-press-feedback onClick={signOut} className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-olive-ink/70 hover:bg-olive-ink/10 md:hidden">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
@@ -185,6 +187,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               Switch to customer view
             </Link>
           )}
+          <ThemeToggle className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[15px] font-semibold text-olive-ink/65 transition-colors duration-200 hover:bg-olive-ink/10 hover:text-olive-ink" />
           <button data-press-feedback
             onClick={signOut}
             className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[15px] font-semibold text-olive-ink/65 hover:bg-olive-ink/10 hover:text-olive-ink transition-colors duration-200 ease-out"
