@@ -130,8 +130,9 @@ export function AskWhirlSheet({ visible, onClose, mode, businessId, stats, near,
   const blocked = state === 'offline' || state === 'minute' || state === 'day' || state === 'resting'
 
   return (
-    <Sheet visible={visible} onClose={onClose} sheetStyle={{ backgroundColor: t.bg, maxHeight: '88%' }}>
+    <Sheet visible={visible} onClose={onClose} sheetStyle={[s.sheet, { backgroundColor: t.bg, borderColor: t.border, maxHeight: '88%' }]}>
       <View style={s.wrap}>
+        <View style={[s.handle, { backgroundColor: t.border }]} />
         {notice === 'show' ? (
           <View style={s.center}>
             <Whirl pose="wave" size={96} />
@@ -158,7 +159,7 @@ export function AskWhirlSheet({ visible, onClose, mode, businessId, stats, near,
               ) : (
                 turns.map((m, i) => (
                   <View key={i} style={m.role === 'user' ? s.rowUser : s.rowBot}>
-                    <View style={[s.bubble, m.role === 'user' ? { backgroundColor: t.accent } : { backgroundColor: t.bubble }]}>
+                    <View style={[s.bubble, m.role === 'user' ? { backgroundColor: t.accent } : { backgroundColor: t.card, borderWidth: 1, borderColor: t.border }]}>
                       <Text style={[s.bubbleText, { color: m.role === 'user' ? t.onAccent : t.ink }]}>{m.content}</Text>
                     </View>
                     {m.shopIds?.map((id) => {
@@ -247,7 +248,9 @@ function Dots({ color, still }: { color: string; still: boolean }) {
 }
 
 const s = StyleSheet.create({
-  wrap: { paddingHorizontal: 16, paddingBottom: 12, minHeight: 360 },
+  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderBottomWidth: 0, overflow: 'hidden', shadowColor: '#000000', shadowOpacity: 0.18, shadowRadius: 20, shadowOffset: { width: 0, height: -6 }, elevation: 16 },
+  handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, marginTop: 10, marginBottom: 14 },
+  wrap: { paddingHorizontal: 16, paddingBottom: 24, minHeight: 360 },
   scroll: { flexGrow: 0, maxHeight: 440 },
   scrollIn: { paddingVertical: 8, gap: 10 },
   center: { alignItems: 'center', gap: 10, paddingVertical: 12 },
@@ -263,7 +266,7 @@ const s = StyleSheet.create({
   problem: { alignItems: 'center', gap: 10, paddingVertical: 8 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, borderWidth: 1, borderRadius: 20, padding: 6, marginTop: 8 },
   input: { flex: 1, fontFamily: fonts.body, fontSize: 16, maxHeight: 110, paddingHorizontal: 10, paddingVertical: 8 },
-  send: { borderRadius: 16, paddingVertical: 10, paddingHorizontal: 16 },
+  send: { borderRadius: 16, alignSelf: 'flex-end', paddingVertical: 10, paddingHorizontal: 16 },
   primary: { borderRadius: 16, paddingVertical: 12, paddingHorizontal: 22, alignSelf: 'center' },
   primaryText: { fontFamily: fonts.nativeDisplaySemibold, fontSize: 15 },
 })

@@ -171,5 +171,5 @@ export function Sheet({
 
 const styles = themed(() => StyleSheet.create({
   host: { flex: 1, justifyContent: 'flex-end' },
-  backdropTint: { backgroundColor: schemeColor('rgba(0,0,0,0.25)', 'bg') },
+  backdropTint: { backgroundColor: schemeColor('rgba(0,0,0,0.42)', 'bg') },
 }))
