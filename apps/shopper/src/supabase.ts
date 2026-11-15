@@ -20,3 +20,22 @@ export const supabase = createClient(url || 'https://placeholder.supabase.co', k
 })
 
 export const hasSupabaseConfig = Boolean(url && key)
+
+// Optimistic launch: read the session supabase-js persisted, straight from local
+// storage with no network. getSession() can block on a token refresh when the
+// access token has expired, which would hold up first paint. The app shows from
+// this value and lets getSession() confirm it in the background.
+// Default supabase-js storage key: sb-<project-ref>-auth-token.
+export async function readStoredSession(): Promise<import('@supabase/supabase-js').Session | null> {
+  try {
+    if (!hasSupabaseConfig) return null
+    const ref = new URL(url).hostname.split('.')[0]
+    const raw = await storage.getItem(`sb-${ref}-auth-token`)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.access_token || !parsed?.refresh_token || !parsed?.user?.id) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
