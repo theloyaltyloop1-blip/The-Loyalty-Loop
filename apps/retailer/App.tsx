@@ -59,6 +59,8 @@ import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, rewardDiscountPence } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
 import { hasSupabaseConfig, supabase } from "./src/supabase";
+import { fuzzyFilter } from "./src/fuzzy-search";
+import { useDebouncedValue } from "./src/use-debounced-value";
 import { SuccessCheck } from "./src/components/SuccessCheck";
 import {
   NativeOwnerPageView,
@@ -1674,11 +1676,11 @@ function MembersPage({ business }: { business: Business }) {
         setLoading(false);
       });
   }, [business.id]);
-  const shown = members.filter((member) =>
-    `${member.first_name || ""} ${member.last_name || ""}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const searchTerm = useDebouncedValue(search);
+  // Typo-tolerant, accent-insensitive; "Smith John" finds John Smith.
+  const shown = fuzzyFilter(members, searchTerm, (member) => [
+    `${member.first_name || ""} ${member.last_name || ""}`,
+  ]);
   return (
     <View>
       <Text style={styles.pageKicker}>CUSTOMERS</Text>
@@ -1740,7 +1742,11 @@ function MembersPage({ business }: { business: Business }) {
           );
         })
       ) : (
-        <Text style={styles.emptyState}>No matching members yet.</Text>
+        <Text style={styles.emptyState}>
+          {searchTerm.trim()
+            ? `No members match "${searchTerm.trim()}". Check the spelling or try just a first name.`
+            : "No members yet. Customers appear here once they join your shop."}
+        </Text>
       )}
     </View>
   );

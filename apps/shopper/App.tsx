@@ -22,6 +22,8 @@ import {
 import { CategoryCircles, HomeCollection, homeStyles } from './src/components/HomeCollection'
 import { categoryCounts } from './src/home-rails'
 import { SHOP_FEATURES, featureBadge, hasAllFeatures } from './src/shop-features'
+import { fuzzyFilter } from './src/fuzzy-search'
+import { useDebouncedValue } from './src/use-debounced-value'
 import { formatAddress } from './src/format-address'
 import { useLaunchUpdate } from './src/launch-update'
 import { useUserLocation } from './src/use-user-location'
@@ -1683,7 +1685,9 @@ function HomeTab({ businesses, memberships, catalog, announcements, loading, onS
   const [category, setCategory] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [features, setFeatures] = useState<string[]>([])
-  const filtered = businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features) && b.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const searchTerm = useDebouncedValue(query)
+  // Typo-tolerant and ranked best-match-first; with no search text the list keeps its own order.
+  const filtered = fuzzyFilter(businesses.filter(b => (!category || (b.category || 'Other') === category) && hasAllFeatures(b.features, features)), searchTerm, b => [b.name, b.category, b.address])
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
   return <>
@@ -1691,7 +1695,7 @@ function HomeTab({ businesses, memberships, catalog, announcements, loading, onS
     <SearchBar accessibilityLabel="Search local shops" value={query} onChangeText={setQuery} />
     <CategoryCircles categories={categoryCounts(businesses)} selected={category} onSelect={setCategory} />
     <FeatureFilter selected={features} onChange={setFeatures} />
-    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || features.length > 0 || !!query.trim()} onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
+    {loading && businesses.length === 0 ? <View accessibilityState={{ busy: true }} style={{ paddingVertical: 36, alignItems: 'center', gap: 12 }}><ActivityIndicator color={primary} /><Text style={styles.muted}>Finding your local favourites…</Text></View> : <HomeCollection shops={filtered} featured={trending} memberships={memberships} catalog={catalog} filtered={!!category || features.length > 0 || !!searchTerm.trim()} onSelect={onSelect} onCategory={setCategory} location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }} />}
     {announcements.length > 0 && <>
       <Text style={homeStyles.sectionHeading}>From your local shops</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.announcementRow}>
@@ -1801,7 +1805,8 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
   const mapRef = useRef<MapView>(null)
   const [query, setQuery] = useState('')
   const [center, setCenter] = useState<{lat:number;lng:number}|undefined>()
-  const matches = businesses.filter(b => b.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const searchTerm = useDebouncedValue(query)
+  const matches = fuzzyFilter(businesses, searchTerm, b => [b.name, b.category, b.address])
   const pins = businesses
     .filter((b): b is Business & { lat: number; lng: number } => b.lat != null && b.lng != null)
     .map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, business: b }))
