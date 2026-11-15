@@ -14,7 +14,7 @@ Rules for entries are in `CLAUDE.md`. Entries mentioning Codex are history; Code
 ## 2026-11-15 - Instruction files rewritten (CLAUDE.md, AGENTS.md, this header) - NOT shipped
 
 - **What:** `CLAUDE.md` replaced with the current rules (branch from `origin/main`, main chat does not build, owner's yes before commit/deploy/OTA, `eas update --environment production` per platform with a bundle check, `showAlert`, coloured tiles, no Fidel contact), a release checklist and a Never list. `AGENTS.md` is now a pointer to `CLAUDE.md`. This file's Fidel/Codex header replaced by the header and "Current state" block above. The old "Copy-ready prompt for Claude Code" section and a stray prompt line at the very end were removed; nothing replaces them.
-- **Branch:** `claude/instruction-rewrite`, worktree `.claude/worktrees/instruction-rewrite`, cut from `origin/main` b759d00. Uncommitted.
+- **Branch:** `claude/instruction-rewrite`, worktree `.claude/worktrees/instruction-rewrite`, cut from `origin/main` b759d00. Committed on the branch, not pushed or merged.
 - **Checks run:** `git diff --stat` shows only these three files; the old header and prompt section are gone and every other entry is unchanged. **Not run:** no build or test (docs only). The `eas update` line in the checklist was copied from earlier notes, not executed.
 - **Open:** the version lines in "Current state" come from the 15 November release entries and need the owner's confirmation. `ARCH_PLAN.md` and `IMPLEMENTATION_TIMELINE.md` still describe the Codex era. `.agents/skills/` is a stale Codex copy of `.claude/skills/`. GitHub's default branch is still `apps/web`.
 - **Next:** (owner) say whether to commit and merge to `main`. (owner) change the GitHub default branch to `main`.
