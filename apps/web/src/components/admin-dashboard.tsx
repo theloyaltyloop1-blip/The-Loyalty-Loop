@@ -1,19 +1,10 @@
 import { useState } from 'react'
-import { Store, Users, Receipt, Gift, BarChart3, ArrowUpRight, Check, CircleHelp } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
 
 export type AdminUsage = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 const number = (value: number) => value.toLocaleString()
 const label = (value: string) => value.replaceAll('_', ' ')
 const palette = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)']
-
-export function AdminMetrics({ counts }: { counts: Record<string, number> }) {
-  return <div className="admin-metrics">{[
-    { key: 'businesses', title: 'Businesses', icon: Store, note: 'All business records' },
-    { key: 'memberships', title: 'Loyalty memberships', icon: Users, note: 'Shop memberships, not unique people' },
-    { key: 'transactions', title: 'Transactions', icon: Receipt, note: 'All recorded transaction types' },
-    { key: 'rewards', title: 'Rewards', icon: Gift, note: 'All reward records' },
-  ].map(({ key, title, icon: Icon, note }) => <article className="admin-metric" key={key}><span className="admin-metric-icon"><Icon size={21}/></span><div className="admin-metric-content"><span>{title}</span><strong>{counts[key] === undefined ? 'Unavailable' : number(counts[key])}</strong><p>{note}</p></div></article>)}</div>
-}
 
 function BarChart({ title, subtitle, rows }: { title: string; subtitle: string; rows: { name: string; value: number }[] }) {
   const maximum = Math.max(1, ...rows.map(row => row.value))
@@ -29,10 +20,6 @@ function SurfaceChart({ rows, total }: { rows: { name: string; value: number }[]
     offset += length
     return <circle key={row.name} cx="100" cy="100" r="72" fill="none" stroke={palette[index % palette.length]} strokeWidth="22" strokeDasharray={`${length} ${circumference - length}`} strokeDashoffset={-start} transform="rotate(-90 100 100)"><title>{label(row.name)}: {number(row.value)} actions</title></circle>
   })}</svg><div><strong>{number(total)}</strong><span>tracked actions</span></div></div><ul className="admin-surface-key">{rows.map((row, index) => <li key={row.name}><span className="admin-key-dot" style={{ background: palette[index % palette.length] }} aria-hidden="true"/><span>{label(row.name)}</span><strong>{number(row.value)}</strong><small>{Math.round(row.value / total * 100)}%</small></li>)}</ul></> : <div className="admin-chart-empty"><BarChart3 size={28}/><strong>No activity yet</strong><span>Opted-in activity will appear here.</span></div>}</section>
-}
-
-export function AdminQueueSummary({ message, queues }: { message: string; queues: { key: string; label: string; count: number; unavailable: boolean; onOpen: () => void }[] }) {
-  return <section className="admin-work"><div className="admin-work-intro"><span className="admin-work-icon" aria-hidden="true"><Check size={22}/></span><h2>Review queues</h2><p>{message}</p><small>Open a queue to review its records.</small></div><div className="admin-work-links">{queues.map(queue => <button key={queue.key} onClick={queue.onOpen}><span className="admin-queue-count">{queue.unavailable ? <CircleHelp size={22} aria-label="Unavailable"/> : number(queue.count)}</span><span>{queue.label}<small>{queue.unavailable ? 'Could not load' : queue.count === 1 ? '1 item to review' : `${number(queue.count)} items to review`}</small></span><ArrowUpRight size={18}/></button>)}</div></section>
 }
 
 export function AdminCharts({ items, unavailable = false }: { items: AdminUsage[]; unavailable?: boolean }) {

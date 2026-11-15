@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Navigate, Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, CheckCircle2, Download, LockKeyhole, PauseCircle, ShieldCheck, XCircle, CalendarDays, Mail } from 'lucide-react'
+import { Users as UsersIcon, ScrollText, BarChart3, LayoutDashboard, SlidersHorizontal, Store, LifeBuoy, MessageSquareWarning, HardDrive, Gift, RefreshCw, LogOut, ArrowUpRight, Download, LockKeyhole, PauseCircle, ShieldCheck, CalendarDays, Mail, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchPlatformHealth } from '@/lib/platform-health'
 import './admin-panel.css'
-import './admin-reference.css'
+import './admin-redesign.css'
 import { Audit } from '@/pages/admin/Audit'
 import { Businesses } from '@/pages/admin/Businesses'
 import { Loyalty } from '@/pages/admin/Loyalty'
@@ -17,7 +17,9 @@ import { Users } from '@/pages/admin/Users'
 import { ReleaseEmails } from '@/pages/admin/ReleaseEmails'
 import { TrendingAdmin } from '@/pages/TrendingAdmin'
 import { ShopRequests } from '@/pages/ShopRequests'
-import { AdminCharts, AdminMetrics, AdminQueueSummary } from '@/components/admin-dashboard'
+import { AdminCharts } from '@/components/admin-dashboard'
+import { fetchDashboardStats, type DashboardStats } from '@/lib/admin'
+import { Hero, NeedsYou, RecentActivity, SystemChecks, type ActivityRow } from '@/pages/admin/Overview'
 import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, getVerificationDocUrl, fetchVerificationChecks, fetchVerificationMode, setVerificationMode, spotCheckVerification, type VerificationCheck, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
@@ -31,9 +33,12 @@ const tabLabels: Record<Tab, string> = {
 }
 
 const navGroups: { label: string; tabs: Tab[] }[] = [
-  { label: 'Workspace', tabs: ['overview', 'analytics', 'users', 'businesses', 'loyalty'] },
-  { label: 'Manage', tabs: ['verifications', 'trending', 'shop-requests', 'support', 'moderation', 'release-emails', 'controls'] },
-  { label: 'System', tabs: ['audit', 'backups', 'features'] },
+  { label: 'Home', tabs: ['overview', 'analytics'] },
+  { label: 'Needs review', tabs: ['verifications', 'support', 'moderation', 'shop-requests'] },
+  { label: 'People & shops', tabs: ['users', 'businesses', 'loyalty'] },
+  { label: 'Growth', tabs: ['trending', 'release-emails'] },
+  { label: 'Platform', tabs: ['controls', 'features'] },
+  { label: 'Safety', tabs: ['audit', 'backups'] },
 ]
 
 // Features that were built and shipped, then deliberately switched off at
@@ -89,6 +94,9 @@ export function AccessPanel() {
   const [support, setSupport] = React.useState<SupportRequest[]>([])
   const [reports, setReports] = React.useState<ReviewReport[]>([])
   const [usage, setUsage] = React.useState<UsageEvent[]>([])
+  const [stats, setStats] = React.useState<DashboardStats | null>(null)
+  const [checksOpen, setChecksOpen] = React.useState(false)
+  const [menuOpen, setMenuOpen] = React.useState(false)
   const [busy, setBusy] = React.useState(true)
   const [errors, setErrors] = React.useState<string[]>([])
   const [updatedAt, setUpdatedAt] = React.useState<Date | null>(null)
@@ -106,7 +114,7 @@ export function AccessPanel() {
       }
     }
     try {
-      const [tableChecks, storage, functionChecks, pending, requests, reviewReports, usageData] = await Promise.all([
+      const [tableChecks, storage, functionChecks, pending, requests, reviewReports, usageData, dashStats] = await Promise.all([
         Promise.all(['businesses', 'memberships', 'transactions', 'rewards', 'announcements', 'reviews', 'support_requests'].map(async (label) => {
           try {
             const { count, error } = await supabase.from(label).select('*', { head: true, count: 'exact' })
@@ -123,9 +131,10 @@ export function AccessPanel() {
           if (error) throw new Error(error.message)
           return (data || []) as UsageEvent[]
         })(), []),
+        safe('Platform totals', fetchDashboardStats(), null as DashboardStats | null),
       ])
       setHealth([...tableChecks, storage, ...functionChecks, appleSignInHealth()])
-      setVerifications(pending); setSupport(requests); setReports(reviewReports); setUsage(usageData)
+      setVerifications(pending); setSupport(requests); setReports(reviewReports); setUsage(usageData); setStats(dashStats)
       setUpdatedAt(new Date())
     } catch (error) { failures.push(error instanceof Error ? error.message : 'Dashboard unavailable') }
     finally { setErrors(failures); setBusy(false); loadingRef.current = false }
@@ -141,11 +150,12 @@ export function AccessPanel() {
   const queueCount = verifications.length + support.filter(item => item.status === 'open').length + reports.length
   const analyticsFailed = errors.some(error => error.startsWith('Product analytics:'))
   return <div className="admin-panel admin-shell">
-    <aside className="admin-sidebar">
+    <aside className={'admin-sidebar' + (menuOpen ? ' is-open' : '')}>
       <Link to="/access" className="admin-brand"><span className="admin-brand-mark"><Gift size={21}/></span><span>The Loyalty Loop<small>Admin workspace</small></span></Link>
-      <nav aria-label="Access panel navigation">
+      <button type="button" className="admin-menu-toggle" aria-expanded={menuOpen} aria-controls="admin-nav" onClick={() => setMenuOpen(o => !o)}>{menuOpen ? <X size={18}/> : <Menu size={18}/>}<span>{tabLabels[tab]}</span>{queueCount > 0 && <span className="admin-badge">{queueCount}</span>}</button>
+      <nav id="admin-nav" aria-label="Access panel navigation">
         {navGroups.map(group => <div className="admin-nav-group" key={group.label}><p className="admin-nav-label">{group.label}</p>{group.tabs.map(key => { const Icon = icons[key]; const count = key === 'verifications' ? verifications.length : key === 'support' ? support.filter(item => item.status === 'open').length : key === 'moderation' ? reports.length : 0
-          return <button key={key} aria-current={tab === key ? 'page' : undefined} onClick={() => { setTab(key); setSelectedHealth(null) }} className={'admin-nav-item ' + (tab === key ? 'is-active' : '')}><Icon size={18}/><span>{tabLabels[key]}</span>{count > 0 && <span className="admin-badge">{count}</span>}</button>
+          return <button key={key} aria-current={tab === key ? 'page' : undefined} onClick={() => { setTab(key); setSelectedHealth(null); setMenuOpen(false) }} className={'admin-nav-item ' + (tab === key ? 'is-active' : '')}><Icon size={18}/><span>{tabLabels[key]}</span>{count > 0 && <span className="admin-badge">{count}</span>}</button>
         })}</div>)}
       </nav>
       <div className="admin-sidebar-footer"><Link to="/dashboard">Customer app <ArrowUpRight size={14}/></Link><Link to="/owner">Business app <ArrowUpRight size={14}/></Link><button onClick={() => void signOut()}><LogOut size={16}/>Sign out</button></div>
@@ -156,15 +166,27 @@ export function AccessPanel() {
       {!(['users', 'businesses', 'loyalty', 'audit', 'release-emails'] as Tab[]).includes(tab) && <div className="admin-update">{updatedAt ? `Last checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first check'}{(tab === 'overview' || tab === 'analytics') && <span>Analytics · last 30 days</span>}</div>}
       {!!errors.length && <div role="alert" className="admin-error"><strong>Some data could not be loaded.</strong>{errors.map(error => <p key={error}>{error}</p>)}<button disabled={busy} onClick={() => void load()}>Retry failed checks</button></div>}
       {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : tab === 'release-emails' ? <ReleaseEmails/> : busy ? <div role="status" className="admin-loading">Loading your dashboard…</div> : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/> : tab === 'overview' ? <>
-        <AdminMetrics counts={Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))}/>
-        <AdminCharts items={usage} unavailable={analyticsFailed}/>
-        <AdminQueueSummary message={queueCount ? 'A few things need your attention.' : errors.length ? 'Refresh failed checks to confirm your queues.' : 'You’re all caught up.'} queues={([
-          { key: 'verifications', label: 'Business listings', count: verifications.length, source: 'Business listings:' },
-          { key: 'support', label: 'Owner support', count: support.filter(item => item.status === 'open').length, source: 'Owner support:' },
-          { key: 'moderation', label: 'Reported reviews', count: reports.length, source: 'Reported reviews:' },
-        ] as const).map(queue => ({ ...queue, unavailable: errors.some(error => error.startsWith(queue.source)), onOpen: () => setTab(queue.key) }))}/>
-        <div className="admin-section-heading"><div><h2>System checks</h2><p>Reachability and configuration at the last refresh.</p></div><span>{health.filter(item => item.ok).length} / {health.length} passing</span></div>
-        <Overview health={health} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={setTab}/>
+        {(() => {
+          const counts = Object.fromEntries(health.filter(item => item.count !== undefined).map(item => [item.label, item.count!]))
+          const openSupport = support.filter(item => item.status === 'open')
+          const failing = health.filter(item => !item.ok)
+          const queues = [
+            { key: 'verifications' as const, label: 'Business listings', count: verifications.length, source: 'Business listings:', hint: verifications.length === 1 ? '1 shop waiting for approval' : `${verifications.length} shops waiting for approval` },
+            { key: 'support' as const, label: 'Owner support', count: openSupport.length, source: 'Owner support:', hint: openSupport.length === 1 ? '1 owner needs a reply' : `${openSupport.length} owners need a reply` },
+            { key: 'moderation' as const, label: 'Reported reviews', count: reports.length, source: 'Reported reviews:', hint: reports.length === 1 ? '1 review to decide on' : `${reports.length} reviews to decide on` },
+          ].map(q => ({ ...q, unavailable: errors.some(error => error.startsWith(q.source)) }))
+          const activity: ActivityRow[] = [
+            ...verifications.map(v => ({ id: 'v' + v.id, title: v.name, sub: 'New business listing', at: v.verification_submitted_at ?? '', pill: 'Pending' as const, tab: 'verifications' as const })),
+            ...openSupport.map(r => ({ id: 's' + r.id, title: r.subject, sub: r.business?.name ?? 'Owner support', at: r.created_at, pill: 'Open' as const, tab: 'support' as const })),
+            ...reports.map(r => ({ id: 'r' + r.id, title: REASON_LABELS[r.reason], sub: r.review?.business?.name ?? 'Reported review', at: r.created_at, pill: 'Reported' as const, tab: 'moderation' as const })),
+          ].filter(r => r.at).sort((x, y) => y.at.localeCompare(x.at)).slice(0, 6)
+          return <>
+            <NeedsYou queues={queues} failing={failing} retryNeeded={!!errors.length} onOpen={setTab} onOpenChecks={() => { setChecksOpen(true); document.getElementById('ad-system-checks')?.scrollIntoView({ behavior: 'smooth' }) }}/>
+            <Hero stats={stats} unavailable={errors.some(error => error.startsWith('Platform totals:'))} counts={counts}/>
+            <div className="ad-mid"><AdminCharts items={usage} unavailable={analyticsFailed}/><RecentActivity rows={activity} onOpen={setTab}/></div>
+            <SystemChecks health={health as (Health & { targetTab?: string })[]} open={checksOpen} onToggle={() => setChecksOpen(o => !o)} selected={selectedHealth} onSelect={setSelectedHealth} onRefresh={load} onOpenTab={setTab}/>
+          </>
+        })()}
       </> : tab === 'analytics' ? <><AdminCharts items={usage} unavailable={analyticsFailed}/>{!analyticsFailed && <ProductAnalytics items={usage}/>}</> : tab === 'verifications' ? <VerificationQueue items={verifications} refresh={load}/> : tab === 'support' ? <SupportQueue items={support} refresh={load}/> : tab === 'moderation' ? <ReviewReportsQueue items={reports} refresh={load}/> : tab === 'backups' ? <LaptopBackups/> : <PausedFeatures/>}
     </main>
   </div>
@@ -174,11 +196,6 @@ function ProductAnalytics({ items }: { items: UsageEvent[] }) {
   const total = items.reduce((sum, item) => sum + Number(item.events), 0)
   const people = Math.max(0, ...items.map((item) => Number(item.people)))
   return <section><div className="grid gap-4 sm:grid-cols-2"><article className="rounded-2xl bg-card p-5"><p className="text-sm text-muted-foreground">Tracked actions, last 30 days</p><p className="mt-2 font-display text-4xl font-bold">{total}</p></article><article className="rounded-2xl bg-card p-5"><p className="text-sm text-muted-foreground">Most users on one feature</p><p className="mt-2 font-display text-4xl font-bold">{people}</p></article></div><p className="mt-6 text-sm text-muted-foreground">Only people who opt in are included. Events never include passwords, emails, QR codes or message content.</p><div className="mt-4 overflow-x-auto rounded-2xl border border-border"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-b border-border text-muted-foreground"><tr><th className="p-4">Feature</th><th className="p-4">Where</th><th className="p-4">Uses</th><th className="p-4">People</th><th className="p-4">Last used</th></tr></thead><tbody>{items.length ? items.map((item) => <tr key={`${item.surface}-${item.event_name}`} className="border-b border-border"><td className="p-4 font-semibold">{item.event_name.replaceAll('_', ' ')}</td><td className="p-4 text-muted-foreground">{item.surface.replaceAll('_', ' ')}</td><td className="p-4">{item.events}</td><td className="p-4">{item.people}</td><td className="p-4 text-muted-foreground">{new Date(item.last_seen).toLocaleString()}</td></tr>) : <tr><td colSpan={5} className="p-5 text-muted-foreground">No opted-in usage yet. It will appear here after people use the website or updated apps.</td></tr>}</tbody></table></div></section>
-}
-
-function Overview({ health, selected, onSelect, onRefresh, onOpenTab }: { health: Health[]; selected: Health | null; onSelect: (item: Health | null) => void; onRefresh: () => Promise<void>; onOpenTab: (tab: Tab) => void }) {
-  return <><div className="admin-health-grid">{health.map(item => <button key={item.label} type="button" onClick={() => onSelect(item)} className={'admin-health-card ' + (item.ok ? '' : 'has-error')}><div><span>{item.label.replaceAll('_', ' ')}</span>{item.ok ? <CheckCircle2 size={17}/> : <XCircle size={17}/>}</div><p>{item.detail}</p><small>View details →</small></button>)}</div>
-    {selected && <section className="mt-5 rounded-2xl border border-border bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold">{selected.label}</p><p className="mt-1 text-sm text-muted-foreground">{selected.detail}</p></div><button data-press-feedback onClick={() => onSelect(null)} className="rounded-lg px-2 py-1 text-sm text-muted-foreground">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button data-press-feedback onClick={() => void onRefresh()} className="rounded-xl bg-info text-info-foreground px-4 py-2 text-sm font-bold">Run check again</button>{selected.targetTab && <button data-press-feedback onClick={() => onOpenTab(selected.targetTab!)} className="rounded-xl border border-border px-4 py-2 text-sm font-bold">Open related queue</button>}{selected.label === 'Storage' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/storage/buckets" target="_blank" rel="noreferrer" className="rounded-xl border border-border px-4 py-2 text-sm font-bold">Open Storage</a>}{selected.label === 'Platform health function' && <a href="https://supabase.com/dashboard/project/tgukdabfvvoywawmzbdo/functions/platform-health" target="_blank" rel="noreferrer" className="rounded-xl border border-border px-4 py-2 text-sm font-bold">Open function</a>}</div></section>}</>
 }
 
 function RejectListingDialog({ name, onReject }: { name: string; onReject: (reason: string) => Promise<void> }) {
