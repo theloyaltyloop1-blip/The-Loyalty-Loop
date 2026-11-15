@@ -4,7 +4,7 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 
 - Sections 1 to 7 are the standing picture. Correct them when a fact changes.
 - Section 8 is the log. Add each new entry at the top of it.
-- When the log passes 20 entries, move the oldest into `docs/handoff-archive/` as a new dated file.
+- When this file passes 300 lines, archive it and start a new one. The steps are in `CLAUDE.md` under "When the handoff gets too big".
 - The full history up to 15 November 2026 is in `docs/handoff-archive/` (see section 9). Search it before redoing something that may have been tried.
 
 ## 1. Current state (update on every release)

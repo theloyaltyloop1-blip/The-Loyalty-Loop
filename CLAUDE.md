@@ -114,5 +114,19 @@ entry at the top of section 8, "Log", in `CLAUDE_HANDOFF.md`:
 Include: what changed, branch and commit, files, checks run, checks not run, what is still
 open, and the next action with its owner (owner or Claude). When a release changes which
 versions are on phones, update "Current state". When an entry closes or opens an item in
-sections 2 to 5, correct that section too. Keep the file short: follow its own rule for
-moving old log entries to `docs/handoff-archive/`.
+sections 2 to 5, correct that section too.
+
+### When the handoff gets too big
+
+After adding an entry, count the lines: `wc -l CLAUDE_HANDOFF.md`. If it is over 300 lines,
+start a new one in the same piece of work:
+
+1. Copy the whole file to `docs/handoff-archive/YYYY-MM-DD.md` (today's date). Do not edit
+   the copy.
+2. In `CLAUDE_HANDOFF.md`, keep sections 1 to 7 and correct anything out of date. Remove
+   items that are finished.
+3. In section 8, keep only the 5 newest log entries. Delete the rest; they are in the copy.
+4. Add the new archive file to the list in section 9.
+5. Check the file is now under 200 lines. If not, shorten sections 2 to 6.
+
+The file name stays `CLAUDE_HANDOFF.md`. Never read an archive file whole; search it.
