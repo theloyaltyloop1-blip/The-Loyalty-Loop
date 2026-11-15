@@ -33,7 +33,7 @@ def main():
     for dark in (False, True):
         d = B / 'png' / ('dark' if dark else '')
         d.mkdir(parents=True, exist_ok=True)
-        for name, *_ in NAMES:
+        for name in [n[0] for n in NAMES] + ['whirl-small']:
             for pose in POSES:
                 html = f'<body style="margin:0;background:transparent"><img src="{uri(name, pose, dark)}" width="512" height="512" style="display:block"></body>'
                 shot(html, 512, 512, str(d / f'{name}-{pose}.png'), transparent=True)
@@ -65,12 +65,12 @@ def main():
 
     # 48px / 32px legibility check for all six poses of all three concepts
     cells = []
-    for name, title, *_ in NAMES:
+    for name, title in [(n[0], n[1]) for n in NAMES] + [('whirl-small', 'Whirl small')]:
         for dark in (False, True):
             bg = '#121714' if dark else '#F8E4C6'
             imgs = ''.join(f'<img src="{uri(name, p, dark)}" width="48" height="48">' for p in POSES) + ''.join(f'<img src="{uri(name, p, dark)}" width="32" height="32">' for p in POSES)
             cells.append(f'<div style="background:{bg};padding:10px;display:flex;gap:8px;align-items:center;margin-bottom:6px">{imgs}</div>')
-    shot(f'<body style="margin:0;padding:10px;background:#888;width:640px">{"".join(cells)}</body>', 660, 520, str(B / 'sizes.png'))
+    shot(f'<body style="margin:0;padding:10px;background:#888;width:640px">{"".join(cells)}</body>', 660, 640, str(B / 'sizes.png'))
 
 
 if __name__ == '__main__':

@@ -223,7 +223,7 @@ def dot(t, pose):
 
 
 # ---------- WHIRL: cheeky loop with arms and legs ----------
-def whirl(t, pose):
+def whirl(t, pose, small=False):
     out, O, R = t['OUT'], t['O'], t['R']
     rh, lh = HANDS[pose]
     br, bl = BEND[pose]
@@ -241,7 +241,7 @@ def whirl(t, pose):
     if pose not in ('think', 'stamp'):
         s.append(arm(t, rs, rh, br, O))
     s.append(f'<circle cx="{cx}" cy="{cy}" r="56" fill="{t["P"]}"/>')
-    s.append(mark_group(t, 0.63, cx, cy, tilt, outline=out, ow=4.2))
+    s.append(mark_group(t, 0.70 if small else 0.63, cx, cy, tilt, outline=out, ow=5.5 if small else 4.2))
     ey = cy - 6
     ink = t['INK']
 
@@ -252,8 +252,19 @@ def whirl(t, pose):
         b = brow(88, ey - 24, 112, ey - 24) + brow(146, ey - 28, 170, ey - 24)
     if pose == 'think':
         b = brow(88, ey - 22, 112, ey - 22) + brow(146, ey - 32, 170, ey - 28)
-    s.append(draw_face(t, pose, (106, 150), ey, 128, cy + 22, googly=True, w=14))
-    s.append(b)
+    if small:
+        # plain face: no brows, solid pupils, big smile; reads at 32 px
+        kind, look, m = FACE[pose]
+        def se(x):
+            if kind in ('happy', 'closed') or (pose == 'thumbs' and x > 128):
+                return eye(t, 'happy' if kind != 'closed' else 'closed', x, ey)
+            return (f'<circle cx="{x}" cy="{ey}" r="15" fill="{t["W"]}" stroke="{ink}" stroke-width="4"/>'
+                    f'<circle cx="{x + look[0] * 6}" cy="{ey + look[1] * 6}" r="8" fill="{ink}"/>')
+        mm = {'grin': 'smile', 'smirk': 'smile'}.get(m, m)
+        s.append(se(108) + se(148) + mouth(t, mm, 128, cy + 24, 15))
+    else:
+        s.append(draw_face(t, pose, (106, 150), ey, 128, cy + 22, googly=True, w=14))
+        s.append(b)
     if pose == 'stamp':
         s.append(card(t, 80, 190, 104, 50, rot=-3, filled=3))
         sp = (164, 190)
@@ -301,6 +312,7 @@ def pip(t, pose):
 
 
 CHARS = {'dot': dot, 'whirl': whirl, 'pip': pip}
+SMALL = lambda t, pose: whirl(t, pose, small=True)
 
 
 def main():
@@ -310,6 +322,9 @@ def main():
         for name, fn in CHARS.items():
             for pose in POSES:
                 (d / f'{name}-{pose}.svg').write_text(fn(t, pose), encoding='utf-8')
+            (d / f'whirl-small-{pose}.svg').write_text(SMALL(t, pose), encoding='utf-8') if False else None
+        for pose in POSES:
+            (d / f'whirl-small-{pose}.svg').write_text(SMALL(t, pose), encoding='utf-8')
     print('wrote', len(list((ROOT / 'svg').rglob('*.svg'))), 'svgs')
 
 

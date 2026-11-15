@@ -6,6 +6,8 @@ Open `concepts.png` first (one-page contact sheet: all 18 poses on paper and on 
 
 **Decision: the owner chose Whirl (2026-11-15).** Dot and Pip are kept here only for reference.
 
+**Small-size Whirl:** `svg/whirl-small-<pose>.svg` (and `png/`, dark versions) is a simpler Whirl for 48 px and below: plain round eyes, no brows, simple smile, slightly larger body, heavier outlines. In `sizes.png` (last two rows) it reads a little cleaner at 32 px than the full version, but the blades and limbs are still busy at that size; below 32 px use the plain brand mark instead. Not tested in an app.
+
 ## The three concepts
 
 | Name | Character | How it comes from the loop | Personality |
