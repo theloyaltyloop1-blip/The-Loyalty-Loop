@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Navigate, Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Users as UsersIcon, LayoutDashboard, Inbox, BarChart3, Megaphone, Settings2, RefreshCw, LogOut, ArrowUpRight, Download, LockKeyhole, PauseCircle, ChevronRight, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { Users as UsersIcon, LayoutDashboard, Inbox, BarChart3, Megaphone, Settings2, RefreshCw, LogOut, ArrowUpRight, Download, LockKeyhole, PauseCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -18,7 +18,7 @@ import { TrendingAdmin } from '@/pages/TrendingAdmin'
 import { ShopRequests } from '@/pages/ShopRequests'
 import { AdminCharts } from '@/components/admin-dashboard'
 import { fetchDashboardStats, type DashboardStats } from '@/lib/admin'
-import { Housekeeping, NeedsYou, Pulse, UsageSnapshot, type ActivityRow, type AdminTab } from '@/pages/admin/Overview'
+import { Housekeeping, Latest, NeedsYou, Pulse, UsageSnapshot, type ActivityRow, type AdminTab } from '@/pages/admin/Overview'
 import { AccessTools } from '@/pages/AccessTools'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { dismissReviewReport, fetchAdminSupportRequests, fetchOpenReviewReports, fetchPendingVerifications, removeReportedReview, resolveSupportRequest, reviewBusinessVerification, getVerificationDocUrl, fetchVerificationChecks, fetchVerificationMode, setVerificationMode, spotCheckVerification, type VerificationCheck, type PendingVerification, type ReviewReport, type SupportRequest } from '@/lib/businesses'
@@ -175,20 +175,20 @@ export function AccessPanel() {
       ...verifications.map(v => ({ id: 'v' + v.id, title: v.name, sub: 'New business listing', at: v.verification_submitted_at ?? '', pill: 'Pending' as const, tab: 'verifications' as const })),
       ...openSupport.map(r => ({ id: 's' + r.id, title: r.subject, sub: r.business?.name ?? 'Owner support', at: r.created_at, pill: 'Open' as const, tab: 'support' as const })),
       ...reports.map(r => ({ id: 'r' + r.id, title: REASON_LABELS[r.reason], sub: r.review?.business?.name ?? 'Reported review', at: r.created_at, pill: 'Reported' as const, tab: 'moderation' as const })),
-    ].filter(r => r.at).sort((x, y) => y.at.localeCompare(x.at)).slice(0, 4)
+    ].filter(r => r.at).sort((x, y) => y.at.localeCompare(x.at)).slice(0, 5)
     // Order of operations: act on the queues, check the pulse, read usage, then upkeep.
     return <div className="ag-flow">
-      <NeedsYou queues={queues} failing={failing} activity={activity} onOpen={setTab} onOpenChecks={() => { setChecksOpen(true); requestAnimationFrame(() => document.getElementById('ag-checks')?.scrollIntoView({ behavior: 'smooth', block: 'center' })) }}/>
+      <NeedsYou queues={queues} failing={failing} onOpen={setTab} onOpenChecks={() => { setChecksOpen(true); requestAnimationFrame(() => document.getElementById('ag-checks')?.scrollIntoView({ behavior: 'smooth', block: 'center' })) }}/>
       <Pulse stats={stats} unavailable={errors.some(error => error.startsWith('Platform totals:'))} counts={counts}/>
+      <Latest rows={activity} onOpen={setTab}/>
       <UsageSnapshot items={usage} unavailable={analyticsFailed} onOpenInsights={() => setTab('analytics')}/>
       <Housekeeping health={health} counts={counts} checksOpen={checksOpen} onChecksOpen={setChecksOpen} onRefresh={load} onOpen={setTab}/>
     </div>
   }
 
   return <div className="admin-panel ag">
-    <div className="ag-bg" aria-hidden="true"/>
     <aside className="ag-side">
-        <Link to="/access" className="ag-brand"><img src="/favicon.svg" alt="" width={24} height={24}/><span>The Loyalty Loop</span><small>Admin</small></Link>
+        <Link to="/access" className="ag-brand"><img src="/favicon.svg" alt="" width={28} height={28}/><span>The Loyalty Loop<small>Admin</small></span></Link>
         <nav className="ag-nav" aria-label="Admin sections">
           {navGroups.map(group => <div className="ag-nav-group" key={group.label} role="group" aria-label={group.label}>
             <p className="ag-nav-label" aria-hidden="true">{group.label}</p>
@@ -209,18 +209,17 @@ export function AccessPanel() {
     </aside>
     <main className="ag-main">
       <div className="ag-topbar">
-        <div className="ag-crumb"><span className="ag-only-wide">{area.label}</span>{area.tabs.length > 1 && <><ChevronRight size={14} strokeWidth={1.5} className="ag-only-wide" aria-hidden="true"/><b>{tabLabels[tab]}</b></>}{area.tabs.length === 1 && <b className="ag-only-narrow">{area.label}</b>}</div>
+        <div className="ag-title"><h1>{area.tabs.length > 1 ? tabLabels[tab] : area.label}</h1><p>{tab === 'overview' ? new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : area.blurb}</p></div>
         <div className="ag-top-tools">
-          {!selfLoading && <span className="ag-stamp-time ag-only-wide">{updatedAt ? `Checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Checking…'}</span>}
-          {!selfLoading && <button type="button" disabled={busy} onClick={() => void load()} className="ag-btn"><RefreshCw size={16} strokeWidth={1.5} className={busy ? 'ag-spin' : undefined} aria-hidden="true"/>{busy ? 'Refreshing' : 'Refresh'}</button>}
-          <button type="button" onClick={() => void signOut()} className="ag-btn is-icon ag-only-narrow" aria-label="Sign out"><LogOut size={16} strokeWidth={1.5}/></button>
+          {!selfLoading && <span className={'ag-chip ag-only-wide' + (errors.length ? ' is-bad' : '')}><i aria-hidden="true"/>{errors.length ? 'Some data missing' : updatedAt ? `Checked ${updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'Checking'}</span>}
+          {!selfLoading && <button type="button" disabled={busy} onClick={() => void load()} className="ag-btn is-primary"><RefreshCw size={16} strokeWidth={2} className={busy ? 'ag-spin' : undefined} aria-hidden="true"/>{busy ? 'Refreshing' : 'Refresh'}</button>}
+          <button type="button" onClick={() => void signOut()} className="ag-btn is-icon ag-only-narrow" aria-label="Sign out"><LogOut size={16} strokeWidth={1.75}/></button>
         </div>
       </div>
-      <header className="ag-head"><h1>{area.label}</h1><p>{tab === 'overview' ? new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : area.blurb}</p></header>
       {area.tabs.length > 1 && <div className="ag-tabs" role="tablist" aria-label={`${area.label} sections`}>
         {area.tabs.map(key => <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>{tabLabels[key]}{!!tabCount[key] && <span className="ag-count">{tabCount[key]}</span>}</button>)}
       </div>}
-      {!!errors.length && !selfLoading && <div role="alert" className="ag-alert"><TriangleAlert size={18} strokeWidth={1.5} aria-hidden="true"/><div><strong>Some data could not be loaded</strong>{errors.map(error => <p key={error}>{error}</p>)}</div><button type="button" className="ag-btn" disabled={busy} onClick={() => void load()}>Retry</button></div>}
+      {!!errors.length && !selfLoading && <div role="alert" className="ag-alert"><TriangleAlert size={18} strokeWidth={1.5} aria-hidden="true"/><div><strong>Some data could not be loaded</strong>{errors.map(error => <p key={error}>{error}</p>)}</div><button type="button" className="ag-btn is-sm" disabled={busy} onClick={() => void load()}>Retry</button></div>}
       <div className="ag-body">
         {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : tab === 'release-emails' ? <ReleaseEmails/>
           : busy && !updatedAt ? <div role="status" aria-label="Loading your dashboard" className="ag-loading"><span/><span/><span/></div>
@@ -237,7 +236,7 @@ function ProductAnalytics({ items }: { items: UsageEvent[] }) {
   const total = items.reduce((sum, item) => sum + Number(item.events), 0)
   const people = Math.max(0, ...items.map((item) => Number(item.people)))
   return <section>
-    <div className="ag-pair"><article className="ag-glass"><p className="ag-sub">Tracked actions, last 30 days</p><strong>{total.toLocaleString('en-GB')}</strong></article><article className="ag-glass"><p className="ag-sub">Most people on one feature</p><strong>{people.toLocaleString('en-GB')}</strong></article></div>
+    <div className="ag-pair"><article className="ag-card"><p>Tracked actions, last 30 days</p><strong>{total.toLocaleString('en-GB')}</strong></article><article className="ag-card"><p>Most people on one feature</p><strong>{people.toLocaleString('en-GB')}</strong></article></div>
     <div className="overflow-x-auto rounded-2xl border border-border"><table className="w-full min-w-[560px] text-left text-sm"><thead className="bg-background text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3 font-semibold">Feature</th><th className="px-4 py-3 font-semibold">Where</th><th className="px-4 py-3 font-semibold">Uses</th><th className="px-4 py-3 font-semibold">People</th><th className="px-4 py-3 font-semibold">Last used</th></tr></thead><tbody>{items.length ? items.map((item) => <tr key={`${item.surface}-${item.event_name}`} className="border-t border-border"><td className="px-4 py-3 font-semibold">{item.event_name.replaceAll('_', ' ')}</td><td className="px-4 py-3 text-muted-foreground">{item.surface.replaceAll('_', ' ')}</td><td className="px-4 py-3 tabular-nums">{item.events}</td><td className="px-4 py-3 tabular-nums">{item.people}</td><td className="px-4 py-3 text-muted-foreground">{new Date(item.last_seen).toLocaleString('en-GB')}</td></tr>) : <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No opted-in usage yet. It will appear here after people use the website or updated apps.</td></tr>}</tbody></table></div>
     <p className="ag-note">Only people who opt in are included. Events never include passwords, emails, QR codes or message content.</p>
   </section>
