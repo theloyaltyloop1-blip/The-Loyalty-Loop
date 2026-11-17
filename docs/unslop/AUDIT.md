@@ -92,3 +92,28 @@ from 16 Nov is waiting for the owner's verdict).
 ## Coordination
 The "Fable 5.2 skills and site audit" session is running read-only auditors for the website and both apps.
 Its website findings will be folded in below when they arrive. This session is the only writer under `apps/web`.
+
+## Findings from the "Fable 5.2 skills and site audit" session (folded in 2026-11-17)
+
+Full report: shared notes folder, `website-audit-from-fable-session.md`. Status of each item after this session:
+
+| # | Finding | Status |
+| --- | --- | --- |
+| 1 | Signed-out map shows personal tabs and "Sign out" | Fixed (`dashboard-layout.tsx`): Map tab plus Log in and Sign up |
+| 2 | Auth, Help, 404 on the old blue-navy system | Fixed: `.surface-paper` tokens in `color-system.css` (home page palette, light and dark) |
+| 3 | Logo shown black/white by filters on the home page | **Owner decision**, untouched |
+| 4 | Home-page videos show a retired look | **Owner decision**, untouched |
+| 5 | "View shop" signed out ends on a bare login | Fixed for log-in (`?next=` limited to shop pages). Sign-up and Google/Apple do not carry it yet |
+| 6 | Uppercase tracked labels | Fixed in 74754dc |
+| 7 | White text on shop colours | Fixed with `onBrandColor` (Rewards, Activity, Discover, News, Announcements) |
+| 8 | Map error state and button contrast | Fixed: error with Try again; light button on the navy panel |
+| 9 | Motion overload | Preloader, curtain, cursor, magnetic and parallax removed in 74754dc; sideways panels kept for the owner |
+| 10 | Faded text forced to black | **Owner decision**, untouched |
+| 11 | Owner pages jump on load | Not done |
+| 12 | Copy drift | "Retailer" → "Sign up your shop"; Help paper-card answer matches the home page; FAQ numerals removed; arrow and sparkle done. Fidel paragraph (privacy text) and raw server errors left |
+| 13 | Dead weight | Rubik import removed. Unused CSS, old design-system doc and palette names left |
+| 14 | Dark-mode flash | Fixed: theme applied before first paint in `index.html`; theme-color values match the surfaces |
+| 15 | No phone menu on the home page | Not done |
+| 16 | Hover lift | Fixed in 74754dc |
+| 17 | Cookie banner storage | Fixed: read and write guarded |
+| 18 | Admin text contrast | Admin out of scope, reported only |

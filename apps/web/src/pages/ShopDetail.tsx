@@ -224,7 +224,7 @@ export function ShopDetail() {
   }
 
   if (loading || (session && !ready)) return <PageSkeleton variant="detail" />
-  if (!session) return <Navigate to="/login" replace />
+  if (!session) return <Navigate to={`/login?next=${encodeURIComponent(`/dashboard/shop/${slug ?? ''}`)}`} replace />
   if (loadError && !business) {
     return (
       <DashboardLayout>

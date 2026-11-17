@@ -6,8 +6,12 @@
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3F4EF" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121714" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F4F1EA" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214" />
+    <script>
+      // Apply the saved or system theme before first paint, so dark mode does not flash light.
+      try { var t = localStorage.getItem('loyalty-loop-theme'); if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; if (t === 'dark') document.documentElement.classList.add('dark'); document.documentElement.style.colorScheme = t } catch (e) {}
+    </script>
     <meta name="color-scheme" content="light dark" />
     <meta name="robots" content="index,follow" />
     <title>The Loyalty Loop: digital loyalty cards for neighbourhood shops</title>

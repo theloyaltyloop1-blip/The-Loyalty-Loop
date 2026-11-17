@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { onBrandColor } from '@/lib/utils'
 import { toast } from 'sonner'
 import { MapPin, Search, Store } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -18,10 +19,16 @@ export function DiscoverPage() {
   const [query, setQuery] = React.useState('')
   const [askOpen,setAskOpen]=React.useState(false)
   const [loading, setLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState(false)
 
   usePageMeta({ title: 'Shop map | The Loyalty Loop', description: 'Find local Loyalty Loop shops on the map.', path: '/dashboard/discover', robots: 'noindex,nofollow,noarchive' })
 
-  React.useEffect(() => { fetchBusinesses().then(setBusinesses).catch(() => toast.error('Could not load shops. Please refresh.')).finally(() => setLoading(false)) }, [])
+  const load = React.useCallback(() => {
+    setLoading(true)
+    setLoadError(false)
+    fetchBusinesses().then(setBusinesses).catch(() => { setLoadError(true); toast.error('Could not load shops.') }).finally(() => setLoading(false))
+  }, [])
+  React.useEffect(() => { load() }, [load])
 
   const searchTerm = useDebouncedValue(query)
   const filtered = fuzzyFilter(businesses, searchTerm, (business) => [business.name, business.category, business.address, business.postcode])
@@ -35,11 +42,11 @@ export function DiscoverPage() {
     {loading ? <SkeletonBlock className="h-[560px] w-full rounded-3xl" /> : <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
       <BusinessesMap businesses={located} onSelect={setSelected} />
       <aside className="max-h-[560px] overflow-y-auto rounded-3xl bg-card p-2 ring-1 ring-foreground/8"><p className="px-3 pb-2 pt-3 text-sm font-semibold text-muted-foreground">{located.length} on the map</p>
-        {located.map((business) => { const active = selected?.id === business.id; return <button key={business.id} onClick={() => setSelected(business)} className={`w-full rounded-xl p-3 text-left transition-colors ${active ? 'bg-peach text-peach-ink' : 'hover:bg-secondary'}`}><div className="flex items-start gap-3">{business.logo_url ? <img src={business.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded-xl text-white" style={{ backgroundColor: business.brand_color }}><Store className="h-4 w-4" /></span>}<span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{business.name}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">{business.category ?? 'Local shop'}</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{business.address ?? 'Location confirmed'}</span></span></div></button> })}
-        {!located.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No mapped shops match this search. Check the spelling, or try a category or town.</p>}
+        {located.map((business) => { const active = selected?.id === business.id; return <button key={business.id} onClick={() => setSelected(business)} className={`w-full rounded-xl p-3 text-left transition-colors ${active ? 'bg-peach text-peach-ink' : 'hover:bg-secondary'}`}><div className="flex items-start gap-3">{business.logo_url ? <img src={business.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded-xl" style={{ backgroundColor: business.brand_color, color: onBrandColor(business.brand_color) }}><Store className="h-4 w-4" /></span>}<span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{business.name}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">{business.category ?? 'Local shop'}</span><span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{business.address ?? 'Location confirmed'}</span></span></div></button> })}
+        {loadError ? <div role="alert" className="px-3 py-8 text-center text-sm text-muted-foreground"><p>We couldn’t load the shops. Check your connection and try again.</p><button type="button" onClick={load} className="mt-3 inline-flex min-h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">Try again</button></div> : !located.length && <p className="px-3 py-8 text-center text-sm text-muted-foreground">No mapped shops match this search. Check the spelling, or try a category or town.</p>}
       </aside>
     </div>}
-    {selected && <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-olive p-6 text-olive-ink"><div><p className="font-display text-xl font-semibold tracking-tight">{selected.name}</p><p className="mt-1 text-sm text-olive-ink/80">{selected.description || selected.address || 'A local Loyalty Loop shop.'}</p></div><button data-press-feedback onClick={() => navigate(`/dashboard/shop/${selected.slug}`)} className="h-11 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">View shop</button></section>}
+    {selected && <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-olive p-6 text-olive-ink"><div><p className="font-display text-xl font-semibold tracking-tight">{selected.name}</p><p className="mt-1 text-sm text-olive-ink/80">{selected.description || selected.address || 'A local Loyalty Loop shop.'}</p></div><button data-press-feedback onClick={() => navigate(`/dashboard/shop/${selected.slug}`)} className="h-11 rounded-full bg-olive-ink px-5 text-sm font-semibold text-olive transition-opacity hover:opacity-90">View shop</button></section>}
     <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-peach px-5 py-5 text-peach-ink sm:px-7"><p className="font-semibold">Can’t find your favourite shop?</p><button data-press-feedback onClick={()=>setAskOpen(true)} className="rounded-full bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover">Ask a shop to join</button></div>
     <AskShopDialog open={askOpen} onOpenChange={setAskOpen} initialQuery={query}/>
   </DashboardLayout>

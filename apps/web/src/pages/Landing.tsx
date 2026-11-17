@@ -187,7 +187,6 @@ export function Landing() {
           <dl className="lp-qa">
             {QUESTIONS.map(([question, answer], i) => (
               <div key={question} data-reveal style={{ '--d': i } as CSSProperties}>
-                <span className="lp-qa-n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
                 <dt>{question}</dt>
                 <dd>{answer}</dd>
               </div>

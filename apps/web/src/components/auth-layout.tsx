@@ -6,7 +6,7 @@ import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 export function AuthLayout({ title, subtitle, mascot, children }: { title: string; subtitle?: string; mascot?: 'wave' | 'think' | 'sleepy' | 'thumbs' | 'celebrate' | 'stamp'; children: React.ReactNode }) {
   const navigate = useNavigate()
   return (
-    <div className="min-h-dvh bg-background p-3 sm:p-4 md:grid md:grid-cols-[minmax(320px,0.9fr)_1.1fr] md:gap-4">
+    <div className="surface-paper min-h-dvh bg-background p-3 sm:p-4 md:grid md:grid-cols-[minmax(320px,0.9fr)_1.1fr] md:gap-4">
       <aside className="relative hidden overflow-hidden rounded-3xl bg-olive p-10 text-olive-ink md:flex md:flex-col md:justify-between">
         <Link to="/" className="flex min-h-11 items-center gap-3" aria-label="The Loyalty Loop home">
           <span className="grid h-11 w-11 place-items-center rounded-full bg-olive-ink"><img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" /></span>

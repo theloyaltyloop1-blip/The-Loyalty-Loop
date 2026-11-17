@@ -324,3 +324,56 @@ html.dark .admin-panel {
   --color-chart-4: var(--palette-amber-300);
   --color-chart-5: var(--palette-green-300);
 }
+
+/* Public pages outside the home page (sign in, sign up, password, Help, 404)
+   use the home page's palette: warm paper, near-black, stone, sapphire on the
+   main action. Signed-in pages and owner tiles keep the tokens above.
+   Hand-written (2026-11-17), not generated. */
+.surface-paper {
+  --color-background: #F4F1EA;
+  --color-foreground: #111111;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #111111;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #111111;
+  --color-secondary: #E7E2D8;
+  --color-secondary-foreground: #111111;
+  --color-muted: #E7E2D8;
+  --color-muted-foreground: #5F5B54;
+  --color-border: #DCD6CA;
+  --color-input: #8A847A;
+  --color-olive: #0E0E0F;
+  --color-olive-ink: #F4F1EA;
+  --color-sage: #E7E2D8;
+  --color-sage-ink: #111111;
+  --color-amber: #E7E2D8;
+  --color-amber-ink: #111111;
+  --color-orange: #0042AC;
+  --color-orange-ink: #FFFFFF;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+html.dark .surface-paper {
+  --color-background: #131315;
+  --color-foreground: #F2EFE8;
+  --color-card: #1A1A1E;
+  --color-card-foreground: #F2EFE8;
+  --color-popover: #1A1A1E;
+  --color-popover-foreground: #F2EFE8;
+  --color-secondary: #26262B;
+  --color-secondary-foreground: #F2EFE8;
+  --color-muted: #26262B;
+  --color-muted-foreground: #A39E95;
+  --color-border: #34343A;
+  --color-input: #7C7C85;
+  --color-olive: #0A0A0C;
+  --color-olive-ink: #F2EFE8;
+  --color-sage: #26262B;
+  --color-sage-ink: #F2EFE8;
+  --color-amber: #27325A;
+  --color-amber-ink: #F2EFE8;
+  --color-orange: #3A66D4;
+  --color-orange-ink: #FFFFFF;
+}
+/* Headings follow the home page: medium weight, size does the work. */
+.surface-paper h1, .surface-paper h2 { font-weight: 500; letter-spacing: -0.03em; }

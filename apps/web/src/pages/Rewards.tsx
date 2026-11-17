@@ -1,4 +1,5 @@
 import { WhirlOrIcon } from '@/components/whirl-kit'
+import { onBrandColor } from '@/lib/utils'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { Link, Navigate } from 'react-router-dom'
@@ -18,7 +19,7 @@ function RewardCard({ reward }: { reward: CustomerReward }) {
   return (
     <article className={'rounded-2xl bg-card ring-1 ring-foreground/8 overflow-hidden ' + (unavailable ? 'opacity-65' : '')}>
       <div className="p-6 flex gap-5 items-start">
-        <div className="h-14 w-14 rounded-xl flex shrink-0 items-center justify-center text-white" style={{ backgroundColor: reward.business?.brand_color ?? '#0042AC' }}>
+        <div className="h-14 w-14 rounded-xl flex shrink-0 items-center justify-center" style={{ backgroundColor: reward.business?.brand_color ?? '#0042AC', color: onBrandColor(reward.business?.brand_color ?? '#0042AC') }}>
           {reward.business?.logo_url ? <img src={reward.business.logo_url} alt="" loading="lazy" decoding="async" className="h-full w-full rounded-xl object-cover" /> : <Gift className="h-6 w-6" />}
         </div>
         <div className="min-w-0 flex-1">

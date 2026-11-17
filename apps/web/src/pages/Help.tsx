@@ -33,7 +33,7 @@ const SHOPPER_ITEMS: Item[] = [
   },
   {
     q: 'What happens to my existing paper cards?',
-    a: 'Bring your paper card in store and most shops will happily match your progress when you join their digital card. Just ask.',
+    a: 'Ask the shop whether they can carry over your existing progress. Each business decides how to handle its paper cards.',
   },
   {
     q: 'Can I add my loyalty card to Apple Wallet or Google Wallet?',
@@ -152,7 +152,7 @@ export function Help() {
   })
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="surface-paper min-h-dvh bg-background">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         <div className="flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold">

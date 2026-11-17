@@ -1,10 +1,15 @@
 import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, setRememberMe, signInWithGoogle, signInWithApple } from '@/lib/supabase'
 import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, AuthMinorLink, GoogleButton, AppleButton, AuthDivider } from '@/components/auth-layout'
 
 export function Login() {
   const navigate = useNavigate()
+  // A signed-out visitor sent here from a shop page goes back to that shop.
+  // Only shop pages are accepted, so the link cannot send people elsewhere.
+  const [params] = useSearchParams()
+  const nextParam = params.get('next')
+  const next = nextParam && /^\/dashboard\/shop\/[a-z0-9-]{1,100}$/i.test(nextParam) ? nextParam : null
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [remember, setRemember] = React.useState(true)
@@ -38,12 +43,12 @@ export function Login() {
             ? '/brand'
           : roles?.some((role) => role.role === 'business_owner')
             ? '/owner'
-            : '/dashboard'
+            : next ?? '/dashboard'
     )
   }
 
   return (
-    <AuthLayout title="Log in">
+    <AuthLayout title="Log in" subtitle={next ? 'Log in to see your card for this shop.' : undefined}>
       <AppleButton onClick={() => signInWithApple().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.'))} />
       <GoogleButton onClick={() => signInWithGoogle().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
       <AuthDivider />
@@ -85,7 +90,7 @@ export function Login() {
 
       <AuthLinks>
         <AuthLinkLine prompt="New here?" linkText="Sign up as a customer" to="/signup" />
-        <AuthLinkLine prompt="Run a shop?" linkText="Sign up as a Loyalty Loop Retailer" to="/signup/owner" />
+        <AuthLinkLine prompt="Run a shop?" linkText="Sign up your shop" to="/signup/owner" />
         <AuthMinorLink linkText="Forgot your password?" to="/forgot-password" />
       </AuthLinks>
     </AuthLayout>

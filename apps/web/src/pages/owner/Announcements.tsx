@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { onBrandColor } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Navigate } from 'react-router-dom'
 import { Megaphone, Plus, Trash2 } from 'lucide-react'
@@ -52,7 +53,7 @@ export function OwnerAnnouncements() {
     <p className="text-muted-foreground mt-2 mb-7">Share menu launches, events and updates with customers on the News page.</p>
     {!business ? <div className="rounded-3xl bg-sage px-6 py-10 text-center text-sage-ink">Set up your shop before publishing announcements.</div> : <>
       <form onSubmit={publish} className="rounded-2xl bg-card p-6 ring-1 ring-foreground/8 mb-7">
-        <div className="flex items-center gap-2 mb-5"><div className="h-9 w-9 rounded-xl flex items-center justify-center text-white" style={{backgroundColor: business.brand_color}}><Megaphone className="h-4 w-4" /></div><h2 className="font-display text-xl font-semibold tracking-tight">Create an update</h2></div>
+        <div className="flex items-center gap-2 mb-5"><div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: business.brand_color, color: onBrandColor(business.brand_color) }}><Megaphone className="h-4 w-4" /></div><h2 className="font-display text-xl font-semibold tracking-tight">Create an update</h2></div>
         <input className={inputClass + ' mb-3'} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder={`e.g. ${categoryCopy(business?.category).announcement}`} required />
         <textarea className={inputClass + ' min-h-28'} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} placeholder="Tell customers what’s new…" />
         {error && <p role="alert" className="mt-3 text-sm font-semibold text-destructive">{error}</p>}
