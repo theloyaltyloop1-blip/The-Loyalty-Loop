@@ -4,6 +4,7 @@ import { PassRow, ShopPass } from "../../packages/card-design/ShopPass";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   AppState,
+  BackHandler,
   Dimensions,
   FlatList,
   Image,
@@ -41,7 +42,7 @@ import { shopMoney } from './src/money'
 import { useCountry } from './src/use-country'
 import { ratingLabel, ratingStats } from './src/ratings'
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
-import { SkeletonScreen } from './src/components/Skeleton'
+import { SkeletonBlock, SkeletonScreen } from './src/components/Skeleton'
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated'
@@ -271,6 +272,15 @@ function TrashIcon({ color = colors.foreground, size = 18 }: IconProps) {
 function CardIcon({ color = colors.foreground, size = 18 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M3 6h18v12H3zM3 10h18M7 15h3" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
 }
+function MoonIcon({ color = colors.foreground, size = 18 }: IconProps) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+}
+function SmileIcon({ color = colors.foreground, size = 18 }: IconProps) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} /><Path d="M8.5 14a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+}
+function GlobeIcon({ color = colors.foreground, size = 18 }: IconProps) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} /><Path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" stroke={color} strokeWidth={2} strokeLinejoin="round" /></Svg>
+}
 function BoltIcon({ color = colors.foreground, size = 14 }: IconProps) {
   return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12L13 2z" fill={color} /></Svg>
 }
@@ -464,7 +474,7 @@ function AppHeader({ onOpenProfile }: { onOpenProfile: () => void }) {
         <Image source={logo} style={styles.headerLogo} />
         <Text style={styles.headerTitle}>The Loyalty Loop</Text>
       </View>
-      <Pressable onPress={onOpenProfile} hitSlop={10} style={styles.headerProfileButton}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Your profile and settings" onPress={onOpenProfile} hitSlop={10} style={styles.headerProfileButton}>
         <UserIcon />
       </Pressable>
     </View>
@@ -563,7 +573,7 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
         <View style={styles.mark}>
           <Image source={logo} style={styles.markImage} />
         </View>
-        <Text style={styles.eyebrow}>THE LOYALTY LOOP</Text>
+        <Text style={styles.eyebrow}>The Loyalty Loop</Text>
         {mode === 'signUp' && <Whirl pose={reason ? 'thumbs' : 'wave'} size={104} style={{ alignSelf: 'flex-start', marginBottom: 4 }} />}
         <Text style={styles.hero}>{reason ? 'Save your card' : mode === 'signUp' ? 'Your local shops want to say thanks.' : 'Welcome back'}</Text>
         <Text style={styles.copy}>{reason ?? (mode === 'signUp' ? 'A free account keeps your stamps and rewards in one place. Nothing to carry, nothing to lose in a coat pocket.' : 'Sign in to see your cards and rewards.')}</Text>
@@ -692,7 +702,7 @@ function SettingsGroup({ title, children }: { title?: string; children: ReactNod
 const APPEARANCE_LABELS = { light: 'Light', dark: 'Dark', system: 'Light' } as const
 
 type SettingsView = 'root' | 'card' | 'name' | 'blocked' | 'cards' | 'externalCards'
-const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Customer card', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards', externalCards: 'My other cards' }
+const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Your code', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards', externalCards: 'My other cards' }
 
 /** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
  * grouped rows — security & privacy → notifications → support → legal → account.
@@ -728,7 +738,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
     void walkPastEnabled().then(setWalkPast)
     void loadBlocks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible])
+  }, [visible, initialView])
 
   // Opening Linked cards also stores any card Fidel enrolled that we never saved.
   useEffect(() => {
@@ -807,12 +817,12 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
           {view === 'root' ? (
             <Text style={styles.sheetTitle}>{SETTINGS_TITLES.root}</Text>
           ) : (
-            <Pressable onPress={() => setView('root')} hitSlop={10} style={styles.sheetBack}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Back to ${SETTINGS_TITLES.root}`} onPress={() => setView('root')} hitSlop={10} style={styles.sheetBack}>
               <ChevronLeftIcon size={18} color={schemeColor("#8A857C", 'fg')} />
               <Text style={styles.sheetTitle}>{SETTINGS_TITLES[view]}</Text>
             </Pressable>
           )}
-          <Pressable onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={12}>
             <CloseIcon />
           </Pressable>
         </View>
@@ -831,7 +841,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                 <Pressable onPress={() => setView('card')} style={styles.settingsHeroButton}>
                   <View style={styles.settingsHeroButtonIcon}><QrIcon color={schemeColor("#fff", 'fg')} size={20} /></View>
                   <View style={styles.settingsRowBody}>
-                    <Text style={styles.settingsHeroButtonTitle}>Show my customer card</Text>
+                    <Text style={styles.settingsHeroButtonTitle}>Show my code</Text>
                     <Text style={styles.settingsHeroButtonCopy}>Show it when you pay to earn rewards</Text>
                   </View>
                   <ChevronRightIcon color={colors.primaryText} size={18} />
@@ -860,7 +870,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               <SettingsGroup title="Appearance">
                 <SettingsRow
                   tile="purple"
-                  icon={(c) => <HelpIcon color={c} size={18} />}
+                  icon={(c) => <MoonIcon color={c} size={18} />}
                   title="Light or dark"
                   detail={APPEARANCE_LABELS[theme.preference]}
                   onPress={() =>
@@ -872,7 +882,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                 />
                 <SettingsRow
                   tile="orange"
-                  icon={(c) => <HelpIcon color={c} size={18} />}
+                  icon={(c) => <SmileIcon color={c} size={18} />}
                   title="Show Whirl"
                   detail="Our mascot on welcome screens, empty pages and rewards. Loading spinners stay."
                   right={<Switch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.primary }} />}
@@ -883,7 +893,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               {country.countries.length > 1 && <SettingsGroup title="Country">
                 <SettingsRow
                   tile="teal"
-                  icon={(c) => <HelpIcon color={c} size={18} />}
+                  icon={(c) => <GlobeIcon color={c} size={18} />}
                   title="Your country"
                   detail={`${country.country.name} · prices in ${country.country.currency_code}`}
                   onPress={() =>
@@ -939,12 +949,12 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
           {view === 'card' && (
             <View style={styles.cardScreen}>
               <View style={styles.cardQr}>
-                <QRCode value={`loyaltyloop:customer:${userId}`} size={220} />
+                <QRCode value={`loyaltyloop:customer:${userId}`} size={200} color="#000000" backgroundColor="#FFFFFF" />
               </View>
               <Text style={styles.cardName}>{firstName}</Text>
-              <Text style={styles.manualCodeLabel}>YOUR MANUAL CODE</Text>
+              <Text style={styles.manualCodeLabel}>Your code</Text>
               <Text selectable style={styles.manualCode}>{stampCode || 'Loading…'}</Text>
-              <Text style={styles.small}>Show this when you pay at a participating shop to earn rewards. If the scanner can’t read it, the shop can type your manual code instead.</Text>
+              <Text style={styles.small}>Show this when you pay at a participating shop to earn rewards. If the scanner can’t read it, the shop can type your code instead.</Text>
             </View>
           )}
 
@@ -1109,6 +1119,8 @@ function ShopDetail({
   onLinkCard,
   onJoined,
   programmeVersion = 0,
+  seedCatalog,
+  openAtCode = false,
 }: {
   business: Business
   userId: string
@@ -1124,6 +1136,11 @@ function ShopDetail({
   onJoined: (membership: Membership) => void
   /** Goes up when any shop's programme changes, so this page reloads its rewards. */
   programmeVersion?: number
+  /** Home's copy of this shop's rewards (loaded at launch, saved on the phone), used while
+   * the page loads its own. Null when home has never loaded any. */
+  seedCatalog: Pick<RewardCatalogItem, 'title' | 'stamp_threshold' | 'spend_threshold_pence' | 'points_cost'>[] | null
+  /** Opened from "Show my card": scroll straight to the code. */
+  openAtCode?: boolean
 }) {
   const { isDark } = useTheme()
   const [busy, setBusy] = useState(false)
@@ -1151,6 +1168,21 @@ function ShopDetail({
   const [rollingSpend, setRollingSpend] = useState<number | null>(null)
   const scrollRef = useRef<ScrollView>(null)
   const cardY = useRef(0)
+  const passRef = useRef<View>(null)
+  const codeRef = useRef<View>(null)
+  const insets = useSafeAreaInsets()
+  // "Show my card" opens the page with the code in full view (no animation: the page simply
+  // opens there), once per shop opened, keeping as much of the card above it as fits.
+  const scrolledToCode = useRef<string | null>(null)
+  const showCode = () => {
+    if (!openAtCode || scrolledToCode.current === business.id || !codeRef.current || !passRef.current) return
+    scrolledToCode.current = business.id
+    codeRef.current.measureLayout(passRef.current, (_x, y, _w, h) => {
+      const visible = Dimensions.get('window').height - insets.top - insets.bottom
+      const target = cardY.current + y + h + 40 - visible
+      if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: false })
+    }, () => undefined)
+  }
   // How much just landed on the card, for the receipt (null when nothing new).
   const [landed, setLanded] = useState<number | null>(null)
   // After the receipt closes, the new stamps land on the card one by one.
@@ -1167,15 +1199,19 @@ function ShopDetail({
     lastObservedStampValues[business.id] = value
   }, [business.id, value])
 
+  // While this page's own copy loads, the card uses home's copy of the same rewards, so it
+  // never shows a stand-in target. `holding`: neither copy exists yet, so the count waits.
+  const targets = catalogLoading ? [...(seedCatalog ?? [])].sort((a, b) => a.stamp_threshold - b.stamp_threshold) : catalog
+  const holding = catalogLoading && seedCatalog === null
   // Rewards unlock at the catalogue tiers, so progress is shown towards the next
   // one: the lowest tier above the customer's progress, or the top tier (where a
   // new round starts). Mirrors spend_next_tier in the database.
-  const spendTiers = catalog
+  const spendTiers = targets
     .filter((reward) => (reward.spend_threshold_pence ?? 0) > 0)
     .sort((a, b) => (a.spend_threshold_pence as number) - (b.spend_threshold_pence as number))
   const nextTier = spendShop
     ? spendTiers.find((reward) => (reward.spend_threshold_pence as number) > value) ?? spendTiers[spendTiers.length - 1]
-    : catalog.find((reward) => reward.stamp_threshold > value) ?? catalog[catalog.length - 1]
+    : targets.find((reward) => reward.stamp_threshold > value) ?? targets[targets.length - 1]
   const threshold = spendShop
     ? nextTier?.spend_threshold_pence || business.reward_threshold_pence || 2000
     : nextTier?.stamp_threshold || business.loyalty_config?.stamps_required || 10
@@ -1440,7 +1476,8 @@ function ShopDetail({
   const pointsView = pointsStanding(
     business,
     value,
-    catalog.filter((r) => (r.points_cost ?? 0) > 0).map((r) => ({ id: r.id, title: r.title, points_cost: r.points_cost as number })),
+    (catalogLoading ? (seedCatalog ?? []).map((r, i) => ({ ...r, id: `seed-${i}` })) : catalog)
+      .filter((r) => (r.points_cost ?? 0) > 0).map((r) => ({ id: r.id, title: r.title, points_cost: r.points_cost as number })),
     pointUnits,
   )
 
@@ -1566,32 +1603,32 @@ function ShopDetail({
       <StatusBar barStyle={statusBarStyle(isDark, skin.dark)} />
       <ShopBackdrop skin={skin} />
       <KeyboardAwareScrollView ref={scrollRef} contentContainerStyle={ss.screen}>
-        <View style={{ marginHorizontal: -20, marginTop: -20 }} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
+        <View ref={passRef} style={{ marginHorizontal: -20, marginTop: -20 }} onLayout={(e) => { cardY.current = e.nativeEvent.layout.y }}>
           <ShopPass
             skin={skin}
             shop={business}
             eyebrow={[business.category || 'Local business', openStatus(business.opening_hours)?.label].filter(Boolean).join(' · ')}
-            stamps={membership && passStamps ? { filled: Math.min(value, threshold), total: threshold } : null}
+            stamps={membership && passStamps && !holding ? { filled: Math.min(value, threshold), total: threshold } : null}
             wrapStamp={(i, stamp) => {
               const filled = Math.min(value, threshold)
               const first = filled - (thump?.count ?? 0)
               if (!thump || i < first || i >= filled) return stamp
               return <StampThump key={thump.key} delay={(i - first) * 170} ringColor={skin.accent} radius={14}>{stamp}</StampThump>
             }}
-            count={!membership || programmeId === 'tiers' ? null
+            count={!membership || programmeId === 'tiers' || holding ? null
               : pointsLike ? { value: String(value), of: pointsLike && programmeId === 'custom' ? ` ${pointUnits.many}` : ' pts' }
               : spendShop ? (threshold > 0 ? { value: pounds(Math.min(value, threshold), business.country_code).replace(/\.00$/, ''), of: `/${pounds(threshold, business.country_code).replace(/\.00$/, '')}` } : null)
               : passStamps ? { value: String(Math.min(value, threshold)), of: `/${threshold}` } : null}
-            progress={membership && !passStamps ? passProgress : null}
-            progressLabel={passLabel}
-            code={membership ? <View style={{ alignItems: 'center' }}><QRCode value={`loyaltyloop:customer:${userId}`} size={190} /><Tip id="member-code" text="Show this code when you pay to collect" /></View> : null}
+            progress={membership && !passStamps && !holding ? passProgress : null}
+            progressLabel={holding ? (membership ? 'Loading your card…' : 'Join to start collecting') : passLabel}
+            code={membership ? <View ref={codeRef} onLayout={showCode} style={{ alignItems: 'center' }}><QRCode value={`loyaltyloop:customer:${userId}`} size={190} /><Tip id="member-code" text="Show this code when you pay to collect" /></View> : null}
             action={membership ? null : (
-              <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: schemeColor('#FFFFFF', 'bg'), borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, (busy || pressed) && { opacity: 0.8 }]}>
+              <Pressable accessibilityRole="button" onPress={join} disabled={busy} style={({ pressed }) => [{ marginTop: 26, backgroundColor: '#FFFFFF', borderRadius: 999, paddingVertical: 16, paddingHorizontal: 48, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 8 }, (busy || pressed) && { opacity: 0.8 }]}>
                 <Text style={{ color: skin.dark ? skin.bg : skin.ink, fontWeight: '800', fontSize: 17 }}>{busy ? 'Joining…' : 'Join card'}</Text>
               </Pressable>
             )}
             fields={[
-              ...(membership ? [{ label: 'Member code', value: stampCode || '…' }, { label: 'Next reward', value: nextTier?.title ?? 'Coming soon' }] : []),
+              ...(membership ? [{ label: 'Your code', value: stampCode || '…' }, { label: 'Next reward', value: nextTier?.title ?? (catalogLoading ? '…' : 'Coming soon') }] : []),
               ...(pageRating ? [{ label: 'Rating', value: `${pageRating} (${reviews.length})` }] : []),
               ...(business.features?.length ? [{ label: 'Good to know', value: business.features.map(id => featureBadge(id, business.halal_certifier)).slice(0, 2).join(', ') }] : []),
             ]}
@@ -1675,7 +1712,7 @@ function ShopDetail({
           ) : null}
           <Text style={ss.mapAddress}>{business.address || 'Open Google Maps for directions'}</Text>
           <Pressable onPress={() => void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`)} style={({ pressed }) => [ss.directionsButton, pressed && ss.pressed]}>
-            <Text style={ss.directionsButtonText}>Get directions in Google Maps →</Text>
+            <Text style={ss.directionsButtonText}>Get directions in Google Maps</Text>
           </Pressable>
         </View> : null}
 
@@ -1711,7 +1748,7 @@ function ShopDetail({
               <Text style={ss.reviewComposerTitle}>{myReview ? 'Update your review' : 'Share your experience'}</Text>
               <View style={ss.starRow}>
                 {[1, 2, 3, 4, 5].map((rating) => (
-                  <Pressable key={rating} onPress={() => setReviewRating(rating)} hitSlop={8} style={ss.starButton}>
+                  <Pressable key={rating} accessibilityRole="button" accessibilityLabel={`${rating} ${rating === 1 ? 'star' : 'stars'}`} accessibilityState={{ selected: rating === reviewRating }} onPress={() => setReviewRating(rating)} hitSlop={8} style={ss.starButton}>
                     <Text style={[ss.star, rating <= reviewRating && ss.starSelected]}>★</Text>
                   </Pressable>
                 ))}
@@ -1720,10 +1757,11 @@ function ShopDetail({
                 value={reviewBody}
                 onChangeText={setReviewBody}
                 placeholder="What did you enjoy?"
-                placeholderTextColor={schemeColor("#000000", 'fg')}
+                // The box stays white on every shop design and in dark mode, so its text is fixed dark.
+                placeholderTextColor="#6F6B64"
                 multiline
                 maxLength={2000}
-                style={ss.reviewInput}
+                style={[ss.reviewInput, { color: '#1A2138' }]}
               />
               <Button title={savingReview ? 'Saving…' : myReview ? 'Update review' : 'Post review'} onPress={saveReview} disabled={savingReview} />
               {myReview && <Pressable onPress={deleteReview} disabled={savingReview}><Text style={ss.deleteReview}>Delete review</Text></Pressable>}
@@ -1752,11 +1790,11 @@ function ShopDetail({
                   )}
                   {review.user_id !== userId && (
                     <View style={ss.reviewModRow}>
-                      <Pressable onPress={() => reportReview(review)} hitSlop={8}>
+                      <Pressable accessibilityRole="button" onPress={() => reportReview(review)} style={ss.reviewModButton}>
                         <Text style={ss.reviewModLink}>Report</Text>
                       </Pressable>
                       <Text style={ss.reviewModDot}>·</Text>
-                      <Pressable onPress={() => blockAuthor(review)} hitSlop={8}>
+                      <Pressable accessibilityRole="button" onPress={() => blockAuthor(review)} style={ss.reviewModButton}>
                         <Text style={ss.reviewModLink}>Block this person</Text>
                       </Pressable>
                     </View>
@@ -1831,10 +1869,10 @@ const featureStyles = themed(() => StyleSheet.create({
   badgeText: { color: schemeColor('#000000', 'fg'), fontSize: 12, fontWeight: '700' },
 }))
 
-function HomeTab({ userId, businesses, memberships, catalog, announcements, loading, onSelect, onAsk, firstName, onOpenProfile, onSeeNews }: {
+function HomeTab({ userId, businesses, memberships, catalog, announcements, loading, failed, onRetry, onSelect, onShowCard, onAsk, firstName, onOpenProfile, onSeeNews }: {
   userId: string; firstName?: string; onOpenProfile: () => void; onSeeNews: () => void;
   businesses: Business[]; memberships: Membership[]; catalog: HomeTier[];
-  announcements: Announcement[]; loading: boolean; onSelect: (business: Business) => void; onAsk: (query: string) => void;
+  announcements: Announcement[]; loading: boolean; failed: boolean; onRetry: () => void; onSelect: (business: Business) => void; onShowCard: (business: Business) => void; onAsk: (query: string) => void;
 }) {
   const [searching, setSearching] = useState(false)
   const [category, setCategory] = useState<string | null>(null)
@@ -1847,11 +1885,17 @@ function HomeTab({ userId, businesses, memberships, catalog, announcements, load
   const trending = trendingShops(businesses, filtered, { fallback: 4, limit: 4 })
   const { coords: userLocation, status: locationStatus, locate } = useUserLocation()
   const [askWhirl, setAskWhirl] = useState(false)
+  // Android back closes search (AppHome's handler passes through on the Home tab).
+  useEffect(() => {
+    if (!searching) return
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setSearching(false); setQuery(''); setCategory(null); setFeatures([]); return true })
+    return () => sub.remove()
+  }, [searching])
   if (!searching) {
     if (loading && businesses.length === 0) return <SkeletonScreen cards={3} cardHeight={150} label="Finding your local favourites" />
     return <><HomeFeed firstName={firstName} shops={businesses} memberships={memberships} catalog={catalog} news={announcements}
       location={userLocation} locationStatus={locationStatus} onUseLocation={() => { void locate() }}
-      onSelect={onSelect} onSearch={() => setSearching(true)} onSeeNews={onSeeNews} onAsk={() => onAsk('')} onOpenProfile={onOpenProfile}
+      onSelect={onSelect} onShowCard={onShowCard} failed={failed} onRetry={onRetry} onSearch={() => setSearching(true)} onSeeNews={onSeeNews} onAsk={() => onAsk('')} onOpenProfile={onOpenProfile}
       onAskWhirl={() => setAskWhirl(true)}
       quickIds={quickCards.ids} onQuickChange={quickCards.save} />
       <AskWhirlSheet visible={askWhirl} onClose={() => setAskWhirl(false)} mode="shopper"
@@ -2193,7 +2237,7 @@ function PlatformBanner({ notices, dismissedIds, onDismiss }: { notices: Platfor
               {notice.body ? <Text style={styles.platformBannerBody}>: {notice.body}</Text> : null}
             </Text>
           </View>
-          <Pressable onPress={() => onDismiss(notice.id)} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Dismiss: ${notice.title}`} onPress={() => onDismiss(notice.id)} hitSlop={14}>
             <CloseIcon size={16} color={schemeColor("#fff", 'fg')} />
           </Pressable>
         </View>
@@ -2206,11 +2250,27 @@ function PlatformBanner({ notices, dismissedIds, onDismiss }: { notices: Platfor
 // News tab
 // ---------------------------------------------------------------------
 
-function NewsTab({ announcements }: { announcements: Announcement[] }) {
+/** What a list tab shows when it has nothing to list: placeholders while the first load runs,
+ * a retry line if it failed, otherwise the tab's own empty message. */
+type ListLoad = { loading: boolean; failed: boolean; onRetry: () => void }
+function EmptyList({ loading, failed, onRetry, children }: ListLoad & { children: ReactNode }) {
+  if (loading) return <View style={{ gap: 12 }} accessibilityLabel="Loading"><SkeletonBlock height={120} radius={18} /><SkeletonBlock height={120} radius={18} /></View>
+  if (failed) {
+    return (
+      <View style={{ alignItems: 'center', marginTop: 8 }}>
+        <Text style={[styles.empty, { textAlign: 'center' }]}>We couldn’t load this. Check your connection and try again.</Text>
+        <Button secondary title="Try again" onPress={onRetry} />
+      </View>
+    )
+  }
+  return <>{children}</>
+}
+
+function NewsTab({ announcements, load }: { announcements: Announcement[]; load: ListLoad }) {
   return (
     <>
       <Text style={styles.pageTitle}>News from your shops</Text>
-      {announcements.length === 0 && <View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="sleepy" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>Quiet in here. When your shops have news, you’ll see it first.</Text></View>}
+      {announcements.length === 0 && <EmptyList {...load}><View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="sleepy" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>Quiet in here. When your shops have news, you’ll see it first.</Text></View></EmptyList>}
       {announcements.map((a) => (
         <View key={a.id} style={styles.newsCard}>
           <Text style={styles.announcementFrom}>{a.business?.name || 'The Loyalty Loop team'}</Text>
@@ -2294,7 +2354,7 @@ function DiscoverCard({
             {photo.business.description}
           </Text>
         )}
-        <Text style={styles.discoverViewShop}>View shop →</Text>
+        <Text style={styles.discoverViewShop}>View shop</Text>
       </Pressable>
     </View>
   )
@@ -2388,7 +2448,7 @@ function DiscoverTab({
 // Rewards tab
 // ---------------------------------------------------------------------
 
-function RewardsTab({ rewards }: { rewards: Reward[] }) {
+function RewardsTab({ rewards, load }: { rewards: Reward[]; load: ListLoad }) {
   const active = rewards.filter((r) => !r.redeemed_at)
   return (
     <>
@@ -2409,7 +2469,7 @@ function RewardsTab({ rewards }: { rewards: Reward[] }) {
           </Ticket>
         ))
       ) : (
-        <View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="sleepy" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>Nothing to claim yet. Get a few stamps and your first reward lands right here.</Text></View>
+        <EmptyList {...load}><View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="sleepy" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>Nothing to claim yet. Get a few stamps and your first reward lands right here.</Text></View></EmptyList>
       )}
     </>
   )
@@ -2424,16 +2484,18 @@ function FavouritesTab({
   memberships,
   onSelect,
   onQuickJoin,
+  load,
 }: {
   favourites: Business[]
   memberships: Membership[]
   onSelect: (business: Business) => void
   onQuickJoin: (business: Business) => void
+  load: ListLoad
 }) {
   return (
     <>
       <Text style={styles.pageTitle}>Favourites</Text>
-      {favourites.length === 0 && <View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="think" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>No favourites yet. Tap the heart on any shop you like and it’ll live here.</Text></View>}
+      {favourites.length === 0 && <EmptyList {...load}><View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="think" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>No favourites yet. Tap the heart on any shop you like and it’ll live here.</Text></View></EmptyList>}
       {favourites.map((b) => {
         const member = memberships.some((m) => m.business_id === b.id)
         return (
@@ -2448,18 +2510,18 @@ function FavouritesTab({
               )}
             </View>
             <Text style={styles.shopName}>{b.name}</Text>
-            <Text style={styles.categoryLabel}>{(b.category || 'Local business').toUpperCase()}</Text>
+            <Text style={styles.categoryLabel}>{b.category || 'Local business'}</Text>
             <View style={styles.favouriteDivider} />
             <View style={styles.favouriteBottomRow}>
               {member ? (
                 <Text style={styles.favouriteStatus}>Member</Text>
               ) : (
-                <Pressable onPress={() => onQuickJoin(b)} style={styles.favouriteTapRow}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`Join ${b.name}`} onPress={() => onQuickJoin(b)} style={styles.favouriteTapRow}>
                   <View style={[styles.favouriteDot, { backgroundColor: b.brand_color || colors.primary }]} />
                   <Text style={styles.favouriteStatus}>Tap to join</Text>
                 </Pressable>
               )}
-              <Pressable onPress={() => onSelect(b)} style={styles.favouriteViewRow}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`View ${b.name}`} onPress={() => onSelect(b)} style={styles.favouriteViewRow}>
                 <Text style={styles.favouriteViewText}>View</Text>
                 <ArrowRightIcon />
               </Pressable>
@@ -2529,9 +2591,17 @@ function AppHome({ session }: { session: Session }) {
   const [dismissedNoticeIds, setDismissedNoticeIds] = useState<Set<string>>(new Set())
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(() => new Set(cached?.favouriteIds ?? []))
   const [selected, setSelected] = useState<Business | null>(null)
+  // The shop opened from "Show my card", so its page opens at the code.
+  const [codeShopId, setCodeShopId] = useState<string | null>(null)
+  const showCard = (business: Business) => { setCodeShopId(business.id); setSelected(business) }
+  useEffect(() => { if (!selected) setCodeShopId(null) }, [selected])
   const [showProfile, setShowProfile] = useState(false)
   const [stampCode, setStampCode] = useState<string | null>(cached?.stampCode ?? null)
   const [loading, setLoading] = useState(!cached)
+  // Whether this phone has ever had a home screen for this shopper (saved copy or a load this
+  // session). Until then an empty list means "not loaded yet", not "nothing there".
+  const [everLoaded, setEverLoaded] = useState(!!cached)
+  const [loadFailed, setLoadFailed] = useState(false)
   const userId = session.user.id
   const shopperCountry = useCountry(userId)
   const linking = useCardLinking(userId)
@@ -2692,8 +2762,11 @@ function AppHome({ session }: { session: Session }) {
         favouriteIds: (favs.data || []).map((row: any) => row.business_id as string),
         stampCode: profile.data?.stamp_code || null,
       }))
+      setEverLoaded(true)
+      setLoadFailed(false)
       if (serviceStatus.level !== 'ok') serviceStatus.recheck()
     } catch (e) {
+      setLoadFailed(true)
       // Servers down or no signal: keep showing the saved home screen and let
       // the banner explain. Only pop up when there is nothing to show at all.
       serviceStatus.recheck()
@@ -2812,6 +2885,7 @@ function AppHome({ session }: { session: Session }) {
     const openWidgetDestination = ({ url }: { url: string }) => {
       if (url.includes('widget/qr')) {
         setSelected(null)
+        setSettingsView('card')
         setShowProfile(true)
       }
       if (url.includes('widget/rewards')) {
@@ -2944,6 +3018,17 @@ function AppHome({ session }: { session: Session }) {
     [businesses, shopperCountry.country.code],
   )
 
+  // Android back: close the shop page, else go back to Home. Only Home leaves back to the system
+  // (HomeTab closes its own search first). Open sheets are Modals and handle back themselves.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (selected) { setSelected(null); return true }
+      if (tab !== 'home') { setTab('home'); return true }
+      return false
+    })
+    return () => sub.remove()
+  }, [selected, tab])
+
   const celebration = (
       <RewardCelebration
         reward={celebrate}
@@ -2960,6 +3045,8 @@ function AppHome({ session }: { session: Session }) {
       <ShopDetail
         business={selected}
         programmeVersion={programmeVersion}
+        seedCatalog={homeCatalog.length ? homeCatalog.filter((row) => row.business_id === selected.id && !row.kind) : null}
+        openAtCode={codeShopId === selected.id}
         userId={userId}
         membership={memberships.find((m) => m.business_id === selected.id)}
         stampCode={stampCode}
@@ -2977,6 +3064,7 @@ function AppHome({ session }: { session: Session }) {
   }
 
   const discovering = tab === 'discover' && SHOW_DISCOVER_TAB
+  const listLoad: ListLoad = { loading: loading && !everLoaded, failed: loadFailed && !everLoaded, onRetry: () => void load() }
 
   return (
     <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
@@ -3002,11 +3090,11 @@ function AppHome({ session }: { session: Session }) {
       ) : (
         <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} {...whirlRefreshControlProps} />}>
           <WhirlRefreshIndicator refreshing={loading} />
-          {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} announcements={announcements} onSelect={setSelected} onAsk={query => setAskShop({query})} />}
-          {tab === 'news' && <NewsTab announcements={announcements} />}
-          {tab === 'rewards' && <RewardsTab rewards={rewards} />}
+          {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} failed={loadFailed} onRetry={() => void load()} announcements={announcements} onSelect={setSelected} onShowCard={showCard} onAsk={query => setAskShop({query})} />}
+          {tab === 'news' && <NewsTab announcements={announcements} load={listLoad} />}
+          {tab === 'rewards' && <RewardsTab rewards={rewards} load={listLoad} />}
           {tab === 'favourites' && (
-            <FavouritesTab favourites={favouriteBusinesses} memberships={memberships} onSelect={setSelected} onQuickJoin={quickJoin} />
+            <FavouritesTab favourites={favouriteBusinesses} memberships={memberships} onSelect={setSelected} onQuickJoin={quickJoin} load={listLoad} />
           )}
         </KeyboardAwareScrollView>
       )}
@@ -3172,6 +3260,13 @@ function AppRoot() {
   }, [session?.user.id])
   // Saves the token only if notifications are already allowed; the question itself comes after a first join.
   useEffect(() => { if (session) void registerPushToken(session.user.id).catch(() => undefined) }, [session?.user.id])
+  // Android back on sign-in or sign-up returns to the shops, like the on-screen back arrow.
+  const onAuthScreen = !session && auth !== null
+  useEffect(() => {
+    if (!onAuthScreen) return
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { pendingJoin = null; setAuth(null); return true })
+    return () => sub.remove()
+  }, [onAuthScreen])
 
   if (!hasSupabaseConfig) {
     return (
@@ -3238,7 +3333,7 @@ const styles = themed(() => StyleSheet.create({
   mark: { width: 64, height: 64, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.08)', 'border'), alignItems: 'center', justifyContent: 'center', marginBottom: 28, overflow: 'hidden' },
   markImage: { width: 46, height: 46, resizeMode: 'contain' },
 
-  eyebrow: { color: colors.primaryText, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 12 },
+  eyebrow: { color: colors.primaryText, fontWeight: '700', fontSize: 14, marginBottom: 12 },
   hero: { color: colors.foreground, fontSize: 36, fontFamily: FONT_DISPLAY, lineHeight: 42, letterSpacing: -1 },
   title: { color: colors.foreground, fontSize: 26, fontFamily: FONT_DISPLAY, lineHeight: 31, letterSpacing: -0.5 },
   copy: { color: schemeColor('#000000', 'fg'), fontSize: 16, lineHeight: 24, marginTop: 16 },
@@ -3300,7 +3395,7 @@ const styles = themed(() => StyleSheet.create({
   announcementRow: { gap: 12, paddingBottom: 28 },
   announcementCard: { width: 240, backgroundColor: colors.card, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   announcementBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: schemeColor('rgba(232,112,59,0.12)', 'bg'), alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  announcementFrom: { fontSize: 11, fontWeight: '700', color: schemeColor('#000000', 'fg'), textTransform: 'uppercase', letterSpacing: 0.4 },
+  announcementFrom: { fontSize: 13, fontWeight: '600', color: schemeColor('#000000', 'fg') },
   announcementTitle: { fontSize: 15, fontWeight: '800', color: colors.foreground, marginTop: 4 },
   announcementBody: { fontSize: 13, color: schemeColor('#000000', 'fg'), marginTop: 4, lineHeight: 18 },
 
@@ -3368,7 +3463,7 @@ const styles = themed(() => StyleSheet.create({
   barFill: { height: '100%', borderRadius: 6 },
   qrWrap: { alignItems: 'center', marginTop: 20 },
   qrText: { color: schemeColor('#000000', 'fg'), fontWeight: '600', fontSize: 12.5, marginTop: 12 },
-  manualCodeLabel: { color: schemeColor('#000000', 'fg'), fontSize: 10.5, fontWeight: '800', letterSpacing: 1, textAlign: 'center', marginTop: 16 },
+  manualCodeLabel: { color: schemeColor('#000000', 'fg'), fontSize: 13, fontWeight: '600', textAlign: 'center', marginTop: 16 },
   manualCode: { color: colors.foreground, fontSize: 20, fontWeight: '900', letterSpacing: 3, textAlign: 'center', marginTop: 4 },
   securityCard: { backgroundColor: schemeColor('#EFEBE3', 'bg'), borderRadius: 18, padding: 16, marginTop: 16, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.07)', 'border') },
   securityCopy: { color: schemeColor('#000000', 'fg'), fontSize: 13, lineHeight: 19, marginTop: 4 },
@@ -3400,7 +3495,7 @@ const styles = themed(() => StyleSheet.create({
   settingsHeroButtonTitle: { color: colors.foreground, fontWeight: '800', fontSize: 15 },
   settingsHeroButtonCopy: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, marginTop: 1 },
   settingsGroup: { gap: 8 },
-  settingsGroupTitle: { fontSize: 12, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: 0.8, textTransform: 'uppercase', marginLeft: 8 },
+  settingsGroupTitle: { fontSize: 14, fontWeight: '600', color: schemeColor('#000000', 'fg'), marginLeft: 8 },
   settingsCard: { backgroundColor: colors.card, borderRadius: 18, overflow: 'hidden' },
   settingsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 56 },
   settingsRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: schemeColor('rgba(0,0,0,0.12)', 'border') },
@@ -3411,12 +3506,13 @@ const styles = themed(() => StyleSheet.create({
   settingsRowTitleDanger: { color: schemeColor('#b54439', 'fg') },
   settingsRowDetail: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, marginTop: 2, lineHeight: 17 },
   settingsFooter: { textAlign: 'center', color: schemeColor('#000000', 'fg'), fontSize: 12, marginTop: 4 },
-  settingsFieldLabel: { fontSize: 12, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 16 },
+  settingsFieldLabel: { fontSize: 14, fontWeight: '600', color: schemeColor('#000000', 'fg'), paddingHorizontal: 16, paddingTop: 16 },
   settingsInput: { fontSize: 17, color: colors.foreground, paddingHorizontal: 16, paddingVertical: 12 },
   settingsFieldHelp: { color: schemeColor('#000000', 'fg'), fontSize: 12.5, paddingHorizontal: 16, paddingBottom: 16, lineHeight: 17 },
   settingsEmpty: { color: schemeColor('#000000', 'fg'), fontSize: 14, lineHeight: 20, padding: 16 },
   cardScreen: { backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' },
-  cardQr: { backgroundColor: schemeColor('#fff', 'bg'), padding: 16, borderRadius: 20 },
+  // Fixed white in both schemes: scanners need a light margin of about four modules round the code.
+  cardQr: { backgroundColor: '#FFFFFF', padding: 26, borderRadius: 20 },
   cardName: { fontSize: 20, fontFamily: FONT_DISPLAY, color: colors.foreground, marginTop: 20 },
   pinWrap: { alignItems: 'center', width: 60, height: 66, paddingTop: 8 },
   pinHalo: { position: 'absolute', top: 0, width: 56, height: 56, borderRadius: 28, opacity: 0.22 },
@@ -3443,7 +3539,7 @@ const styles = themed(() => StyleSheet.create({
   shortCard: { height: 430, borderRadius: 22, overflow: 'hidden', backgroundColor: schemeColor('#DFE3DA', 'bg'), position: 'relative' },
   shortImage: { width: '100%', height: '100%' },
   shortOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 94, paddingHorizontal: 16, paddingVertical: 16, justifyContent: 'flex-end', backgroundColor: schemeColor('rgba(20,20,18,0.42)', 'bg') },
-  shortIndex: { color: schemeColor('rgba(255,255,255,0.8)', 'fg'), fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  shortIndex: { color: schemeColor('rgba(255,255,255,0.8)', 'fg'), fontSize: 12, fontWeight: '600' },
   shortShopName: { color: schemeColor('#fff', 'fg'), fontSize: 18, fontWeight: '900', marginTop: 4 },
 
   // Reviews
@@ -3466,7 +3562,8 @@ const styles = themed(() => StyleSheet.create({
   reviewBody: { color: schemeColor('#000000', 'fg'), fontSize: 13.5, lineHeight: 20, marginTop: 8 },
   reviewReply: { marginTop: 12, marginLeft: 8, paddingLeft: 12, borderLeftWidth: 3 },
   reviewReplyTitle: { color: colors.ink, fontSize: 13, fontWeight: '800' },
-  reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  reviewModRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  reviewModButton: { minHeight: 44, justifyContent: 'center' },
   reviewModLink: { color: schemeColor('#000000', 'fg'), fontSize: 12, fontWeight: '600' },
   reviewModDot: { color: schemeColor('#000000', 'fg'), fontSize: 12 },
   blockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
@@ -3490,13 +3587,13 @@ const styles = themed(() => StyleSheet.create({
   favouriteCard: { backgroundColor: colors.card, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: schemeColor('rgba(0,0,0,0.06)', 'border') },
   favouriteTopRow: { marginBottom: 12 },
   favouriteLogo: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  categoryLabel: { fontSize: 11, fontWeight: '700', color: schemeColor('#000000', 'fg'), letterSpacing: 0.6, marginTop: 4 },
+  categoryLabel: { fontSize: 13, fontWeight: '600', color: schemeColor('#000000', 'fg'), marginTop: 4 },
   favouriteDivider: { height: 1, backgroundColor: schemeColor('rgba(0,0,0,0.07)', 'bg'), marginVertical: 16 },
   favouriteBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  favouriteTapRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  favouriteTapRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
   favouriteDot: { width: 10, height: 10, borderRadius: 5 },
   favouriteStatus: { fontSize: 13.5, fontWeight: '700', color: colors.foreground },
-  favouriteViewRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  favouriteViewRow: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingLeft: 12 },
   favouriteViewText: { color: colors.primaryText, fontWeight: '800', fontSize: 13.5 },
 
   // Profile sheet
@@ -3506,7 +3603,7 @@ const styles = themed(() => StyleSheet.create({
   deleteAccount: { color: schemeColor('#b54439', 'fg'), fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 16 },
   sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(0,0,0,0.15)', 'bg'), alignSelf: 'center', marginBottom: 16 },
   sheetHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  sheetTitle: { fontSize: 13, fontWeight: '800', color: schemeColor('#000000', 'fg'), letterSpacing: 0.6, textTransform: 'uppercase' },
+  sheetTitle: { fontSize: 17, fontWeight: '700', color: schemeColor('#000000', 'fg') },
 
   // Bottom tab bar
   tabs: { position: 'absolute', left: 16, right: 16, bottom: 10, height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.olive, borderRadius: 999, paddingHorizontal: 8, shadowColor: '#000000', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 },

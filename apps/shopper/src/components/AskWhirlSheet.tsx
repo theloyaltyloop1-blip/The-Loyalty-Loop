@@ -17,7 +17,8 @@ import {
  * cleared when the sheet closes. Server functions: shopper -> `ask-whirl`,
  * business -> `business-coach-chat` (both rate limited, signed-in only).
  *
- * Light or dark comes from the Whirl kit's `useWhirlVariant()` (the app theme).
+ * Colours are the app's theme tokens, which follow light or dark; `useWhirlVariant()`
+ * re-renders the sheet when the scheme changes.
  */
 export type AskWhirlProps = {
   visible: boolean
@@ -36,8 +37,7 @@ export type AskWhirlProps = {
 
 type Turn = ChatMessage & { shopIds?: string[]; failed?: boolean }
 
-const light = () => ({ bg: colors.background, card: colors.card, ink: colors.ink, muted: colors.muted, border: colors.border, accent: colors.primary, onAccent: colors.oliveInk, bubble: colors.sage })
-const DARK = { bg: '#121714', card: '#1B221E', ink: '#F2EFE6', muted: '#A9B0A6', border: '#2B342F', accent: '#EE9A52', onAccent: '#1A1208', bubble: '#242D28' }
+const palette = () => ({ bg: colors.background, card: colors.card, ink: colors.ink, muted: colors.muted, border: colors.border, accent: colors.primary, onAccent: colors.onPrimary, bubble: colors.sage })
 
 async function failureFrom(error: unknown): Promise<AskState> {
   const ctx = (error as { context?: unknown } | null)?.context
@@ -51,7 +51,8 @@ async function failureFrom(error: unknown): Promise<AskState> {
 }
 
 export function AskWhirlSheet({ visible, onClose, mode, businessId, stats, near, resolveShop, onOpenShop }: AskWhirlProps) {
-  const t = useWhirlVariant() === 'dark' ? DARK : light()
+  useWhirlVariant()
+  const t = palette()
   const [turns, setTurns] = useState<Turn[]>([])
   const [state, setState] = useState<AskState>('idle')
   const [input, setInput] = useState('')

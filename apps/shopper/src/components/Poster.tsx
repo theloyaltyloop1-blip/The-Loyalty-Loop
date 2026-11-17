@@ -1,6 +1,7 @@
 import { Whirl } from '../Whirl'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
+import { useReducedMotion } from 'react-native-reanimated'
 import { themed, colors, schemeColor } from '@loyalty-loop/design-tokens'
 import { useTheme } from '../theme'
 
@@ -27,34 +28,27 @@ const EASE = Easing.bezier(0.22, 1, 0.36, 1)
 
 let introShown = false
 
-/** Paper screen with the name and a hairline that fills, then it lifts away. Once per launch. */
+/** Paper screen with the name and a hairline that fills, then it lifts away. Once per launch,
+ * about 0.75 s in all, so the app is usable almost at once. Skipped with reduced motion. */
 export function AppIntro() {
   useTheme() // re-render when the scheme changes
   const { height, width } = useWindowDimensions()
   const [visible, setVisible] = useState(!introShown)
-  const [count, setCount] = useState(0)
   const progress = useRef(new Animated.Value(0)).current
   const lift = useRef(new Animated.Value(0)).current
   useEffect(() => {
     if (!visible) return
     introShown = true
     let cancelled = false
-    let timer: ReturnType<typeof setInterval> | null = null
     void AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
       if (cancelled) return
       if (reduce) { setVisible(false); return }
-      Animated.timing(progress, { toValue: 1, duration: 1200, easing: EASE, useNativeDriver: true }).start()
-      const start = Date.now()
-      timer = setInterval(() => {
-        const t = Math.min(1, (Date.now() - start) / 1200)
-        setCount(Math.round((1 - Math.pow(1 - t, 3)) * 100))
-        if (t >= 1) {
-          if (timer) clearInterval(timer)
-          Animated.timing(lift, { toValue: 1, duration: 900, easing: EASE, useNativeDriver: true }).start(() => setVisible(false))
-        }
-      }, 40)
+      Animated.sequence([
+        Animated.timing(progress, { toValue: 1, duration: 450, easing: EASE, useNativeDriver: true }),
+        Animated.timing(lift, { toValue: 1, duration: 300, easing: EASE, useNativeDriver: true }),
+      ]).start(() => setVisible(false))
     }).catch(() => setVisible(false))
-    return () => { cancelled = true; if (timer) clearInterval(timer) }
+    return () => { cancelled = true }
   }, [visible, progress, lift])
   if (!visible) return null
   const line = width - 48
@@ -65,18 +59,26 @@ export function AppIntro() {
       <View style={[s.introTrack, { width: line }]}>
         <Animated.View style={[s.introFill, { width: line, transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-line, 0] }) }] }]} />
       </View>
-      <Text style={s.introTag}>LOCAL LOYALTY</Text>
-      <Text style={s.introCount}>{String(count).padStart(3, '0')}</Text>
+      <Text style={s.introTag}>Local loyalty</Text>
     </Animated.View>
   )
 }
 
-/** Fades and lifts its children in after `delay` ms, once. */
+// The entrance plays for the first screen that uses it in a session only; coming back to
+// a screen shows it straight away.
+let fadeUpPlayed = false
+
+/** Fades and lifts its children in after `delay` ms, the first time only. Still with reduced motion. */
 export function FadeUp({ delay = 0, children, style }: { delay?: number; children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(0)).current
+  const reduced = useReducedMotion()
+  const [still] = useState(() => fadeUpPlayed || reduced)
+  const v = useRef(new Animated.Value(still ? 1 : 0)).current
   useEffect(() => {
-    Animated.timing(v, { toValue: 1, duration: 1000, delay, easing: EASE, useNativeDriver: true }).start()
-  }, [v, delay])
+    if (still) return
+    fadeUpPlayed = true
+    Animated.timing(v, { toValue: 1, duration: 400, delay, easing: EASE, useNativeDriver: true }).start()
+  }, [v, delay, still])
+  if (still) return <View style={style}>{children}</View>
   return <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>{children}</Animated.View>
 }
 
@@ -91,8 +93,7 @@ const s = themed(() => StyleSheet.create({
   introSerif: { fontFamily: SERIF, fontSize: 33, letterSpacing: -0.3 },
   introTrack: { position: 'absolute', left: 24, bottom: 76, height: StyleSheet.hairlineWidth * 2, backgroundColor: colors.hairline, overflow: 'hidden' },
   introFill: { height: '100%', backgroundColor: schemeColor('#1A2138', 'bg') },
-  introTag: { position: 'absolute', left: 24, bottom: 44, color: colors.muted, fontSize: 10, fontWeight: '500', letterSpacing: 1.8 },
-  introCount: { position: 'absolute', right: 24, bottom: 44, color: colors.ink, fontSize: 12, fontWeight: '500', letterSpacing: 1, fontVariant: ['tabular-nums'] },
+  introTag: { position: 'absolute', left: 24, bottom: 44, color: colors.muted, fontSize: 13, fontWeight: '500' },
   corners: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.hairline },
   corner: { fontSize: 10, fontWeight: '500', letterSpacing: 1.8 },
 }))

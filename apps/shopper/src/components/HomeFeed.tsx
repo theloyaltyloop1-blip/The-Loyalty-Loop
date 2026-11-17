@@ -7,6 +7,8 @@ import Svg, { Circle, Path } from 'react-native-svg'
 import { CardRail, NextRewardHero } from './HomeCollection'
 import { QuickCardsSheet } from './QuickCardsSheet'
 import { FadeUp, INK, MUTED, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, SLATE } from './Poster'
+import { homeProgress } from '../home-progress'
+import { shopMoney } from '../money'
 import { formatMiles, nearestFirst, type Coords } from '../distance'
 import type { HomeMember, HomeShop, HomeTier } from '../home-progress'
 import type { LocationStatus } from '../use-user-location'
@@ -18,10 +20,11 @@ import { colors, schemeColor, themed } from '@loyalty-loop/design-tokens'
 // button so the page stays calm. Every block is full width with the same
 // corners and the same section heading.
 const NEAR_COUNT = 4
+// Fills keep their colour in both schemes, so the initials use fixed colours (5:1 or more).
 const MARK_TONES = themed(() => [
-  { bg: SAGE, fg: colors.ink },
+  { bg: SAGE, fg: INK },
   { bg: SLATE, fg: '#FFFFFF' },
-  { bg: PACIFIC, fg: colors.ink },
+  { bg: PACIFIC, fg: INK },
   { bg: schemeColor('#1A2138', 'bg'), fg: PAPER },
 ])
 
@@ -30,6 +33,24 @@ type FeedNews = { id: string; title: string; body: string | null; business: { na
 
 function initialsOf(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || '?'
+}
+
+/** The page title: the shopper's closest reward, or a plain title when there is none to count to. */
+function headlineFor<T extends FeedShop>(joined: T[], memberships: HomeMember[], catalog: HomeTier[]) {
+  if (!joined.length) return 'Your local shops'
+  const best = joined
+    .map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
+    .filter(({ progress }) => progress.threshold != null)
+    .sort((a, b) => b.progress.fraction - a.progress.fraction)[0]
+  if (!best) return 'Your cards'
+  const { shop, progress } = best
+  const reward = progress.title ? progress.title.charAt(0).toLowerCase() + progress.title.slice(1) : 'your next reward'
+  if (progress.fraction >= 1) return `${progress.title || 'A reward'} is ready at ${shop.name}`
+  const left = Math.max(0, (progress.threshold ?? 0) - progress.value)
+  const amount = progress.spend
+    ? shopMoney(shop.country_code)(left).replace(/\.00$/, '')
+    : `${left} ${left === 1 ? progress.unit.replace(/s$/, '') : progress.unit}`
+  return `${amount} to ${reward} at ${shop.name}`
 }
 
 function Chevron() {
@@ -55,12 +76,16 @@ function ShopMark({ shop, index }: { shop: FeedShop; index: number }) {
 
 export function HomeFeed<T extends FeedShop>({
   firstName, shops, memberships, catalog, news, location, locationStatus, onUseLocation,
-  onSelect, onSearch, onSeeNews, onAsk, onOpenProfile, onAskWhirl, quickIds = [], onQuickChange,
+  onSelect, onShowCard, onSearch, onSeeNews, onAsk, onOpenProfile, onAskWhirl, quickIds = [], onQuickChange, failed = false, onRetry,
 }: {
   firstName?: string
   shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; news: FeedNews[]
   location: Coords | null; locationStatus: LocationStatus; onUseLocation: () => void
   onSelect: (shop: T) => void; onSearch: () => void; onSeeNews: () => void; onAsk: () => void; onOpenProfile: () => void
+  /** "Show my card" on the top card: opens the shop at the code. Defaults to onSelect. */
+  onShowCard?: (shop: T) => void
+  /** The shop list could not be loaded (shown only when there is nothing to list). */
+  failed?: boolean; onRetry?: () => void
   /** Opens Ask Whirl. Left out = no card (guests, or the feature switched off). */
   onAskWhirl?: () => void
   /** Shopper-picked cards for the top of home; empty means automatic. */
@@ -68,8 +93,6 @@ export function HomeFeed<T extends FeedShop>({
 }) {
   const [editingQuick, setEditingQuick] = useState(false)
   const greeting = useWhirlSlot('home', 'greeting')
-  const hour = new Date().getHours()
-  const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'
   const name = firstName?.trim().split(/\s+/)[0]
   const joined = shops.filter(shop => memberships.some(m => m.business_id === shop.id))
   const near = (location
@@ -81,7 +104,7 @@ export function HomeFeed<T extends FeedShop>({
   return <View style={s.page}>
     <FadeUp>
       <View style={s.topRow}>
-        <Text style={s.date}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}</Text>
+        <Text style={s.date}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}</Text>
         <View style={s.topRight}>
         {greeting ? <Whirl pose="wave" size={44} effect="none" /> : null}
         <Pressable accessibilityRole="button" accessibilityLabel="Your profile and settings" onPress={onOpenProfile} hitSlop={8} style={({ pressed }) => [s.avatar, pressed && s.pressed]}>
@@ -89,11 +112,11 @@ export function HomeFeed<T extends FeedShop>({
         </Pressable>
         </View>
       </View>
-      <Text accessibilityRole="header" style={s.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{name ? `${part},\n${name}.` : `Good\n${part.toLowerCase()}.`}</Text>
+      <Text accessibilityRole="header" style={s.title} numberOfLines={3}>{headlineFor(joined, memberships, catalog)}</Text>
     </FadeUp>
     {onAskWhirl ? <FadeUp delay={60} style={s.askWrap}><AskWhirlCard mode="shopper" onPress={onAskWhirl} /></FadeUp> : null}
 
-    <FadeUp delay={100}><NextRewardHero shops={shops} memberships={memberships} catalog={catalog} onSelect={onSelect} quickIds={quickIds} onEditQuick={onQuickChange ? () => setEditingQuick(true) : undefined} /></FadeUp>
+    <FadeUp delay={100}><NextRewardHero shops={shops} memberships={memberships} catalog={catalog} onSelect={onShowCard ?? onSelect} quickIds={quickIds} onEditQuick={onQuickChange ? () => setEditingQuick(true) : undefined} /></FadeUp>
 
     {joined.length > 0 && <FadeUp delay={180} style={s.section}>
       <Heading title="Your cards" />
@@ -108,6 +131,16 @@ export function HomeFeed<T extends FeedShop>({
         <Pressable accessibilityRole="button" onPress={onUseLocation} style={({ pressed }) => [s.locationLink, pressed && s.pressed]}>
           <Text style={s.locationText}>Show the closest first</Text>
         </Pressable>
+      )}
+      {!shops.length && (
+        <View style={s.news}>
+          <Text style={s.newsBody}>{failed ? 'We couldn’t load the shops. Check your connection and try again.' : 'No shops here yet. Ask your favourite shop to join and it will show up here.'}</Text>
+          {failed && onRetry ? (
+            <Pressable accessibilityRole="button" onPress={onRetry} style={({ pressed }) => [s.outline, pressed && s.pressed]}>
+              <Text style={s.outlineText}>Try again</Text>
+            </Pressable>
+          ) : null}
+        </View>
       )}
       <View style={s.rows}>
         {near.map(({ shop, miles }, i) => (
@@ -148,16 +181,15 @@ export function HomeFeed<T extends FeedShop>({
 const s = themed(() => StyleSheet.create({
   page: { paddingTop: 8 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  date: { fontSize: 11, fontWeight: '500', letterSpacing: 1.8, color: colors.muted },
+  date: { fontSize: 14, fontFamily: SANS_MEDIUM, color: colors.muted },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.olive, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: PAPER, fontSize: 16, fontWeight: '700' },
   topRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   askWrap: { marginBottom: 16 },
-  title: { marginTop: 14, marginBottom: 20, fontFamily: SANS_HEAVY, fontSize: 44, lineHeight: 48, letterSpacing: -2, color: colors.ink },
+  title: { marginTop: 14, marginBottom: 20, fontFamily: 'Inter_700Bold', fontSize: 30, lineHeight: 36, letterSpacing: -0.8, color: colors.ink },
   section: { marginTop: 12, marginBottom: 24 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40, marginBottom: 12 },
-  // Huge or tiny: section labels are small caps under the poster-sized greeting.
-  heading: { fontSize: 12, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase', color: colors.muted },
+  heading: { fontSize: 17, fontWeight: '600', letterSpacing: -0.2, color: colors.ink },
   link: { color: colors.primaryText, fontSize: 14, fontFamily: SANS_MEDIUM },
   searchButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: schemeColor('rgba(26,33,56,0.2)', 'border'), alignItems: 'center', justifyContent: 'center' },
   locationLink: { alignSelf: 'flex-start', marginTop: -4, marginBottom: 12 },
@@ -172,7 +204,7 @@ const s = themed(() => StyleSheet.create({
   outline: { marginTop: 12, height: 48, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, borderColor: schemeColor('rgba(26,33,56,0.25)', 'border'), alignItems: 'center', justifyContent: 'center' },
   outlineText: { color: colors.ink, fontSize: 14, fontFamily: SANS_MEDIUM },
   news: { backgroundColor: colors.card, borderRadius: 22, padding: 18, gap: 6 },
-  newsFrom: { fontSize: 11, fontWeight: '500', letterSpacing: 1.6, textTransform: 'uppercase', color: colors.muted },
+  newsFrom: { fontSize: 13, fontFamily: SANS_MEDIUM, color: colors.muted },
   newsTitle: { fontSize: 17, fontWeight: '600', letterSpacing: -0.3, color: colors.ink },
   newsBody: { fontSize: 14, lineHeight: 21, color: colors.muted },
   ask: { alignSelf: 'center', paddingVertical: 14, marginBottom: 8 },

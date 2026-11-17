@@ -9,11 +9,11 @@ import { useWhirlVariant } from '../../../../packages/whirl/native'
  * "Show Whirl" off; the row still works). Tapping opens AskWhirlSheet.
  */
 export function AskWhirlCard({ onPress, mode }: { onPress: () => void; mode: 'shopper' | 'business' }) {
-  const dark = useWhirlVariant() === 'dark'
-  const bg = dark ? '#1B221E' : colors.card
-  const border = dark ? '#2B3A34' : colors.border
-  const ink = dark ? '#F2EFE6' : colors.ink
-  const muted = dark ? '#A9B0A6' : colors.muted
+  useWhirlVariant() // re-render when the scheme changes; the colours below follow it
+  const bg = colors.card
+  const border = colors.border
+  const ink = colors.ink
+  const muted = colors.muted
   return (
     <Pressable
       accessibilityRole="button"

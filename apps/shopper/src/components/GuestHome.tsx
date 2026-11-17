@@ -72,7 +72,7 @@ function ShopCard({ shop, onPress, big = false }: { shop: GuestShop; onPress?: (
         {shop.logo_url
           ? <Image source={{ uri: shop.logo_url }} style={c.logo} />
           : <View style={[c.logo, c.logoBlank]}><Text style={[c.logoText, { color: bg }]}>{initials(shop.name)}</Text></View>}
-        <Text style={[c.category, { color: fg }]} numberOfLines={1}>{(shop.category || 'Local').toUpperCase()}</Text>
+        <Text style={[c.category, { color: fg }]} numberOfLines={1}>{shop.category || 'Local'}</Text>
       </View>
       <View style={{ flex: 1 }} />
       <Text style={[c.name, big && c.nameBig, { color: fg }]} numberOfLines={2}>{shop.name}</Text>
@@ -200,15 +200,15 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
 }
 
 const c = themed(() => StyleSheet.create({
-  card: { height: 188, borderRadius: 26, padding: 18, overflow: 'hidden', shadowColor: INK, shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 5 },
-  cardBig: { height: 230 },
+  card: { minHeight: 188, borderRadius: 26, padding: 18, overflow: 'hidden', shadowColor: INK, shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 5 },
+  cardBig: { minHeight: 230 },
   ring: { position: 'absolute', right: -60, top: -70, width: 210, height: 210, borderRadius: 105, borderWidth: 26, opacity: 0.08 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: { width: 40, height: 40, borderRadius: 20, backgroundColor: schemeColor('#FFFFFF', 'bg') },
   logoBlank: { alignItems: 'center', justifyContent: 'center' },
-  logoText: { fontSize: 14, fontFamily: SANS_HEAVY },
-  category: { flex: 1, fontSize: 11, letterSpacing: 1.6, fontFamily: SANS_MEDIUM, opacity: 0.8 },
-  name: { fontSize: 26, lineHeight: 30, fontFamily: SANS_HEAVY, letterSpacing: -0.6 },
+  logoText: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  category: { flex: 1, fontSize: 14, fontFamily: SANS_MEDIUM, opacity: 0.85 },
+  name: { fontSize: 26, lineHeight: 30, fontFamily: 'Inter_700Bold', letterSpacing: -0.6 },
   nameBig: { fontSize: 32, lineHeight: 36 },
   rewardPill: { alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: schemeColor('rgba(255,255,255,0.94)', 'bg'), borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, marginTop: 12 },
   rewardText: { color: colors.ink, fontSize: 14, lineHeight: 19, fontFamily: SANS_MEDIUM },
@@ -219,10 +219,10 @@ const s = themed(() => StyleSheet.create({
   pressed: { opacity: 0.75 },
   scroll: { paddingHorizontal: 20, paddingBottom: 130 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 },
-  brand: { color: colors.ink, fontSize: 15, fontFamily: SANS_HEAVY, letterSpacing: -0.2 },
+  brand: { color: colors.ink, fontSize: 15, fontFamily: 'Inter_700Bold', letterSpacing: -0.2 },
   signIn: { backgroundColor: schemeColor('#E7E2D8', 'bg'), borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 },
-  signInText: { color: colors.ink, fontSize: 14, fontFamily: SANS_HEAVY },
-  title: { color: colors.ink, fontSize: 40, lineHeight: 44, fontFamily: SANS_HEAVY, letterSpacing: -1.2, marginTop: 28 },
+  signInText: { color: colors.ink, fontSize: 14, fontFamily: 'Inter_600SemiBold' },
+  title: { color: colors.ink, fontSize: 36, lineHeight: 41, fontFamily: 'Inter_700Bold', letterSpacing: -1, marginTop: 28 },
   copy: { color: colors.muted, fontSize: 16, lineHeight: 22, fontFamily: SANS_MEDIUM, marginTop: 10 },
   filterStrip: { marginHorizontal: -20, marginTop: 22, marginBottom: 18 },
   filters: { paddingHorizontal: 20, gap: 8 },
@@ -234,14 +234,14 @@ const s = themed(() => StyleSheet.create({
   cardGap: { marginBottom: 14 },
   saveWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   saveBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 10, backgroundColor: schemeColor('#1A2138', 'bg'), borderRadius: 24, padding: 10, paddingLeft: 20, shadowColor: INK, shadowOpacity: 0.3, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 10 },
-  saveTitle: { color: schemeColor('#FFFFFF', 'fg'), fontSize: 15, fontFamily: SANS_HEAVY },
+  saveTitle: { color: schemeColor('#FFFFFF', 'fg'), fontSize: 15, fontFamily: 'Inter_700Bold' },
   saveCopy: { color: schemeColor('rgba(255,255,255,0.65)', 'fg'), fontSize: 12, fontFamily: SANS_MEDIUM, marginTop: 2 },
   saveButton: { backgroundColor: schemeColor('#FFFFFF', 'bg'), borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
-  saveButtonText: { color: colors.ink, fontSize: 15, fontFamily: SANS_HEAVY },
+  saveButtonText: { color: colors.ink, fontSize: 15, fontFamily: 'Inter_700Bold' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: schemeColor('rgba(0,0,0,0.15)', 'bg'), alignSelf: 'center', marginBottom: 16 },
   address: { color: colors.muted, fontSize: 14, fontFamily: SANS_MEDIUM, marginTop: 14, textAlign: 'center' },
   primary: { backgroundColor: colors.olive, borderRadius: 999, paddingVertical: 17, paddingHorizontal: 20, alignItems: 'center', marginTop: 18, shadowColor: INK, shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
-  primaryText: { color: PAPER, fontSize: 17, fontFamily: SANS_HEAVY },
+  primaryText: { color: PAPER, fontSize: 17, fontFamily: 'Inter_700Bold' },
   sheetSmall: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 12 },
 }))

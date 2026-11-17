@@ -91,7 +91,7 @@ const s = themed(() => StyleSheet.create({
   ring: { position: 'absolute', right: -90, top: 70, width: 320, height: 320, borderRadius: 160, borderWidth: 1, borderColor: schemeColor('rgba(244,241,234,0.22)', 'border') },
   piece: { position: 'absolute' },
   badge: { alignSelf: 'flex-start', height: 32, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.background, justifyContent: 'center' },
-  label: { color: colors.primaryText, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
+  label: { color: colors.primaryText, fontSize: 14, fontWeight: '600' },
   title: { marginTop: 30, color: PAPER, fontFamily: SANS_HEAVY, fontSize: 88, lineHeight: 84, letterSpacing: -5.5 },
   copy: { marginTop: 22, color: schemeColor('rgba(244,241,234,0.65)', 'fg'), fontSize: 17, lineHeight: 25, maxWidth: 320 },
   actions: { marginTop: 'auto', gap: 8 },

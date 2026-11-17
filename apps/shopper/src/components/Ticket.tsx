@@ -52,7 +52,7 @@ export function Ticket({
         <View style={styles.topRow}>
           <Text style={[styles.shop, { color: on }]} numberOfLines={1}>{shopName}</Text>
           <View style={[styles.admit, { borderColor: on }]}>
-            <Text style={[styles.admitText, { color: on }]}>REWARD</Text>
+            <Text style={[styles.admitText, { color: on }]}>Reward</Text>
           </View>
         </View>
         <Text style={[styles.title, { color: on }]} numberOfLines={3}>{title}</Text>
@@ -71,8 +71,9 @@ export function Ticket({
       </View>
 
       <View style={styles.stub}>
-        {children}
-        <Text style={styles.codeLabel}>SHOW THIS AT THE COUNTER</Text>
+        {/* Fixed white in both schemes: the QR needs a light margin round it to scan. */}
+        <View style={styles.qrTile}>{children}</View>
+        <Text style={styles.codeLabel}>Show this at the counter</Text>
         <Text style={styles.code}>{code}</Text>
       </View>
     </Animated.View>
@@ -93,9 +94,9 @@ const styles = themed(() => StyleSheet.create({
   },
   top: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 22 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  shop: { flex: 1, fontSize: 12, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase', opacity: 0.85 },
+  shop: { flex: 1, fontSize: 14, fontWeight: '600', opacity: 0.85 },
   admit: { borderWidth: 1.5, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, opacity: 0.8 },
-  admitText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.4 },
+  admitText: { fontSize: 12, fontWeight: '600' },
   title: { fontSize: 26, lineHeight: 30, fontWeight: '800', letterSpacing: -0.6, marginTop: 14 },
   expiry: { fontSize: 12, marginTop: 8, opacity: 0.75 },
   tear: { height: NOTCH, justifyContent: 'center', backgroundColor: schemeColor('#FFFFFF', 'bg') },
@@ -116,6 +117,7 @@ const styles = themed(() => StyleSheet.create({
     borderBottomRightRadius: 22,
     backgroundColor: schemeColor('#FFFFFF', 'bg'),
   },
-  codeLabel: { marginTop: 14, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, color: colors.muted },
+  qrTile: { backgroundColor: '#FFFFFF', padding: 18, borderRadius: 16 },
+  codeLabel: { marginTop: 14, fontSize: 13, fontWeight: '600', color: colors.muted },
   code: { marginTop: 4, fontSize: 20, fontWeight: '800', letterSpacing: 3, color: colors.ink, fontVariant: ['tabular-nums'] },
 }))

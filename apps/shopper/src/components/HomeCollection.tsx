@@ -56,7 +56,7 @@ function ShopPhoto({ shop, large = false, distance }: { shop: HomeShop; large?: 
 
 /** Up to two initials ("Test Shop" → "TS") so different shops don't all show the same letter. */
 function initialsOf(name: string) {
-  return name.trim().split(/s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || '?'
+  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || '?'
 }
 
 const shopLabel = (shop: HomeShop, miles: number | null) => `Explore ${shop.name}${shop.category ? `, ${shop.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`
@@ -107,12 +107,14 @@ function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { sho
 
 // Your loyalty cards as a swipeable row, the one closest to a reward first.
 // Chunky tiles in the quiet palette: shop name, then the count, big.
-// The last tile is the paper one, so it follows the scheme (read lazily via themed()).
+// The coloured tiles keep their colour in both schemes, so each has its own fixed text
+// colours (all 4.5:1 or more). The last tile is the paper one, so it follows the scheme
+// (read lazily via themed()).
 const TILE_TONES = themed(() => [
-  { bg: SLATE, ink: '#FFFFFF', sub: 'rgba(255,255,255,0.65)' },
-  { bg: PACIFIC, ink: colors.ink, sub: 'rgba(26,33,56,0.6)' },
-  { bg: SAGE, ink: colors.ink, sub: 'rgba(26,33,56,0.6)' },
-  { bg: colors.card, ink: colors.ink, sub: 'rgba(128,128,128,0.8)' },
+  { bg: SLATE, ink: '#FFFFFF', sub: '#E8EDF1' },
+  { bg: PACIFIC, ink: '#0F1424', sub: INK },
+  { bg: SAGE, ink: INK, sub: '#33384A' },
+  { bg: colors.card, ink: colors.ink, sub: colors.muted },
 ])
 export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
   const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
@@ -225,7 +227,7 @@ export function NextRewardHero<T extends RailShop>({ shops, memberships, catalog
 }
 
 // Round category buttons you swipe through, like the cuisine row in delivery apps.
-const CIRCLE_TONES = [c.peach, c.sage, '#E4DCF0', '#F5E7B8', '#D6E6EE']
+const CIRCLE_TONES = themed(() => [c.peach, c.sage, schemeColor('#E4DCF0', 'bg'), schemeColor('#F5E7B8', 'bg'), schemeColor('#D6E6EE', 'bg')])
 export function CategoryCircles({ categories, selected, onSelect }: { categories: [string, number][]; selected: string | null; onSelect: (category: string | null) => void }) {
   if (categories.length < 2) return null
   const item = (key: string | null, name: string, index: number) => {
@@ -337,14 +339,14 @@ const s = themed(() => StyleSheet.create({
   nextShop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   nextLogo: { width: 30, height: 30, borderRadius: 15, backgroundColor: schemeColor('#ECE7DC', 'bg'), alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   nextLogoText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
-  nextShopName: { flex: 1, color: schemeColor('rgba(26,33,56,0.55)', 'fg'), fontSize: 11, fontWeight: '600', letterSpacing: 1.6, textTransform: 'uppercase' },
+  nextShopName: { flex: 1, color: schemeColor('rgba(26,33,56,0.7)', 'fg'), fontSize: 14, fontWeight: '600' },
   nextEdit: { width: 34, height: 34, borderRadius: 17, backgroundColor: schemeColor('rgba(43,58,103,0.1)', 'bg'), alignItems: 'center', justifyContent: 'center' },
   quickWrap: { marginBottom: 24 },
   quickEmpty: { marginBottom: 24, borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed', borderColor: schemeColor('rgba(43,58,103,0.35)', 'border'), paddingVertical: 18, alignItems: 'center' },
   quickEmptyText: { color: colors.primaryText, fontFamily: SANS_MEDIUM, fontSize: 15 },
   nextBig: { color: colors.ink, fontFamily: SANS_HEAVY, fontSize: 88, lineHeight: 88, letterSpacing: -5, includeFontPadding: false },
-  nextLine: { color: schemeColor('rgba(26,33,56,0.6)', 'fg'), fontSize: 12, lineHeight: 17, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 8 },
-  cardTile: { width: 156, height: 116, borderRadius: 22, padding: 14, justifyContent: 'space-between' },
+  nextLine: { color: schemeColor('rgba(26,33,56,0.7)', 'fg'), fontSize: 15, lineHeight: 20, fontFamily: SANS_MEDIUM, marginTop: 8 },
+  cardTile: { width: 156, minHeight: 116, borderRadius: 22, padding: 14, gap: 8, justifyContent: 'space-between' },
   cardTileLine: { borderWidth: StyleSheet.hairlineWidth, borderColor: schemeColor('rgba(17,17,17,0.18)', 'border') },
   cardTileName: { fontFamily: SANS_MEDIUM, fontSize: 14, lineHeight: 17, letterSpacing: -0.2 },
   cardTileCount: { fontFamily: SANS_HEAVY, fontSize: 36, letterSpacing: -2, fontVariant: ['tabular-nums'] },

@@ -465,8 +465,9 @@ function PointsHow({ business, membership, catalog, brand, refresh, money }: { b
                   duration={700}
                   onConfirm={() => void redeem(reward)}
                   accessibilityLabel={`Get ${reward.title} for ${reward.points_cost} points`}
-                  color={can ? brand : schemeColor('#E4E2DA', 'fg')}
-                  textColor={can ? readableOn(brand) : schemeColor('#000000', 'fg')}
+                  // The shop page looks the same in light and dark, so the disabled colours are fixed.
+                  color={can ? brand : '#E4E2DA'}
+                  textColor={can ? readableOn(brand) : '#000000'}
                 />
               ) : null}
             </View>
