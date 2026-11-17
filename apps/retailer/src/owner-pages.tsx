@@ -54,6 +54,13 @@ import { fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
 
 const FONT_DISPLAY = fonts.nativeDisplay;
 
+// Server and network errors are shown in plain words with the next step. Only
+// messages we wrote (friendlyError, including our own functions' replies) show as they are.
+const friendlyError = (message: string) => Object.assign(new Error(message), { friendly: true });
+const plainError = (e: unknown, fallback: string) => (e instanceof Error && (e as { friendly?: boolean }).friendly ? e.message : fallback);
+const LOAD_HELP = "We couldn't reach our servers. Check your connection and try again.";
+const SAVE_HELP = "Nothing was changed. Check your connection and try again.";
+
 const orange = "#2B3A67";
 const ink = "#1A2138";
 const muted = "#000000";
@@ -200,7 +207,7 @@ function PageHeader({
   onBack,
 }: {
   title: string;
-  eyebrow: string;
+  eyebrow?: string;
   onBack: () => void;
 }) {
   return (
@@ -214,7 +221,7 @@ function PageHeader({
         <ArrowLeft size={21} color={schemeColor('#1A2138', 'fg')} />
       </Pressable>
       <View style={{ flex: 1 }}>
-        <Text style={styles.eyebrow}>{eyebrow}</Text>
+        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
         <Text style={styles.title}>{title}</Text>
       </View>
     </View>
@@ -268,6 +275,7 @@ function Section({ children }: { children: ReactNode }) {
 }
 
 function Field({
+  label,
   value,
   onChangeText,
   placeholder,
@@ -275,6 +283,8 @@ function Field({
   secureTextEntry = false,
   keyboardType,
 }: {
+  /** Shown above the box, so the field keeps its name once something is typed. */
+  label?: string;
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
@@ -282,12 +292,13 @@ function Field({
   secureTextEntry?: boolean;
   keyboardType?: "default" | "email-address" | "number-pad" | "decimal-pad";
 }) {
-  return (
+  const input = (
     <TextInput
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={schemeColor("#000000", 'fg')}
+      placeholderTextColor={schemeColor("#6F6B64", 'fg')}
+      accessibilityLabel={label}
       multiline={multiline}
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
@@ -295,6 +306,13 @@ function Field({
       textAlignVertical={multiline ? "top" : "center"}
       style={[styles.input, multiline && styles.textArea]}
     />
+  );
+  if (!label) return input;
+  return (
+    <View>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {input}
+    </View>
   );
 }
 
@@ -449,7 +467,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
     } catch (error) {
       showAlert(
         "Could not load analytics",
-        error instanceof Error ? error.message : "Please try again.",
+        plainError(error, LOAD_HELP),
       );
     } finally {
       setLoading(false);
@@ -481,7 +499,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
     } catch (error) {
       showAlert(
         "AI summary unavailable",
-        error instanceof Error ? error.message : "Please try again.",
+        plainError(error, "Please check your connection and try again."),
       );
     } finally {
       setAiBusy(false);
@@ -497,12 +515,12 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
       );
       if (error) throw error;
       const result = data as ResearchReport & { error?: string };
-      if (result.error) throw new Error(result.error);
+      if (result.error) throw friendlyError(result.error);
       setReport(result);
     } catch (error) {
       showAlert(
         "Research unavailable",
-        error instanceof Error ? error.message : "Please try again.",
+        plainError(error, "Please check your connection and try again."),
       );
     } finally {
       setReportBusy(false);
@@ -543,7 +561,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
     } catch (error) {
       showAlert(
         "Coach unavailable",
-        error instanceof Error ? error.message : "Please try again.",
+        plainError(error, "Please check your connection and try again."),
       );
     } finally {
       setCoachBusy(false);
@@ -554,7 +572,6 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
     <View>
       <PageHeader
         title="AI & detailed analytics"
-        eyebrow="BUSINESS INTELLIGENCE"
         onBack={onBack}
       />
       <View style={styles.segment}>
@@ -704,7 +721,7 @@ function AiAnalyticsPage({ business, onBack, preview = false }: PageProps) {
                 value={coachInput}
                 onChangeText={setCoachInput}
                 placeholder="Ask the coach…"
-                placeholderTextColor={schemeColor("#000000", 'fg')}
+                placeholderTextColor={schemeColor("#6F6B64", 'fg')}
                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
               />
               <Pressable
@@ -814,7 +831,7 @@ function BrandingPage({
     } catch (error) {
       showAlert(
         "Upload failed",
-        error instanceof Error ? error.message : "Please try again.",
+        plainError(error, LOAD_HELP),
       );
     } finally {
       setBusy(null);
@@ -824,7 +841,6 @@ function BrandingPage({
     <View>
       <PageHeader
         title="Your shop design"
-        eyebrow="SHOP BRANDING"
         onBack={leaveBranding}
       />
       <CardDesigner key={business.id} business={business} onSaved={onBusinessChanged} preview={preview} onStateChange={cardState} />
@@ -939,7 +955,7 @@ function ManualSpendSettings({
       .update({ manual_spend_max_pence: Math.round(value * 100) })
       .eq("id", business.id);
     setSaving(false);
-    if (error) return showAlert("Could not save", error.message);
+    if (error) return showAlert("Could not save", SAVE_HELP);
     await onBusinessChanged();
     showAlert("Limit saved", `Staff can now enter up to ${pounds(Math.round(value * 100))} per purchase.`);
   }
@@ -1067,7 +1083,7 @@ function RewardsPage({
       .select("*")
       .eq("business_id", business.id)
       .order(spendShop ? "spend_threshold_pence" : pointsShop ? "points_cost" : "stamp_threshold", { nullsFirst: false });
-    if (error) return showAlert("Could not load rewards", error.message);
+    if (error) return showAlert("Could not load rewards", LOAD_HELP);
     setItems((data || []) as RewardItem[]);
   }, [business.id, preview, spendShop, pointsShop]);
   useEffect(() => {
@@ -1107,7 +1123,7 @@ function RewardsPage({
       sort_order: items.length,
     });
     setBusy(false);
-    if (error) return showAlert("Could not add reward", error.message);
+    if (error) return showAlert("Could not add reward", SAVE_HELP);
     setTitle("");
     setDescription("");
     setAmount("");
@@ -1129,7 +1145,7 @@ function RewardsPage({
       })
       .eq("id", business.id);
     setSavingSignup(false);
-    if (error) return showAlert("Could not save", error.message);
+    if (error) return showAlert("Could not save", SAVE_HELP);
     await onBusinessChanged();
     showAlert(
       "Sign-up reward saved",
@@ -1149,7 +1165,7 @@ function RewardsPage({
             .from("reward_catalog")
             .delete()
             .eq("id", item.id);
-          if (error) showAlert("Could not delete reward", error.message);
+          if (error) showAlert("Could not delete reward", SAVE_HELP);
           else void load();
         },
       },
@@ -1158,7 +1174,7 @@ function RewardsPage({
   if (business.reward_model === "custom") {
     return (
       <View>
-        <PageHeader title="Your programme" eyebrow="LOYALTY PROGRAMME" onBack={onBack} />
+        <PageHeader title="Your programme" onBack={onBack} />
         <CustomProgrammeSection business={business} onBusinessChanged={onBusinessChanged} preview={preview} />
       </View>
     );
@@ -1167,7 +1183,6 @@ function RewardsPage({
     <View>
       <PageHeader
         title="Rewards catalogue"
-        eyebrow="LOYALTY PROGRAMME"
         onBack={onBack}
       />
       {tierShop || pointsShop ? <ProgrammeNote programme={pointsShop ? "points" : "tiers"} /> : null}
@@ -1180,35 +1195,40 @@ function RewardsPage({
           <Text style={styles.cardTitle}>Add a reward</Text>
         </View>
         <Field
+          label="Reward name"
           value={title}
           onChangeText={setTitle}
-          placeholder="Reward name"
+          placeholder="e.g. Free coffee"
         />
         <Field
+          label="Description (optional)"
           value={description}
           onChangeText={setDescription}
-          placeholder="Short description (optional)"
+          placeholder="A short line customers see"
           multiline
         />
         {spendShop ? (
           <Field
+            label={`Spend needed to unlock it, in ${currencySymbol()}`}
             value={amount}
             onChangeText={(value) => setAmount(value.replace(/[^0-9.]/g, ""))}
-            placeholder={`Spend needed to unlock it in ${currencySymbol()}, e.g. ${scaledLimit(2000) / 100}`}
+            placeholder={`e.g. ${scaledLimit(2000) / 100}`}
             keyboardType="decimal-pad"
           />
         ) : (
           <Field
+            label={pointsShop ? "Points it costs" : `${unit.charAt(0).toUpperCase()}${unit.slice(1)} needed to unlock it`}
             value={threshold}
             onChangeText={setThreshold}
-            placeholder={pointsShop ? "Points it costs, e.g. 100" : `${unit.charAt(0).toUpperCase()}${unit.slice(1)} needed to unlock it, e.g. 10`}
+            placeholder={pointsShop ? "e.g. 100" : "e.g. 10"}
             keyboardType="number-pad"
           />
         )}
         <Field
+          label={`${currencySymbol()} off the bill (optional)`}
           value={discount}
           onChangeText={(value) => setDiscount(value.replace(/[^0-9.]/g, ""))}
-          placeholder={`${currencySymbol()} off the bill (optional), e.g. ${scaledLimit(500) / 100}`}
+          placeholder={`e.g. ${scaledLimit(500) / 100}`}
           keyboardType="decimal-pad"
         />
         <PrimaryButton label="Add reward" onPress={add} busy={busy} />
@@ -1390,7 +1410,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
       .select("id,name,spend_threshold_pence,perks,colour,sort_order")
       .eq("business_id", business.id)
       .order("spend_threshold_pence");
-    if (error) return showAlert("Could not load levels", error.message);
+    if (error) return showAlert("Could not load levels", LOAD_HELP);
     setLevels((data || []) as TierLevel[]);
   }, [business.id]);
   useEffect(() => {
@@ -1432,7 +1452,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
       ? await supabase.from("membership_tiers").update(row).eq("id", editingId)
       : await supabase.from("membership_tiers").insert({ business_id: business.id, ...row, sort_order: levels.length });
     setBusy(false);
-    if (error) return showAlert("Could not save the level", error.message);
+    if (error) return showAlert("Could not save the level", SAVE_HELP);
     resetForm();
     void load();
   }
@@ -1444,7 +1464,7 @@ function MembershipLevelsSection({ business }: { business: NativeBusiness }) {
         style: "destructive",
         onPress: async () => {
           const { error } = await supabase.from("membership_tiers").delete().eq("id", level.id);
-          if (error) showAlert("Could not delete the level", error.message);
+          if (error) showAlert("Could not delete the level", SAVE_HELP);
           else void load();
         },
       },
@@ -1528,7 +1548,7 @@ function PointsRateSection({
       .update({ loyalty_config: { ...(business.loyalty_config || {}), points_per_pound: value } })
       .eq("id", business.id);
     setBusy(false);
-    if (error) return showAlert("Could not save the rate", error.message);
+    if (error) return showAlert("Could not save the rate", SAVE_HELP);
     await onBusinessChanged();
     showAlert("Points rate saved", `Customers now earn ${value} point${value === 1 ? "" : "s"} per £1. A refund takes back the points that purchase earned.`);
   }
@@ -1591,7 +1611,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       .select("*")
       .eq("business_id", business.id)
       .order("created_at", { ascending: false });
-    if (error) return showAlert("Could not load staff", error.message);
+    if (error) return showAlert("Could not load staff", LOAD_HELP);
     setItems((data || []) as StaffMember[]);
   }, [business.id, preview]);
   useEffect(() => {
@@ -1619,7 +1639,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       );
       if (error) throw error;
       const result = data as { error?: string };
-      if (result.error) throw new Error(result.error);
+      if (result.error) throw friendlyError(result.error);
       setName("");
       setEmail("");
       setPassword("");
@@ -1631,7 +1651,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
     } catch (error) {
       showAlert(
         "Could not create staff access",
-        error instanceof Error ? error.message : "Please try again.",
+        plainError(error, "Please check your connection and try again."),
       );
     } finally {
       setBusy(false);
@@ -1645,7 +1665,7 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       .from("staff_members")
       .update({ [key]: !item[key] })
       .eq("id", item.id);
-    if (error) showAlert("Could not update permission", error.message);
+    if (error) showAlert("Could not update permission", SAVE_HELP);
     else void load();
   }
   async function changeStatus(item: StaffMember) {
@@ -1654,14 +1674,13 @@ function StaffPage({ business, onBack, preview = false }: PageProps) {
       .from("staff_members")
       .update({ status })
       .eq("id", item.id);
-    if (error) showAlert("Could not update staff access", error.message);
+    if (error) showAlert("Could not update staff access", SAVE_HELP);
     else void load();
   }
   return (
     <View>
       <PageHeader
         title="Staff & permissions"
-        eyebrow="YOUR TEAM"
         onBack={onBack}
       />
       <Section>
@@ -1797,7 +1816,7 @@ function ReviewAiSettingsCard({ businessId }: { businessId: string }) {
       _sign_off: settings.sign_off?.trim() || null,
     });
     setBusy(false);
-    if (error) return showAlert("Could not save", error.code === "42501" ? "Only the shop owner can change AI replies." : error.message);
+    if (error) return showAlert("Could not save", error.code === "42501" ? "Only the shop owner can change AI replies." : SAVE_HELP);
     setSaved(settings);
   }
   const Toggle = ({ value, onChange, title, detail, disabled = false }: { value: boolean; onChange: (value: boolean) => void; title: string; detail: string; disabled?: boolean }) => (
@@ -1845,7 +1864,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
       supabase.from("review_reply_drafts").select("review_id,status,body,updated_at").eq("business_id", business.id),
     ]);
     if (error) {
-      showAlert("Could not load reviews", error.message);
+      showAlert("Could not load reviews", LOAD_HELP);
       return;
     }
     const items = (data || []) as CustomerReview[];
@@ -1879,7 +1898,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
 
   async function dismiss(review: CustomerReview) {
     const { error } = await supabase.rpc("dismiss_review_reply_draft", { _review_id: review.id });
-    if (error) return showAlert("Could not dismiss", error.message);
+    if (error) return showAlert("Could not dismiss", SAVE_HELP);
     edited.current.delete(review.id);
     await load();
   }
@@ -1907,7 +1926,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
       await load();
     } catch (error) {
       const denied = typeof error === "object" && error !== null && "code" in error && error.code === "42501";
-      showAlert("Could not save reply", denied ? "You can only change replies you wrote." : error instanceof Error ? error.message : "Please try again.");
+      showAlert("Could not save reply", denied ? "You can only change replies you wrote." : plainError(error, SAVE_HELP));
     } finally {
       setBusyId(null);
     }
@@ -1915,7 +1934,7 @@ function ReviewsPage({ business, onBack, preview = false }: PageProps) {
 
   return (
     <View>
-      <PageHeader title="Reviews" eyebrow="CUSTOMER FEEDBACK" onBack={onBack} />
+      <PageHeader title="Reviews" onBack={onBack} />
       <Text style={styles.body}>Read customer feedback and reply from your shop.</Text>
       {preview ? null : <ReviewAiSettingsCard businessId={business.id} />}
       {reviews.length ? reviews.map((review) => {
@@ -1981,7 +2000,7 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
       .select("*")
       .eq("business_id", business.id)
       .order("created_at", { ascending: false });
-    if (error) return showAlert("Could not load support", error.message);
+    if (error) return showAlert("Could not load support", LOAD_HELP);
     setItems((data || []) as SupportRequest[]);
   }, [business.id, preview]);
   useEffect(() => {
@@ -2002,7 +2021,7 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
       priority,
     });
     setBusy(false);
-    if (error) return showAlert("Could not send request", error.message);
+    if (error) return showAlert("Could not send request", SAVE_HELP);
     setSubject("");
     setBody("");
     await load();
@@ -2015,7 +2034,6 @@ function SupportPage({ business, userId, onBack, preview = false }: PageProps) {
     <View>
       <PageHeader
         title="Help & support"
-        eyebrow="HELP CENTRE"
         onBack={onBack}
       />
       <Section>
@@ -2102,7 +2120,7 @@ function TutorialPage({ business, onBack, onNavigate }: PageProps) {
   ];
   return (
     <View>
-      <PageHeader title="How it works" eyebrow="IN 3 STEPS" onBack={onBack} />
+      <PageHeader title="How it works" eyebrow="In 3 steps" onBack={onBack} />
       {items.map(({ kind, title }) => (
         <Section key={kind}>
           <Text style={styles.cardTitle}>{title}</Text>
@@ -2204,7 +2222,7 @@ function VerifyPage({ business, userId, onBack, onBusinessChanged, preview = fal
       if (error) {
         const context = (error as { context?: Response }).context;
         const body = context ? await context.json().catch(() => null) : null;
-        throw new Error(body?.error ?? "We could not check your document. Please try again.");
+        throw friendlyError(body?.error ?? "We could not check your document. Please try again.");
       }
       const result = data as { decision: "approved" | "rejected" | "pending"; message: string };
       setPhoto(null);
@@ -2215,7 +2233,7 @@ function VerifyPage({ business, userId, onBack, onBusinessChanged, preview = fal
         result.message,
       );
     } catch (e) {
-      showAlert("Could not check your document", e instanceof Error ? e.message : "Please try again.");
+      showAlert("Could not check your document", plainError(e, "Please check your connection and try again."));
     } finally {
       setBusy(false);
     }
@@ -2231,7 +2249,7 @@ function VerifyPage({ business, userId, onBack, onBusinessChanged, preview = fal
 
   return (
     <View>
-      <PageHeader title="Verification" eyebrow="YOUR BUSINESS" onBack={onBack} />
+      <PageHeader title="Verification" onBack={onBack} />
       <Section>
         <View style={styles.iconHeading}>
           <ShieldCheck size={20} color={status === "verified" ? schemeColor("#2F7D4F", 'fg') : schemeColor('#2B3A67', 'fg')} />
@@ -2333,7 +2351,7 @@ function PosterPage({ business, onBack, onBusinessChanged, preview = false }: Pa
 
   return (
     <View>
-      <PageHeader title="QR poster" eyebrow="GET CUSTOMERS JOINING" onBack={onBack} />
+      <PageHeader title="QR poster" eyebrow="Get customers joining" onBack={onBack} />
       <View style={[posterStyles.poster, { borderColor: brand }]}>
         <View style={[posterStyles.band, { backgroundColor: brand }]} />
         <Text style={posterStyles.platform}>The Loyalty Loop</Text>
@@ -2405,15 +2423,15 @@ function ShopClosurePage({ business, onBack, onBusinessChanged, preview = false 
       if (error) {
         const context = (error as { context?: Response }).context;
         const detail = context ? await context.json().catch(() => null) : null;
-        throw new Error(typeof detail?.error === "string" && detail.error.trim() ? detail.error : "Could not delete the shop. Please try again.");
+        throw friendlyError(typeof detail?.error === "string" && detail.error.trim() ? detail.error : "Could not delete the shop. Please try again.");
       }
-      if (data?.error) throw new Error(data.error);
-      if (!data?.deleted) throw new Error("We couldn’t confirm the shop was deleted. Please check again in a moment.");
+      if (data?.error) throw friendlyError(data.error);
+      if (!data?.deleted) throw friendlyError("We couldn’t confirm the shop was deleted. Please check again in a moment.");
       showAlert("Shop deleted", `${business.name} and its data have been removed.`);
       onBack();
       await onBusinessChanged();
     } catch (e) {
-      showAlert("Couldn’t delete the shop", e instanceof Error ? e.message : "Please try again.");
+      showAlert("Couldn’t delete the shop", plainError(e, "Please check your connection and try again."));
     } finally {
       setDeleting(false);
     }
@@ -2429,7 +2447,7 @@ function ShopClosurePage({ business, onBack, onBusinessChanged, preview = false 
       _new_owner_email: email,
     });
     setTransferring(false);
-    if (error) return showAlert("Couldn’t transfer the shop", error.message || "Please check the email and try again.");
+    if (error) return showAlert("Couldn’t transfer the shop", "Check the email is the new owner's account email, then try again.");
     showAlert("Shop transferred", `${business.name} now belongs to ${email}. It will disappear from your list.`);
     onBack();
     await onBusinessChanged();
@@ -2437,7 +2455,7 @@ function ShopClosurePage({ business, onBack, onBusinessChanged, preview = false 
 
   return (
     <View>
-      <PageHeader title="Delete or hand over" eyebrow={business.name.toUpperCase()} onBack={onBack} />
+      <PageHeader title="Delete or hand over" eyebrow={business.name} onBack={onBack} />
       <Section>
         <Text style={styles.cardTitle}>Hand this shop to someone else</Text>
         <Text style={[styles.muted, { marginTop: 6, marginBottom: 12 }]}>
@@ -2462,7 +2480,7 @@ function ShopClosurePage({ business, onBack, onBusinessChanged, preview = false 
 function HelpPage({ onBack }: PageProps) {
   return (
     <View>
-      <PageHeader title="Help & FAQ" eyebrow="ANSWERS" onBack={onBack} />
+      <PageHeader title="Help & FAQ" onBack={onBack} />
       <HelpFaq />
     </View>
   );
@@ -2517,7 +2535,7 @@ function WalkPastPage({ business, onBack, preview = false }: PageProps) {
   }
   return (
     <View>
-      <PageHeader title="Walk-past offer" eyebrow="NEW CUSTOMERS" onBack={onBack} />
+      <PageHeader title="Walk-past offer" eyebrow="Win new customers" onBack={onBack} />
       <Section>
         <Text style={styles.cardTitle}>{saved ? "Your offer is live" : "Turn it on with an offer"}</Text>
         <Text style={[styles.muted, { marginTop: 8, marginBottom: 14 }]}>
@@ -2586,9 +2604,8 @@ const styles = themed(() => StyleSheet.create({
     backgroundColor: schemeColor('#FCFCFA', 'bg'),
   },
   eyebrow: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: "900",
+    fontSize: 14,
+    fontWeight: "700",
     color: schemeColor('#000000', 'fg'),
   },
   title: { fontSize: 36, lineHeight: 40, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg'), letterSpacing: -1 },
@@ -2600,12 +2617,10 @@ const styles = themed(() => StyleSheet.create({
     padding: 18,
     marginBottom: 16,
   },
-  // Huge or tiny: section labels are small caps under the big page title.
+  // Section labels sit under the big page title, in sentence case.
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: "800",
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
     color: schemeColor('#000000', 'fg'),
     marginTop: 6,
     marginBottom: 12,
@@ -2663,6 +2678,7 @@ const styles = themed(() => StyleSheet.create({
     marginBottom: 10,
   },
   textArea: { minHeight: 105, paddingTop: 14 },
+  fieldLabel: { fontSize: 13, fontWeight: "800", color: schemeColor('#1A2138', 'fg'), marginBottom: 6 },
   segment: {
     flexDirection: "row",
     borderRadius: 16,
@@ -2702,7 +2718,7 @@ const styles = themed(() => StyleSheet.create({
     marginBottom: 12,
   },
   metricValue: { fontSize: 40, lineHeight: 44, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg'), letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
-  metricLabel: { color: schemeColor('#000000', 'fg'), fontWeight: "700", fontSize: 11, letterSpacing: 1.4, textTransform: "uppercase", marginTop: 4 },
+  metricLabel: { color: schemeColor('#000000', 'fg'), fontWeight: "700", fontSize: 13, marginTop: 4 },
   metricChange: {
     color: schemeColor("#2D7A43", 'fg'),
     fontSize: 11,

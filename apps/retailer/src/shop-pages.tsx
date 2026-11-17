@@ -4,6 +4,7 @@ import { useTheme } from "./theme";
 import { useWhirlSettings } from "../../../packages/whirl/native";
 import { money } from "./money";
 import { useEffect, useState, type ReactNode } from "react";
+import { useBackStep } from "./back-steps";
 import {
   Image,
   Linking,
@@ -44,7 +45,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import type { Session } from "@supabase/supabase-js";
-import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
+import { colors, fonts, getActiveScheme, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import { PROGRAMMES, programmeIdFor } from "@loyalty-loop/loyalty";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./shop-features";
 import { supabase } from "./supabase";
@@ -100,6 +101,11 @@ const LOYALTY_TYPE_OPTIONS: {
 
 const SPEND_REWARDS_HELP =
   "Customers earn by spending. Staff scan the customer's QR and enter what they spent, and linked cards count automatically where available. Each reward unlocks at the amount you set; the biggest one starts a new round.";
+
+// Server and network errors are shown in plain words with the next step. Only
+// messages we wrote (friendlyError, including our own functions' replies) show as they are.
+const friendlyError = (message: string) => Object.assign(new Error(message), { friendly: true });
+const plainError = (e: unknown, fallback: string) => (e instanceof Error && (e as { friendly?: boolean }).friendly ? e.message : fallback);
 
 // Amounts are stored in minor units (pence, paisa). Whole amounts show without decimals.
 function poundsWhole(pence: number): string {
@@ -259,6 +265,8 @@ export function BusinessSettings({
 }) {
   const [view, setView] = useState<ShopView>("home");
   useEffect(() => setView("home"), [business.id]);
+  // Android back from Edit profile or Settings returns to the Shop page.
+  useBackStep(view !== "home", () => setView("home"));
   if (view === "details")
     return (
       <ShopDetailsPage
@@ -597,11 +605,11 @@ function ShopDetailsPage({
         .eq("id", business.id)
         .select("id");
       if (error) throw error;
-      if (!data?.length) throw new Error("Nothing was saved. Only the shop owner can change the map pin.");
+      if (!data?.length) throw friendlyError("Nothing was saved. Only the shop owner can change the map pin.");
       await onChanged();
       setPinOpen(false);
     } catch (e) {
-      showAlert("Could not save the pin", e instanceof Error ? e.message : "Please try again.");
+      showAlert("Could not save the pin", plainError(e, "The pin wasn't saved. Check your connection and try again."));
       throw e;
     }
   };
@@ -681,7 +689,7 @@ function ShopDetailsPage({
         .select("id");
       if (error) throw error;
       if (!data?.length) {
-        throw new Error(
+        throw friendlyError(
           "Nothing was saved. Only the shop owner can change these details.",
         );
       }
@@ -693,7 +701,7 @@ function ShopDetailsPage({
     } catch (e) {
       showAlert(
         "Could not save",
-        e instanceof Error ? e.message : "Please try again.",
+        plainError(e, "Nothing was saved. Check your connection and try again."),
       );
     } finally {
       setSaving(false);
@@ -704,14 +712,14 @@ function ShopDetailsPage({
       <PageHeader title={isOwner ? "Edit profile" : "Shop details"} onBack={onBack} />
       {isOwner ? (
         <>
-          <Text style={styles.groupLabel}>SHOP PROFILE</Text>
+          <Text style={styles.groupLabel}>Shop profile</Text>
           <View style={styles.settingsGroup}>
             <Text style={styles.fieldLabel}>Shop name</Text>
             <TextInput
               style={styles.settingsInput}
               value={name}
               onChangeText={setName}
-              placeholderTextColor={schemeColor("#000000", 'fg')}
+              placeholderTextColor={schemeColor("#6F6B64", 'fg')}
             />
             <Text style={styles.fieldLabel}>Category</Text>
             <TextInput
@@ -719,7 +727,7 @@ function ShopDetailsPage({
               value={category}
               onChangeText={setCategory}
               placeholder="Cafe, salon, restaurant…"
-              placeholderTextColor={schemeColor("#000000", 'fg')}
+              placeholderTextColor={schemeColor("#6F6B64", 'fg')}
             />
             <Text style={styles.fieldLabel}>Description</Text>
             <TextInput
@@ -727,7 +735,7 @@ function ShopDetailsPage({
               value={description}
               onChangeText={setDescription}
               placeholder="Tell customers what makes you special"
-              placeholderTextColor={schemeColor("#000000", 'fg')}
+              placeholderTextColor={schemeColor("#6F6B64", 'fg')}
               multiline
               textAlignVertical="top"
             />
@@ -775,7 +783,7 @@ function ShopDetailsPage({
               style={styles.settingsInput}
               value={address}
               onChangeText={setAddress}
-              placeholderTextColor={schemeColor("#000000", 'fg')}
+              placeholderTextColor={schemeColor("#6F6B64", 'fg')}
             />
             <View style={styles.twoColumns}>
               <View style={{ flex: 1 }}>
@@ -784,7 +792,7 @@ function ShopDetailsPage({
                   style={styles.settingsInput}
                   value={postcode}
                   onChangeText={setPostcode}
-                  placeholderTextColor={schemeColor("#000000", 'fg')}
+                  placeholderTextColor={schemeColor("#6F6B64", 'fg')}
                   autoCapitalize="characters"
                 />
               </View>
@@ -794,7 +802,7 @@ function ShopDetailsPage({
                   style={styles.settingsInput}
                   value={phone}
                   onChangeText={setPhone}
-                  placeholderTextColor={schemeColor("#000000", 'fg')}
+                  placeholderTextColor={schemeColor("#6F6B64", 'fg')}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -825,7 +833,7 @@ function ShopDetailsPage({
               onClose={() => setPinOpen(false)}
             />
           </View>
-          <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
+          <Text style={styles.groupLabel}>Loyalty programme</Text>
           <View style={styles.settingsGroup}>
             <Text style={styles.fieldLabel}>How customers collect</Text>
             {spendShop ? null : (
@@ -890,7 +898,7 @@ function ShopDetailsPage({
         </>
       ) : (
         <>
-          <Text style={styles.groupLabel}>SHOP PROFILE</Text>
+          <Text style={styles.groupLabel}>Shop profile</Text>
           <View style={styles.settingsGroup}>
             <View style={styles.readOnlyNotice}>
               <Text style={styles.readOnlyNoticeText}>
@@ -917,7 +925,7 @@ function ShopDetailsPage({
               </View>
             </View>
           </View>
-          <Text style={styles.groupLabel}>LOYALTY PROGRAMME</Text>
+          <Text style={styles.groupLabel}>Loyalty programme</Text>
           <View style={styles.settingsGroup}>
             <Text style={styles.fieldLabel}>How customers collect</Text>
             {spendShop ? null : (
@@ -996,7 +1004,7 @@ function AccountPage({
               .update({ is_active: business.is_active === false })
               .eq("id", business.id);
             if (error)
-              return showAlert("Could not update shop", error.message);
+              return showAlert("Could not update shop", "Nothing changed. Check your connection and try again.");
             await onChanged();
           },
         },
@@ -1005,7 +1013,7 @@ function AccountPage({
   return (
     <View>
       <PageHeader title="Settings & account" onBack={onBack} />
-      <Text style={styles.groupLabel}>APPEARANCE</Text>
+      <Text style={styles.groupLabel}>Appearance</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
           icon={Moon}
@@ -1024,11 +1032,11 @@ function AccountPage({
           tile="blue"
           title="Show Whirl"
           detail="Our mascot on welcome screens, empty pages and tips. Loading spinners stay."
-          right={<Switch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.foreground }} />}
+          right={<Switch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.primary }} />}
           last
         />
       </View>
-      <Text style={styles.groupLabel}>SECURITY & PRIVACY</Text>
+      <Text style={styles.groupLabel}>Security and privacy</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
           icon={Fingerprint}
@@ -1039,7 +1047,7 @@ function AccountPage({
             <Switch
               value={biometricEnabled}
               onValueChange={() => void toggleBiometricLock()}
-              trackColor={{ true: colors.foreground }}
+              trackColor={{ true: colors.primary }}
             />
           }
         />
@@ -1052,7 +1060,7 @@ function AccountPage({
             <Switch
               value={analyticsEnabled}
               onValueChange={() => void toggleUsageAnalytics()}
-              trackColor={{ true: colors.foreground }}
+              trackColor={{ true: colors.primary }}
             />
           }
         />
@@ -1065,13 +1073,13 @@ function AccountPage({
             <Switch
               value={hapticsOn}
               onValueChange={() => void toggleHaptics()}
-              trackColor={{ true: colors.foreground }}
+              trackColor={{ true: colors.primary }}
             />
           }
           last
         />
       </View>
-      <Text style={styles.groupLabel}>HELP & LEARNING</Text>
+      <Text style={styles.groupLabel}>Help</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
           icon={Bell}
@@ -1089,7 +1097,7 @@ function AccountPage({
           last
         />
       </View>
-      <Text style={styles.groupLabel}>LEGAL</Text>
+      <Text style={styles.groupLabel}>Legal</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
           icon={FileText}
@@ -1113,7 +1121,7 @@ function AccountPage({
           last
         />
       </View>
-      <Text style={styles.groupLabel}>ACCOUNT</Text>
+      <Text style={styles.groupLabel}>Account</Text>
       <View style={styles.settingsGroupNoPadding}>
         <SettingsRow
           icon={AtSign}
@@ -1288,6 +1296,8 @@ const styles = themed(() => StyleSheet.create({
     flexGrow: 1,
     minHeight: 132,
     borderRadius: 24,
+    borderWidth: 2,
+    borderColor: schemeColor("#2A2A2A", 'border'),
     padding: 16,
     justifyContent: "flex-end",
   },
@@ -1313,6 +1323,8 @@ const styles = themed(() => StyleSheet.create({
     padding: 16,
     marginBottom: 20,
     backgroundColor: schemeColor("#F3E3D3", 'bg'),
+    borderWidth: 2,
+    borderColor: schemeColor("#2A2A2A", 'border'),
   },
   posterIcon: {
     width: 48,
@@ -1329,7 +1341,7 @@ const styles = themed(() => StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
+    backgroundColor: getActiveScheme() === "dark" ? colors.card : "rgba(255,255,255,.82)",
     borderWidth: 1,
     borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
     alignItems: "center",
@@ -1337,16 +1349,15 @@ const styles = themed(() => StyleSheet.create({
   },
   pageTitle: { fontSize: 24, fontFamily: FONT_DISPLAY, color: schemeColor('#1A2138', 'fg'), letterSpacing: -0.5, flex: 1 },
   groupLabel: {
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 1.3,
+    fontSize: 14,
+    fontWeight: "800",
     color: schemeColor("#000000", 'fg'),
     marginLeft: 4,
     marginTop: 8,
     marginBottom: 9,
   },
   settingsGroup: {
-    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
+    backgroundColor: getActiveScheme() === "dark" ? colors.card : "rgba(255,255,255,.82)",
     borderRadius: 22,
     padding: 17,
     marginBottom: 24,
@@ -1354,7 +1365,7 @@ const styles = themed(() => StyleSheet.create({
     borderColor: schemeColor("rgba(20,20,18,.07)", 'border'),
   },
   settingsGroupNoPadding: {
-    backgroundColor: schemeColor("rgba(255,255,255,.82)", 'bg'),
+    backgroundColor: getActiveScheme() === "dark" ? colors.card : "rgba(255,255,255,.82)",
     borderRadius: 22,
     marginBottom: 24,
     borderWidth: 1,

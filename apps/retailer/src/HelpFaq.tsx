@@ -28,7 +28,7 @@ const BUSINESS_ITEMS: Item[] = [
   },
   {
     q: "What kinds of loyalty programme can I run?",
-    a: "Stamps, spend-to-earn, points or tiers. You choose each reward and what unlocks it, and can change them whenever you like from Shop → Rewards.",
+    a: "Stamps, spend-to-earn, points or tiers. You choose each reward and what unlocks it, and can change them whenever you like from Shop → Programme.",
   },
   {
     q: "How does the AI business coaching work?",
@@ -86,13 +86,13 @@ function HelpItem({ q, a }: Item) {
 export function HelpFaq({ showAccount = true }: { showAccount?: boolean }) {
   return (
     <View>
-      <Text style={styles.group}>YOUR SHOP</Text>
+      <Text style={styles.group}>Your shop</Text>
       <View style={styles.card}>
         {BUSINESS_ITEMS.map((item) => <HelpItem key={item.q} {...item} />)}
       </View>
       {showAccount ? (
         <>
-          <Text style={styles.group}>YOUR ACCOUNT</Text>
+          <Text style={styles.group}>Your account</Text>
           <View style={styles.card}>
             {ACCOUNT_ITEMS.map((item) => <HelpItem key={item.q} {...item} />)}
           </View>
@@ -112,7 +112,7 @@ export function HelpFaq({ showAccount = true }: { showAccount?: boolean }) {
 }
 
 const styles = themed(() => StyleSheet.create({
-  group: { marginTop: 18, marginBottom: 8, fontSize: 12, fontWeight: "900", letterSpacing: 1, color: schemeColor('#4A4F5C', 'fg') },
+  group: { marginTop: 18, marginBottom: 8, fontSize: 15, fontWeight: "800", color: schemeColor('#4A4F5C', 'fg') },
   card: { backgroundColor: schemeColor("#FCFCFA", 'bg'), borderRadius: 20, paddingHorizontal: 16, borderWidth: 1, borderColor: schemeColor("#E6E1D8", 'border') },
   contact: { paddingVertical: 14 },
   item: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: schemeColor("#DDD6CA", 'border') },

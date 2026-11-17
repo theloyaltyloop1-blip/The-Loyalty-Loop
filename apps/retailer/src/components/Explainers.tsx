@@ -279,7 +279,7 @@ export function Explainer({ kind, caption, showCaption = true }: { kind: Explain
   const text = caption ?? EXPLAINER_CAPTIONS[kind]
   return (
     <View style={styles.wrap} accessible accessibilityRole="image" accessibilityLabel={text}>
-      <View style={[styles.frame, { backgroundColor: BG[kind] }]}>
+      <View style={[styles.frame, { backgroundColor: schemeColor(BG[kind], 'bg') }]}>
         <Svg viewBox="0 0 320 180" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
           {scene}
         </Svg>

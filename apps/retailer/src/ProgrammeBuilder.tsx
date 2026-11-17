@@ -54,11 +54,11 @@ export function RulesCard({ rules, symbol = "£", brandColor = "#2B3A67" }: { ru
     ) : null;
   return (
     <View style={[styles.card, { backgroundColor: brandColor }]}>
-      <Text style={styles.cardEyebrow}>YOUR PROGRAMME</Text>
+      <Text style={styles.cardEyebrow}>Your programme</Text>
       <Text style={styles.cardSummary}>{rules.summary}</Text>
-      {block(`HOW TO EARN ${rules.unit.many.toUpperCase()}`, d.earn)}
-      {block("WHAT THEY GET", d.spend)}
-      {block("LEVELS", d.levels)}
+      {block(`How to earn ${rules.unit.many}`, d.earn)}
+      {block("What they get", d.spend)}
+      {block("Levels", d.levels)}
       {d.small.length ? <Text style={styles.cardSmall}>{d.small.join(" · ")}</Text> : null}
     </View>
   );
@@ -159,7 +159,7 @@ export function ProgrammeBuilder({
           multiline
           maxLength={2000}
           placeholder={messages.length ? "Reply or ask for a change…" : "e.g. 3 points is £1 off"}
-          placeholderTextColor={schemeColor("rgba(0,0,0,0.45)", 'fg')}
+          placeholderTextColor={colors.muted}
           accessibilityLabel="Describe your programme"
         />
         <Pressable
@@ -209,7 +209,7 @@ const styles = themed(() => StyleSheet.create({
   send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   error: { color: schemeColor("#B42318", 'fg'), fontSize: 14, fontWeight: "700", marginTop: 8 },
   card: { borderRadius: 20, padding: 18 },
-  cardEyebrow: { color: schemeColor("rgba(255,255,255,0.8)", 'fg'), fontSize: 11, fontWeight: "800", letterSpacing: 1.1 },
+  cardEyebrow: { color: schemeColor("rgba(255,255,255,0.8)", 'fg'), fontSize: 13, fontWeight: "700" },
   cardSummary: { color: schemeColor("#fff", 'fg'), fontSize: 18, lineHeight: 24, fontFamily: fonts.nativeDisplay, marginTop: 4 },
   cardLine: { color: schemeColor("#fff", 'fg'), fontSize: 14, fontWeight: "700", lineHeight: 20, marginTop: 3 },
   cardSmall: { color: schemeColor("rgba(255,255,255,0.8)", 'fg'), fontSize: 12, marginTop: 12 },

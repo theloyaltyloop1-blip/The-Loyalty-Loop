@@ -64,8 +64,8 @@ import type { Session } from "@supabase/supabase-js";
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque";
 import { Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from "@expo-google-fonts/inter";
 import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument-serif";
-import { AppIntro, INK, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM } from "./src/components/Poster";
-import { colors, fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
+import { AppIntro, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM } from "./src/components/Poster";
+import { colors, fonts, getActiveScheme, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
 import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
@@ -90,7 +90,8 @@ import { getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } f
 import { syncRetailerWidget } from "./src/widgets/state";
 import { Sheet } from "./src/components/Sheet";
 import { TourOverlay, TourProvider, TourTarget, useTour } from "./src/components/Tour";
-import { pointsBalanceSentence, programmeIdFor, recordsSpend, standingFromSnapshot, type ProgrammeSnapshot, type SnapshotStanding } from "@loyalty-loop/loyalty";
+import { hasPointsWallet, pointsBalanceSentence, programmeIdFor, progressFor, recordsSpend, rewardWords, standingFromSnapshot, unitNames, type LadderRung, type ProgrammeSnapshot, type SnapshotStanding } from "@loyalty-loop/loyalty";
+import { useBackStep } from "./src/back-steps";
 import { CashOff } from "./src/CashOff";
 import { useLaunchUpdate } from "./src/launch-update";
 import { BusinessSettings } from "./src/shop-pages";
@@ -194,6 +195,7 @@ const PREVIEW_STATS: DashboardStats = {
   dormantMembers: 52,
   week: [9, 14, 11, 16, 21, 26, 13],
 };
+const capitalise = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 function formatDate(value?: string | null) {
   if (!value) return "-";
   return new Date(value).toLocaleDateString();
@@ -404,7 +406,7 @@ function DiscountCharge({
         value={billTotal}
         onChangeText={onBillTotalChange}
         placeholder="Bill total, e.g. 20.00"
-        placeholderTextColor={schemeColor("#000000", 'fg')}
+        placeholderTextColor={colors.muted}
         keyboardType="decimal-pad"
         style={styles.input}
         accessibilityLabel="Bill total in pounds"
@@ -505,7 +507,13 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
       const raw = e instanceof Error ? e.message : "";
       showAlert(
         "Could not sign in",
-        /confirm/i.test(raw) ? "Tap the link in the email we sent you first, then sign in." : raw || "Please try again.",
+        /confirm/i.test(raw)
+          ? "Tap the link in the email we sent you first, then sign in."
+          : /invalid/i.test(raw)
+            ? "That email and password don't match. Check them and try again, or tap “Forgot password?”."
+            : /fetch|network/i.test(raw)
+              ? "We couldn't reach our servers. Check your connection and try again."
+              : "Something went wrong. Check your email and password, then try again.",
       );
     } finally {
       setBusy(false);
@@ -518,8 +526,8 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
         keyboardShouldPersistTaps="handled"
       >
         <WhirlOrMark pose="wave" mark={<View style={styles.mark}><Text style={styles.markText}>↻</Text></View>} />
-        <Text style={styles.eyebrow}>THE LOYALTY LOOP FOR BUSINESS</Text>
-        <Text style={styles.hero}>Welcome back</Text>
+        <Text style={styles.eyebrow}>The Loyalty Loop for Business</Text>
+        <Text style={styles.hero}>Sign in to your shop</Text>
         <Text style={styles.copy}>
           Sign in as an owner or staff member to reward customers at your shop.
         </Text>
@@ -529,7 +537,7 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
             value={email}
             onChangeText={setEmail}
             placeholder="Email address"
-            placeholderTextColor={schemeColor("#000000", 'fg')}
+            placeholderTextColor={colors.muted}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -540,7 +548,7 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
             value={password}
             onChangeText={setPassword}
             placeholder="Password"
-            placeholderTextColor={schemeColor("#000000", 'fg')}
+            placeholderTextColor={colors.muted}
             secureTextEntry
             autoComplete="current-password"
             textContentType="password"
@@ -557,10 +565,10 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
         <Text style={styles.small}>
           Customer account? Use The Loyalty Loop shopper app.
         </Text>
-        <Pressable onPress={() => void forgotPassword()} style={styles.authHelpLink}>
+        <Pressable accessibilityRole="button" onPress={() => void forgotPassword()} style={styles.authHelpLink}>
           <Text style={styles.authHelpLinkText}>Forgot password?</Text>
         </Pressable>
-        <Pressable onPress={() => setHelpOpen(true)} style={styles.authHelpLink}>
+        <Pressable accessibilityRole="button" onPress={() => setHelpOpen(true)} style={styles.authHelpLink}>
           <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
         </Pressable>
         <Modal visible={helpOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setHelpOpen(false)}>
@@ -681,7 +689,11 @@ function StampsScreen({
   const [memberInfo, setMemberInfo] = useState<{
     joined_at?: string | null;
     last_activity_at?: string | null;
+    stamp_count?: number | null;
+    points_balance?: number | null;
   } | null>(null);
+  // The shop's reward ladder, for "Sam · 7 of 10 stamps" above the Award button.
+  const [ladder, setLadder] = useState<LadderRung[]>([]);
   const [activeReward, setActiveReward] = useState<ActiveReward | null>(null);
   // Bill total typed by staff for a "£ off" reward, to show what to charge.
   const [billTotal, setBillTotal] = useState("");
@@ -715,33 +727,40 @@ function StampsScreen({
   // afterwards; a typed short code stays on the code entry (otherwise awarding
   // after a code lookup unexpectedly opened the camera).
   const lookupVia = useRef<"camera" | "code" | null>(null);
-  const lastScanBuzz = useRef(0);
-  const unit =
-    business.loyalty_type === "points"
-      ? "points"
-      : business.loyalty_type === "tiered"
-        ? "visits"
-        : "stamps";
+  // One clean result per scan: the camera reports the same code many times a
+  // second, so scan events are ignored while a code is being dealt with. Freed
+  // when the camera opens again. A code that isn't ours is ignored until it has
+  // been out of view for a moment, so it gives one pop-up, not a stream.
+  const scanBusy = useRef(false);
+  const rejectedScan = useRef<{ data: string; seenAt: number } | null>(null);
+  useEffect(() => {
+    if (!camera) return;
+    scanBusy.current = false;
+    rejectedScan.current = null;
+  }, [camera]);
+  const words = rewardWords(business.loyalty_type);
+  const unit = words.units;
   useEffect(() => {
     let active = true;
     // Custom programmes may have no reward list at all (e.g. only "3 points = £1 off").
     if (business.reward_model === "custom") {
       setHasReward(true);
+      setLadder([]);
       return;
     }
     setHasReward(null);
     void supabase
       .from("reward_catalog")
-      .select("id")
+      .select("business_id,title,stamp_threshold,spend_threshold_pence")
       .eq("business_id", business.id)
-      .limit(1)
       .then(({ data, error }) => {
         if (!active) return;
         if (error) {
-          showAlert("Could not check rewards", error.message);
+          showAlert("Could not check your rewards", "We couldn't reach our servers. Check your connection, then open Scan again.");
           setHasReward(false);
           return;
         }
+        setLadder((data || []) as LadderRung[]);
         setHasReward((data || []).length > 0);
       });
     return () => {
@@ -874,7 +893,7 @@ function StampsScreen({
     } catch (e) {
       // spendRef is kept, so trying again cannot credit the purchase twice.
       haptic.error()
-      showAlert("Could not add purchase", e instanceof Error ? e.message : "Check the connection and try again.");
+      showAlert("Could not add purchase", "The purchase wasn't saved. Check the connection and try again. Trying again won't add it twice.");
     } finally {
       setBusy(false);
     }
@@ -889,7 +908,7 @@ function StampsScreen({
         onPress: async () => {
           const { error } = await supabase.rpc("undo_manual_spend", { _transaction_id: entry.id, _reason: "Undone by staff" });
           const refusal = spendRefusal(error);
-          if (refusal || error) showAlert("Could not undo", refusal ?? error?.message ?? "Please try again.");
+          if (refusal || error) showAlert("Could not undo", refusal ?? "The entry is still there. Check the connection and try again.");
           else setLastSpendMessage(`${pounds(entry.value)} undone.`);
           void loadRecentSpend();
         },
@@ -948,7 +967,7 @@ function StampsScreen({
     if (row) setMatched({ id: row.id, first_name: row.first_name, last_name: row.last_name, email: row.email });
     setMemberInfo(
       row
-        ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at }
+        ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at, stamp_count: row.stamp_count, points_balance: row.points_balance }
         : null,
     );
     setActiveReward(rewardRows?.[0] ? toActiveReward(rewardRows[0]) : null);
@@ -960,16 +979,14 @@ function StampsScreen({
     });
     const row = (data || [])[0] as ScannedMemberDetails | undefined;
     if (row) setMatched({ id: row.id, first_name: row.first_name, last_name: row.last_name, email: row.email });
-    setMemberInfo(row ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at } : null);
+    setMemberInfo(row ? { joined_at: row.joined_at, last_activity_at: row.last_activity_at, stamp_count: row.stamp_count, points_balance: row.points_balance } : null);
   }
 
   async function parse(value: string) {
     const rewardToken = parseRewardQr(value);
     if (rewardToken) {
-      if (mode !== "reward") {
-        showAlert("Reward QR code", "Switch to Reward mode before redeeming this QR code.");
-        return;
-      }
+      // A reward QR always means "use this reward": switch to Reward and carry on.
+      if (mode !== "reward") onModeChange("reward");
       setCamera(false);
       setBusy(true);
       try {
@@ -979,7 +996,7 @@ function StampsScreen({
           .eq("business_id", business.id)
           .eq("qr_token", rewardToken)
           .maybeSingle();
-        if (error) throw error;
+        if (error) throw new Error("We couldn't check this reward. Check the connection and scan it again.");
         if (!reward) throw new Error("That reward does not belong to this shop.");
         if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
         if (reward.expires_at && new Date(reward.expires_at) < new Date()) throw new Error("This reward has expired.");
@@ -996,6 +1013,8 @@ function StampsScreen({
     }
     const match = value.match(/^loyaltyloop:customer:(.+)$/);
     if (!match) {
+      rejectedScan.current = { data: value, seenAt: Date.now() };
+      scanBusy.current = false;
       showAlert(
         "Not a Loyalty Loop code",
         mode === "reward" ? "Scan the customer's reward QR code." : "Scan a Loyalty Loop customer QR code.",
@@ -1035,7 +1054,7 @@ function StampsScreen({
           .eq("business_id", business.id)
           .eq("short_code", normalized)
           .maybeSingle();
-        if (rewardError) throw rewardError;
+        if (rewardError) throw new Error("We couldn't check that code. Check the connection and try again.");
         if (reward) {
           if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
           if (reward.expires_at && new Date(reward.expires_at) < new Date()) throw new Error("This reward has expired.");
@@ -1049,7 +1068,7 @@ function StampsScreen({
       const { data, error } = await supabase.rpc("lookup_user_by_stamp_code", {
         _code: normalized,
       });
-      if (error) throw error;
+      if (error) throw new Error("We couldn't check that code. Check the connection and try again.");
       const person = (data || [])[0];
       if (!person) throw new Error(mode === "reward" ? "No reward or customer found with that code." : "No customer found with that code.");
       setMatched(person);
@@ -1116,10 +1135,8 @@ function StampsScreen({
     } catch (e) {
       haptic.error()
       showAlert(
-        "Could not award",
-        e instanceof Error
-          ? e.message
-          : "The customer may need to join this shop first.",
+        `Could not add ${unit}`,
+        "Nothing was added. Check the connection and try again. If it keeps failing, the customer may need to join your shop in the app first.",
       );
     } finally {
       setBusy(false);
@@ -1148,7 +1165,7 @@ function StampsScreen({
         "Could not redeem",
         e instanceof Error && e.message.includes("business is inactive")
           ? "This shop is inactive. Ask the owner to reactivate it before redeeming a reward."
-          : e instanceof Error ? e.message : "Please try again.",
+          : "The reward is still unused. Check the connection and try again.",
       );
     } finally {
       setBusy(false);
@@ -1156,8 +1173,7 @@ function StampsScreen({
   }
   return (
     <View>
-      <Text style={styles.pageKicker}>QUICK ACTION</Text>
-      <Text style={styles.pageTitle}>{spendShop ? "Record a purchase" : "Stamps"}</Text>
+      <Text style={styles.pageTitle}>{spendShop ? "Record a purchase" : capitalise(unit)}</Text>
       <View style={[styles.segment, { marginTop: 18 }]}>
         {(["stamps", "reward"] as const).map((value) => (
           <Pressable
@@ -1174,7 +1190,7 @@ function StampsScreen({
                 mode === value && styles.segmentTextActive,
               ]}
             >
-              {value === "stamps" ? (spendShop ? "Purchase" : "Stamps") : "Reward"}
+              {value === "stamps" ? (spendShop ? "Purchase" : capitalise(unit)) : "Reward"}
             </Text>
           </Pressable>
         ))}
@@ -1244,8 +1260,15 @@ function StampsScreen({
                 facing="back"
                 barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
                 onBarcodeScanned={({ data }) => {
+                  if (scanBusy.current) return;
                   const now = Date.now();
-                  if (now - lastScanBuzz.current > 1500) { lastScanBuzz.current = now; haptic.select(); }
+                  const rejected = rejectedScan.current;
+                  if (rejected && rejected.data === data && now - rejected.seenAt < 2500) {
+                    rejected.seenAt = now;
+                    return;
+                  }
+                  scanBusy.current = true;
+                  haptic.select();
                   lookupVia.current = "camera";
                   void parse(data);
                 }}
@@ -1260,7 +1283,7 @@ function StampsScreen({
           <View style={styles.card}>
             <Text style={styles.section}>{mode === "reward" ? "Or enter their reward or customer code" : "Or enter their code"}</Text>
             <TextInput
-              placeholderTextColor={schemeColor("#000000", 'fg')}
+              placeholderTextColor={colors.muted}
               style={[styles.input, styles.customerCodeInput]}
               value={code}
               onChangeText={setCode}
@@ -1327,17 +1350,25 @@ function StampsScreen({
                   />
                 </View>
               ) : mode === "stamps" ? (
-                <DynamicButton
-                  status={busy ? "busy" : showSuccess ? "done" : "idle"}
-                  label={`Award ${unit}`}
-                  busyLabel="Awarding…"
-                  doneLabel="Awarded"
-                  onPress={() => void award()}
-                  color={colors.primary}
-                  style={styles.dynamicAction}
-                />
+                <View>
+                  {/* Who is being stamped, and where they are, before the tap. */}
+                  <Text style={styles.matchWho} accessibilityLiveRegion="polite">
+                    {matched.first_name || "Customer"}
+                    {memberInfo ? ` · ${progressFor(business, memberInfo, ladder).label}` : ""}
+                  </Text>
+                  <DynamicButton
+                    status={busy ? "busy" : showSuccess ? "done" : "idle"}
+                    label={`Award ${unit}`}
+                    busyLabel="Awarding…"
+                    doneLabel="Awarded"
+                    onPress={() => void award()}
+                    color={colors.primary}
+                    style={styles.dynamicAction}
+                  />
+                </View>
               ) : activeReward ? (
                 <View>
+                <Text style={styles.matchWho}>{matched.first_name || "Customer"}</Text>
                 {activeReward.discount_pence || activeReward.discount_percent ? (
                   <DiscountCharge
                     discountPence={activeReward.discount_pence}
@@ -1363,38 +1394,37 @@ function StampsScreen({
                 </View>
               ) : (
                 <Text style={styles.copy}>
-                  This customer has no reward ready to redeem yet.
+                  {matched.first_name || "This customer"} has no reward ready to use yet.
                 </Text>
               )}
-              <Text style={[styles.matchTitle, { marginTop: 18 }]}>
-                Member Information:
-              </Text>
-              <View style={styles.memberInfoRow}>
-                <Text style={styles.memberInfoLabel}>Name:</Text>
-                <Text style={styles.memberInfoValue}>
-                  {[matched.first_name, matched.last_name]
-                    .filter(Boolean)
-                    .join(" ") || "-"}
-                </Text>
-              </View>
-              <View style={styles.memberInfoRow}>
-                <Text style={styles.memberInfoLabel}>Email:</Text>
-                <Text style={styles.memberInfoValue}>
-                  {matched.email || "Not available"}
-                </Text>
-              </View>
-              <View style={styles.memberInfoRow}>
-                <Text style={styles.memberInfoLabel}>First Visit:</Text>
-                <Text style={styles.memberInfoValue}>
-                  {formatDate(memberInfo?.joined_at)}
-                </Text>
-              </View>
-              <View style={styles.memberInfoRow}>
-                <Text style={styles.memberInfoLabel}>Last Visit:</Text>
-                <Text style={styles.memberInfoValue}>
-                  {formatDate(memberInfo?.last_activity_at)}
-                </Text>
-              </View>
+              <FoldSection title="Customer details">
+                <View style={styles.memberInfoRow}>
+                  <Text style={styles.memberInfoLabel}>Name</Text>
+                  <Text style={styles.memberInfoValue}>
+                    {[matched.first_name, matched.last_name]
+                      .filter(Boolean)
+                      .join(" ") || "-"}
+                  </Text>
+                </View>
+                <View style={styles.memberInfoRow}>
+                  <Text style={styles.memberInfoLabel}>Email</Text>
+                  <Text style={styles.memberInfoValue}>
+                    {matched.email || "Not available"}
+                  </Text>
+                </View>
+                <View style={styles.memberInfoRow}>
+                  <Text style={styles.memberInfoLabel}>First visit</Text>
+                  <Text style={styles.memberInfoValue}>
+                    {formatDate(memberInfo?.joined_at)}
+                  </Text>
+                </View>
+                <View style={styles.memberInfoRow}>
+                  <Text style={styles.memberInfoLabel}>Last visit</Text>
+                  <Text style={styles.memberInfoValue}>
+                    {formatDate(memberInfo?.last_activity_at)}
+                  </Text>
+                </View>
+              </FoldSection>
             </View>
             </TourTarget>
             </ScanMatchCard>
@@ -1497,7 +1527,9 @@ function DashboardHome({
     { label: "Put your shop on the map", done: business.lat != null && business.lng != null },
     { label: "Write a short description", done: Boolean(business.description) },
   ];
-  const spendShop = business.reward_model === "spend_threshold";
+  const spendShop = recordsSpend(business);
+  // What one entry is called at this shop: purchases, or stamps / points / visits.
+  const activity = spendShop ? "purchases" : rewardWords(business.loyalty_type).units;
   const week = stats.week ?? [];
   const weekTotal = week.reduce((sum, n) => sum + n, 0);
   const peak = Math.max(1, ...week);
@@ -1530,29 +1562,18 @@ function DashboardHome({
         </View>
         <Text style={styles.homeBigLabel}>{stats.activeMembers === 1 ? "regular came back" : "regulars came back"}</Text>
         {week.length ? (
-          <View accessible accessibilityLabel={`${weekTotal} ${spendShop ? "purchases" : "stamps"} in the last 7 days`} style={styles.homeBars}>
+          <View accessible accessibilityLabel={`${weekTotal} ${activity} in the last 7 days`} style={styles.homeBars}>
             {days.map((d, i) => (
               <View key={i} style={styles.homeBarCol}>
-                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? schemeColor('#1A2138', 'bg') : schemeColor("rgba(26,33,56,0.16)", 'bg') }]} />
+                {/* The best day is the darkest bar in light and the brightest in dark. */}
+                <View style={[styles.homeBar, { height: Math.max(6, Math.round((d.count / peak) * 70)), backgroundColor: d.best ? colors.sageInk : schemeColor("rgba(26,33,56,0.16)", 'bg') }]} />
                 <Text style={styles.homeBarDay}>{d.day}</Text>
               </View>
             ))}
           </View>
         ) : null}
-        {week.length ? <Text style={styles.homeWeek}>{weekTotal} {spendShop ? "purchases" : "stamps"} this week</Text> : null}
+        {week.length ? <Text style={styles.homeWeek}>{weekTotal} {activity} this week</Text> : null}
       </View>
-
-      {stats.dormantMembers > 0 && onWinBack ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Win back ${stats.dormantMembers} ${stats.dormantMembers === 1 ? "customer" : "customers"}`}
-          onPress={onWinBack}
-          style={({ pressed }) => [styles.homePill, { alignSelf: "stretch" }, pressed && styles.pressed]}
-        >
-          <Users size={19} strokeWidth={1.8} color={colors.primaryText} />
-          <Text style={styles.homePillText}>Win back {stats.dormantMembers} {stats.dormantMembers === 1 ? "customer" : "customers"}</Text>
-        </Pressable>
-      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -1562,34 +1583,47 @@ function DashboardHome({
       >
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={styles.homeScanTitle}>Scan a customer</Text>
-          <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : "Stamp, spend or reward"}</Text>
+          <Text style={styles.homeScanSub}>{spendShop ? "Record a purchase or a reward" : `Add ${activity} or use a reward`}</Text>
         </View>
         <View style={styles.homeScanIcon}><ScanLine size={26} strokeWidth={2} color={colors.primaryText} /></View>
       </Pressable>
 
-      <View style={styles.homePills}>
-        <Pressable accessibilityRole="button" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, pressed && styles.pressed]}>
-          <Gift size={19} strokeWidth={1.8} color={colors.primaryText} />
-          <Text style={styles.homePillText}>Redeem</Text>
+      {/* Below the Scan button, which overlaps the panel's lower edge. */}
+      {stats.dormantMembers > 0 && onWinBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Win back ${stats.dormantMembers} ${stats.dormantMembers === 1 ? "customer" : "customers"}`}
+          onPress={onWinBack}
+          style={({ pressed }) => [styles.homePill, styles.homePillAmber, { alignSelf: "stretch", flexGrow: 0, flexShrink: 0, flexBasis: "auto" }, pressed && styles.pressed]}
+        >
+          <Users size={19} strokeWidth={2} color={colors.amberInk} />
+          <Text style={[styles.homePillText, { color: colors.amberInk }]}>Win back {stats.dormantMembers} {stats.dormantMembers === 1 ? "customer" : "customers"}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={onReport} style={({ pressed }) => [styles.homePill, pressed && styles.pressed]}>
-          <Sparkles size={19} strokeWidth={1.8} color={colors.primaryText} />
-          <Text style={styles.homePillText}>Report</Text>
+      ) : null}
+
+      <View style={styles.homePills}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Redeem a reward" onPress={onRedeemReward} style={({ pressed }) => [styles.homePill, styles.homePillSage, pressed && styles.pressed]}>
+          <Gift size={19} strokeWidth={2} color={colors.sageInk} />
+          <Text style={[styles.homePillText, { color: colors.sageInk }]}>Redeem</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Open your business report" onPress={onReport} style={({ pressed }) => [styles.homePill, styles.homePillPeach, pressed && styles.pressed]}>
+          <Sparkles size={19} strokeWidth={2} color={colors.peachInk} />
+          <Text style={[styles.homePillText, { color: colors.peachInk }]}>Report</Text>
         </Pressable>
       </View>
 
       <View style={styles.homeTiles}>
-        <View style={styles.homeTile}>
-          <Text style={styles.homeTileValue} numberOfLines={1} adjustsFontSizeToFit>{stats.members}</Text>
-          <Text style={styles.homeTileLabel}>Customers</Text>
+        <View style={[styles.homeTile, { backgroundColor: colors.peach }]}>
+          <Text style={[styles.homeTileValue, { color: colors.peachInk }]} numberOfLines={1} adjustsFontSizeToFit>{stats.members}</Text>
+          <Text style={[styles.homeTileLabel, { color: colors.peachInk }]}>Customers</Text>
         </View>
-        <View style={styles.homeTile}>
-          <Text style={styles.homeTileValue} numberOfLines={1} adjustsFontSizeToFit>{stats.stamps}</Text>
-          <Text style={styles.homeTileLabel}>{spendShop ? "Purchases" : "Stamps"}</Text>
+        <View style={[styles.homeTile, { backgroundColor: colors.amber }]}>
+          <Text style={[styles.homeTileValue, { color: colors.amberInk }]} numberOfLines={1} adjustsFontSizeToFit>{stats.stamps}</Text>
+          <Text style={[styles.homeTileLabel, { color: colors.amberInk }]}>{capitalise(activity)}</Text>
         </View>
-        <View style={styles.homeTile}>
-          <Text style={styles.homeTileValue} numberOfLines={1} adjustsFontSizeToFit>{stats.rewards}</Text>
-          <Text style={styles.homeTileLabel}>Rewards</Text>
+        <View style={[styles.homeTile, { backgroundColor: colors.sage }]}>
+          <Text style={[styles.homeTileValue, { color: colors.sageInk }]} numberOfLines={1} adjustsFontSizeToFit>{stats.rewards}</Text>
+          <Text style={[styles.homeTileLabel, { color: colors.sageInk }]}>Rewards</Text>
         </View>
       </View>
 
@@ -1628,7 +1662,7 @@ function CustomersHome({ business }: { business: Business }) {
     [emailing, setEmailing] = useState(false);
   useEffect(() => {
     supabase.rpc("get_business_members", { _business_id: business.id }).then(({ data, error }) => {
-      if (error) showAlert("Could not load customers", error.message);
+      if (error) showAlert("Could not load customers", "We couldn't reach our servers. Check your connection, then open this page again.");
       setMembers((data || []) as MemberRow[]);
     });
   }, [business.id]);
@@ -1654,7 +1688,7 @@ function CustomersHome({ business }: { business: Business }) {
       .insert({ business_id: business.id, title: title.trim(), body: body.trim(), audience, status: "sent" });
     setSending(false);
     if (error) {
-      showAlert("Could not send", error.message);
+      showAlert("Could not send", "Your message wasn't sent. Check the connection and try again.");
       return;
     }
     setTitle("");
@@ -1688,7 +1722,6 @@ function CustomersHome({ business }: { business: Business }) {
   }
   return (
     <View>
-      <Text style={styles.pageKicker}>WIN BACK</Text>
       <Text style={styles.pageTitle}>Bring them back</Text>
       <Text style={styles.pageIntro}>See who has gone quiet, then send them a push notification or an email.</Text>
       {members === null ? (
@@ -1718,13 +1751,16 @@ function CustomersHome({ business }: { business: Business }) {
             <Pressable
               key={value}
               onPress={() => setAudience(value)}
-              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: audience === value ? colors.primary : schemeColor("#EFE9DF", 'bg') }}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: audience === value }}
+              accessibilityLabel={`Send to ${label.toLowerCase()}`}
+              style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 14, borderRadius: 999, backgroundColor: audience === value ? colors.primary : schemeColor("#EFE9DF", 'bg') }}
             >
               <Text style={{ fontWeight: "700", fontSize: 13, color: audience === value ? schemeColor("#fff", 'fg') : schemeColor("#6F6B64", 'fg') }}>{label}</Text>
             </Pressable>
           ))}
         </View>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor={schemeColor("#000000", 'fg')} />
+        <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={120} placeholder="We miss you" placeholderTextColor={colors.muted} />
         <TextInput
           style={[styles.input, { height: 96, textAlignVertical: "top", marginTop: 10 }]}
           value={body}
@@ -1732,7 +1768,7 @@ function CustomersHome({ business }: { business: Business }) {
           maxLength={1000}
           multiline
           placeholder="Come in this week and we'll have something waiting."
-          placeholderTextColor={schemeColor("#000000", 'fg')}
+          placeholderTextColor={colors.muted}
         />
         <Button title={sending ? "Sending…" : "Send push notification"} onPress={() => void send()} />
       </View>
@@ -1756,7 +1792,7 @@ function MembersPage({ business }: { business: Business }) {
     supabase
       .rpc("get_business_members", { _business_id: business.id })
       .then(({ data, error }) => {
-        if (error) showAlert("Could not load members", error.message);
+        if (error) showAlert("Could not load customers", "We couldn't reach our servers. Check your connection, then open this page again.");
         setMembers((data || []) as MemberRow[]);
         setLoading(false);
       });
@@ -1768,8 +1804,7 @@ function MembersPage({ business }: { business: Business }) {
   ]);
   return (
     <View>
-      <Text style={styles.pageKicker}>CUSTOMERS</Text>
-      <Text style={styles.pageTitle}>Members</Text>
+      <Text style={styles.pageTitle}>Customers</Text>
       <Text style={styles.pageIntro}>
         Everyone collecting rewards at {business.name}.
       </Text>
@@ -1777,8 +1812,8 @@ function MembersPage({ business }: { business: Business }) {
         style={styles.searchInput}
         value={search}
         onChangeText={setSearch}
-        placeholder="Search members"
-        placeholderTextColor={schemeColor("#000000", 'fg')}
+        placeholder="Search customers"
+        placeholderTextColor={colors.muted}
       />
       {loading ? (
         <WhirlSpinner size={28} style={{ marginTop: 30 }} />
@@ -1787,14 +1822,19 @@ function MembersPage({ business }: { business: Business }) {
           const name =
             [member.first_name, member.last_name].filter(Boolean).join(" ") ||
             "Customer";
-          const spendShop = business.reward_model === "spend_threshold";
-          const progress = spendShop
-            ? poundsWhole(Math.max(0, member.reward_progress_pence ?? 0))
-            : business.loyalty_type === "points"
-              ? member.points_balance
-              : business.loyalty_type === "tiered"
-                ? member.visit_count
-                : member.stamp_count;
+          // Points and custom shops show the wallet; other spend shops the £ spent;
+          // stamp shops their stamps, points or visits (packages/loyalty).
+          const wallet = hasPointsWallet(business);
+          const spendShop = recordsSpend(business);
+          const progress = wallet
+            ? member.points_balance
+            : spendShop
+              ? poundsWhole(Math.max(0, member.reward_progress_pence ?? 0))
+              : business.loyalty_type === "points"
+                ? member.points_balance
+                : business.loyalty_type === "tiered"
+                  ? member.visit_count
+                  : member.stamp_count;
           return (
             <View key={member.user_id} style={styles.memberCard}>
               <View
@@ -1814,13 +1854,11 @@ function MembersPage({ business }: { business: Business }) {
               <View>
                 <Text style={styles.memberProgress}>{progress}</Text>
                 <Text style={styles.memberUnit}>
-                  {spendShop
-                    ? "spent"
-                    : business.loyalty_type === "points"
-                      ? "points"
-                      : business.loyalty_type === "tiered"
-                        ? "visits"
-                        : "stamps"}
+                  {wallet
+                    ? unitNames(business).many
+                    : spendShop
+                      ? "spent"
+                      : rewardWords(business.loyalty_type).units}
                 </Text>
               </View>
             </View>
@@ -1830,8 +1868,8 @@ function MembersPage({ business }: { business: Business }) {
         <WhirlEmpty pose="sleepy" show={!searchTerm.trim()}>
           <Text style={styles.emptyState}>
             {searchTerm.trim()
-              ? `No members match "${searchTerm.trim()}". Check the spelling or try just a first name.`
-              : "No members yet. Customers appear here once they join your shop."}
+              ? `No customers match "${searchTerm.trim()}". Check the spelling or try just a first name.`
+              : "No customers yet. They appear here once they join your shop."}
           </Text>
         </WhirlEmpty>
       )}
@@ -1878,6 +1916,9 @@ function AnalyticsPage({
       rewards: 0,
     }),
     [dailySeries, setDailySeries] = useState<DailyPoint[]>([]);
+  // Back steps out of Detailed to the simple view (Android).
+  useBackStep(detailed, () => setDetailed(false));
+  const activity = recordsSpend(business) ? "purchases" : rewardWords(business.loyalty_type).units;
   useEffect(() => {
     const since = new Date(Date.now() - period * 86400000).toISOString();
     Promise.all([
@@ -1959,7 +2000,6 @@ function AnalyticsPage({
   if (detailed) {
     return (
       <View>
-        <Text style={styles.pageKicker}>PERFORMANCE</Text>
         <Text style={styles.pageTitle}>Analytics</Text>
         {modeSwitch}
         <NativeOwnerPageView
@@ -1976,7 +2016,6 @@ function AnalyticsPage({
   }
   return (
     <View>
-      <Text style={styles.pageKicker}>PERFORMANCE</Text>
       <Text style={styles.pageTitle}>Analytics</Text>
       <Text style={styles.pageIntro}>
         A clear view of what changed and what to do next.
@@ -2003,40 +2042,40 @@ function AnalyticsPage({
           </Pressable>
         ))}
       </View>
-      <Text style={styles.sectionCaption}>LAST {period} DAYS</Text>
+      <Text style={styles.sectionCaption}>Last {period} days</Text>
       <View style={styles.analyticsGrid}>
-        <StatTile icon="+" value={periodStats.members} label="New members" />
+        <StatTile icon="+" value={periodStats.members} label="New customers" />
         <StatTile icon="♟" value={periodStats.stamps} label="Activity" />
         <StatTile icon="◇" value={periodStats.rewards} label="Rewards" />
       </View>
       <View style={styles.insightCard}>
-        <Text style={styles.insightLabel}>QUICK READ</Text>
+        <Text style={styles.insightLabel}>Quick read</Text>
         <Text style={styles.insightTitle}>
           {periodStats.members > 0
-            ? "Your loyalty audience is growing."
+            ? "More customers are joining."
             : "Focus on getting the next customer to join."}
         </Text>
         <Text style={styles.insightCopy}>
           {periodStats.stamps > 0
-            ? `${periodStats.stamps} loyalty actions were recorded in this period. Keep the scan prompt visible at the till.`
+            ? `${periodStats.stamps} ${activity} were recorded in this period. Keep your QR poster where customers pay.`
             : "No loyalty activity is recorded for this period yet. Try placing your QR poster beside the payment point."}
         </Text>
       </View>
       <FoldSection title={`Charts for the last ${period} days`}>
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Activity: purchases & visitors</Text>
+        <Text style={styles.chartTitle}>{capitalise(activity)} and visitors</Text>
         <MiniLineChart
           data={dailySeries}
           aKey="stamps"
           bKey="visits"
-          aLabel="Purchases"
+          aLabel={capitalise(activity)}
           bLabel="Visitors"
           aColor={colors.primary}
-          bColor={schemeColor("#2B3A67", 'fg')}
+          bColor={colors.accent}
         />
       </View>
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Customers: new & old</Text>
+        <Text style={styles.chartTitle}>New and returning customers</Text>
         <MiniLineChart
           data={dailySeries}
           aKey="newCustomers"
@@ -2051,8 +2090,8 @@ function AnalyticsPage({
       <View style={styles.totalCard}>
         <Text style={styles.totalTitle}>All-time picture</Text>
         <Text style={styles.totalLine}>
-          {totals.members} members · {totals.stamps} stamps · {totals.redeemed}{" "}
-          redeemed
+          {totals.members} customers · {totals.stamps} {activity} · {totals.redeemed}{" "}
+          rewards used
         </Text>
       </View>
     </View>
@@ -2071,7 +2110,7 @@ function NewsPage({ business }: { business: Business }) {
       .eq("business_id", business.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
-        if (error) showAlert("Could not load news", error.message);
+        if (error) showAlert("Could not load news", "We couldn't reach our servers. Check your connection, then open News again.");
         setItems((data || []) as Announcement[]);
       });
   useEffect(() => {
@@ -2091,7 +2130,7 @@ function NewsPage({ business }: { business: Business }) {
       is_active: true,
     });
     setBusy(false);
-    if (error) return showAlert("Could not publish", error.message);
+    if (error) return showAlert("Could not publish", "Your news wasn't published. Check the connection and try again.");
     setTitle("");
     setBody("");
     load();
@@ -2105,12 +2144,11 @@ function NewsPage({ business }: { business: Business }) {
       .from("announcements")
       .update({ is_active: !item.is_active })
       .eq("id", item.id);
-    if (error) return showAlert("Could not update", error.message);
+    if (error) return showAlert("Could not update", "Nothing changed. Check the connection and try again.");
     load();
   };
   return (
     <View>
-      <Text style={styles.pageKicker}>ANNOUNCEMENTS</Text>
       <Text style={styles.pageTitle}>News</Text>
       <Text style={styles.pageIntro}>
         Share a new menu, event, offer or shop update with customers.
@@ -2122,7 +2160,7 @@ function NewsPage({ business }: { business: Business }) {
           value={title}
           onChangeText={setTitle}
           placeholder="Headline"
-          placeholderTextColor={schemeColor("#000000", 'fg')}
+          placeholderTextColor={colors.muted}
           maxLength={120}
         />
         <TextInput
@@ -2130,7 +2168,7 @@ function NewsPage({ business }: { business: Business }) {
           value={body}
           onChangeText={setBody}
           placeholder="What would you like customers to know?"
-          placeholderTextColor={schemeColor("#000000", 'fg')}
+          placeholderTextColor={colors.muted}
           multiline
           textAlignVertical="top"
           maxLength={2000}
@@ -2162,7 +2200,7 @@ function NewsPage({ business }: { business: Business }) {
                   ]}
                 >
                   <Text style={styles.statusText}>
-                    {item.is_active ? "LIVE" : "HIDDEN"}
+                    {item.is_active ? "Live" : "Hidden"}
                   </Text>
                 </View>
               </View>
@@ -2517,7 +2555,7 @@ function Dashboard({
   const ANALYTICS_SUBTABS = [
     { id: "analytics", label: "Insights" },
     { id: "customers", label: "Win back" },
-    { id: "members", label: "Members" },
+    { id: "members", label: "Customers" },
     { id: "news", label: "News" },
   ] as const;
   const inAnalytics = (ANALYTICS_TABS as readonly string[]).includes(tab);
@@ -2527,6 +2565,10 @@ function Dashboard({
     { id: "scan", icon: Stamp, label: "Scan", active: tab === "scan" },
     { id: "settings", icon: Store, label: "Shop", active: tab === "settings" },
   ] as const;
+  // Android back: an owner page closes first, then any tab returns to Home,
+  // and on Home back leaves the app as usual (src/back-steps.ts).
+  useBackStep(tab !== "home", () => { setOwnerPage(null); setTab("home"); });
+  useBackStep(ownerPage !== null, () => setOwnerPage(null));
   if (!loading && shops.length) clearPendingShop();
   if (!loading && !shops.length && canCreateBusiness) {
     return <ShopOnboarding ownerId={session.user.id} onFinish={finishOnboarding} />;
@@ -2562,8 +2604,13 @@ function Dashboard({
             {notice.title}
             {notice.body ? <Text style={styles.platformBannerBody}>: {notice.body}</Text> : null}
           </Text>
-          <Pressable onPress={() => setDismissedNoticeIds((prev) => new Set(prev).add(notice.id))} hitSlop={8}>
-            <X size={16} color={schemeColor("#fff", 'fg')} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss this notice"
+            onPress={() => setDismissedNoticeIds((prev) => new Set(prev).add(notice.id))}
+            style={styles.platformBannerClose}
+          >
+            <X size={18} color={schemeColor("#fff", 'fg')} />
           </Pressable>
         </View>
       ))}
@@ -2599,14 +2646,17 @@ function Dashboard({
           ) : (
             <>
               {inAnalytics && (
-                <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+                <View accessibilityRole="tablist" style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                   {ANALYTICS_SUBTABS.map((sub) => (
                     <Pressable
                       key={sub.id}
                       onPress={() => setTab(sub.id)}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: tab === sub.id }}
                       style={{
+                        minHeight: 44,
+                        justifyContent: "center",
                         paddingHorizontal: 14,
-                        paddingVertical: 8,
                         borderRadius: 999,
                         backgroundColor: tab === sub.id ? colors.primary : schemeColor("#EFE9DF", 'bg'),
                       }}
@@ -2695,10 +2745,13 @@ function Dashboard({
           ))
         )}
       </KeyboardAwareScrollView>
-      <View style={styles.tabs}>
+      <View style={styles.tabs} accessibilityRole="tablist">
         {nav.map(({ id, icon: Icon, label, active }) => (
           <TourTarget key={id} id={`tab-${id === "settings" ? "shop" : id}`} style={{ flex: active ? 1.7 : 1 }}>
           <Pressable
+            accessibilityRole="tab"
+            accessibilityLabel={label}
+            accessibilityState={{ selected: active }}
             style={({ pressed }) => [styles.tab, active && styles.tabActivePill, pressed && styles.tabPressed]}
             onPress={() => {
               setOwnerPage(null);
@@ -2913,6 +2966,8 @@ function AppRoot() {
       void offerPushPrompt(session.user.id);
     }
   }, [session?.user.id]);
+  // Android back on the sign-in form returns to the shop set-up screen it came from.
+  useBackStep(!session && showAuth, () => setShowAuth(false));
   if (!hasSupabaseConfig)
     return (
       <SafeAreaView style={styles.safe}>
@@ -2955,11 +3010,16 @@ function AppRoot() {
   );
 }
 
+// Translucent white panels stay white in dark mode under schemeColor, under light text;
+// in dark they use the card colour instead (light mode is unchanged).
+const glass = (rgba: string) => (getActiveScheme() === "dark" ? colors.card : rgba);
+
 const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   platformBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10 },
   platformBannerText: { flex: 1, color: schemeColor("#fff", 'fg'), fontSize: 13, fontWeight: "700" },
   platformBannerBody: { fontWeight: "400", opacity: 0.9 },
+  platformBannerClose: { width: 44, height: 44, marginVertical: -8, marginRight: -10, alignItems: "center", justifyContent: "center" },
   auth: { flexGrow: 1, padding: 28, justifyContent: "center" },
   screen: { padding: 22, paddingBottom: 112 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
@@ -2984,11 +3044,10 @@ const styles = themed(() => StyleSheet.create({
   },
   markText: { color: schemeColor("#e4b666", 'fg'), fontSize: 34, fontFamily: FONT_DISPLAY },
   eyebrow: {
-    color: colors.primary,
-    fontWeight: "800",
-    fontSize: 12,
-    letterSpacing: 1.4,
-    marginBottom: 10,
+    color: colors.primaryText,
+    fontWeight: "700",
+    fontSize: 15,
+    marginBottom: 8,
   },
   hero: {
     color: colors.foreground,
@@ -3039,7 +3098,7 @@ const styles = themed(() => StyleSheet.create({
     textAlign: "center",
     marginTop: 22,
   },
-  authHelpLink: { alignSelf: "center", marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
+  authHelpLink: { alignSelf: "center", marginTop: 6, minHeight: 44, justifyContent: "center", paddingHorizontal: 12 },
   authHelpLinkText: { color: schemeColor("#000000", 'fg'), fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
   card: {
     backgroundColor: schemeColor("#fff", 'bg'),
@@ -3122,6 +3181,7 @@ const styles = themed(() => StyleSheet.create({
     paddingTop: 14,
   },
   matchTitle: { fontSize: 17, fontWeight: "800", color: colors.foreground },
+  matchWho: { fontSize: 20, fontWeight: "800", color: colors.foreground, textAlign: "center", minHeight: 28, marginBottom: 10 },
   cameraSheet: { flex: 1 },
   spendBanner: { backgroundColor: schemeColor("#e0f2e4", 'bg'), borderRadius: 18, padding: 14, marginTop: 16 },
   spendBannerText: { color: schemeColor("#1f5c33", 'fg'), fontSize: 15, fontWeight: "800", textAlign: "center" },
@@ -3178,31 +3238,35 @@ const styles = themed(() => StyleSheet.create({
   homeHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: schemeColor("rgba(17,17,17,0.14)", 'border') },
   homeHeaderLogo: { width: 34, height: 34, borderRadius: 17 },
   homeHeaderLetter: { color: PAPER, fontSize: 14, fontWeight: "700" },
-  homeHeaderName: { flex: 1, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase", color: colors.ink },
-  homePanel: { backgroundColor: schemeColor("#FFFFFF", 'bg'), borderRadius: 28, padding: 24, paddingBottom: 54, gap: 6, shadowColor: INK, shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
-  homePanelLabel: { color: colors.muted, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase" },
+  homeHeaderName: { flex: 1, fontSize: 18, fontWeight: "800", color: colors.ink },
+  // Coloured tiles with 2px dark borders (owner rule): sage panel, amber / sage / peach below.
+  homePanel: { backgroundColor: colors.sage, borderWidth: 2, borderColor: schemeColor("#2A2A2A", 'border'), borderRadius: 28, padding: 24, paddingBottom: 54, gap: 6 },
+  homePanelLabel: { color: colors.sageInk, fontSize: 15, fontWeight: "700" },
   homeBigRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6 },
   homeBig: { color: colors.ink, fontFamily: SANS_HEAVY, fontSize: 104, lineHeight: 104, letterSpacing: -6, includeFontPadding: false, flexShrink: 1 },
-  homeBadge: { height: 28, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: schemeColor("rgba(26,33,56,0.2)", 'border'), justifyContent: "center" },
-  homeBadgeText: { color: colors.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" },
-  homeBigLabel: { color: colors.muted, fontSize: 12, fontWeight: "700", letterSpacing: 1.6, textTransform: "uppercase" },
+  homeBadge: { height: 30, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1.5, borderColor: colors.sageInk, justifyContent: "center" },
+  homeBadgeText: { color: colors.sageInk, fontSize: 13, fontWeight: "700" },
+  homeBigLabel: { color: colors.sageInk, fontSize: 16, fontWeight: "700" },
   homeBars: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 96, marginTop: 18 },
   homeBarCol: { flex: 1, alignItems: "center", gap: 6 },
   homeBar: { width: "100%", borderRadius: 4 },
-  homeBarDay: { color: colors.muted, fontSize: 11, fontWeight: "600" },
-  homeWeek: { color: colors.muted, fontSize: 11, fontWeight: "600", letterSpacing: 1.6, textTransform: "uppercase", marginTop: 10 },
+  homeBarDay: { color: colors.sageInk, fontSize: 12, fontWeight: "600" },
+  homeWeek: { color: colors.sageInk, fontSize: 14, fontWeight: "600", marginTop: 10 },
   // Top plane: overlaps the stats card's lower edge.
   homeScan: { minHeight: 104, marginTop: -54, marginHorizontal: 10, borderRadius: 28, backgroundColor: colors.olive, flexDirection: "row", alignItems: "center", paddingHorizontal: 22, gap: 14, shadowColor: NIGHT, shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
   homeScanTitle: { color: PAPER, fontFamily: SANS_HEAVY, fontSize: 30, lineHeight: 34, letterSpacing: -1.2 },
-  homeScanSub: { color: schemeColor("rgba(244,241,234,0.7)", 'fg'), fontSize: 11, fontWeight: "600", letterSpacing: 1.4, textTransform: "uppercase" },
+  homeScanSub: { color: colors.oliveInk, opacity: 0.85, fontSize: 14, fontWeight: "600" },
   homeScanIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" },
   homePills: { flexDirection: "row", gap: 10 },
-  homePill: { flex: 1, height: 54, borderRadius: 999, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: schemeColor("#FFFFFF", 'bg'), borderWidth: 1.5, borderColor: schemeColor("rgba(43,58,103,0.25)", 'border') },
-  homePillText: { fontSize: 15, fontFamily: SANS_MEDIUM, color: colors.primaryText },
-  homeTiles: { flexDirection: "row", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: schemeColor("rgba(17,17,17,0.14)", 'border') },
-  homeTile: { flex: 1, paddingVertical: 18, gap: 4 },
-  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 44, lineHeight: 46, letterSpacing: -2, color: colors.ink, fontVariant: ['tabular-nums'] },
-  homeTileLabel: { fontSize: 11, fontWeight: "500", letterSpacing: 1.4, textTransform: "uppercase", color: colors.muted },
+  homePill: { flex: 1, height: 56, borderRadius: 20, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 2, borderColor: schemeColor("#2A2A2A", 'border') },
+  homePillSage: { backgroundColor: colors.sage },
+  homePillPeach: { backgroundColor: colors.peach },
+  homePillAmber: { backgroundColor: colors.amber },
+  homePillText: { fontSize: 16, fontWeight: "700" },
+  homeTiles: { flexDirection: "row", gap: 10 },
+  homeTile: { flex: 1, minHeight: 112, borderRadius: 20, borderWidth: 2, borderColor: schemeColor("#2A2A2A", 'border'), padding: 14, gap: 4, justifyContent: "space-between" },
+  homeTileValue: { fontFamily: SANS_HEAVY, fontSize: 40, lineHeight: 44, letterSpacing: -1.5, fontVariant: ['tabular-nums'] },
+  homeTileLabel: { fontSize: 14, fontWeight: "700" },
   homeGuideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, height: 48 },
   homeGuideLinkText: { color: colors.ink, fontFamily: SANS_MEDIUM, fontSize: 15 },
   welcomeRow: {
@@ -3238,7 +3302,7 @@ const styles = themed(() => StyleSheet.create({
     borderColor: schemeColor("#2A2A2A", 'border'),
     borderRadius: 22,
     padding: 18,
-    backgroundColor: schemeColor("rgba(255,255,255,.55)", 'bg'),
+    backgroundColor: glass("rgba(255,255,255,.55)"),
     marginBottom: 20,
   },
   setupTitle: {
@@ -3276,7 +3340,7 @@ const styles = themed(() => StyleSheet.create({
     marginBottom: 8,
   },
   statTileWide: { width: "48%" },
-  sectionCaption: { fontSize: 11, fontWeight: "900", letterSpacing: 1.7, color: schemeColor("#59615A", 'fg'), marginTop: 8, marginBottom: 8 },
+  sectionCaption: { fontSize: 14, fontWeight: "800", color: schemeColor("#59615A", 'fg'), marginTop: 8, marginBottom: 8 },
   reportButtonLight: { minHeight: 52, borderRadius: 26, borderWidth: 1, borderColor: schemeColor("rgba(38,48,42,.25)", 'border'), backgroundColor: schemeColor("rgba(255,255,255,.55)", 'bg'), flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 },
   reportButtonLightText: { color: schemeColor("#171815", 'fg'), fontWeight: "800", fontSize: 14 },
   accordionHeader: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, marginTop: 6 },
@@ -3333,15 +3397,8 @@ const styles = themed(() => StyleSheet.create({
   },
   bigActionButtonText: { color: schemeColor("#fff", 'fg'), fontWeight: "900", fontSize: 18 },
   dynamicAction: { minHeight: 64, borderRadius: 32 },
-  pageKicker: {
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 1.7,
-    color: colors.primary,
-    marginTop: 28,
-    marginBottom: 7,
-  },
   pageTitle: {
+    marginTop: 18,
     fontSize: 34,
     lineHeight: 40,
     fontFamily: FONT_DISPLAY,
@@ -3360,7 +3417,7 @@ const styles = themed(() => StyleSheet.create({
     borderRadius: 15,
     borderWidth: 1,
     borderColor: schemeColor("rgba(20,20,18,.1)", 'border'),
-    backgroundColor: schemeColor("rgba(255,255,255,.72)", 'bg'),
+    backgroundColor: glass("rgba(255,255,255,.72)"),
     paddingHorizontal: 15,
     fontSize: 15,
     color: schemeColor("#111", 'fg'),
@@ -3371,7 +3428,7 @@ const styles = themed(() => StyleSheet.create({
     borderWidth: 1,
     borderColor: schemeColor("rgba(20,20,18,.09)", 'border'),
     borderRadius: 18,
-    backgroundColor: schemeColor("rgba(255,255,255,.7)", 'bg'),
+    backgroundColor: glass("rgba(255,255,255,.7)"),
     padding: 13,
     flexDirection: "row",
     alignItems: "center",
@@ -3461,9 +3518,8 @@ const styles = themed(() => StyleSheet.create({
     marginBottom: 15,
   },
   insightLabel: {
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.5,
+    fontSize: 13,
+    fontWeight: "800",
     color: schemeColor("#00D3FB", 'fg'),
   },
   insightTitle: {
@@ -3473,7 +3529,7 @@ const styles = themed(() => StyleSheet.create({
     color: schemeColor("#fff", 'fg'),
     marginTop: 9,
   },
-  insightCopy: { fontSize: 14, lineHeight: 21, color: schemeColor("#000000", 'fg'), marginTop: 9 },
+  insightCopy: { fontSize: 14, lineHeight: 21, color: colors.oliveInk, marginTop: 9 },
   totalCard: {
     borderWidth: 2,
     borderColor: schemeColor("#2A2A2A", 'border'),
@@ -3516,7 +3572,7 @@ const styles = themed(() => StyleSheet.create({
     paddingVertical: 4,
   },
   statusDraft: { backgroundColor: schemeColor("#E5E1D9", 'bg') },
-  statusText: { fontSize: 9, fontWeight: "900", color: schemeColor("#000000", 'fg') },
+  statusText: { fontSize: 11, fontWeight: "800", color: schemeColor("#000000", 'fg') },
   newsBody: { fontSize: 13, lineHeight: 19, color: schemeColor("#000000", 'fg'), marginTop: 8 },
   newsDate: { fontSize: 11, color: schemeColor("#000000", 'fg'), marginTop: 10 },
   navIcon: { fontSize: 21, lineHeight: 23, color: schemeColor("#000000", 'fg') },

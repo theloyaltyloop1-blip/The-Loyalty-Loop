@@ -24,6 +24,7 @@ import { findCountry } from "./money";
 import { supabase } from "./supabase";
 import type { ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
 import { ProgrammeBuilder, RulesCard } from "./ProgrammeBuilder";
+import { useBackStep } from "./back-steps";
 
 
 const BRAND_COLOR = "#8B7355";
@@ -154,7 +155,7 @@ function CardPreview({ programme, name, draft, symbol }: { programme: ProgrammeI
   }
   return (
     <View style={styles.preview}>
-      <Text style={styles.previewEyebrow}>WHAT YOUR CUSTOMERS WILL SEE</Text>
+      <Text style={styles.previewEyebrow}>What your customers will see</Text>
       <Text style={styles.previewName}>{name.trim() || "Your shop"}</Text>
       {body}
     </View>
@@ -212,6 +213,9 @@ export function ShopOnboarding({
   const [custom, setCustom] = useState(pending?.custom ?? false);
   const [rules, setRules] = useState<ProgrammeRules | null>(null);
   const isCustom = custom && !resume;
+  // Android back steps through the set-up like the on-screen Back links. Not
+  // after the shop is live (step 3), and step 0 leaves back to the system.
+  useBackStep(step > 0 && step !== 3, () => setStep(step === ACCOUNT_STEP ? (isCustom ? 1 : 2) : step - 1));
 
   const country = findCountry([], countryCode);
   const currency = { symbol: country.currency_symbol, scale: country.amount_scale };
@@ -259,7 +263,7 @@ export function ShopOnboarding({
       const raw = e instanceof Error ? e.message : "";
       showAlert(
         "Could not set up your shop",
-        raw.includes("invalid_programme_rules") ? "Those rules couldn't be saved. Ask the AI to adjust them and try again." : raw || "Please try again.",
+        raw.includes("invalid_programme_rules") ? "Those rules couldn't be saved. Ask the AI to adjust them and try again." : "Your shop wasn't saved yet. Check your connection and try again.",
       );
     } finally {
       setSaving(false);
@@ -325,7 +329,7 @@ export function ShopOnboarding({
       setDone(true);
       setStep(3);
     } catch (e) {
-      showAlert("Could not set up your shop", e instanceof Error ? e.message : "Please try again.");
+      showAlert("Could not set up your shop", "Your shop wasn't saved yet. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -425,7 +429,7 @@ export function ShopOnboarding({
               onChangeText={setName}
               maxLength={80}
               placeholder="e.g. Bean & Bird"
-              placeholderTextColor={schemeColor("#000000", 'fg')}
+              placeholderTextColor={colors.muted}
               autoFocus
             />
             {countryOptions.length > 1 && <View style={styles.chipRow}>
@@ -448,7 +452,7 @@ export function ShopOnboarding({
             </View>}
             {custom ? (
               <View style={styles.preview}>
-                <Text style={styles.previewEyebrow}>WHAT YOUR CUSTOMERS WILL SEE</Text>
+                <Text style={styles.previewEyebrow}>What your customers will see</Text>
                 <Text style={styles.previewName}>{name.trim() || "Your shop"}</Text>
                 <Text style={styles.previewLine}>Your own programme, designed on the next step</Text>
               </View>
@@ -504,11 +508,11 @@ export function ShopOnboarding({
                       )}
                     </View>
                     <Text style={styles.fieldLabel}>Name</Text>
-                    <TextInput style={styles.input} value={tier.name} maxLength={40} onChangeText={(v) => patchTier(index, { name: v })} placeholderTextColor={schemeColor("#000000", 'fg')} />
+                    <TextInput style={styles.input} value={tier.name} maxLength={40} onChangeText={(v) => patchTier(index, { name: v })} placeholderTextColor={colors.muted} />
                     <Text style={styles.fieldLabel}>Spend in a year ({symbol})</Text>
-                    <TextInput style={styles.input} value={tier.amount} keyboardType="decimal-pad" onChangeText={(v) => patchTier(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor={schemeColor("#000000", 'fg')} />
+                    <TextInput style={styles.input} value={tier.amount} keyboardType="decimal-pad" onChangeText={(v) => patchTier(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor={colors.muted} />
                     <Text style={styles.fieldLabel}>Perks (one per line)</Text>
-                    <TextInput style={[styles.input, { height: 92, textAlignVertical: "top" }]} value={tier.perks} multiline onChangeText={(v) => patchTier(index, { perks: v })} placeholderTextColor={schemeColor("#000000", 'fg')} />
+                    <TextInput style={[styles.input, { height: 92, textAlignVertical: "top" }]} value={tier.perks} multiline onChangeText={(v) => patchTier(index, { perks: v })} placeholderTextColor={colors.muted} />
                   </View>
                 ))
               : draft.rewards.map((reward, index) => (
@@ -522,11 +526,11 @@ export function ShopOnboarding({
                       )}
                     </View>
                     <Text style={styles.fieldLabel}>What do they get?</Text>
-                    <TextInput style={styles.input} value={reward.title} maxLength={80} onChangeText={(v) => patchReward(index, { title: v })} placeholder="e.g. Free coffee" placeholderTextColor={schemeColor("#000000", 'fg')} />
+                    <TextInput style={styles.input} value={reward.title} maxLength={80} onChangeText={(v) => patchReward(index, { title: v })} placeholder="e.g. Free coffee" placeholderTextColor={colors.muted} />
                     <Text style={styles.fieldLabel}>
                       {activeProgramme === "stamps" ? "Stamps needed" : activeProgramme === "points" ? "Points needed" : `Customer spends (${symbol})`}
                     </Text>
-                    <TextInput style={styles.input} value={reward.amount} keyboardType="decimal-pad" onChangeText={(v) => patchReward(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor={schemeColor("#000000", 'fg')} />
+                    <TextInput style={styles.input} value={reward.amount} keyboardType="decimal-pad" onChangeText={(v) => patchReward(index, { amount: v.replace(/[^0-9.]/g, "") })} placeholderTextColor={colors.muted} />
                   </View>
                 ))}
 
@@ -549,7 +553,7 @@ export function ShopOnboarding({
             {activeProgramme === "points" && (
               <View style={styles.editCard}>
                 <Text style={styles.fieldLabel}>Points earned for every {symbol}1 spent</Text>
-                <TextInput style={styles.input} value={draft.pointsPerPound} keyboardType="number-pad" onChangeText={(v) => setDraft((d) => d && { ...d, pointsPerPound: v.replace(/[^0-9]/g, "") })} placeholderTextColor={schemeColor("#000000", 'fg')} />
+                <TextInput style={styles.input} value={draft.pointsPerPound} keyboardType="number-pad" onChangeText={(v) => setDraft((d) => d && { ...d, pointsPerPound: v.replace(/[^0-9]/g, "") })} placeholderTextColor={colors.muted} />
               </View>
             )}
 
@@ -667,7 +671,11 @@ function SaveShopAccount({
       const raw = e instanceof Error ? e.message : "";
       showAlert(
         "Could not create your account",
-        /already|registered|exists/i.test(raw) ? "There's already an account with that email. Sign in instead and your shop will be created." : raw || "Please try again.",
+        /already|registered|exists/i.test(raw)
+          ? "There's already an account with that email. Sign in instead and your shop will be created."
+          : /password/i.test(raw)
+            ? "Choose a stronger password: at least 8 characters, mixing letters and numbers."
+            : "Your account wasn't created. Check your connection and try again.",
       );
     } finally {
       setBusy(false);
@@ -704,7 +712,7 @@ function SaveShopAccount({
         value={email}
         onChangeText={setEmail}
         placeholder="Email address"
-        placeholderTextColor={schemeColor("#000000", 'fg')}
+        placeholderTextColor={colors.muted}
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
@@ -715,7 +723,7 @@ function SaveShopAccount({
         value={password}
         onChangeText={setPassword}
         placeholder="Password (8+ characters)"
-        placeholderTextColor={schemeColor("#000000", 'fg')}
+        placeholderTextColor={colors.muted}
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
@@ -769,7 +777,7 @@ const styles = themed(() => StyleSheet.create({
   addRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14 },
   problem: { color: schemeColor("#000000", 'fg'), fontSize: 14, fontWeight: "700", marginTop: 12 },
   preview: { backgroundColor: schemeColor('#8B7355', 'bg'), borderRadius: 20, padding: 18 },
-  previewEyebrow: { color: schemeColor("rgba(255,255,255,0.85)", 'fg'), fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  previewEyebrow: { color: schemeColor("rgba(255,255,255,0.85)", 'fg'), fontSize: 13, fontWeight: "700" },
   previewName: { color: schemeColor("#fff", 'fg'), fontSize: 22, fontFamily: fonts.nativeDisplay, marginTop: 4, marginBottom: 12 },
   previewLine: { color: schemeColor("#fff", 'fg'), fontSize: 14, fontWeight: "700", marginTop: 6 },
   previewBig: { color: schemeColor("#fff", 'fg'), fontSize: 30, fontWeight: "800" },
