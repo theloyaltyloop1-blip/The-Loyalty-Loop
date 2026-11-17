@@ -9,7 +9,7 @@
   --fx-serif: 'Instrument Serif', Georgia, serif;
 }
 
-.fx-note em { font-family: var(--fx-serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+.fx-note em { font-style: normal; }
 
 /* Reveal: a short rise, staggered */
 @media (prefers-reduced-motion: no-preference) {
