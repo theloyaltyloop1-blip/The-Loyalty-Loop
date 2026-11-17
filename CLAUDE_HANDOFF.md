@@ -117,6 +117,12 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-17 - Home page: bold sapphire hero, no serif italics - LIVE
+
+- **Commit:** 8a7906b on main, confirmed live (served CSS has the new hero rules).
+- **What:** owner picked option 2 of 4 rendered previews. Nav and hero on sapphire with white type, white stamp card with sapphire coffee stamps, lime and cyan cards behind, lime "Start collecting". Sections below keep the paper look. Instrument Serif italics replaced by Inter across the home page (owner disliked them). Files: landing.css, poster-fx.css.
+- **Checks:** `npm run build` passes; hero rendered light, dark and 390 px. Not checked on a real phone. The Instrument Serif font is still imported in index.css but no longer used on the home page (could be dropped later).
+
 ### 2026-11-17 - Home page hero fix - LIVE
 
 - **Commit:** 57b0ea9 on main, confirmed on www.the-loyalty-loop.com (served CSS has `.lp-logo-tile`).
