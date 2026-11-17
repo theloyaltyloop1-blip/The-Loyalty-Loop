@@ -117,6 +117,14 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-17 - Website unslop + site-audit fixes + owner decisions - LIVE
+
+- **Commits on main:** 74754dc (unslop pass), ac5c79e (audit fixes), eaf97b5 (owner decisions). Each confirmed on www.the-loyalty-loop.com from the served CSS/JS.
+- **ac5c79e:** signed-out map shows Map, Log in, Sign up; log-in, sign-up, Help and 404 use the home page palette (`.surface-paper` in color-system.css); shop link while signed out returns to the shop after log-in (`?next`, shop pages only); text on shop colours uses `onBrandColor`; map error state with retry; theme applied before first paint (index.html); cookie banner storage guarded; copy fixes.
+- **eaf97b5 (owner decisions):** logo shown as supplied (filters removed); both home-page videos hidden (`SHOW_VIDEOS` in Landing.tsx); faded text no longer forced to black, /60 text raised to /70.
+- **Checks:** tsc and `npm run build` pass; screenshots in docs/unslop/{before,after,after-audit,after-decisions} (local, mocked data). Not checked: real phone, signed-in pages with real data.
+- **Open:** logo dark green petal hard to see on the black hero card, demo card and footer (owner); owner pages jump while loading; no phone menu on home page; sign-up and Google/Apple do not carry `?next`; unused CSS and old design doc; new videos (owner). Audit and claims list: docs/unslop/AUDIT.md.
+
 ### 2026-11-17 - Website unslop pass (branch `claude/unslop-website-8bbf16`, NOT merged, NOT deployed) - Claude
 
 - **What:** `unslop` skill pass over `apps/web` in light-polish mode, owner's brand kept (paper/near-black/stone/sapphire, Inter + Instrument Serif, coloured owner tiles, Whirl). Audit, direction and unverified-claims list: `docs/unslop/AUDIT.md`. Screenshots: `docs/unslop/before/`, `docs/unslop/after/` (rendered locally with a mocked database and made-up sample shops; nothing touched production).
