@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { NavLink, Link, Navigate, useLocation } from 'react-router-dom'
-import { Users, Store, LogOut, ChevronDown, ArrowLeftRight, ScanLine } from 'lucide-react'
+import { Users, Store, LogOut, ChevronDown, ArrowLeftRight, ArrowRight, ScanLine } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useOwner } from '@/lib/owner-context'
 import { onBrandColor } from '@/lib/utils'
@@ -26,7 +26,7 @@ const OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Shop', to: '/owner/settings', icon: Store, group: SHOP_PATHS },
 ]
 
-// Small uppercase group labels above the desktop sidebar items.
+// Small group labels above the desktop sidebar items.
 const NAV_GROUP_LABEL: Record<string, string> = { Scan: 'Daily', Customers: 'Grow', Shop: 'Manage' }
 
 const SUB_TABS: Record<string, { label: string; to: string }[]> = {
@@ -153,7 +153,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
           {navItems.map(({ label, to, icon: Icon, end, group }) => (
             <React.Fragment key={to}>
             {isOwner && NAV_GROUP_LABEL[label] && (
-              <p className="hidden px-3.5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-olive-ink/55 md:block">{NAV_GROUP_LABEL[label]}</p>
+              <p className="hidden px-3.5 pb-1.5 pt-5 text-xs font-medium text-olive-ink/60 first:pt-0 md:block">{NAV_GROUP_LABEL[label]}</p>
             )}
             <NavLink
               to={to}
@@ -184,7 +184,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[15px] font-semibold text-olive-ink/65 hover:bg-olive-ink/10 hover:text-olive-ink transition-colors duration-200 ease-out"
             >
               <ArrowLeftRight className="h-5 w-5" />
-              Switch to customer view
+              Customer view
             </Link>
           )}
           <ThemeToggle className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[15px] font-semibold text-olive-ink/65 transition-colors duration-200 hover:bg-olive-ink/10 hover:text-olive-ink" />
@@ -217,7 +217,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
                 {business.verification_status === 'pending' ? "We're checking your document." : 'Verify your business to put it live.'}
               </span>
             </span>
-            <span className="font-semibold text-primary">{business.verification_status === 'pending' ? 'See status' : 'Verify now'} →</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-primary">{business.verification_status === 'pending' ? 'See status' : 'Verify now'}<ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
           </Link>
         )}
         {children}

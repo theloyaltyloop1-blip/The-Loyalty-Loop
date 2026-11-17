@@ -6,7 +6,7 @@ import { Whirl } from '@/components/whirl'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { StoreBadges } from '@/components/store-badges'
 import { LandingDemo } from '@/components/landing-demo'
-import { ContextCursor, Preloader, useEasterEgg, useMagnetic, useReveal, useScrollProgress } from '@/components/poster-fx'
+import { useEasterEgg, useReveal, useScrollProgress } from '@/components/poster-fx'
 import { usePageMeta } from '@/lib/use-page-meta'
 import { ThemeToggle } from '@/components/theme-toggle'
 import './landing.css'
@@ -53,18 +53,13 @@ const STAMPS_FILLED = 7
 export function Landing() {
   usePageMeta({ title: 'The Loyalty Loop: keep coming back to local', description: 'Digital loyalty cards for independent shops. Earn rewards with every visit, keep track of them, and give your regular places another visit.', path: '/' })
   const page = useRef<HTMLDivElement>(null)
-  const hero = useRef<HTMLElement>(null)
   const how = useRef<HTMLElement>(null)
   useReveal(page)
-  useMagnetic(page)
-  const heroP = useScrollProgress(hero)
   const howP = useScrollProgress(how)
   const egg = useEasterEgg()
 
   return (
     <div className="lp" ref={page}>
-      <Preloader />
-      <ContextCursor />
       {egg.node}
       <a className="lp-skip" href="#main-content">Skip to content</a>
 
@@ -80,7 +75,7 @@ export function Landing() {
           </nav>
           <div className="flex items-center gap-2">
           <ThemeToggle compact />
-          <Link to="/login" className="lp-btn lp-btn-quiet" data-magnetic>
+          <Link to="/login" className="lp-btn lp-btn-quiet">
             <span className="hidden sm:inline">Sign up or log in</span>
             <span className="sm:hidden">Sign in</span>
           </Link>
@@ -89,19 +84,19 @@ export function Landing() {
       </header>
 
       <main id="main-content">
-        <section ref={hero} className="lp-hero">
+        <section className="lp-hero">
           <div className="lp-wrap lp-frame" aria-hidden="true"><span>Digital loyalty cards</span><span>For independent shops</span><span>Est. 2026</span></div>
           <div className="lp-wrap lp-hero-grid">
             <div className="lp-hero-copy">
               <h1 data-reveal style={{ '--d': 1 } as CSSProperties}>Your high street, <em>in your pocket.</em></h1>
               <p className="lp-lead" data-reveal style={{ '--d': 2 } as CSSProperties}>Keep the loyalty cards from your favourite local shops in one place, and get rewarded every time you visit.</p>
               <div className="lp-actions" data-reveal style={{ '--d': 3 } as CSSProperties}>
-                <Link className="lp-btn lp-btn-primary" to="/signup" data-magnetic data-cursor="Join free">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
+                <Link className="lp-btn lp-btn-primary" to="/signup">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
               </div>
               <div data-reveal style={{ '--d': 4 } as CSSProperties}><StoreBadges className="lp-badges" /></div>
             </div>
 
-            <div className="lp-stack" role="img" aria-label="Example loyalty card: 7 of 10 stamps at a neighbourhood café, with two more shop cards behind it" style={{ transform: `translateY(${heroP * -60}px)` }}>
+            <div className="lp-stack" role="img" aria-label="Example loyalty card: 7 of 10 stamps at a neighbourhood café, with two more shop cards behind it">
               {BACK_CARDS.map((card, i) => (
                 <div key={card.shop} className={`lp-card lp-card-back lp-card-${card.tone}`} style={{ '--i': i } as CSSProperties} aria-hidden="true">
                   <span className="lp-card-shop">{card.shop}</span>
@@ -133,7 +128,7 @@ export function Landing() {
           <div className="lp-film" data-reveal>
             <h2 id="lp-film-title">From the till <em>to a free coffee.</em></h2>
             <p>Twenty seconds on how a shop records a purchase and a card fills up.</p>
-            <div data-cursor="Play">
+            <div>
               <video className="lp-film-video" controls playsInline preload="none" poster="/video/loyalty-loop-poster.jpg" aria-label="The Loyalty Loop in 21 seconds: a shop records three purchases and the customer unlocks a free coffee">
                 <source src="/video/loyalty-loop.mp4" type="video/mp4" />
               </video>
@@ -153,7 +148,7 @@ export function Landing() {
                 </li>
               ))}
             </ol>
-            <div className="lp-wrap"><Link className="lp-link" to="/dashboard/discover" data-cursor="Explore">Find participating shops</Link></div>
+            <div className="lp-wrap"><Link className="lp-link" to="/dashboard/discover">Find participating shops</Link></div>
           </div>
         </section>
 
@@ -165,7 +160,7 @@ export function Landing() {
               <p>You know their order. We help you reward their loyalty. Choose rewards, record visits from your phone, and see how your loyalty programme is doing.</p>
               <p className="lp-biz-note">No paper cards to print or extra scanner to buy.</p>
               <div className="lp-actions">
-                <Link className="lp-btn lp-btn-primary" to="/signup/owner" data-magnetic data-cursor="Start">Set up your business</Link>
+                <Link className="lp-btn lp-btn-primary" to="/signup/owner">Set up your business</Link>
                 <Link className="lp-link" to="/login">Log in to your business</Link>
               </div>
               <StoreBadges app="business" className="lp-badges" />
@@ -179,7 +174,7 @@ export function Landing() {
               </div>
               <div className="lp-record-toast"><Check size={16} strokeWidth={2.5} /> Stamp added. 3 more to their reward.</div>
             </div>
-            <div className="lp-biz-film" data-reveal data-cursor="Play">
+            <div className="lp-biz-film" data-reveal>
               <video className="lp-biz-video" controls playsInline preload="none" poster="/video/loyalty-loop-business-poster.jpg" aria-label="The Loyalty Loop for Business in 21 seconds: scan a customer's QR code, enter the amount, and they earn a reward">
                 <source src="/video/loyalty-loop-business.mp4" type="video/mp4" />
               </video>
@@ -210,7 +205,7 @@ export function Landing() {
           <p className="lp-save-word" data-reveal>Every visit, <em>counted.</em></p>
           <div className="lp-wrap lp-save-row" data-reveal style={{ '--d': 2 } as CSSProperties}>
             <p>Free for shoppers. Your favourite local shops, in one place.</p>
-            <Link className="lp-btn lp-btn-primary" to="/signup" data-magnetic data-cursor="Join free">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link className="lp-btn lp-btn-primary" to="/signup">Start collecting <ArrowRight size={18} aria-hidden="true" /></Link>
           </div>
         </section>
       </main>

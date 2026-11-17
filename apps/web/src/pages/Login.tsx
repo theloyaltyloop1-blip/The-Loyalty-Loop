@@ -43,7 +43,7 @@ export function Login() {
   }
 
   return (
-    <AuthLayout title="Welcome back">
+    <AuthLayout title="Log in">
       <AppleButton onClick={() => signInWithApple().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Apple.'))} />
       <GoogleButton onClick={() => signInWithGoogle().catch((e) => setError(e instanceof Error ? e.message : 'Could not sign in with Google.'))} />
       <AuthDivider />

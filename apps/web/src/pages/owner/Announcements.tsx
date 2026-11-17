@@ -2,6 +2,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { Navigate } from 'react-router-dom'
 import { Megaphone, Plus, Trash2 } from 'lucide-react'
+import { WhirlSkeletonBlock } from '@/components/whirl-kit'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton } from '@/components/page-skeleton'
@@ -58,7 +59,7 @@ export function OwnerAnnouncements() {
         <button data-press-feedback disabled={publishing} className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground px-5 py-3 font-semibold disabled:opacity-60"><Plus className="h-4 w-4" />{publishing ? 'Publishing…' : 'Publish update'}</button>
       </form>
       <h2 className="font-display text-xl font-semibold tracking-tight text-foreground mb-4">Your updates</h2>
-      <div className="grid gap-4">{listState === 'loading' ? <div role="status" aria-label="Loading announcements" className="h-24 animate-pulse rounded-2xl bg-secondary" /> : listState === 'error' ? <p role="alert" className="text-sm text-destructive">We couldn’t load your updates. <button type="button" onClick={reload} className="font-semibold underline">Try again</button></p> : items.length === 0 ? <p className="text-muted-foreground">No announcements yet. Publish your first update above.</p> : items.map((item) => <AnnouncementRow key={item.id} item={item} onChange={reload} />)}</div>
+      <div className="grid gap-4">{listState === 'loading' ? <div role="status" aria-label="Loading announcements"><WhirlSkeletonBlock height={96} radius={20} /></div> : listState === 'error' ? <p role="alert" className="text-sm text-destructive">We couldn’t load your updates. <button type="button" onClick={reload} className="font-semibold underline">Try again</button></p> : items.length === 0 ? <p className="text-muted-foreground">No announcements yet. Publish your first update above.</p> : items.map((item) => <AnnouncementRow key={item.id} item={item} onChange={reload} />)}</div>
     </>}
   </OwnerLayout>
 }

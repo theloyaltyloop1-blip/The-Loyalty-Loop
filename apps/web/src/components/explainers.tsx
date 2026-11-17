@@ -157,7 +157,7 @@ function Stamps() {
       ))}
       <A tag="rect" x={60} y={112} width={200} height={38} rx={19} fill={GREEN} {...grow(0.68, 0.8, 'X', 'center')} />
       <A tag="g" keys={fadeIn(0.76, 0.84)}>
-        <text x={160} y={137} fontSize={17} fontWeight={800} fill="#fff" textAnchor="middle">Free coffee!</text>
+        <text x={160} y={137} fontSize={17} fontWeight={800} fill="#fff" textAnchor="middle">Free coffee</text>
       </A>
     </>
   )

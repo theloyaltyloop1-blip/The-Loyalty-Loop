@@ -33,7 +33,7 @@ export function ShopCard({ business, membership }: { business: Business; members
   return (
     <button data-press-feedback
       onClick={() => navigate(`/dashboard/shop/${business.slug}`)}
-      className="group flex w-full items-center gap-4 rounded-2xl bg-card p-4 text-left ring-1 ring-foreground/8 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgb(28_38_32/0.10)] sm:p-5"
+      className="group flex w-full items-center gap-4 rounded-2xl bg-card p-4 text-left ring-1 ring-foreground/8 transition-shadow duration-200 ease-out hover:shadow-sticker-lifted sm:p-5"
     >
       <ShopLogo business={business} size={60} />
 

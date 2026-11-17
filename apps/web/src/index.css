@@ -82,9 +82,13 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     font-weight: 600;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.01em;
     text-wrap: balance;
   }
+
+  /* Tight tracking is for large display text only; card titles and small
+     headings stay near zero so they read cleanly. */
+  h1, h2 { letter-spacing: -0.025em; }
 
   p { text-wrap: pretty; }
 

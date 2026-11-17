@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
-import { PageWipe } from '@/components/poster-fx'
+import { PublicScrollReset } from '@/components/poster-fx'
 import { WHATSAPP_VISIBLE } from '@/lib/features'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/lib/auth-context'
@@ -100,7 +100,7 @@ function App() {
               <Suspense fallback={<BarePageSkeleton />}>
                 <UsageTracker />
                 <RouteMeta />
-                <PageWipe />
+                <PublicScrollReset />
                 <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/help" element={<Help />} />

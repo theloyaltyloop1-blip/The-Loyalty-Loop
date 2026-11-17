@@ -132,7 +132,7 @@ export function OwnerWalkthrough({ businessId }: { businessId: string }) {
         <rect className="tour-hole" {...hole} rx={18} fill="none" stroke="#fff" strokeWidth={2} />
       </svg>
       <div className="absolute rounded-3xl bg-card p-5 text-card-foreground shadow-2xl" style={cardStyle}>
-        <p className="text-lg font-extrabold leading-snug">{current.copy}</p>
+        <p className="text-lg font-semibold leading-snug">{current.copy}</p>
         <div className="mt-4 flex items-center justify-between">
           <button type="button" onClick={skip} className="min-h-11 pr-4 text-sm font-bold text-muted-foreground">Skip</button>
           <button

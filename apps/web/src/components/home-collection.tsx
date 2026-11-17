@@ -26,7 +26,7 @@ function Photo({ business, hero = false, distance, heroLabel }: { business: Busi
         loading="lazy"
         decoding="async"
         onError={() => setFailedCover(true)}
-        className={'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025] ' + (failedCover ? 'hidden' : '')}
+        className={'absolute inset-0 h-full w-full object-cover ' + (failedCover ? 'hidden' : '')}
       />}
       {!hero && distance && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm"><MapPin className="h-3 w-3 text-primary" aria-hidden="true" />{distance}</span>}
       {hero && heroLabel && <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-background/95 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm"><MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />{heroLabel}</span>}
@@ -85,7 +85,7 @@ export function HomeCollection({ businesses, featured, featuredReason, membershi
     {featured && featuredProgress && <Link
       to={`/dashboard/shop/${featured.slug}`}
       aria-label={`Explore ${featured.name}${featured.category ? `, ${featured.category}` : ''}`}
-      className="group block overflow-hidden rounded-3xl bg-olive text-olive-ink shadow-sticker transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker-lifted focus-visible:outline-3 focus-visible:outline-primary"
+      className="group block overflow-hidden rounded-3xl bg-olive text-olive-ink shadow-sticker transition-shadow duration-200 ease-out hover:shadow-sticker-lifted focus-visible:outline-3 focus-visible:outline-primary"
     >
       <Photo business={featured} hero heroLabel={heroLabel} />
       <div className="p-5 sm:p-7">
@@ -107,7 +107,7 @@ export function HomeCollection({ businesses, featured, featuredReason, membershi
           const progress = getHomeProgress(business, membershipByBusiness.get(business.id), catalog)
           const background = index % 3 === 0 ? 'var(--color-olive)' : index % 3 === 1 ? 'var(--color-peach)' : 'var(--color-sage)'
           const ink = index % 3 === 0 ? 'var(--color-olive-ink)' : index % 3 === 1 ? 'var(--color-peach-ink)' : 'var(--color-sage-ink)'
-          return <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`${business.name}. ${progress.label}. View loyalty card.`} className="block rounded-2xl p-5 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker-lifted focus-visible:outline-3 focus-visible:outline-primary" style={{ backgroundColor: background, color: ink }}>
+          return <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`${business.name}. ${progress.label}. View loyalty card.`} className="block rounded-2xl p-5 transition-shadow duration-200 ease-out hover:shadow-sticker-lifted focus-visible:outline-3 focus-visible:outline-primary" style={{ backgroundColor: background, color: ink }}>
             <p className="font-display text-xl font-bold tracking-tight">{business.name}</p>
             <p className="mt-1 text-sm">{progress.reward}</p>
             {progress.target && !progress.spend && progress.target <= 12
@@ -126,7 +126,7 @@ export function HomeCollection({ businesses, featured, featuredReason, membershi
         <LocationNote status={locationStatus} onUseLocation={onUseLocation} />
       </div>
       <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-3">
-        {nearby.map(({ shop: business, miles }) => <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`Explore ${business.name}${business.category ? `, ${business.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`} className="group w-[78%] shrink-0 snap-start overflow-hidden rounded-2xl bg-card text-foreground shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sticker focus-visible:outline-3 focus-visible:outline-primary sm:w-auto">
+        {nearby.map(({ shop: business, miles }) => <Link key={business.id} to={`/dashboard/shop/${business.slug}`} aria-label={`Explore ${business.name}${business.category ? `, ${business.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`} className="group w-[78%] shrink-0 snap-start overflow-hidden rounded-2xl bg-card text-foreground shadow-sm transition-shadow duration-200 ease-out hover:shadow-sticker focus-visible:outline-3 focus-visible:outline-primary sm:w-auto">
           <Photo business={business} distance={miles !== null ? formatMiles(miles) : undefined} />
           <div className="flex items-center justify-between gap-3 p-4"><div className="min-w-0"><p className="truncate font-display text-lg font-bold">{business.name}</p><p className="mt-1 truncate text-sm text-muted-foreground">{business.category || 'Local independent'}</p></div><ArrowRight className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /></div>
         </Link>)}

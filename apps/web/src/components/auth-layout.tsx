@@ -7,15 +7,15 @@ export function AuthLayout({ title, subtitle, mascot, children }: { title: strin
   const navigate = useNavigate()
   return (
     <div className="min-h-dvh bg-background p-3 sm:p-4 md:grid md:grid-cols-[minmax(320px,0.9fr)_1.1fr] md:gap-4">
-      <aside className="relative hidden overflow-hidden rounded-[28px] bg-olive p-10 text-olive-ink md:flex md:flex-col md:justify-between">
+      <aside className="relative hidden overflow-hidden rounded-3xl bg-olive p-10 text-olive-ink md:flex md:flex-col md:justify-between">
         <Link to="/" className="flex min-h-11 items-center gap-3" aria-label="The Loyalty Loop home">
           <span className="grid h-11 w-11 place-items-center rounded-full bg-olive-ink"><img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" /></span>
           <span className="font-display text-lg font-semibold tracking-tight">The Loyalty Loop</span>
         </Link>
         <div aria-hidden="true" className="relative mx-auto my-10 h-56 w-full max-w-sm">
-          <div className="absolute right-0 top-0 h-40 w-[78%] rotate-6 rounded-[20px] bg-amber" />
-          <div className="absolute right-4 top-6 h-40 w-[78%] -rotate-3 rounded-[20px] bg-orange" />
-          <div className="absolute bottom-0 left-0 w-[82%] rounded-[20px] bg-card p-5 text-foreground shadow-[0_20px_44px_rgb(10_16_8/0.28)]">
+          <div className="absolute right-0 top-0 h-40 w-[78%] rotate-6 rounded-2xl bg-amber" />
+          <div className="absolute right-4 top-6 h-40 w-[78%] -rotate-3 rounded-2xl bg-orange" />
+          <div className="absolute bottom-0 left-0 w-[82%] rounded-2xl bg-card p-5 text-foreground shadow-[0_20px_44px_rgb(10_16_8/0.28)]">
             <p className="font-display text-2xl font-bold tracking-tight">The usual, please.</p>
             <div className="mt-4 grid grid-cols-5 gap-2">
               {Array.from({ length: 5 }, (_, i) => (
@@ -27,7 +27,7 @@ export function AuthLayout({ title, subtitle, mascot, children }: { title: strin
         <p className="font-display text-3xl font-semibold leading-tight tracking-tight">A little loyalty goes a long way.</p>
       </aside>
 
-      <main className="flex min-h-[calc(100dvh-1.5rem)] flex-col rounded-[28px] bg-card px-6 py-8 sm:px-10 md:min-h-0 md:px-14 md:py-12">
+      <main className="flex min-h-[calc(100dvh-1.5rem)] flex-col rounded-3xl bg-card px-6 py-8 sm:px-10 md:min-h-0 md:px-14 md:py-12">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm font-semibold">
           <Link to="/" className="flex min-h-11 items-center gap-2 md:invisible" aria-label="The Loyalty Loop home">
             <img src={loyaltyLoopLogo} alt="" className="h-8 w-8 object-contain" />

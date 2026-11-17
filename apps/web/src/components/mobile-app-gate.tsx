@@ -4,7 +4,7 @@ import { APPS } from '@/lib/store-links'
 import { LoopMark } from '@/components/loop-mark'
 
 // On a phone the website steps aside for the app: a full-screen "Continue in our
-// app!" sheet, then a hop to the store after a short pause. Android goes to Google
+// app" sheet, then a hop to the store after a short pause. Android goes to Google
 // Play, iPhone/iPad to the App Store. Business pages send owners to the Business app.
 //
 // Left alone: desktops, search-engine crawlers (Googlebot's mobile UA says Android,
@@ -107,7 +107,7 @@ export function MobileAppGate() {
           <LoopMark className="size-12 object-contain" />
         </div>
         <h1 id="mobile-app-gate-title" className="mt-7 font-display text-3xl font-bold tracking-tight">
-          Continue in our app!
+          Continue in our app
         </h1>
         <p className="mt-3 text-base text-muted-foreground">
           {app.name} works best on your phone as an app. Taking you to {storeName}…

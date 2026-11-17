@@ -539,7 +539,7 @@ function ProfileTab() {
         disabled={saving}
         className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50 mb-5"
       >
-        {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
+        {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
       </button>
 
       <GalleryTab businessId={business.id} />
@@ -831,7 +831,7 @@ function StampLoyaltyTab() {
         disabled={saving}
         className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
-        {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
+        {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
       </button>
     </>
   )
@@ -1411,7 +1411,7 @@ function SpendLoyaltyTab() {
         disabled={saving}
         className="rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 h-12 disabled:opacity-50"
       >
-        {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save changes'}
+        {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
       </button>
     </>
   )

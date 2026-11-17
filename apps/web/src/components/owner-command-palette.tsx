@@ -85,7 +85,7 @@ export function OwnerSearchPill({ className = '' }: { className?: string }) {
               const showGroup = i === 0 || results[i - 1].group !== c.group
               return (
                 <React.Fragment key={c.label}>
-                  {showGroup && <li role="presentation" className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{c.group}</li>}
+                  {showGroup && <li role="presentation" className="px-3 pb-1 pt-3 text-xs font-medium text-muted-foreground">{c.group}</li>}
                   <li role="option" aria-selected={i === active}>
                     <button
                       type="button"

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight, Compass } from 'lucide-react'
 import { PROGRAMMES, programmeIdFor } from '@loyalty-loop/loyalty'
 import { OwnerLayout } from '@/components/owner-layout'
 import { Explainer } from '@/components/explainers'
@@ -38,7 +38,7 @@ export function OwnerTutorial() {
             onClick={() => restartOwnerTour(business.id)}
             className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground hover:bg-primary-hover"
           >
-            <Sparkles className="h-4 w-4" aria-hidden="true" />Take the tour
+            <Compass className="h-4 w-4" aria-hidden="true" />Take the tour
           </button>
         )}
         <Link to="/owner/tools" className="inline-flex h-12 items-center gap-2 rounded-full px-5 font-semibold text-foreground ring-1 ring-foreground/15 hover:bg-foreground/5">

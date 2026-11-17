@@ -99,11 +99,11 @@ export function OwnerCustomers() {
             type="button"
             data-press-feedback
             onClick={messageSlipping}
-            className="group inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            title="Send them a “we miss you”"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
           >
-            <HeartHandshake className="h-4 w-4 group-hover:motion-safe:animate-bounce" />
-            <span className="group-hover:hidden">Win back {slipping.length} {slipping.length === 1 ? 'customer' : 'customers'}</span>
-            <span className="hidden group-hover:inline">Send them a “we miss you”</span>
+            <HeartHandshake className="h-4 w-4" aria-hidden="true" />
+            <span>Win back {slipping.length} {slipping.length === 1 ? 'customer' : 'customers'}</span>
           </button>
         )}
       </div>
@@ -113,7 +113,7 @@ export function OwnerCustomers() {
         <p className="text-muted-foreground">Loading…</p>
       ) : (
         <>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Customer health</p>
+          <p className="mb-2 text-sm font-medium text-muted-foreground">Customer health</p>
           <div className="grid grid-cols-3 gap-3 mb-8">
             {[
               { label: 'Customers', value: list.length, tone: 'bg-sage text-sage-ink' },
@@ -122,7 +122,7 @@ export function OwnerCustomers() {
             ].map((s) => (
               <div key={s.label} className={`rounded-2xl p-4 ${s.tone}`}>
                 <p className="font-display text-3xl font-bold tabular-nums">{s.value}</p>
-                <p className="text-[11px] font-semibold uppercase tracking-wider opacity-70">{s.label}</p>
+                <p className="mt-1 text-sm font-medium opacity-80">{s.label}</p>
               </div>
             ))}
           </div>

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
-import { Users, ShoppingBag, Gift, Ticket, TrendingUp, TrendingDown, Minus, Sparkles, Send, MessageCircle, Search, ExternalLink, ChevronDown } from 'lucide-react'
+import { Users, ShoppingBag, Gift, Ticket, TrendingUp, TrendingDown, Minus, Send, MessageCircle, Search, ExternalLink, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
 import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
@@ -58,7 +58,7 @@ function Delta({ current, prev }: { current: number; prev: number }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <span tabIndex={0} className="flex items-center gap-1 text-xs font-bold text-fun-green outline-none">
-            <TrendingUp className="h-3.5 w-3.5" /> new
+            <TrendingUp className="h-3.5 w-3.5" /> Up from 0
           </span>
         </TooltipTrigger>
         <TooltipContent>{compareLabel}</TooltipContent>
@@ -70,7 +70,7 @@ function Delta({ current, prev }: { current: number; prev: number }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <span tabIndex={0} className="flex items-center gap-1 text-xs font-bold text-muted-foreground outline-none">
-            <Minus className="h-3.5 w-3.5" /> flat
+            <Minus className="h-3.5 w-3.5" /> No change
           </span>
         </TooltipTrigger>
         <TooltipContent>{compareLabel}</TooltipContent>
@@ -100,7 +100,7 @@ const TILE_TONES = {
 } as const
 
 function GroupLabel({ children }: { children: React.ReactNode }) {
-  return <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{children}</p>
+  return <p className="mb-2 text-sm font-medium text-muted-foreground">{children}</p>
 }
 
 // Secondary sections fold away so the numbers and the summary lead.
@@ -144,12 +144,12 @@ function StatTile({
       {hint ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <p tabIndex={0} className="mt-1 w-fit text-[11px] font-semibold uppercase tracking-wider opacity-70 underline decoration-dotted underline-offset-2 outline-none">{label}</p>
+            <p tabIndex={0} className="mt-1 w-fit text-sm font-medium opacity-80 underline decoration-dotted underline-offset-2 outline-none">{label}</p>
           </TooltipTrigger>
           <TooltipContent side="bottom">{hint}</TooltipContent>
         </Tooltip>
       ) : (
-        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider opacity-70">{label}</p>
+        <p className="mt-1 text-sm font-medium opacity-80">{label}</p>
       )}
     </div>
   )
@@ -180,8 +180,7 @@ function AiSummaryCard({ businessId, period, stats, totals }: { businessId: stri
 
   return (
     <div className="rounded-2xl bg-peach p-6">
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="h-4 w-4 text-primary" />
+      <div className="mb-3">
         <p className="font-display text-lg font-semibold tracking-tight text-peach-ink">What changed in the last {period} days</p>
       </div>
       {loading ? (

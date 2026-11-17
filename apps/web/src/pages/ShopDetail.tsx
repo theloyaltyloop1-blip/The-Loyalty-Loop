@@ -3,7 +3,7 @@ import { rewardWords } from '@/lib/shop-types'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { ArrowLeft, Heart, Gift, MapPin, Share2, BadgeCheck, Clock, Navigation } from 'lucide-react'
+import { ArrowLeft, Heart, Gift, MapPin, Share2, BadgeCheck, Clock, Navigation, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
@@ -351,7 +351,7 @@ export function ShopDetail() {
         <div className="px-5 pb-6 sm:px-8 sm:pb-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div
-              className="-mt-10 flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-card font-display text-3xl font-bold ring-4 ring-card sm:-mt-12 sm:h-24 sm:w-24"
+              className="relative -mt-10 flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-card font-display text-3xl font-bold ring-4 ring-card sm:-mt-12 sm:h-24 sm:w-24"
               style={{ backgroundColor: business.logo_url ? undefined : business.brand_color }}
             >
               {business.logo_url ? (
@@ -388,7 +388,7 @@ export function ShopDetail() {
           </ul>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-foreground">
             {business.rating_avg != null && (business.rating_count ?? 0) > 0 && (
-              <span>★ {Number(business.rating_avg).toFixed(1)} <span className="font-normal">({business.rating_count} {business.rating_count === 1 ? 'review' : 'reviews'})</span></span>
+              <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 fill-amber text-amber" aria-hidden="true" />{Number(business.rating_avg).toFixed(1)} <span className="font-normal">({business.rating_count} {business.rating_count === 1 ? 'review' : 'reviews'})</span></span>
             )}
             {status && (
               <span className={'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ' + (status.open ? 'bg-sage text-sage-ink' : 'bg-destructive/10 text-foreground')}>

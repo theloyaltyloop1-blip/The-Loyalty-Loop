@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { ArrowUp, Info, Sparkles } from 'lucide-react'
+import { ArrowUp, Info, MessageCircle } from 'lucide-react'
+import { WhirlSpinner } from '@/components/whirl-kit'
 import { describeRules, type ProgrammeRules } from '@loyalty-loop/loyalty/programme-rules'
 import { designProgramme, type DesignMessage } from '@/lib/businesses'
 
@@ -21,7 +22,7 @@ export function RulesPreview({ rules, currencySymbol = '£', brandColor = '#2B3A
   const section = (title: string, lines: string[]) =>
     lines.length > 0 && (
       <div className="mt-3">
-        <p className="text-[11px] font-bold tracking-wide text-white/75 mb-1">{title}</p>
+        <p className="text-xs font-semibold text-white/80 mb-1">{title}</p>
         <ul className="space-y-1">
           {lines.map((line, i) => (
             <li key={i} className="text-sm font-semibold text-white leading-snug">{line}</li>
@@ -31,11 +32,11 @@ export function RulesPreview({ rules, currencySymbol = '£', brandColor = '#2B3A
     )
   return (
     <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: brandColor }}>
-      <p className="text-[11px] font-bold tracking-wide text-white/80">YOUR PROGRAMME</p>
+      <p className="text-xs font-semibold text-white/80">Your programme</p>
       <p className="text-base font-display font-bold text-white mt-1">{rules.summary}</p>
-      {section(`HOW TO EARN ${rules.unit.many.toUpperCase()}`, d.earn)}
-      {section('WHAT THEY GET', d.spend)}
-      {section('LEVELS', d.levels)}
+      {section(`How to earn ${rules.unit.many}`, d.earn)}
+      {section('What they get', d.spend)}
+      {section('Levels', d.levels)}
       {d.small.length > 0 && <p className="text-xs text-white/75 mt-3">{d.small.join(' · ')}</p>}
     </div>
   )
@@ -96,7 +97,7 @@ export function ProgrammeBuilder({
       <div ref={listRef} className="max-h-[22rem] overflow-y-auto space-y-3 mb-3 pr-1" aria-live="polite">
         <div className="flex gap-2">
           <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-            <Sparkles className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
           </span>
           <div className="rounded-2xl rounded-tl-md bg-sage text-foreground px-4 py-3 text-sm leading-relaxed">
             {initialRules
@@ -112,7 +113,7 @@ export function ProgrammeBuilder({
           ) : (
             <div key={i} className="flex gap-2">
               <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                <Sparkles className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
               </span>
               <div className="rounded-2xl rounded-tl-md bg-sage text-foreground px-4 py-3 text-sm leading-relaxed max-w-[85%] whitespace-pre-wrap">{m.content}</div>
             </div>
@@ -120,8 +121,8 @@ export function ProgrammeBuilder({
         ))}
         {busy && (
           <div className="flex gap-2 items-center">
-            <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 animate-pulse">
-              <Sparkles className="h-4 w-4" />
+            <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+              <WhirlSpinner size={18} delayMs={0} color="currentColor" label="Working it out" />
             </span>
             <span className="text-sm text-foreground/70">Working it out…</span>
           </div>

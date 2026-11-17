@@ -3,7 +3,7 @@ import { rewardWords } from '@/lib/shop-types'
 import { pointsBalanceSentence, recordsSpend, standingFromSnapshot, type SnapshotStanding } from '@loyalty-loop/loyalty'
 import { Navigate } from 'react-router-dom'
 import { BrowserQRCodeReader } from '@zxing/browser'
-import { Camera, CameraOff, Check, Gift, ScanLine } from 'lucide-react'
+import { Camera, CameraOff, Check, Gift } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { parseRewardQr } from '@/lib/reward-qr'
 import { OwnerLayout } from '@/components/owner-layout'
@@ -226,7 +226,7 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none placeholder:font-sans placeholder:font-normal placeholder:tracking-normal focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
           aria-label="Customer's manual code"
           value={code}
@@ -629,7 +629,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none placeholder:font-sans placeholder:font-normal placeholder:tracking-normal focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Customer's manual code"
           aria-label="Customer's manual code"
           value={code}
@@ -905,7 +905,7 @@ function RedeemPanel({ businessId }: { businessId: string }) {
 
       <div className="flex items-center gap-2">
         <input
-          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none focus:border-primary focus:ring-3 focus:ring-primary/20"
+          className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 font-mono font-bold tracking-widest outline-none placeholder:font-sans placeholder:font-normal placeholder:tracking-normal focus:border-primary focus:ring-3 focus:ring-primary/20"
           placeholder="Reward's short code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -981,8 +981,8 @@ export function OwnerScan() {
   return (
     <OwnerLayout>
 
-      <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-6 flex items-center gap-3 sm:text-4xl">
-        <span className="grid h-11 w-11 place-items-center rounded-full bg-peach text-peach-ink"><ScanLine className="h-6 w-6" /></span> {spendShop ? 'Purchases & rewards' : 'Award & redeem'}
+      <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-6 sm:text-4xl">
+        {spendShop ? 'Purchases & rewards' : 'Award & redeem'}
       </h1>
 
       {!activeBusinessId ? (

@@ -1,7 +1,7 @@
 import { Whirl } from '@/components/whirl'
 import * as React from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Coffee, Gem, Plus, QrCode, ScanLine, Sparkles, Star, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Coffee, Gem, MessageCircle, Plus, QrCode, ScanLine, Star, Trash2 } from 'lucide-react'
 import {
   PROGRAMMES,
   SHOP_KINDS,
@@ -125,7 +125,7 @@ function CardPreview({
   }
   return (
     <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: BRAND_COLOR }}>
-      <p className="text-[11px] font-bold tracking-wide text-white/80 mb-1">WHAT YOUR CUSTOMERS WILL SEE</p>
+      <p className="text-xs font-semibold text-white/80 mb-1">What your customers will see</p>
       <p className="text-lg font-display font-bold text-white mb-3">{title}</p>
       {body}
     </div>
@@ -264,7 +264,7 @@ export function OwnerOnboarding() {
           {Array.from({ length: STEP_COUNT }, (_, i) => (
             <span
               key={i}
-              className={'h-2 rounded-full transition-all duration-300 ' + (i === step ? 'w-8 bg-primary' : i < step ? 'w-2 bg-olive' : 'w-2 bg-foreground/15')}
+              className={'h-2 rounded-full transition-colors duration-300 ' + (i === step ? 'w-8 bg-primary' : i < step ? 'w-2 bg-olive' : 'w-2 bg-foreground/15')}
             />
           ))}
         </div>
@@ -304,7 +304,7 @@ export function OwnerOnboarding() {
                   className={cardClass + (custom && !kind ? 'border-primary bg-card' : 'border-dashed border-border bg-card/40')}
                 >
                   <span className="flex items-center gap-3">
-                    <Sparkles className="h-6 w-6 text-primary shrink-0" />
+                    <MessageCircle className="h-6 w-6 text-primary shrink-0" aria-hidden="true" />
                     <span>
                       <span className="block font-bold text-foreground">Something different</span>
                       <span className="block text-sm text-foreground/70">Describe your own programme and our AI sets it up</span>
@@ -355,7 +355,7 @@ export function OwnerOnboarding() {
                         onClick={pickCustom}
                         className="rounded-xl border-2 border-dashed border-border bg-card/60 p-3 text-left"
                       >
-                        <span className="flex items-center gap-1.5 font-bold text-sm text-foreground"><Sparkles className="h-4 w-4 text-primary" /> Design my own with AI</span>
+                        <span className="flex items-center gap-1.5 font-bold text-sm text-foreground"><MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" /> Design my own with AI</span>
                         <span className="block text-xs text-foreground/70">None of these fit? Describe it and our AI builds it.</span>
                       </button>
                     </div>
@@ -389,7 +389,7 @@ export function OwnerOnboarding() {
               </div>}
               {custom ? (
                 <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: BRAND_COLOR }}>
-                  <p className="text-[11px] font-bold tracking-wide text-white/80 mb-1">WHAT YOUR CUSTOMERS WILL SEE</p>
+                  <p className="text-xs font-semibold text-white/80 mb-1">What your customers will see</p>
                   <p className="text-lg font-display font-bold text-white mb-1">{name.trim() || 'Your shop'}</p>
                   <p className="text-sm font-semibold text-white">Your own programme, designed on the next step</p>
                 </div>
@@ -503,11 +503,8 @@ export function OwnerOnboarding() {
 
           {step === 3 && (
             <>
-              <div className="flex items-center justify-center h-14 w-14 rounded-full bg-olive text-olive-ink mx-auto mb-4">
-                <Check className="h-7 w-7" />
-              </div>
               <Whirl pose="celebrate" className="mx-auto mb-2 h-28 w-28" />
-              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground text-center mb-2">You're open for stamps!</h1>
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground text-center mb-2">You're open for stamps</h1>
               <p className="text-foreground/70 text-center mb-6">Customers can join {activeName} now. This is the card they'll see:</p>
               {isCustom && rules ? (
                 <div className="mb-6"><RulesPreview rules={rules} currencySymbol={activeCountry.currency.symbol} brandColor={BRAND_COLOR} /></div>

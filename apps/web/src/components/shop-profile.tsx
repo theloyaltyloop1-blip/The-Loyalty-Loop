@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Check, Gift } from 'lucide-react'
 import { toast } from 'sonner'
 import { PROGRAMMES, pointsStanding, programmeIdFor, tierStanding, unitNames, type PointsReward } from '@loyalty-loop/loyalty'
 import { describeRules, validateRules } from '@loyalty-loop/loyalty/programme-rules'
@@ -65,7 +66,7 @@ export function HowItWorks({
   const onBrand = onBrandColor(brand)
   return (
     <section className="rounded-3xl bg-card p-6 ring-1 ring-foreground/8 sm:p-7" aria-labelledby="how-it-works-title">
-      <p className="text-xs font-extrabold tracking-[0.14em] text-foreground">HOW IT WORKS</p>
+      <p className="text-sm font-semibold text-muted-foreground">How it works</p>
       <h2 id="how-it-works-title" className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-foreground">{programme.id === 'custom' ? `${business.name} rewards` : programme.name}</h2>
       <p className="mb-5 mt-1 text-sm text-foreground">{programme.id === 'custom' ? business.programme_rules?.summary ?? '' : programme.pitch}</p>
       {programme.id === 'stamps' && <StampsHow business={business} membership={membership} catalog={catalog} brand={brand} onBrand={onBrand} />}
@@ -93,12 +94,12 @@ function StampsHow({ business, membership, catalog, brand, onBrand }: { business
           return (
             <span
               key={i}
-              className="flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-extrabold text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-bold text-foreground tabular-nums"
               style={filled
                 ? { backgroundColor: brand, borderColor: brand, color: onBrand }
                 : { borderColor: last ? brand : 'rgba(0,0,0,0.15)', borderStyle: last ? 'dashed' : 'solid' }}
             >
-              {last ? '★' : i + 1}
+              {last ? <Gift className="h-4 w-4" aria-label="Reward" /> : i + 1}
             </span>
           )
         })}
@@ -108,7 +109,7 @@ function StampsHow({ business, membership, catalog, brand, onBrand }: { business
         <ul className="mt-3 space-y-2">
           {catalog.map((reward) => (
             <li key={reward.id} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3 text-foreground">
-              <span className="text-sm font-extrabold">{reward.stamp_threshold} {unit}{reward.stamp_threshold === 1 ? '' : 's'}</span>
+              <span className="text-sm font-semibold">{reward.stamp_threshold} {unit}{reward.stamp_threshold === 1 ? '' : 's'}</span>
               <span className="text-right font-semibold">{reward.title}</span>
             </li>
           ))}
@@ -129,7 +130,7 @@ function SpendHow({ membership, catalog, brand, onBrand }: { membership: Members
           const reached = Boolean(membership) && reward.spend_threshold_pence! <= progress
           return (
             <li key={reward.id} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3 text-foreground" style={reached ? { backgroundColor: brand, color: onBrand } : undefined}>
-              <span className="text-sm font-extrabold">Spend {whole(reward.spend_threshold_pence!)}</span>
+              <span className="text-sm font-semibold">Spend {whole(reward.spend_threshold_pence!)}</span>
               <span className="text-right font-semibold">{reward.title}</span>
             </li>
           )
@@ -167,14 +168,14 @@ function TiersHow({ membership, tiers, rollingSpendPence, brand }: { membership:
             <li key={tier.id} className="rounded-2xl bg-secondary/60 p-4 text-foreground ring-1 ring-foreground/8" style={here ? { boxShadow: `0 0 0 2px ${colour}` } : undefined} aria-current={here ? 'step' : undefined}>
               <div className="flex items-center gap-2.5">
                 <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: colour }} />
-                <span className="flex-1 text-lg font-extrabold">{tier.name}</span>
-                {here && <span className="rounded-full px-2.5 py-1 text-xs font-extrabold" style={{ backgroundColor: colour, color: onBrandColor(colour) }}>You are here</span>}
-                {!here && index < currentIndex && <span className="text-xs font-extrabold">Reached</span>}
+                <span className="flex-1 text-lg font-bold">{tier.name}</span>
+                {here && <span className="rounded-full px-2.5 py-1 text-xs font-semibold" style={{ backgroundColor: colour, color: onBrandColor(colour) }}>You are here</span>}
+                {!here && index < currentIndex && <span className="text-xs font-semibold">Reached</span>}
               </div>
               <p className="mt-1.5 text-sm font-semibold">{tier.spend_threshold_pence === 0 ? 'Everyone starts here' : `Spend ${whole(tier.spend_threshold_pence)} in a year`}</p>
               {tier.perks?.length ? (
                 <ul className="mt-2 space-y-1 text-sm">
-                  {tier.perks.map((perk) => <li key={perk}>✓ {perk}</li>)}
+                  {tier.perks.map((perk) => <li key={perk} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{perk}</li>)}
                 </ul>
               ) : null}
             </li>
@@ -256,7 +257,7 @@ function PointsHow({ business, membership, catalog, brand, onBrand, refetch }: {
           {[['Earn', described.earn], ['Get', described.spend], ['Levels', described.levels]].map(([title, lines]) =>
             (lines as string[]).length > 0 && (
               <div key={title as string} className="mt-4">
-                <p className="text-xs font-extrabold tracking-[0.14em] text-foreground">{(title as string).toUpperCase()}</p>
+                <p className="text-sm font-semibold text-muted-foreground">{title as string}</p>
                 <ul className="mt-1.5 space-y-1">
                   {(lines as string[]).map((line, i) => <li key={i} className="text-sm font-semibold text-foreground">{line}</li>)}
                 </ul>
@@ -278,14 +279,14 @@ function PointsHow({ business, membership, catalog, brand, onBrand, refetch }: {
             <li key={reward.id} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3 text-foreground">
               <div>
                 <p className="font-semibold">{reward.title}</p>
-                <p className="text-sm font-extrabold">{reward.points_cost} {reward.points_cost === 1 ? units.one : units.many}</p>
+                <p className="text-sm font-semibold">{reward.points_cost} {reward.points_cost === 1 ? units.one : units.many}</p>
               </div>
               {membership && (
                 <button
                   data-press-feedback
                   disabled={!can || busyId !== null}
                   onClick={() => void redeem(reward)}
-                  className="min-h-10 shrink-0 rounded-full px-4 text-sm font-extrabold transition-transform active:scale-[0.98] disabled:cursor-not-allowed"
+                  className="min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition-transform active:scale-[0.98] disabled:cursor-not-allowed"
                   style={can ? { backgroundColor: brand, color: onBrand } : { backgroundColor: 'rgba(0,0,0,0.08)', color: '#000' }}
                 >
                   {busyId === reward.id ? 'Getting…' : 'Get reward'}
