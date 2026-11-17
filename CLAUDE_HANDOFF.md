@@ -117,6 +117,12 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-17 - Home page hero fix - LIVE
+
+- **Commit:** 57b0ea9 on main, confirmed on www.the-loyalty-loop.com (served CSS has `.lp-logo-tile`).
+- **What:** hero grid centred and headline slightly smaller so the card fits beside it on one screen; stamps are smaller with a coffee cup; logo on a small paper circle on near-black surfaces (card, demo card, footer, dark-mode nav), mark unchanged; no clipped back-card label. Files: Landing.tsx, landing.css, landing-demo.tsx.
+- **Checks:** `npm run build` passes; hero rendered at 1464 px (125% zoom) light and dark, and at 390 px. Not checked on a real phone.
+
 ### 2026-11-17 - Website unslop + site-audit fixes + owner decisions - LIVE
 
 - **Commits on main:** 74754dc (unslop pass), ac5c79e (audit fixes), eaf97b5 (owner decisions). Each confirmed on www.the-loyalty-loop.com from the served CSS/JS.
