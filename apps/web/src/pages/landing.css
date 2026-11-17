@@ -61,17 +61,23 @@
 
 /* Hero */
 .lp-hero { position: relative; padding: 40px 0 120px; }
-.lp-hero-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 64px; align-items: end; margin-top: 88px; }
-.lp-hero h1 { font-size: clamp(60px, 8.6vw, 140px); max-width: 10ch; }
+.lp-hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 64px; align-items: center; margin-top: 56px; }
+.lp-hero h1 { font-size: clamp(56px, 7.2vw, 116px); max-width: 10ch; }
 .lp-lead { margin: 36px 0 40px; font-size: 18px; line-height: 1.6; color: var(--lp-muted); max-width: 38ch; }
 .lp-scroll { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); display: inline-flex; flex-direction: column; align-items: center; gap: 12px; font-size: 13px; font-weight: 500; color: var(--lp-muted); }
 .lp-scroll-line { width: 1px; height: 40px; background: linear-gradient(var(--lp-line), var(--lp-ink)); }
 
-.lp-stack { position: relative; height: 500px; }
+.lp-stack { position: relative; height: 470px; }
+/* The logo sits on a small paper tile wherever the surface is near-black, so
+   every petal of the mark stays visible. The mark itself is unchanged. */
+.lp-logo-tile { display: inline-grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 999px; background: var(--lp-light); }
+.lp-demo-card .lp-logo-tile { width: 32px; height: 32px; }
+.lp-nav .lp-logo-tile { width: 40px; height: 40px; background: transparent; }
+html.dark .lp-nav .lp-logo-tile { background: var(--lp-light); }
 .lp-card { position: absolute; border-radius: 22px; }
-.lp-card-back { right: 0; width: 84%; height: 310px; padding: 26px 28px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 30px 60px rgba(17, 17, 17, .10); }
+.lp-card-back { right: 0; width: 84%; height: 300px; padding: 22px 26px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 30px 60px rgba(17, 17, 17, .10); }
 .lp-card-back:nth-child(1) { top: 0; transform: rotate(5deg) translate(4%, 0); }
-.lp-card-back:nth-child(2) { top: 40px; transform: rotate(-3deg) translate(-2%, 0); }
+.lp-card-back:nth-child(2) { top: 44px; transform: rotate(-3deg) translate(-2%, 0); }
 .lp-card-stone { background: var(--lp-stone); color: var(--lp-ink); }
 .lp-card-blue { background: var(--lp-blue); color: #FFFFFF; }
 .lp-card-back .lp-card-reward { font-family: var(--lp-serif); font-style: italic; font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
@@ -80,7 +86,7 @@
 .lp-card-top { display: flex; align-items: center; justify-content: space-between; }
 .lp-card-title { margin-top: 26px; font-size: 44px; line-height: .98; font-weight: 500; letter-spacing: -0.045em; }
 .lp-card-sub { margin-top: 12px; font-size: 14px; color: rgba(244, 241, 234, .6); }
-.lp-stamps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 28px 0 22px; }
+.lp-stamps { display: grid; grid-template-columns: repeat(5, 52px); justify-content: space-between; row-gap: 12px; margin: 28px 0 22px; }
 .lp-stamp { aspect-ratio: 1; border-radius: 999px; border: 1px solid rgba(244, 241, 234, .22); display: grid; place-items: center; }
 .lp-stamp.is-filled { border: 0; background: var(--lp-light); color: #0E0E0F; }
 .lp-card-foot { display: flex; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--lp-line-dark); font-size: 12px; font-weight: 500; letter-spacing: .01em; color: rgba(244, 241, 234, .7); font-variant-numeric: tabular-nums; }

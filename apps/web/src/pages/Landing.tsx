@@ -1,6 +1,6 @@
 import { useRef, type CSSProperties, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight, Check, Coffee } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
 import { Whirl } from '@/components/whirl'
 import { LegalFooterLinks } from '@/components/legal-footer'
@@ -70,7 +70,7 @@ export function Landing() {
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-row">
           <Link to="/" className={`lp-brand${egg.spinning ? ' fx-spin' : ''}`} aria-label="The Loyalty Loop home" onClick={egg.onClick}>
-            <LoopMark className="h-8 w-8" />
+            <span className="lp-logo-tile"><LoopMark className="h-8 w-8" /></span>
             <span>The Loyalty Loop</span>
           </Link>
           <nav aria-label="Main navigation" className="lp-nav-links">
@@ -110,14 +110,14 @@ export function Landing() {
               <div className="lp-card lp-card-front" aria-hidden="true">
                 <div className="lp-card-top">
                   <span className="lp-card-shop">Marlow Street Coffee</span>
-                  <LoopMark className="h-7 w-7" />
+                  <span className="lp-logo-tile"><LoopMark className="h-6 w-6" /></span>
                 </div>
                 <p className="lp-card-title">The usual, please.</p>
                 <p className="lp-card-sub">Collect 10 stamps. One coffee on the house.</p>
                 <div className="lp-stamps">
                   {Array.from({ length: STAMPS_TOTAL }, (_, i) => (
                     <span key={i} className={i < STAMPS_FILLED ? 'lp-stamp is-filled' : 'lp-stamp'} style={{ '--s': i } as CSSProperties}>
-                      {i < STAMPS_FILLED ? <Check size={18} strokeWidth={2.5} /> : null}
+                      {i < STAMPS_FILLED ? <Coffee size={20} strokeWidth={1.75} /> : null}
                     </span>
                   ))}
                 </div>
@@ -216,7 +216,7 @@ export function Landing() {
       <footer className="lp-footer">
         <div className="lp-wrap">
           <div className="lp-footer-top">
-            <Link to="/" className="lp-brand"><LoopMark className="h-7 w-7" />The Loyalty Loop</Link>
+            <Link to="/" className="lp-brand"><span className="lp-logo-tile"><LoopMark className="h-6 w-6" /></span>The Loyalty Loop</Link>
             <p>A little loyalty goes a long way.</p>
           </div>
           <div className="lp-footer-bottom">

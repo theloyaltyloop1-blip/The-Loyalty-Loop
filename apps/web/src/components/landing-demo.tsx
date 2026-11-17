@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { Check, Gift, RotateCcw } from 'lucide-react'
+import { Coffee, Gift, RotateCcw } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
 
 // A small play-along demo for the landing page: the visitor plays the shop,
@@ -64,13 +64,13 @@ export function LandingDemo() {
         <div className={`lp-demo-card${ready ? ' is-ready' : ''}`}>
           <div className="lp-card-top">
             <span className="lp-card-shop">Marlow Street Coffee</span>
-            <LoopMark className="h-6 w-6" />
+            <span className="lp-logo-tile"><LoopMark className="h-5 w-5" /></span>
           </div>
           <p className="lp-demo-title">{ready ? 'On the house.' : 'The usual, please.'}</p>
           <div className="lp-demo-stamps" aria-hidden="true">
             {Array.from({ length: GOAL }, (_, i) => (
               <span key={i} className={i < stamps ? 'lp-stamp is-filled' : 'lp-stamp'}>
-                {i < stamps ? <Check size={18} strokeWidth={2.5} /> : null}
+                {i < stamps ? <Coffee size={18} strokeWidth={1.75} /> : null}
               </span>
             ))}
           </div>
