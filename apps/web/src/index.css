@@ -240,9 +240,6 @@ button[data-press-feedback]:not(:disabled):active { transform: scale(.97); }
   .shop-poster-steps b { width: 22px; height: 22px; font-size: 11px; }
 }
 
-/* Owner request 2026-10-17: all text black in light mode, including faded text-foreground/NN. Dark mode keeps light text so it stays readable. */
-html:not(.dark) [class*="text-foreground/"],
-html:not(.dark) [class*="text-muted-foreground/"] { color: #000000; }
 
 /* Sonner's rich error/success text sits just under 4.5:1 on its pale fills. */
 :root [data-sonner-toaster][data-sonner-theme='light'] { --error-text: hsl(360, 100%, 34%); --success-text: hsl(140, 100%, 22%); --warning-text: hsl(31, 92%, 30%); --info-text: hsl(216, 87%, 40%); }

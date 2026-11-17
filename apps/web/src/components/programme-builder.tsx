@@ -185,7 +185,7 @@ export function ProgrammeBuilder({
               </li>
             ))}
           </ul>
-          <p className="text-xs text-foreground/60 mt-2">We've passed this on to the team.</p>
+          <p className="text-xs text-foreground/70 mt-2">We've passed this on to the team.</p>
         </div>
       )}
     </div>

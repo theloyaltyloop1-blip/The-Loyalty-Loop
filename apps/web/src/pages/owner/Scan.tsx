@@ -659,8 +659,8 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
                 {summaryStanding.kind === 'points'
                   ? summaryStanding.label
                   : `${summaryStanding.tierName ?? 'No level yet'}${summaryStanding.label ? ` · ${summaryStanding.label}` : ''}`}
-                {summaryStanding.kind === 'tiers' && summaryStanding.perks.length ? <span className="block text-foreground/60">{summaryStanding.perks.join(' · ')}</span> : null}
-                {summaryStanding.kind === 'points' && summaryStanding.levelPerks?.length ? <span className="block text-foreground/60">{summaryStanding.levelName}: {summaryStanding.levelPerks.join(' · ')}</span> : null}
+                {summaryStanding.kind === 'tiers' && summaryStanding.perks.length ? <span className="block text-foreground/70">{summaryStanding.perks.join(' · ')}</span> : null}
+                {summaryStanding.kind === 'points' && summaryStanding.levelPerks?.length ? <span className="block text-foreground/70">{summaryStanding.levelName}: {summaryStanding.levelPerks.join(' · ')}</span> : null}
               </span>
             ) : (
               <span>
@@ -683,7 +683,7 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
                   <button data-press-feedback type="button" aria-label="Less" disabled={steps <= 1} onClick={() => setCashSteps(steps - 1)}
                     className="h-9 w-9 rounded-full ring-1 ring-foreground/15 font-bold disabled:opacity-30">−</button>
                   <span className="flex-1 text-center text-sm font-bold text-foreground tabular-nums">
-                    {formatPounds(steps * cash.pence)} <span className="font-normal text-foreground/60">for {steps * cash.points} {units.many}</span>
+                    {formatPounds(steps * cash.pence)} <span className="font-normal text-foreground/70">for {steps * cash.points} {units.many}</span>
                   </span>
                   <button data-press-feedback type="button" aria-label="More" disabled={steps >= maxSteps} onClick={() => setCashSteps(steps + 1)}
                     className="h-9 w-9 rounded-full ring-1 ring-foreground/15 font-bold disabled:opacity-30">+</button>

@@ -47,6 +47,10 @@ const BACK_CARDS = [
   { shop: 'Pip’s Bakehouse', reward: 'Collect 8 stamps, a loaf on us', tone: 'blue' },
 ]
 
+// Both home-page videos show an older look. Hidden until new videos are made;
+// set this to true to bring both back.
+const SHOW_VIDEOS = false
+
 const STAMPS_TOTAL = 10
 const STAMPS_FILLED = 7
 
@@ -121,10 +125,10 @@ export function Landing() {
               </div>
             </div>
           </div>
-          <a href="#film" className="lp-scroll" onClick={scrollToSection}><span className="lp-scroll-line" aria-hidden="true" />Scroll</a>
+          <a href={SHOW_VIDEOS ? '#film' : '#how-it-works'} className="lp-scroll" onClick={scrollToSection}><span className="lp-scroll-line" aria-hidden="true" />Scroll</a>
         </section>
 
-        <section id="film" className="lp-wrap lp-film-wrap" aria-labelledby="lp-film-title">
+        {SHOW_VIDEOS && <section id="film" className="lp-wrap lp-film-wrap" aria-labelledby="lp-film-title">
           <div className="lp-film" data-reveal>
             <h2 id="lp-film-title">From the till <em>to a free coffee.</em></h2>
             <p>Twenty seconds on how a shop records a purchase and a card fills up.</p>
@@ -134,7 +138,7 @@ export function Landing() {
               </video>
             </div>
           </div>
-        </section>
+        </section>}
 
         <section id="how-it-works" ref={how} className="lp-how" aria-labelledby="lp-how-title">
           <div className="lp-how-pin">
@@ -174,11 +178,11 @@ export function Landing() {
               </div>
               <div className="lp-record-toast"><Check size={16} strokeWidth={2.5} /> Stamp added. 3 more to their reward.</div>
             </div>
-            <div className="lp-biz-film" data-reveal>
+            {SHOW_VIDEOS && <div className="lp-biz-film" data-reveal>
               <video className="lp-biz-video" controls playsInline preload="none" poster="/video/loyalty-loop-business-poster.jpg" aria-label="The Loyalty Loop for Business in 21 seconds: scan a customer's QR code, enter the amount, and they earn a reward">
                 <source src="/video/loyalty-loop-business.mp4" type="video/mp4" />
               </video>
-            </div>
+            </div>}
           </div>
         </section>
 
