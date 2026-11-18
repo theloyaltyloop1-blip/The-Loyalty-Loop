@@ -56,6 +56,11 @@ verify_jwt = true
 [functions.product-updates-unsubscribe]
 verify_jwt = false
 
+# Outreach bot sender. Called every minute by pg_cron with a Vault secret, or by an
+# admin from the website; the handler checks both itself.
+[functions.outreach-send]
+verify_jwt = false
+
 # Public printable QR poster PDF for the Business app (only shows public shop info).
 [functions.shop-poster]
 verify_jwt = false

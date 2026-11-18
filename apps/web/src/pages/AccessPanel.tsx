@@ -14,6 +14,7 @@ import { Businesses } from '@/pages/admin/Businesses'
 import { Loyalty } from '@/pages/admin/Loyalty'
 import { Users } from '@/pages/admin/Users'
 import { ReleaseEmails } from '@/pages/admin/ReleaseEmails'
+import { Outreach } from '@/pages/admin/Outreach'
 import { TrendingAdmin } from '@/pages/TrendingAdmin'
 import { ShopRequests } from '@/pages/ShopRequests'
 import { AdminCharts } from '@/components/admin-dashboard'
@@ -28,7 +29,7 @@ type Health = { count?: number; label: string; detail: string; ok: boolean; targ
 type UsageEvent = { event_name: string; surface: string; events: number; people: number; last_seen: string }
 
 const tabLabels: Record<Tab, string> = {
-  overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'Businesses', loyalty: 'Loyalty data', audit: 'Audit log', 'release-emails': 'Release emails',
+  overview: 'Overview', analytics: 'Product analytics', controls: 'Platform controls', verifications: 'Business listings', support: 'Owner support', moderation: 'Reported reviews', backups: 'Laptop backups', features: 'Paused features', trending: 'Trending shops', 'shop-requests': 'Shop requests', users: 'Users & roles', businesses: 'Businesses', loyalty: 'Loyalty data', audit: 'Audit log', 'release-emails': 'Release emails', outreach: 'Outreach bot',
 }
 
 // Fifteen destinations fold into six areas. Each area is one sidebar item; its
@@ -44,13 +45,13 @@ const navGroups: { label: string; areas: Area[] }[] = [
     { key: 'insights', label: 'Insights', blurb: 'What people use and where they use it', icon: BarChart3, tabs: ['analytics'] },
   ] },
   { label: 'Operations', areas: [
-    { key: 'growth', label: 'Growth', blurb: 'Promote shops and tell people what’s new', icon: Megaphone, tabs: ['trending', 'release-emails'] },
+    { key: 'growth', label: 'Growth', blurb: 'Promote shops, tell people what’s new and email new shops', icon: Megaphone, tabs: ['trending', 'release-emails', 'outreach'] },
     { key: 'system', label: 'System', blurb: 'Switches, safety copies and the record of changes', icon: Settings2, tabs: ['controls', 'features', 'backups', 'audit'] },
   ] },
 ]
 const allAreas = navGroups.flatMap(group => group.areas)
 // These tabs fetch their own data, so the shared refresh does not apply to them.
-const SELF_LOADING: Tab[] = ['users', 'businesses', 'loyalty', 'audit', 'release-emails']
+const SELF_LOADING: Tab[] = ['users', 'businesses', 'loyalty', 'audit', 'release-emails', 'outreach']
 
 // Features that were built and shipped, then deliberately switched off at
 // the owner's request — kept here so it's obvious what still exists and how
@@ -221,7 +222,7 @@ export function AccessPanel() {
       </div>}
       {!!errors.length && !selfLoading && <div role="alert" className="ag-alert"><TriangleAlert size={18} strokeWidth={1.5} aria-hidden="true"/><div><strong>Some data could not be loaded</strong>{errors.map(error => <p key={error}>{error}</p>)}</div><button type="button" className="ag-btn is-sm" disabled={busy} onClick={() => void load()}>Retry</button></div>}
       <div className="ag-body">
-        {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : tab === 'release-emails' ? <ReleaseEmails/>
+        {tab === 'users' ? <Users/> : tab === 'businesses' ? <Businesses/> : tab === 'loyalty' ? <Loyalty/> : tab === 'audit' ? <Audit/> : tab === 'release-emails' ? <ReleaseEmails/> : tab === 'outreach' ? <Outreach/>
           : busy && !updatedAt ? <div role="status" aria-label="Loading your dashboard" className="ag-loading"><span/><span/><span/></div>
           : tab === 'trending' ? <TrendingAdmin embedded/> : tab === 'shop-requests' ? <ShopRequests embedded/> : tab === 'controls' ? <AccessTools/>
           : tab === 'overview' ? overview()

@@ -8,7 +8,7 @@ const num = (v: number) => v.toLocaleString('en-GB')
 const sentence = (v: string) => v.replaceAll('_', ' ')
 const ICON = { size: 18, strokeWidth: 1.75, 'aria-hidden': true } as const
 
-export type AdminTab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'trending' | 'shop-requests' | 'users' | 'businesses' | 'loyalty' | 'audit' | 'release-emails'
+export type AdminTab = 'overview' | 'analytics' | 'controls' | 'verifications' | 'support' | 'moderation' | 'backups' | 'features' | 'trending' | 'shop-requests' | 'users' | 'businesses' | 'loyalty' | 'audit' | 'release-emails' | 'outreach'
 export type OverviewHealth = { count?: number; label: string; detail: string; ok: boolean; targetTab?: AdminTab }
 type QueueKey = 'verifications' | 'support' | 'moderation'
 export type OverviewQueue = { key: QueueKey; label: string; count: number; unavailable: boolean; hint: string }
