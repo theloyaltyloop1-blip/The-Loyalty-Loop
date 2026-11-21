@@ -13,7 +13,7 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 - Supabase project ref: `tgukdabfvvoywawmzbdo`.
 - Shopper versions on phones: 1.0.1 and 1.0.2. In review at Apple and Google since 2026-11-15: 1.0.3 (iOS build 17, Android versionCode 135).
 - Business versions on phones: 1.0.1. In review at Apple and Google since 2026-11-15: 1.0.2 (iOS build 15, Android versionCode 134).
-- When 1.0.3 and 1.0.2 are approved they become extra versions to publish OTAs for. Add them here.
+- Publish every OTA for shopper 1.0.1, 1.0.2 and 1.0.3, and Business 1.0.1 and 1.0.2 (the review versions get OTAs too, so they are current when approved). Latest OTAs (2026-11-21): shopper 1.0.1 and 1.0.2 serve the card-to-page groups (1.0.2 `46ac33ab` / `49909009`, 1.0.1 `4aa248ef` / `3d9ca859`, android / ios), which already include the email codes; shopper 1.0.3 and Business 1.0.1 and 1.0.2 serve the email-codes groups from 54167be.
 - Waiting for the next native build: predictive back and blurry image placeholders (2026-11-07 polish entry). Icons, splash, dark-mode native half and walk-past are already in the builds in review.
 - Shops use stamps by default. Programme types live: `stamp_legacy`, `spend_threshold`, `tiers`, `points`, `custom` (AI-designed).
 - Parked: Fidel card linking (hidden in the shopper app; spec in `ARCH_PLAN.md`), SumUp till link (live, only Test Shop connected), WhatsApp.
@@ -23,7 +23,9 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 
 **Website** (`apps/web`): shopper pages, owner dashboard, admin at `/access` (rebuilt 2026-11-15), AI programme builder, "Try it" demo on the home page, dark mode, outage message (`apps/web/public/status.json`), phone visitors sent to the apps (`src/components/mobile-app-gate.tsx`; phone-only web pages go in `WEB_ONLY_PATHS`), release-email admin tab (`/access?view=release-emails`).
 
-**Both apps, by OTA:** dark mode, Whirl mascot and Ask Whirl assistant, stronger haptics, typo-tolerant search, outage banner with saved home screen, keyboard-aware text boxes, branded pop-ups (`showAlert`), AI programme builder.
+**Email codes (2026-11-21):** sign-up and password reset use a 6-digit code typed in the app or website, not a link, everywhere. Supabase templates show the code and keep the link as a fallback (source in `supabase/templates/`). Email OTP length 6, expiry 3600 s.
+
+**Both apps, by OTA:** design-audit fixes of 2026-11-17 (released 2026-11-21), dark mode, Whirl mascot and Ask Whirl assistant, stronger haptics, typo-tolerant search, outage banner with saved home screen, keyboard-aware text boxes, branded pop-ups (`showAlert`), AI programme builder.
 
 **Shopper app:** whole-page map tab, quick cards and live balances on home, custom card designs, win-back coupons.
 
@@ -49,6 +51,8 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 - Apply migration `20261115120000_typo_tolerant_admin_search.sql` (in the repo, not applied).
 - Deploy the sender fix for `send-visit-thank-you`, `send-owner-legal-documents` and `shop-request-notify` (committed, not deployed, as of 2026-11-14).
 - Redeploy the wallet pass functions (custom-programme lines and the new logo).
+- The shopper app has no "Forgot password?" on its sign-in screen (website and Business app do).
+- Once every app version on phones has the code screens, drop the fallback link from both Supabase email templates.
 - Website staff Redeem panel does not show pounds or percent off for custom programmes.
 - No admin page for `programme_requests`.
 - Milestone rewards are not clawed back on a refund.
@@ -60,6 +64,8 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 
 Almost every release since 2026-11-07 was type-checked and bundled but not seen on a device. The owner should open each app twice (an update applies on the second launch) and look at:
 
+- email code screens: shopper sign-up, Business shop sign-up, Business "Forgot password", signing in before confirming
+- design-audit fixes released 2026-11-21 (shopper home, shop page, QR, Android back; Business scan, customers, Android back)
 - dark mode on home, a shop, scan and Settings
 - Whirl placements and the Ask Whirl sheet
 - sign-in, sign-out, offline launch and switching accounts
@@ -132,17 +138,21 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Rollback:** republish the previous shopper groups, or `npx --yes eas-cli@24.11.0 update:roll-back-to-embedded --branch production --runtime-version <1.0.1|1.0.2> --platform <android|ios>` from `apps/shopper` (embedded drops every OTA since the store build). Shows on the second app launch.
 - **Next:** (owner) open the shopper app twice, then tap a few cards and press Back, ideally on a slow Android. (Claude) when 1.0.3 is approved, publish this and every later shopper OTA for runtime 1.0.3 too.
 
-### 2026-11-21 - Email codes instead of email links (sign-up, password reset) - NOT shipped
+### 2026-11-21 - Email codes instead of email links (sign-up, password reset) - LIVE
 
-- **Branch:** `claude/email-otp-39de5a` (worktree `.claude/worktrees/email-otp-39de5a`, from origin/main 090e7a8). Not committed.
+- **Released (owner's yes, "everything on main"):** commit 54167be on main. Supabase templates applied in the dashboard (old templates were not backed up; the page blocked reading them). Email OTP length changed 8 to 6 (expiry 3600 s). Website live (served bundle has "Send a new code"). OTAs from 54167be also carry the 2026-11-17 design-audit fixes and walk-past JS (guarded; `location-guard.test.mjs` passes).
+- **OTA groups (android / ios):** shopper 1.0.3 `6c665ba1-21fa-42ce-8b51-938d61ca49e3` / `29922978-d3d6-47ce-90aa-21e50d72d480`; shopper 1.0.2 `cfd3e019-b008-40b1-aebc-7199155775c9` / `27734cdd-f173-4ead-825f-71c72dc31248`; shopper 1.0.1 `475964fb-eb95-407b-9339-28826fdc1e0e` / `9d8dcb53-c9a0-45cd-b651-ba90f0f42603`; Business 1.0.2 `42749cee-372e-4433-85cd-6771e170848e` / `d32d78be-b196-45ad-bd53-42ec0f04f4d3`; Business 1.0.1 `34d58598-5d0c-41c0-84b2-5f2d9799969c` / `d3ba689b-821f-42b3-b656-f29047f1e067`. Every bundle downloaded and checked: contains `tgukdabfvvoywawmzbdo` and "Send a new code".
+- **Superseded at once on shopper 1.0.1 and 1.0.2:** another session (branch `claude/card-to-page`) published "Tapped card grows into the shop page" minutes later (1.0.2 `46ac33ab…` / `49909009…`, 1.0.1 `4aa248ef…` / `3d9ca859…`). Those bundles were checked too and include the email codes and audit fixes. Shopper 1.0.3 and both Business versions serve the groups above.
+- **Rollback:** republish the previous groups (shopper 1.0.2 android a995da70-28aa-40a9-b446-9ad971a002cc, ios 3f9dacc6-b9e7-4b2f-92b2-61c421551e51; 1.0.1 android ca3e45fb-5842-4267-b4e1-69e031c6c4ee, ios a777e9b6-e252-4cf6-94e5-4e93fb899956; Business 69182dc6-380c-452a-a928-76ccf0d111e5) with `npx eas-cli@24.11.0 update:republish --group <id>`, or `update:roll-back-to-embedded` per runtime and platform.
+- **Branch:** `claude/email-otp-39de5a` (worktree `.claude/worktrees/email-otp-39de5a`, from origin/main 090e7a8).
 - **What:** after email sign-up, people type a 6-digit code (`supabase.auth.verifyOtp`, type `signup`) instead of tapping a link, then carry on signed in. Password reset sends a code; the person types it with a new password (`verifyOtp` type `recovery`, then `updateUser`). Every code screen has "Send a new code" (60 s timer), "Use a different email" and plain errors for wrong or old codes. Signing in before confirming now sends a fresh code and shows the code screen instead of "tap the link". Signing up again with an address that already has an account now says so (Supabase sends nothing in that case).
 - **Where:** shopper sign-up (`apps/shopper/App.tsx` AuthScreen, `src/components/EmailCodeStep.tsx`, `src/email-code.ts`); Business shop sign-up (`src/shop-onboarding.tsx`) and sign-in screen reset + unconfirmed (`App.tsx` Auth, `src/components/EmailCodeStep.tsx`, `src/email-code.ts`); website `Signup.tsx`, `ForgotPassword.tsx` (now asks for the code and new password on one page), `Login.tsx` (unconfirmed), `WhatsAppOnboarding.tsx` (runs `complete_whatsapp_signup` after the code, as `/auth/callback` does), `components/email-code-step.tsx`, `lib/email-code.ts`. The three `email-code.ts` files are copies; keep them in step.
 - **Kept:** `/auth/callback` and `/reset-password` are unchanged, and every request still passes the same redirect URL, so links in emails keep working for older app versions. The shopper app still sets no redirect (Supabase Site URL), as before.
 - **Templates:** `supabase/templates/confirm-signup.html` and `reset-password.html` (+ README) show `{{ .Token }}` large and keep `{{ .ConfirmationURL }}` as a fallback link. Not applied: the live templates are hosted in Supabase and `config.toml` has no auth section.
 - **Checks run:** `npx tsc --noEmit` in `apps/shopper` and `apps/retailer` (both clean); `npm --prefix apps/web run build` passes. Website sign-up, forgot password, log-in-unconfirmed and resend exercised on a local dev server against a local fake of the auth endpoints (no live project calls): wrong code shows the error, right code signs in and lands on `/dashboard`, reset sends `PUT /auth/v1/user`, resend resets the timer.
 - **Not checked:** not checked on a phone (neither app run); WhatsApp code path not run; nothing run against the live Supabase project (no test inbox in the repo); live OTP length and expiry not read.
-- **Order to release (each on the owner's yes):** 1) owner pastes both templates in the Supabase dashboard and checks OTP length is 6; 2) website push; 3) JS-only OTA for both apps, Android and iOS separately, for every version on phones (shopper 1.0.1, 1.0.2 and 1.0.3 if approved; Business 1.0.1 and 1.0.2 if approved). Templates must go first: until then emails have no code and the new screens would wait for one.
-- **Next:** (owner) yes for templates, website and OTAs. (Claude) once every app version on phones has the code screens, offer to drop the link from the templates.
+- **Order to release:** done 2026-11-21 (templates, website, OTAs).
+- **Next:** (owner) open each app twice and try sign-up and reset with a real inbox. (Claude) once every app version on phones has the code screens, offer to drop the link from the templates.
 
 ### 2026-11-18 - Outreach bot moved online (Supabase + admin page) - NOT shipped
 
