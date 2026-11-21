@@ -13,7 +13,7 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 - Supabase project ref: `tgukdabfvvoywawmzbdo`.
 - Shopper versions on phones: 1.0.1 and 1.0.2. In review at Apple and Google since 2026-11-15: 1.0.3 (iOS build 17, Android versionCode 135).
 - Business versions on phones: 1.0.1. In review at Apple and Google since 2026-11-15: 1.0.2 (iOS build 15, Android versionCode 134).
-- Publish every OTA for shopper 1.0.1, 1.0.2 and 1.0.3, and Business 1.0.1 and 1.0.2 (the review versions get OTAs too, so they are current when approved). Latest OTAs (2026-11-21): shopper 1.0.1 and 1.0.2 serve the card-to-page groups (1.0.2 `46ac33ab` / `49909009`, 1.0.1 `4aa248ef` / `3d9ca859`, android / ios), which already include the email codes; shopper 1.0.3 and Business 1.0.1 and 1.0.2 serve the email-codes groups from 54167be.
+- Publish every OTA for shopper 1.0.1, 1.0.2 and 1.0.3, and Business 1.0.1 and 1.0.2 (the review versions get OTAs too, so they are current when approved). Latest OTAs (2026-11-21): shopper 1.0.1 and 1.0.2 serve the card-to-page groups (1.0.2 `46ac33ab` / `49909009`, 1.0.1 `4aa248ef` / `3d9ca859`, android / ios), which already include the email codes; shopper 1.0.3 serves the email-codes groups from 54167be; Business 1.0.2 and 1.0.1 serve the offline-stamping groups from d5ab8eb (1.0.2 `da1b4463` / `17ccd7ce`, 1.0.1 `26f8f43f` / `ed052961`, android / ios), which include the email codes.
 - Waiting for the next native build: predictive back and blurry image placeholders (2026-11-07 polish entry). Icons, splash, dark-mode native half and walk-past are already in the builds in review.
 - Shops use stamps by default. Programme types live: `stamp_legacy`, `spend_threshold`, `tiers`, `points`, `custom` (AI-designed).
 - Parked: Fidel card linking (hidden in the shopper app; spec in `ARCH_PLAN.md`), SumUp till link (live, only Test Shop connected), WhatsApp.
@@ -29,7 +29,7 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 
 **Shopper app:** whole-page map tab, quick cards and live balances on home, custom card designs, win-back coupons.
 
-**Business app:** app-first onboarding, map pin picker (OpenStreetMap tiles, no native map), QR poster, Help and FAQ, delete or hand over shop, business verification screens (shadow mode).
+**Business app:** stamps saved on the phone without signal and sent later (2026-11-21), app-first onboarding, map pin picker (OpenStreetMap tiles, no native map), QR poster, Help and FAQ, delete or hand over shop, business verification screens (shadow mode).
 
 **Supabase:** edge functions `design-programme`, `ask-whirl`, `business-coach-chat`, `map-pin`, `verify-business` (shadow mode), wallet pass functions, four SumUp functions, `send-release-announcement`, `product-updates-unsubscribe`, `send-winback-emails`. Migration `walk_past_alerts` is applied.
 
@@ -69,6 +69,7 @@ Almost every release since 2026-11-07 was type-checked and bundled but not seen 
 - dark mode on home, a shop, scan and Settings
 - Whirl placements and the Ask Whirl sheet
 - sign-in, sign-out, offline launch and switching accounts
+- Business offline stamping: Scan with "Simulate outage" on and in aeroplane mode, the amber waiting pill, sending when back online, rewards refused offline
 - shopper Home layout, map tab, quick cards, live balances
 - Business map pin picker, QR poster PDF, delete and hand-over screens, verification photo upload
 - iOS rounded-corner patch (`src/smooth-corners.ts`); if corners look wrong, remove its import in `index.ts` and publish an OTA
@@ -123,9 +124,9 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
-### 2026-11-21 - Business app: stamps work without signal (saved on the phone, sent later) - NOT shipped
+### 2026-11-21 - Business app: stamps work without signal (saved on the phone, sent later) - LIVE (OTA)
 
-- **Branch:** `claude/offline-stamping` (worktree `.claude/worktrees/zealous-ritchie-457764`, from origin/main e855eee). Committed aa58816 on the owner's yes (2026-11-21); not pushed, no OTA.
+- **Branch:** `claude/offline-stamping` (worktree `.claude/worktrees/zealous-ritchie-457764`, rebased onto 5e3d0b6). Commits `921abc9` (feature) and `d5ab8eb` (handoff), pushed to `main` and published by OTA on the owner's yes (2026-11-21, "Yes, release it").
 - **What:** when the phone has no signal (or a stamp gets no answer within 10 s), Award saves the stamp on the phone instead of failing. The button turns dark amber "Saved" with "Saved – will send when you're back online", then the screen resets for the next customer. An amber pill (2px dark border, like the other tiles) on Home and Scan shows "N stamps waiting to send"; tapping it sends now. Waiting stamps go oldest first when the app opens, comes back to the front, the outage check sees the connection return, after the next successful live stamp, and every 20 s with backoff (5 s doubling to 5 min). Refused or too-old stamps are reported in one `showAlert` with the customer's first name and reason. The customer's thank-you, push and wallet update only fire once the server accepts the stamp.
 - **Server:** no change needed. Every stamp already carries a phone-made `client_ref`, and the live database has the unique index `transactions_client_ref_key` (checked on 2026-11-21 with a read-only query), so a resend gives one stamp; the duplicate answer counts as sent.
 - **Limits chosen:** 200 waiting scans per account per phone; a stamp older than 48 hours is dropped and reported, not sent. The queue is per signed-in account, survives closing the app and signing out (sign-out pop-up says how many are waiting), and is stored in `expo-sqlite/kv-store` (already in the app, so JS only).
@@ -135,7 +136,10 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Files:** `apps/retailer/src/offline-stamps-core.ts` (new, pure rules), `apps/retailer/src/offline-stamps.ts` (new, storage + Supabase), `apps/retailer/src/offline-stamps.test.mjs` (new, 26 tests), `apps/retailer/App.tsx`, `apps/retailer/src/shop-pages.tsx`. No change to `package.json`, `app.json` or the lockfile.
 - **Checks run:** `npx tsc --noEmit` in `apps/retailer` (clean); `node --test src/*.test.mjs` in `apps/retailer` (62/62 pass, 26 new); the new tests drive the real supabase-js client with an injected fetch for no signal, a hung request cut by the timeout, a duplicate `client_ref`, a database refusal and an offline-then-online run (two stamps in, a resend adds nothing); `npx expo export --platform android` (Hermes bundle builds; local only, nothing uploaded).
 - **Not checked:** not checked on a phone; the screens have not been seen. Nothing sent to the live database. How to try it on a phone: Settings, long-press the version line, "Simulate outage" makes stamps save on the phone (switch it off and they send); for rewards use aeroplane mode, because the switch only fakes stamp sending.
-- **Next:** (owner) yes to commit, then a JS-only OTA for Business 1.0.1 (and 1.0.2 if approved), Android and iOS separately with `--environment production`. Optional follow-up: queue spend-shop purchases the same way (`record_manual_spend` already takes `_client_ref`).
+- **OTA (branch `production`, `--environment production`, message "Offline stamping: save stamps without signal", from d5ab8eb):** Business 1.0.2 android group `da1b4463-2c4f-4e2b-9679-f7765de2d5dd` (update `01a1ff5f-3982-757b-b222-63a28dcf3a45`), ios group `17ccd7ce-f9a6-4df4-8e09-7ad1aac6852f` (update `01a1ff60-ce10-7309-ad50-9e11a2357666`); Business 1.0.1 android group `26f8f43f-49e7-4d0c-9bbf-6fc676068841` (update `01a1ff62-3bf4-7d7e-89bb-68fd4f68a4ae`), ios group `ed052961-c6d3-4f1c-955e-32bb16dc2f6c` (update `01a1ff63-8781-72d8-8ffd-534ecd101b57`). 1.0.1 published by setting `apps/retailer/app.json` version to 1.0.1 temporarily, then restored (not committed).
+- **Bundle check:** `u.expo.dev/<Business project>` now serves all four new update IDs for their runtime and platform. The asset CDN answers 403 to direct downloads, so iOS was checked by hash: the file `eas update` uploaded matches the manifest launchAsset hash `FfeYnko-…` (shared by the 1.0.1 and 1.0.2 iOS updates) and contains `tgukdabfvvoywawmzbdo`, "waiting to send", `offline-stamps.v1.` and "Saved – will send when you're back online" (stored as UTF-16 by Hermes because of the en dash). Android (launchAsset `gnLlJm1N…`, shared by both runtimes) was not opened: a local production-env export of the same commit contains the same strings but is not byte-identical, so the uploaded Android bundle itself is unverified.
+- **Rollback:** republish the previous Business groups with `npx --yes eas-cli@24.11.0 update:republish --group <id>` from `apps/retailer`: 1.0.2 android `42749cee-372e-4433-85cd-6771e170848e`, ios `d32d78be-b196-45ad-bd53-42ec0f04f4d3`; 1.0.1 android `34d58598-5d0c-41c0-84b2-5f2d9799969c`, ios `d3ba689b-821f-42b3-b656-f29047f1e067` (the email-codes groups). Or `update:roll-back-to-embedded --branch production --runtime-version <1.0.1|1.0.2> --platform <android|ios>` (drops every OTA since the store build). Shows on the second app launch.
+- **Next:** (owner) open the Business app twice, then try Scan with "Simulate outage" on (Settings, long-press the version line) and with aeroplane mode. Not checked on a phone. Optional follow-up (Claude, on the owner's yes): queue spend-shop purchases the same way (`record_manual_spend` already takes `_client_ref`).
 
 ### 2026-11-21 - Shopper app: tapped card grows into the shop page, Back shrinks it home - LIVE (OTA)
 
