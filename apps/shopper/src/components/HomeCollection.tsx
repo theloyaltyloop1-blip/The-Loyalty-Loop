@@ -1,5 +1,5 @@
 import { LoyaltyCard } from "../../../../packages/card-design/LoyaltyCard";
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { colors as c, fonts } from '../theme'
@@ -11,6 +11,7 @@ import { formatMiles, nearestFirst, pickFeatured, type Coords } from '../distanc
 import { categoryRails, heroSlides, newestShops } from '../home-rails'
 import type { LocationStatus } from '../use-user-location'
 import { Tip } from './Tip'
+import { markCardOrigin } from './CardGrow'
 import { colors, schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 // Home screen in delivery-app style: a hero carousel, then rows you swipe sideways.
@@ -72,7 +73,7 @@ function HeroCarousel<T extends RailShop>({ slides, label, catalog, onSelect }: 
       onMomentumScrollEnd={e => setPage(Math.round(e.nativeEvent.contentOffset.x / (slide + RAIL_GAP)))}>
       {slides.map(shop => {
         const offer = homeProgress(shop, undefined, catalog, shopMoney(shop.country_code)).offer
-        return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`Explore ${shop.name}. ${offer}`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.hero, { width: slide }, pressed && s.pressed]}>
+        return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`Explore ${shop.name}. ${offer}`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: c.olive, radius: 22 }); onSelect(shop) }} style={({ pressed }) => [s.hero, { width: slide }, pressed && s.pressed]}>
           <ShopPhoto shop={shop} large distance={label(shop)} />
           <View style={s.heroCopy}>
             <Text style={s.heroName} numberOfLines={1}>{shop.name}</Text>
@@ -98,7 +99,7 @@ function RailHeading({ title, action, onAction, right }: { title: string; action
 // A swipeable row of photo tiles.
 function ShopRail<T extends RailShop>({ items, onSelect, width }: { items: { shop: T; miles: number | null }[]; onSelect: (shop: T) => void; width: number }) {
   return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={width + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
-    {items.map(({ shop, miles }) => <Pressable accessibilityRole="button" accessibilityLabel={shopLabel(shop, miles)} key={shop.id} onPress={() => onSelect(shop)} style={({ pressed }) => [s.tile, { width }, pressed && s.pressed]}>
+    {items.map(({ shop, miles }) => <Pressable accessibilityRole="button" accessibilityLabel={shopLabel(shop, miles)} key={shop.id} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: c.card, radius: 18 }); onSelect(shop) }} style={({ pressed }) => [s.tile, { width }, pressed && s.pressed]}>
       <ShopPhoto shop={shop} distance={miles !== null ? formatMiles(miles) : undefined} />
       <View style={s.tileCopy}><Text style={s.tileName} numberOfLines={1}>{shop.name}</Text><Text style={s.tileCategory} numberOfLines={1}>{[ratingLabel(shop), shop.category || 'Local independent'].filter(Boolean).join(' · ')}</Text></View>
     </Pressable>)}
@@ -125,7 +126,7 @@ export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSe
       const money = (v: number) => shopMoney(shop.country_code)(v).replace(/\.00$/, '')
       const value = progress.threshold === null ? null : progress.spend ? money(progress.value) : String(progress.value)
       const of = progress.threshold === null ? null : progress.spend ? `/${money(progress.threshold)}` : `/${progress.threshold}`
-      return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.cardTile, { backgroundColor: tone.bg }, tone.bg === '#FFFFFF' && s.cardTileLine, pressed && s.pressed]}>
+      return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: tone.bg, radius: 22 }); onSelect(shop) }} style={({ pressed }) => [s.cardTile, { backgroundColor: tone.bg }, tone.bg === '#FFFFFF' && s.cardTileLine, pressed && s.pressed]}>
         <Text style={[s.cardTileName, { color: tone.ink }]} numberOfLines={2}>{shop.name}</Text>
         {value !== null
           ? <Text style={[s.cardTileCount, { color: tone.ink }]} numberOfLines={1} adjustsFontSizeToFit>{value}<Text style={[s.cardTileOf, { color: tone.sub }]}>{of}</Text></Text>
@@ -158,7 +159,9 @@ function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, wi
   const big = threshold == null ? 'Your card' : ready ? 'Ready!' : progress.spend ? money(left) : progress.unit === 'points' ? `${left} pts` : `${left} more`
   const line = threshold == null ? `${progress.offer || progress.label}.`.replace(/\.\.$/, '.') : ready ? `${progress.title || 'Your reward'} is waiting.` : progress.spend || progress.unit === 'points' ? `to go for ${reward}.` : `for ${reward}.`
   const dots = threshold != null && !progress.spend && progress.unit !== 'points' && threshold <= 12
-  return <View style={[s.nextCard, width != null && { width, marginBottom: 0 }]}>
+  // The whole card grows into the page, not just its button.
+  const cardRef = useRef<View>(null)
+  return <View ref={cardRef} style={[s.nextCard, width != null && { width, marginBottom: 0 }]}>
     <View style={s.nextShop}>
       <View style={s.nextLogo}>{shop.logo_url ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : <Text style={s.nextLogoText}>{shop.name.trim().charAt(0).toUpperCase()}</Text>}</View>
       <Text style={s.nextShopName} numberOfLines={1}>{shop.name}</Text>
@@ -175,7 +178,7 @@ function RewardHeroCard<T extends RailShop>({ card, onSelect, onEdit, pinned, wi
       ? <View style={s.nextDots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{Array.from({ length: threshold }, (_, i) => <View key={i} style={[s.nextDot, i < progress.value && s.nextDotOn]} />)}</View>
       : <View style={s.nextTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><View style={[s.nextFill, { width: `${Math.round(Math.min(1, progress.fraction) * 100)}%` }]} /></View>}
     {threshold != null && !dots && <Text style={s.nextCount} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{progress.spend ? `${money(progress.value)} / ${money(threshold)}` : `${progress.value} / ${threshold}${progress.unit === 'points' ? ' pts' : ''}`}</Text>}
-    <Pressable accessibilityRole="button" accessibilityLabel={`Show my ${shop.name} card`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.nextButton, pressed && s.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Show my ${shop.name} card`} onPress={() => { markCardOrigin(shop.id, cardRef.current, { color: schemeColor('#FFFFFF', 'bg'), radius: 28 }); onSelect(shop) }} style={({ pressed }) => [s.nextButton, pressed && s.pressed]}>
       <Text style={s.nextButtonText}>{ready ? 'Use it now' : 'Show my card'}</Text><Arrow color={PAPER} />
     </Pressable>
   </View>
@@ -246,7 +249,7 @@ export function CategoryCircles({ categories, selected, onSelect }: { categories
 }
 
 function ShopRow<T extends RailShop>({ shop, miles, onSelect }: { shop: T; miles: number | null; onSelect: (shop: T) => void }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={shopLabel(shop, miles)} onPress={() => onSelect(shop)} style={({ pressed }) => [s.row, pressed && s.pressed]}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={shopLabel(shop, miles)} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: c.card, radius: 16 }); onSelect(shop) }} style={({ pressed }) => [s.row, pressed && s.pressed]}>
     <ShopMark shop={shop} /><View style={s.rowCopy}><Text style={s.rowName} numberOfLines={1}>{shop.name}</Text><Text style={s.rowMeta} numberOfLines={1}>{[ratingLabel(shop), shop.category || 'Local independent', miles !== null ? formatMiles(miles) : null].filter(Boolean).join(' · ')}</Text></View><Arrow color={c.primary} />
   </Pressable>
 }

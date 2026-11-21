@@ -117,6 +117,18 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-21 - Shopper app: tapped card grows into the shop page, Back shrinks it home - NOT shipped
+
+- **Branch:** `claude/card-to-page` (worktree `.claude/worktrees/v2-dashboard-23f22a`, from origin/main 54167be). Committed on the owner's yes (2026-11-21); not pushed, no OTA.
+- **What:** from the Glide Studio reel "Don't cut. Carry." Tapping a shop card now grows the card into the shop page (~320 ms spring, UI thread): a window opens from the card's exact rectangle to the full screen, the card's colour turns into the shop's page colour with the shop logo, then the page shows through. Back (page button and Android back) re-measures the card and shrinks the page into it; Back mid-growth turns it round smoothly. Reduced motion: quick fade instead. If the card can't be measured, or has scrolled off screen, it opens as a hard cut / closes with a fade. Taps from notifications, links, Ask Whirl, Ask-a-shop and requested shops keep the old hard cut.
+- **Cards wired:** home top card ("Show my card", whole card grows), "Your cards" tiles, home near-you rows, hero carousel, photo rails, search/category rows, map tab shop cards, Favourites "View" (whole card grows).
+- **Behaviour change:** the shop page is now drawn over the tabs instead of replacing them, so the home list, search results and map keep their scroll and state when you come back (before, they reset). The keyboard is dismissed when a page opens. The tabs are hidden from screen readers while a page is open.
+- **Menus from their button:** nothing to do. The shopper app has no button-anchored menus; every pop-up is a bottom sheet (`Sheet.tsx`) that already rises from the bottom edge.
+- **Files:** `apps/shopper/src/components/CardGrow.tsx` (new), `apps/shopper/App.tsx`, `apps/shopper/src/components/HomeCollection.tsx`, `apps/shopper/src/components/HomeFeed.tsx`. JS only: no change to `package.json`, `app.json` or the lockfile.
+- **Checks run:** `npx tsc --noEmit` in `apps/shopper` (clean); `npx expo export --platform android` (Hermes bundle builds, so the Reanimated worklets compile; local export only, nothing uploaded).
+- **Not checked:** not checked on a phone or emulator; the animation has not been seen running. Web preview not possible (react-native-maps does not bundle for web). Feel, timing, Android `measureInWindow` offsets and the safe-area padding during growth all need a look on a real phone, ideally a slow Android.
+- **Next:** (owner) try it on a phone from a preview/test install if one exists, then say yes to commit and OTA. (Claude, on the owner's yes) commit, then JS-only OTA for shopper, Android and iOS separately with `--environment production`, for 1.0.1, 1.0.2 and 1.0.3 if approved.
+
 ### 2026-11-21 - Email codes instead of email links (sign-up, password reset) - NOT shipped
 
 - **Branch:** `claude/email-otp-39de5a` (worktree `.claude/worktrees/email-otp-39de5a`, from origin/main 090e7a8). Not committed.

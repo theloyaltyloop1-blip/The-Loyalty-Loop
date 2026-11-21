@@ -72,6 +72,7 @@ import { pushPermission, registerPushToken } from './src/push'
 import * as SecureStore from 'expo-secure-store'
 import { GuestHome, type GuestShop } from './src/components/GuestHome'
 import { Tip } from './src/components/Tip'
+import { CardGrowOverlay, markCardOrigin, type CardGrowHandle } from './src/components/CardGrow'
 import { disableWalkPast, enableWalkPast, refreshWalkPast, walkPastEnabled, walkPastSupported } from './src/walk-past'
 import { addPassFromBase64 } from './modules/expo-wallet-pass'
 import { haptic, getHapticsEnabled, setHapticsEnabled } from './src/haptics'
@@ -2227,7 +2228,7 @@ function MapTab({ businesses, onSelect, onAsk }: { businesses: Business[]; onSel
             renderItem={({ item: { shop, miles } }) => {
               const open = openStatus(shop.opening_hours)
               return (
-                <Pressable accessibilityRole="button" accessibilityLabel={`Open ${shop.name}`} onPress={() => onSelect(shop)} style={({ pressed }) => [styles.mapCard, pressed && styles.mapCardPressed]}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`Open ${shop.name}`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: schemeColor('#fff', 'bg'), radius: 24 }); onSelect(shop) }} style={({ pressed }) => [styles.mapCard, pressed && styles.mapCardPressed]}>
                   <MapShopLogo business={shop} size={56} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.shopName} numberOfLines={1}>{shop.name}</Text>
@@ -2522,6 +2523,8 @@ function FavouritesTab({
   onQuickJoin: (business: Business) => void
   load: ListLoad
 }) {
+  // Each favourite's whole card, so "View" grows the card (not the link) into the page.
+  const cardRefs = useRef(new Map<string, View>())
   return (
     <>
       <Text style={styles.pageTitle}>Favourites</Text>
@@ -2529,7 +2532,7 @@ function FavouritesTab({
       {favourites.map((b) => {
         const member = memberships.some((m) => m.business_id === b.id)
         return (
-          <View key={b.id} style={styles.favouriteCard}>
+          <View key={b.id} ref={el => { if (el) cardRefs.current.set(b.id, el); else cardRefs.current.delete(b.id) }} style={styles.favouriteCard}>
             <View style={styles.favouriteTopRow}>
               {b.logo_url ? (
                 <Image source={{ uri: b.logo_url }} style={styles.favouriteLogo} />
@@ -2551,7 +2554,7 @@ function FavouritesTab({
                   <Text style={styles.favouriteStatus}>Tap to join</Text>
                 </Pressable>
               )}
-              <Pressable accessibilityRole="button" accessibilityLabel={`View ${b.name}`} onPress={() => onSelect(b)} style={styles.favouriteViewRow}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`View ${b.name}`} onPress={() => { markCardOrigin(b.id, cardRefs.current.get(b.id), { color: colors.card, radius: 20 }); onSelect(b) }} style={styles.favouriteViewRow}>
                 <Text style={styles.favouriteViewText}>View</Text>
                 <ArrowRightIcon />
               </Pressable>
@@ -2623,7 +2626,16 @@ function AppHome({ session }: { session: Session }) {
   const [selected, setSelected] = useState<Business | null>(null)
   // The shop opened from "Show my card", so its page opens at the code.
   const [codeShopId, setCodeShopId] = useState<string | null>(null)
-  const showCard = (business: Business) => { setCodeShopId(business.id); setSelected(business) }
+  // Each open is its own page instance, so a card tapped again (even mid-close) grows afresh.
+  const [openCount, setOpenCount] = useState(0)
+  const openShop = (business: Business) => { setOpenCount(n => n + 1); setSelected(business) }
+  const shopKey = selected ? `${selected.id}:${openCount}` : null
+  const shopKeyRef = useRef(shopKey)
+  shopKeyRef.current = shopKey
+  const shopPage = useRef<CardGrowHandle>(null)
+  // Back shrinks the page into the card it came from (or cuts, when it came from elsewhere).
+  const closeShop = () => { if (shopPage.current) shopPage.current.close(); else setSelected(null) }
+  const showCard = (business: Business) => { setCodeShopId(business.id); openShop(business) }
   useEffect(() => { if (!selected) setCodeShopId(null) }, [selected])
   const [showProfile, setShowProfile] = useState(false)
   const [stampCode, setStampCode] = useState<string | null>(cached?.stampCode ?? null)
@@ -3052,7 +3064,7 @@ function AppHome({ session }: { session: Session }) {
   // (HomeTab closes its own search first). Open sheets are Modals and handle back themselves.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (selected) { setSelected(null); return true }
+      if (selected) { closeShop(); return true }
       if (tab !== 'home') { setTab('home'); return true }
       return false
     })
@@ -3067,11 +3079,17 @@ function AppHome({ session }: { session: Session }) {
       />
   )
 
-  if (selected) {
-    return (
-      <>
-      {cardLinkedCheck}
-      {celebration}
+  // The shop page sits over the tabs instead of replacing them, so the list keeps its
+  // place and Back can shrink the page into the exact card it grew from.
+  const shopOverlay = selected && shopKey ? (
+    <CardGrowOverlay
+      key={shopKey}
+      ref={shopPage}
+      shopId={selected.id}
+      pageColor={shopSkin(selected).bg}
+      logoUrl={selected.logo_url}
+      onClosed={() => { if (shopKeyRef.current === shopKey) setSelected(null) }}
+    >
       <ShopDetail
         business={selected}
         programmeVersion={programmeVersion}
@@ -3081,23 +3099,27 @@ function AppHome({ session }: { session: Session }) {
         membership={memberships.find((m) => m.business_id === selected.id)}
         stampCode={stampCode}
         favourite={favouriteIds.has(selected.id)}
-        onBack={() => setSelected(null)}
+        onBack={closeShop}
         onToggleFavourite={() => toggleFavourite(selected)}
         refresh={load}
         onJoined={(m) => { setMemberships(prev => [...prev.filter(x => x.business_id !== m.business_id), { ...m, rolling_spend_pence: 0 }]); void afterJoin(selected.name) }}
         cardLinking={cardLinking}
         onLinkCard={() => void linkCardFromShop()}
       />
-      {pingSheet}
-      </>
-    )
-  }
+    </CardGrowOverlay>
+  ) : null
 
   const discovering = tab === 'discover' && SHOW_DISCOVER_TAB
   const listLoad: ListLoad = { loading: loading && !everLoaded, failed: loadFailed && !everLoaded, onRetry: () => void load() }
 
   return (
-    <SafeAreaView style={styles.safe} edges={discovering ? ['bottom'] : ['top', 'bottom']}>
+    <View style={styles.safe}>
+    <SafeAreaView
+      style={styles.safe}
+      edges={discovering ? ['bottom'] : ['top', 'bottom']}
+      accessibilityElementsHidden={!!selected}
+      importantForAccessibility={selected ? 'no-hide-descendants' : 'auto'}
+    >
       <StatusBar barStyle={statusBarStyle(isDark, discovering)} />
       {!discovering && tab !== 'home' && tab !== 'map' && <AppHeader onOpenProfile={() => setShowProfile(true)} />}
       {!discovering && <OutageBanner status={serviceStatus} savedAt={savedAt} />}
@@ -3112,25 +3134,25 @@ function AppHome({ session }: { session: Session }) {
         <DiscoverTab
           favouriteIds={favouriteIds}
           onToggleFavourite={toggleFavourite}
-          onOpenShop={setSelected}
+          onOpenShop={openShop}
           onBack={() => setTab('home')}
         />
       ) : tab === 'map' ? (
-        <MapTab businesses={localBusinesses} onSelect={setSelected} onAsk={(query,location) => setAskShop({query,location})} />
+        <MapTab businesses={localBusinesses} onSelect={openShop} onAsk={(query,location) => setAskShop({query,location})} />
       ) : (
         <KeyboardAwareScrollView contentContainerStyle={styles.screen} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} {...whirlRefreshControlProps} />}>
           <WhirlRefreshIndicator refreshing={loading} />
-          {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} failed={loadFailed} onRetry={() => void load()} announcements={announcements} onSelect={setSelected} onShowCard={showCard} onAsk={query => setAskShop({query})} />}
+          {tab === 'home' && <HomeTab userId={userId} firstName={session.user.user_metadata?.first_name} onOpenProfile={() => setShowProfile(true)} onSeeNews={() => setTab('news')} businesses={localBusinesses} memberships={memberships} catalog={homeCatalog} loading={loading} failed={loadFailed} onRetry={() => void load()} announcements={announcements} onSelect={openShop} onShowCard={showCard} onAsk={query => setAskShop({query})} />}
           {tab === 'news' && <NewsTab announcements={announcements} load={listLoad} />}
           {tab === 'rewards' && <RewardsTab rewards={rewards} load={listLoad} />}
           {tab === 'favourites' && (
-            <FavouritesTab favourites={favouriteBusinesses} memberships={memberships} onSelect={setSelected} onQuickJoin={quickJoin} load={listLoad} />
+            <FavouritesTab favourites={favouriteBusinesses} memberships={memberships} onSelect={openShop} onQuickJoin={quickJoin} load={listLoad} />
           )}
         </KeyboardAwareScrollView>
       )}
       {!discovering && <BottomTabBar tab={tab} onChange={setTab} />}
       {celebration}
-      <AskShopSheet visible={askShop !== null} initialQuery={askShop?.query ?? ''} location={askShop?.location} onClose={() => setAskShop(null)} onViewShop={id => { const shop=businesses.find(b => b.id === id); if(shop)setSelected(shop) }} />
+      <AskShopSheet visible={askShop !== null} initialQuery={askShop?.query ?? ''} location={askShop?.location} onClose={() => setAskShop(null)} onViewShop={id => { const shop=businesses.find(b => b.id === id); if(shop)openShop(shop) }} />
       <SettingsSheet
         visible={showProfile}
         session={session}
@@ -3140,7 +3162,7 @@ function AppHome({ session }: { session: Session }) {
         cardLinking={cardLinking}
         country={shopperCountry}
         onLinkCard={() => void linkCardFromSettings()}
-        onViewRequested={id=>{const shop=businesses.find(b=>b.id===id);if(shop){setShowProfile(false);setSelected(shop)}}}
+        onViewRequested={id=>{const shop=businesses.find(b=>b.id===id);if(shop){setShowProfile(false);openShop(shop)}}}
         onClose={() => {
           setShowProfile(false)
           setSettingsView('root')
@@ -3149,6 +3171,8 @@ function AppHome({ session }: { session: Session }) {
       {cardLinkedCheck}
       {pingSheet}
     </SafeAreaView>
+    {shopOverlay}
+    </View>
   )
 }
 

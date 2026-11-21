@@ -6,6 +6,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { CardRail, NextRewardHero } from './HomeCollection'
 import { QuickCardsSheet } from './QuickCardsSheet'
+import { markCardOrigin } from './CardGrow'
 import { FadeUp, INK, MUTED, PACIFIC, PAPER, SAGE, SANS_HEAVY, SANS_MEDIUM, SAPPHIRE, SLATE } from './Poster'
 import { homeProgress } from '../home-progress'
 import { shopMoney } from '../money'
@@ -144,7 +145,7 @@ export function HomeFeed<T extends FeedShop>({
       )}
       <View style={s.rows}>
         {near.map(({ shop, miles }, i) => (
-          <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}${shop.category ? `, ${shop.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`} onPress={() => onSelect(shop)} style={({ pressed }) => [s.row, pressed && s.pressed]}>
+          <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}${shop.category ? `, ${shop.category}` : ''}${miles !== null ? `, ${formatMiles(miles)} away` : ''}`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: colors.card, radius: 22 }); onSelect(shop) }} style={({ pressed }) => [s.row, pressed && s.pressed]}>
             <ShopMark shop={shop} index={i} />
             <View style={s.rowCopy}>
               <Text style={s.rowName} numberOfLines={1}>{shop.name}</Text>
