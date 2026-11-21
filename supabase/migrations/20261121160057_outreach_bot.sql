@@ -1,7 +1,7 @@
 -- Cold-email outreach bot, moved online from the owner's laptop
 -- (marketing/outreach-bot). Same data the local bot kept in CSV files and
 -- state.json, held here so the `outreach-send` edge function can send on
--- schedule while the laptop is off. NOT applied yet: owner's yes first.
+-- schedule while the laptop is off. Applied to production 2026-11-21.
 --
 -- Admin only. Every table has RLS with one policy: has_role(auth.uid(), 'admin').
 -- anon gets nothing. The edge function uses the service role.
