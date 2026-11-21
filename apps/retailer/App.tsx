@@ -137,6 +137,9 @@ type Business = {
   country_code?: string | null;
   verification_status?: "unverified" | "pending" | "verified" | "rejected";
   approval_status?: "pending" | "approved" | "rejected";
+  /** Missing until the automatic win-back migration is applied. */
+  winback_auto_enabled?: boolean;
+  winback_threshold_days?: number;
 };
 type StaffBusiness = {
   business_id: string;
@@ -1875,7 +1878,8 @@ function DashboardHome({
   );
 }
 
-function CustomersHome({ business }: { business: Business }) {
+function CustomersHome({ business, onBusinessChanged }: { business: Business; onBusinessChanged: () => Promise<void> | void }) {
+  const days = business.winback_threshold_days ?? 30;
   const [members, setMembers] = useState<MemberRow[] | null>(null),
     [audience, setAudience] = useState<"all" | "inactive_30" | "regulars">("all"),
     [title, setTitle] = useState(""),
@@ -1888,7 +1892,7 @@ function CustomersHome({ business }: { business: Business }) {
       setMembers((data || []) as MemberRow[]);
     });
   }, [business.id]);
-  const cutoff = Date.now() - 30 * 86400000;
+  const cutoff = Date.now() - days * 86400000;
   // Same rule as the server: no visit yet counts from the day they joined.
   const seen = (m: MemberRow) => new Date(m.last_activity_at || m.joined_at).getTime();
   const list = members || [];
@@ -1920,26 +1924,27 @@ function CustomersHome({ business }: { business: Business }) {
   async function emailQuiet() {
     setEmailing(true);
     const { data, error } = await supabase.functions.invoke("send-winback-emails", {
-      body: { business_id: business.id, days_inactive_threshold: 30 },
+      body: { business_id: business.id, days_inactive_threshold: days },
     });
     setEmailing(false);
     if (error) {
       showAlert("Could not send emails", "Try again in a minute.");
       return;
     }
-    const result = data as { sent?: number; skipped?: number; errors?: number; message?: string };
+    const result = data as { sent?: number; skipped?: number; errors?: number; remaining?: number; message?: string };
     if (!result.sent && result.errors) {
       showAlert("Emails not sent", "Email sending isn't set up yet. Push notifications still work.");
       return;
     }
     if (!result.sent && !result.skipped) {
-      showAlert("Nobody to email", "Everyone has visited in the last 30 days.");
+      showAlert("Nobody to email", `Everyone has visited in the last ${days} days.`);
       return;
     }
     showAlert(
       "Emails sent",
       `${result.sent ?? 0} sent with a comeback code.` +
-        (result.skipped ? ` ${result.skipped} already had one this month.` : ""),
+        (result.skipped ? ` ${result.skipped} already had one this month.` : "") +
+        (result.remaining ? ` ${result.remaining} more are waiting: tap Send now again to email them.` : ""),
     );
   }
   return (
@@ -1962,7 +1967,7 @@ function CustomersHome({ business }: { business: Business }) {
               </View>
             ))
           ) : (
-            <Text style={styles.pageIntro}>Everyone has visited in the last 30 days.</Text>
+            <Text style={styles.pageIntro}>Everyone has visited in the last {days} days.</Text>
           )}
         </>
       )}
@@ -1994,13 +1999,150 @@ function CustomersHome({ business }: { business: Business }) {
         />
         <Button title={sending ? "Sending…" : "Send push notification"} onPress={() => void send()} />
       </View>
+      {"winback_auto_enabled" in business ? (
+        <AutoWinbackSection business={business} days={days} onBusinessChanged={onBusinessChanged} />
+      ) : null}
       <View style={styles.card}>
         <Text style={styles.fieldLabel}>Email customers who've gone quiet</Text>
         <Text style={[styles.pageIntro, { marginTop: 6 }]}>
-          Everyone who hasn't visited in 30 days gets an email with a comeback code. Nobody gets more than one a month.
+          Send now to everyone who hasn't visited in {days} days, with a comeback code. Nobody gets more than one a month.
         </Text>
-        <Button title={emailing ? "Sending…" : "Send win-back emails"} onPress={() => void emailQuiet()} />
+        <Button title={emailing ? "Sending…" : "Send win-back emails now"} disabled={emailing} onPress={() => void emailQuiet()} />
       </View>
+    </View>
+  );
+}
+
+// Automatic win-back (businesses.winback_auto_enabled / winback_threshold_days): a daily
+// job emails customers as they go quiet, at about 10am UK time. Same rules as the website.
+function AutoWinbackSection({
+  business,
+  days,
+  onBusinessChanged,
+}: {
+  business: Business;
+  days: number;
+  onBusinessChanged: () => Promise<void> | void;
+}) {
+  const on = business.winback_auto_enabled !== false;
+  const [shown, setShown] = useState(on);
+  const [draft, setDraft] = useState(String(days));
+  const [busy, setBusy] = useState(false);
+  const [nextRun, setNextRun] = useState<{ would_send: number; waiting: number } | null>(null);
+  const [lastRun, setLastRun] = useState<{ run_on: string; sent: number; failed: number; waiting: number } | null>(null);
+  useEffect(() => setShown(on), [on]);
+  useEffect(() => setDraft(String(days)), [days]);
+  useEffect(() => {
+    let live = true;
+    // Counts only; nothing is sent. preview_for, never business_id: the older function
+    // ignored dry_run and would have sent, but rejects a body without business_id.
+    supabase.functions
+      .invoke("send-winback-emails", { body: { preview_for: business.id } })
+      .then(({ data }) => {
+        const auto = (data as { automatic?: { would_send: number; waiting: number } } | null)?.automatic;
+        if (live) setNextRun(auto ?? null);
+      });
+    supabase
+      .from("winback_auto_runs")
+      .select("run_on, sent, failed, waiting")
+      .eq("business_id", business.id)
+      .order("run_on", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (live) setLastRun(data ?? null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [business.id, days, on]);
+
+  async function save(patch: { winback_auto_enabled?: boolean; winback_threshold_days?: number }) {
+    setBusy(true);
+    const { error } = await supabase.from("businesses").update(patch).eq("id", business.id);
+    setBusy(false);
+    if (error) {
+      setShown(on);
+      setDraft(String(days));
+      return showAlert("Could not save", "Your change wasn't saved. Check the connection and try again.");
+    }
+    await onBusinessChanged();
+    if (patch.winback_auto_enabled === false) {
+      showAlert("Automatic emails off", "Nobody gets a win-back email unless you tap Send now.");
+    } else if (patch.winback_auto_enabled === true) {
+      showAlert("Automatic emails on", "The next ones go out at about 10am.");
+    } else {
+      showAlert("Saved", `Customers now count as gone quiet after ${patch.winback_threshold_days} days.`);
+    }
+  }
+
+  function saveDays() {
+    const value = Number(draft);
+    if (!Number.isInteger(value) || value < 7 || value > 365) {
+      return showAlert("Check the days", "Enter a whole number of days from 7 to 365.");
+    }
+    void save({ winback_threshold_days: value });
+  }
+
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const lastRunText = lastRun
+    ? `Last morning run, ${new Date(lastRun.run_on + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}: ` +
+      (lastRun.sent ? `${plural(lastRun.sent, "email")} sent` : "nobody was due") +
+      (lastRun.failed ? `, ${lastRun.failed} didn't go through (tried again next morning)` : "") +
+      (lastRun.waiting ? `, ${lastRun.waiting} kept for the next mornings` : "") +
+      "."
+    : null;
+
+  return (
+    <View style={[styles.card, { backgroundColor: schemeColor("#DCEBD9", "bg") }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <Text style={[styles.fieldLabel, { flex: 1, fontSize: 15, marginTop: 0, marginBottom: 0 }]}>Automatic win-back emails</Text>
+        <Switch
+          value={shown}
+          disabled={busy}
+          accessibilityLabel="Automatic win-back emails"
+          onValueChange={(next) => {
+            setShown(next);
+            void save({ winback_auto_enabled: next });
+          }}
+        />
+      </View>
+      {shown ? (
+        <>
+          <Text style={[styles.memberMeta, { fontSize: 14, lineHeight: 20, marginTop: 0 }]}>
+            Every morning at about 10am (UK time) customers who haven't visited for {days} days get an email with a one-use comeback
+            code, valid for 30 days. One each time they go quiet, never to anyone who turned off offers. Up to 50 a day.
+          </Text>
+          <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>Counts as gone quiet after (days)</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <TextInput
+              style={[styles.input, { width: 96 }]}
+              value={draft}
+              onChangeText={(value) => setDraft(value.replace(/[^0-9]/g, ""))}
+              keyboardType="number-pad"
+              maxLength={3}
+              accessibilityLabel="Days before a customer counts as gone quiet"
+            />
+            {draft !== String(days) ? (
+              <View style={{ flex: 1 }}>
+                <Button title={busy ? "Saving…" : "Save"} disabled={busy} onPress={saveDays} />
+              </View>
+            ) : null}
+          </View>
+          {nextRun ? (
+            <Text style={[styles.memberMeta, { fontSize: 14, fontWeight: "700", marginTop: 0 }]}>
+              {nextRun.would_send
+                ? `Next run: ${plural(nextRun.would_send, "customer")} due an email` + (nextRun.waiting ? `, ${nextRun.waiting} more on the mornings after.` : ".")
+                : "Next run: nobody is due an email yet."}
+            </Text>
+          ) : null}
+          {lastRunText ? <Text style={[styles.memberMeta, { fontSize: 13, marginTop: 0 }]}>{lastRunText}</Text> : null}
+        </>
+      ) : (
+        <Text style={[styles.memberMeta, { fontSize: 14, lineHeight: 20, marginTop: 0 }]}>
+          Off. Nobody gets a win-back email unless you tap Send now below.
+        </Text>
+      )}
     </View>
   );
 }
@@ -2969,7 +3111,7 @@ function Dashboard({
                   onWinBack={() => setTab("customers")}
                 />
               )}{" "}
-              {tab === "customers" && <CustomersHome business={selected} />}{" "}
+              {tab === "customers" && <CustomersHome business={selected} onBusinessChanged={() => load(true)} />}{" "}
               {tab === "scan" && (
                 <StampsScreen
                   business={selected}

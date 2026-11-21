@@ -61,6 +61,11 @@ verify_jwt = false
 [functions.outreach-send]
 verify_jwt = false
 
+# Win-back emails. "Send now" checks the owner's JWT itself; the daily pg_cron job
+# has no user session and sends the Vault secret 'winback_cron_secret' instead.
+[functions.send-winback-emails]
+verify_jwt = false
+
 # Public printable QR poster PDF for the Business app (only shows public shop info).
 [functions.shop-poster]
 verify_jwt = false

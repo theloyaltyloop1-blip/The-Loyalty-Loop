@@ -26,6 +26,10 @@ import {
   fetchRewardCatalog,
   fetchWinbackLog,
   triggerWinbackEmails,
+  previewWinbackEmails,
+  fetchLastWinbackAutoRun,
+  type WinbackPreview,
+  type WinbackAutoRun,
   submitVerificationDocument,
   runVerificationCheck,
   fetchMyVerification,
@@ -1488,15 +1492,20 @@ function SpendLoyaltyTab() {
   )
 }
 
+const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? one : many}`
+
 function WinbackTab() {
-  const { business } = useOwner()
-  const [threshold, setThreshold] = React.useState(30)
+  const { business, updateLocalBusiness } = useOwner()
+  const savedDays = business?.winback_threshold_days ?? 30
+  const [threshold, setThreshold] = React.useState(savedDays)
   const [log, setLog] = React.useState<WinbackLogEntry[]>([])
   const [loadingLog, setLoadingLog] = React.useState(true)
   const [sending, setSending] = React.useState(false)
   const [result, setResult] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [logError, setLogError] = React.useState(false)
+  const [preview, setPreview] = React.useState<WinbackPreview | null>(null)
+  const [lastRun, setLastRun] = React.useState<WinbackAutoRun | null>(null)
 
   const loadLog = React.useCallback(() => {
     if (!business) return
@@ -1510,7 +1519,22 @@ function WinbackTab() {
 
   React.useEffect(() => {
     loadLog()
+    if (business) fetchLastWinbackAutoRun(business.id).then(setLastRun)
   }, [loadLog])
+
+  React.useEffect(() => {
+    setThreshold(savedDays)
+  }, [business?.id, savedDays])
+
+  // Counts only, nothing is sent: how many the next morning run and "Send now" would email.
+  React.useEffect(() => {
+    if (!business) return
+    let live = true
+    const timer = window.setTimeout(() => {
+      previewWinbackEmails(business.id, threshold).then((p) => { if (live) setPreview(p) })
+    }, 400)
+    return () => { live = false; window.clearTimeout(timer) }
+  }, [business?.id, threshold, savedDays, business?.winback_auto_enabled, log.length])
 
   if (!business) return null
 
@@ -1523,7 +1547,8 @@ function WinbackTab() {
       setResult(
         res.message ?? `Sent ${res.sent} email${res.sent === 1 ? '' : 's'}` +
           (res.skipped ? `, skipped ${res.skipped} (already emailed recently)` : '') +
-          (res.errors ? `, ${res.errors} failed` : '')
+          (res.errors ? `, ${res.errors} failed` : '') +
+          (res.remaining ? `. ${res.remaining} more waiting: press Send now again to email them.` : '')
       )
       loadLog()
     } catch (e) {
@@ -1535,10 +1560,21 @@ function WinbackTab() {
 
   return (
     <>
-      <SectionCard title="Send win-back emails">
+      {'winback_auto_enabled' in business && (
+        <AutoWinbackCard
+          businessId={business.id}
+          on={business.winback_auto_enabled !== false}
+          days={savedDays}
+          preview={preview?.automatic ?? null}
+          lastRun={lastRun}
+          onSaved={updateLocalBusiness}
+        />
+      )}
+
+      <SectionCard title="Send now">
         <p className="text-sm text-muted-foreground mb-4">
-          Emails members who haven't visited in a while, with a one-off coupon code, to bring them back.
-          Skips anyone already emailed in the last 30 days or opted out of promos.
+          Emails straight away everyone who hasn't visited for at least this many days, with a one-use comeback code.
+          Skips anyone already emailed in the last 30 days or opted out of offers. Up to 100 at a time.
         </p>
         <div className="flex flex-wrap items-end gap-4">
           <Field label="Inactive for at least (days)">
@@ -1553,11 +1589,18 @@ function WinbackTab() {
           <button data-press-feedback
             onClick={handleSend}
             disabled={sending}
-            className="h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 flex items-center gap-2 disabled:opacity-50"
+            className="mb-4 h-12 rounded-full bg-primary hover:bg-primary-hover transition-colors text-primary-foreground font-semibold px-6 flex items-center gap-2 disabled:opacity-50"
           >
             <Send className="h-4 w-4" /> {sending ? 'Sending…' : 'Send now'}
           </button>
         </div>
+        {preview && !result && (
+          <p className="text-sm text-muted-foreground">
+            {preview.send_now.would_send
+              ? `${plural(preview.send_now.would_send, 'customer')} would get one now.`
+              : 'Nobody is due one right now.'}
+          </p>
+        )}
         {result && <p className="text-sm text-fun-green font-semibold mt-3">{result}</p>}
         {error && <p className="text-sm text-destructive font-semibold mt-3">{error}</p>}
       </SectionCard>
@@ -1576,8 +1619,8 @@ function WinbackTab() {
                 key={entry.id}
                 className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3 text-sm"
               >
-                <div>
-                  <p className="font-semibold text-foreground">{entry.recipient_email}</p>
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground break-all">{entry.recipient_email}</p>
                   <p className="text-xs text-muted-foreground">
                     {entry.days_inactive} days inactive · code {entry.coupon_code} ·{' '}
                     {new Date(entry.sent_at).toLocaleDateString()}
@@ -1597,6 +1640,110 @@ function WinbackTab() {
         )}
       </SectionCard>
     </>
+  )
+}
+
+// Automatic win-back (businesses.winback_auto_enabled / winback_threshold_days). A daily
+// job emails customers as they go quiet, at about 10am UK time. Hidden until the database
+// has the columns.
+function AutoWinbackCard({
+  businessId,
+  on,
+  days,
+  preview,
+  lastRun,
+  onSaved,
+}: {
+  businessId: string
+  on: boolean
+  days: number
+  preview: WinbackPreview['automatic'] | null
+  lastRun: WinbackAutoRun | null
+  onSaved: (patch: { winback_auto_enabled?: boolean; winback_threshold_days?: number }) => void
+}) {
+  const [draft, setDraft] = React.useState(String(days))
+  const [busy, setBusy] = React.useState(false)
+  const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null)
+  React.useEffect(() => setDraft(String(days)), [days, businessId])
+
+  async function save(patch: { winback_auto_enabled?: boolean; winback_threshold_days?: number }, done: string) {
+    setBusy(true)
+    setMessage(null)
+    try {
+      await updateBusiness(businessId, patch)
+      onSaved(patch)
+      setMessage({ ok: true, text: done })
+    } catch {
+      setMessage({ ok: false, text: 'Could not save. Check the connection and try again.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function saveDays() {
+    const value = Number(draft)
+    if (!Number.isInteger(value) || value < 7 || value > 365) {
+      return setMessage({ ok: false, text: 'Enter a whole number of days from 7 to 365.' })
+    }
+    void save({ winback_threshold_days: value }, `Saved. Customers now count as gone quiet after ${value} days.`)
+  }
+
+  const lastRunText = lastRun
+    ? `Last morning run, ${new Date(lastRun.run_on + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}: ` +
+      (lastRun.sent ? `${plural(lastRun.sent, 'email')} sent` : 'nobody was due') +
+      (lastRun.failed ? `, ${lastRun.failed} didn’t go through (we try again the next morning)` : '') +
+      (lastRun.waiting ? `, ${lastRun.waiting} kept for the next mornings` : '') + '.'
+    : null
+
+  return (
+    <div className="mb-5 rounded-3xl bg-sage p-6 text-sage-ink sm:p-7">
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight"><Clock className="h-5 w-5" /> Automatic win-back</h3>
+        <button data-press-feedback
+          role="switch"
+          aria-checked={on}
+          aria-label="Automatic win-back emails"
+          disabled={busy}
+          onClick={() => void save(
+            { winback_auto_enabled: !on },
+            on ? 'Switched off. Nobody gets a win-back email unless you press Send now.' : 'Switched on. The next emails go out at about 10am.',
+          )}
+          className={'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ease-out disabled:opacity-60 ' + (on ? 'bg-primary' : 'bg-foreground/15')}
+        >
+          <span className={'absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ' + (on ? 'translate-x-6' : 'translate-x-1')} />
+        </button>
+      </div>
+      {on ? (
+        <>
+          <p className="mt-2 text-sm opacity-80">
+            Every morning at about 10am (UK time) we email customers who haven’t visited for {days} days, with a one-use comeback code
+            that’s valid for 30 days. Each customer gets one when they go quiet, and not another until they’ve been back. Anyone who
+            has turned off offers from your shop never gets one. Up to 50 a day; any more go out the next morning.
+          </p>
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <label className="text-sm font-semibold">Counts as gone quiet after (days)
+              <input className={`${inputClass} mt-1.5 max-w-[8rem]`} inputMode="numeric" value={draft} onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, ''))} />
+            </label>
+            {draft !== String(days) && (
+              <button data-press-feedback onClick={saveDays} disabled={busy} className="flex h-12 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50">
+                {busy ? 'Saving…' : 'Save'}
+              </button>
+            )}
+          </div>
+          {preview && (
+            <p className="mt-4 text-sm font-medium">
+              {preview.would_send
+                ? `Next run: ${plural(preview.would_send, 'customer')} due an email` + (preview.waiting ? `, ${preview.waiting} more on the mornings after.` : '.')
+                : 'Next run: nobody is due an email yet.'}
+            </p>
+          )}
+          {lastRunText && <p className="mt-1 text-sm opacity-80">{lastRunText}</p>}
+        </>
+      ) : (
+        <p className="mt-2 text-sm opacity-80">Off. Nobody gets a win-back email unless you press Send now below.</p>
+      )}
+      {message && <p role={message.ok ? 'status' : 'alert'} className="mt-3 text-sm font-medium">{message.text}</p>}
+    </div>
   )
 }
 

@@ -48,6 +48,10 @@ export interface Business {
   reward_threshold_pence: number | null
   /** Birthday bonus stamps/points (stamp and points shops); null = off; missing until the birthday migration is applied. */
   birthday_bonus?: number | null
+  /** Automatic win-back emails each morning; missing until the automatic win-back migration is applied. */
+  winback_auto_enabled?: boolean
+  /** Days without a visit before a member counts as gone quiet (7 to 365). */
+  winback_threshold_days?: number
   manual_spend_max_pence: number
   features: string[] | null
   halal_certifier: string | null
@@ -476,7 +480,44 @@ export async function triggerWinbackEmails(businessId: string, daysInactiveThres
     body: { business_id: businessId, days_inactive_threshold: daysInactiveThreshold },
   })
   if (error) throw error
-  return data as { sent: number; skipped: number; errors: number; message?: string }
+  return data as { sent: number; skipped: number; errors: number; remaining?: number; message?: string }
+}
+
+export interface WinbackPreview {
+  send_now: { would_send: number; skipped: number; waiting: number }
+  automatic: { would_send: number; waiting: number }
+}
+
+/** Counts only, sends nothing. Uses preview_for, never business_id: the older function
+ * ignored dry_run and would have sent, but rejects a body without business_id. Null when
+ * the function can't answer (for example before the automatic win-back version is deployed). */
+export async function previewWinbackEmails(businessId: string, daysInactiveThreshold: number): Promise<WinbackPreview | null> {
+  const { data, error } = await supabase.functions.invoke('send-winback-emails', {
+    body: { preview_for: businessId, days_inactive_threshold: daysInactiveThreshold },
+  })
+  if (error || !data || typeof data !== 'object' || !('automatic' in data)) return null
+  return data as WinbackPreview
+}
+
+export interface WinbackAutoRun {
+  run_on: string
+  sent: number
+  failed: number
+  waiting: number
+  finished_at: string | null
+}
+
+/** The latest automatic run for this shop, or null (none yet, or table not there yet). */
+export async function fetchLastWinbackAutoRun(businessId: string): Promise<WinbackAutoRun | null> {
+  const { data, error } = await supabase
+    .from('winback_auto_runs')
+    .select('run_on, sent, failed, waiting, finished_at')
+    .eq('business_id', businessId)
+    .order('run_on', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) return null
+  return (data as WinbackAutoRun | null) ?? null
 }
 
 /** Owner/admin only — enforced by the transactions_insert_owner_or_admin RLS
