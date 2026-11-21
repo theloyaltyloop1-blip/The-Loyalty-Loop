@@ -50,6 +50,7 @@ import { PROGRAMMES, programmeIdFor } from "@loyalty-loop/loyalty";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./shop-features";
 import { supabase } from "./supabase";
 import { MapPinPicker } from "./MapPinPicker";
+import { OpeningHoursEditor, OpeningHoursSummary, hasHours, invalidHoursDay, type OpeningHours } from "./OpeningHoursEditor";
 import { validPin, type LatLng } from "./tile-map";
 import { setSimulatedOutage, simulatedOutage } from "./service-status";
 import { waitingStamps } from "./offline-stamps";
@@ -88,6 +89,7 @@ export type ShopBusiness = {
   reward_threshold_pence?: number | null;
   features?: string[] | null;
   halal_certifier?: string | null;
+  opening_hours?: OpeningHours | null;
 };
 
 const LOYALTY_TYPE_OPTIONS: {
@@ -310,6 +312,7 @@ function completenessOf(business: ShopBusiness): Completeness[] {
     { key: "postcode", label: "Postcode", done: filled(business.postcode), action: "details" },
     { key: "pin", label: "Map pin", done: validPin(business.lat, business.lng) !== null, action: "details" },
     { key: "phone", label: "Phone number", done: filled(business.phone), action: "details" },
+    { key: "hours", label: "Opening hours", done: hasHours(business.opening_hours), action: "details" },
     { key: "description", label: "Description", done: filled(business.description), action: "details" },
     { key: "logo", label: "Logo", done: filled(business.logo_url), action: "branding" },
     { key: "cover", label: "Cover photo", done: filled(business.cover_url), action: "branding" },
@@ -590,6 +593,7 @@ function ShopDetailsPage({
     [address, setAddress] = useState(business.address || ""),
     [postcode, setPostcode] = useState(business.postcode || ""),
     [phone, setPhone] = useState(business.phone || ""),
+    [hours, setHours] = useState<OpeningHours>(business.opening_hours ?? {}),
     [loyaltyType, setLoyaltyType] = useState<ShopBusiness["loyalty_type"]>(
       business.loyalty_type || "stamp_card",
     ),
@@ -652,11 +656,15 @@ function ShopDetailsPage({
     setAddress(business.address || "");
     setPostcode(business.postcode || "");
     setPhone(business.phone || "");
+    setHours(business.opening_hours ?? {});
     setLoyaltyType(business.loyalty_type || "stamp_card");
   }, [business.id]);
   const save = async () => {
     if (!name.trim())
       return showAlert("Shop name needed", "Enter a name for your business.");
+    const badDay = invalidHoursDay(hours);
+    if (badDay)
+      return showAlert("Check your opening hours", `On ${badDay}, the closing time must be after the opening time.`);
     setSaving(true);
     try {
       // .select("id") matters here: without it, a write that RLS silently
@@ -674,6 +682,8 @@ function ShopDetailsPage({
           address: address.trim() || null,
           postcode: postcode.trim() || null,
           phone: phone.trim() || null,
+          // Same jsonb shape the website writes; an untouched empty editor keeps "no hours set".
+          opening_hours: hasHours(hours) ? hours : business.opening_hours ?? null,
           ...(spendShop
             ? {}
             : {
@@ -834,6 +844,13 @@ function ShopDetailsPage({
               onClose={() => setPinOpen(false)}
             />
           </View>
+          <Text style={styles.groupLabel}>Opening hours</Text>
+          <View style={styles.settingsGroup}>
+            <Text style={styles.copy}>
+              Shoppers see these on your shop page, along with whether you are open right now. Tap a time to change it.
+            </Text>
+            <OpeningHoursEditor hours={hours} onChange={setHours} />
+          </View>
           <Text style={styles.groupLabel}>Loyalty programme</Text>
           <View style={styles.settingsGroup}>
             <Text style={styles.fieldLabel}>How customers collect</Text>
@@ -925,6 +942,8 @@ function ShopDetailsPage({
                 <Text style={styles.readOnlyValue}>{business.phone || "-"}</Text>
               </View>
             </View>
+            <Text style={styles.fieldLabel}>Opening hours</Text>
+            <OpeningHoursSummary hours={business.opening_hours} />
           </View>
           <Text style={styles.groupLabel}>Loyalty programme</Text>
           <View style={styles.settingsGroup}>
