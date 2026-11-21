@@ -1,5 +1,5 @@
 -- Schedule for the outreach sender. Apply only AFTER the `outreach-send`
--- function is deployed and its secrets are set. NOT applied yet.
+-- function is deployed and its secrets are set. Applied to production 2026-11-21.
 --
 -- Runs every minute, but only calls the function while auto-send is on.
 -- The function itself decides whether to send (sending hours, weekdays,
