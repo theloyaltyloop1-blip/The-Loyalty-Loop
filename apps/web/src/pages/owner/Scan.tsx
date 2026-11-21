@@ -11,6 +11,7 @@ import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import {
   awardProgress,
+  fetchBirthdayBonus,
   sendVisitThankYou,
   sendUserPush,
   updateWalletPass,
@@ -190,11 +191,16 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
     setBusy(true)
     setError(null)
     try {
-      await awardProgress(businessId, matchedUserId, amount)
+      const clientRef = await awardProgress(businessId, matchedUserId, amount)
       void sendVisitThankYou(businessId, matchedUserId, amount)
       void sendUserPush(businessId, matchedUserId)
       void updateWalletPass(businessId, matchedUserId)
-      setSuccess(`Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`)
+      const awarded = `Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`
+      setSuccess(awarded)
+      const name = match?.first_name || 'the customer'
+      void fetchBirthdayBonus({ clientRef }).then((bonus) => {
+        if (bonus > 0) setSuccess((current) => current === awarded ? `🎂 Happy birthday, ${name}! Their birthday month added ${bonus} bonus ${unit}${bonus === 1 ? '' : 's'}. ${awarded}` : current)
+      })
       reset()
       setScanCycle((cycle) => cycle + 1)
     } catch (e) {
@@ -567,6 +573,11 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
     try {
       const result = await recordManualSpend(businessId, matchedUserId, amountPence, paymentMethod ?? null, clientRef.current)
       clientRef.current = null
+      if (result.status === 'recorded') {
+        void fetchBirthdayBonus({ transactionId: result.transactionId }).then((bonus) => {
+          if (bonus > 0) setSuccess((current) => current ? `🎂 Happy birthday, ${name}! Their birthday month added ${bonus} bonus point${bonus === 1 ? '' : 's'}. ${current}` : current)
+        })
+      }
       const left = Math.max(0, (result.thresholdPence ?? 0) - result.progressPence)
       const resultStanding = standingFromSnapshot(result, formatPounds)
       setSuccess(result.rewardsEarned

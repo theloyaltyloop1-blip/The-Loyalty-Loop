@@ -1,10 +1,14 @@
 import { supabase } from './supabase'
 
-export type ActivityItem = { id: string; type: 'stamp' | 'redeem' | 'points_earn' | 'points_spend' | 'spend'; value: number; note: string | null; created_at: string; voided_at?: string | null; business: { name: string; brand_color: string } | null }
+export type ActivityItem = { id: string; type: 'stamp' | 'redeem' | 'points_earn' | 'points_spend' | 'spend'; value: number; note: string | null; created_at: string; voided_at?: string | null; birthday_bonus?: number; business: { name: string; brand_color: string } | null }
 export type InboxItem = { id: string; title: string; body: string | null; link: string | null; kind: string; read_at: string | null; created_at: string; business: { name: string } | null }
 
 export async function fetchActivity(userId: string) {
-  const { data, error } = await supabase.from('transactions').select('id,type,value,note,created_at,voided_at,business:businesses(name,brand_color)').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
+  const columns = 'id,type,value,note,created_at,voided_at,business:businesses(name,brand_color)'
+  const read = (cols: string) => supabase.from('transactions').select(cols).eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
+  // birthday_bonus only exists once the birthday migration is applied; fall back without it.
+  let { data, error } = await read(`${columns},birthday_bonus`)
+  if (error) ({ data, error } = await read(columns))
   if (error) throw error
   return (data ?? []).map((row: any) => ({ ...row, business: Array.isArray(row.business) ? row.business[0] ?? null : row.business })) as ActivityItem[]
 }

@@ -82,6 +82,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } from './src/usage-analytics'
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
+import { BirthdayPicker, ShopBirthdayCard, formatBirthday, useMyBirthday } from './src/components/Birthday'
 import { AppAlertHost, showAlert } from './src/components/AppAlert'
 import { EmailCodeStep } from './src/components/EmailCodeStep'
 import { codeErrorMessage, isExistingAccount, isUnconfirmedEmail } from './src/email-code'
@@ -383,6 +384,8 @@ type Business = {
   loyalty_config?: { stamps_required?: number; points_per_pound?: number }
   reward_model?: 'stamp_legacy' | 'spend_threshold' | 'tiers' | 'points'
   reward_threshold_pence?: number | null
+  /** Extra stamps/points in the member's birthday month; null = off, undefined = database not updated yet. */
+  birthday_bonus?: number | null
   features?: string[] | null
   halal_certifier?: string | null
   trending?: boolean | null
@@ -732,8 +735,8 @@ function SettingsGroup({ title, children }: { title?: string; children: ReactNod
 // 'Same as my phone' needs the next store build (userInterfaceStyle automatic); until then this installed app can't see the phone's setting, so only Light/Dark are offered.
 const APPEARANCE_LABELS = { light: 'Light', dark: 'Dark', system: 'Light' } as const
 
-type SettingsView = 'root' | 'card' | 'name' | 'blocked' | 'cards' | 'externalCards'
-const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Your code', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards', externalCards: 'My other cards' }
+type SettingsView = 'root' | 'card' | 'name' | 'blocked' | 'cards' | 'externalCards' | 'birthday'
+const SETTINGS_TITLES: Record<SettingsView, string> = { root: 'Your account', card: 'Your code', name: 'Your name', blocked: 'Blocked people', cards: 'Linked cards', externalCards: 'My other cards', birthday: 'Your birthday' }
 
 /** Account pop-up: a bottom sheet with a brand hero (name + customer card), then
  * grouped rows — security & privacy → notifications → support → legal → account.
@@ -752,6 +755,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
   const email = session.user.email || ''
   const [name, setName] = useState(session.user.user_metadata?.first_name || '')
   const [savingName, setSavingName] = useState(false)
+  const { birthday } = useMyBirthday(userId)
   const theme = useTheme()
   const version = Constants.expoConfig?.version ?? '1.0.0'
   const updateLabel = Updates.updateId ? `update ${Updates.updateId.slice(0, 8)}` : 'store build'
@@ -878,6 +882,9 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   <ChevronRightIcon color={colors.primaryText} size={18} />
                 </Pressable>
               </LinearGradient>
+              <SettingsGroup title="Birthday">
+                <SettingsRow tile="amber" icon={(c) => <GiftIcon color={c} size={18} />} title="Your birthday" detail={formatBirthday(birthday) ?? 'Add it and shops can give you a birthday treat'} onPress={() => setView('birthday')} last />
+              </SettingsGroup>
               <SettingsGroup title="Other loyalty cards">
                 <SettingsRow tile="green" icon={(c) => <CardIcon color={c} size={18} />} title="My other cards" detail="Show your other loyalty cards at the till" onPress={() => setView('externalCards')} last />
               </SettingsGroup>
@@ -990,6 +997,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
           )}
 
           {view === 'externalCards' && <ExternalCards userId={userId} />}
+          {view === 'birthday' && <BirthdayPicker userId={userId} onDone={() => setView('root')} />}
           {view === 'name' && (
             <>
               <View style={styles.settingsCard}>
@@ -1677,6 +1685,10 @@ function ShopDetail({
         </View>
         {membership && spendShop && membership.redemption_blocked_reason ? (
           <Text style={[ss.spendHint, { marginTop: 16 }]}>Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.</Text>
+        ) : null}
+        {business.reward_model === 'stamp_legacy' || business.reward_model === 'points' || !business.reward_model ? (
+          <ShopBirthdayCard userId={userId} businessId={business.id} bonus={business.birthday_bonus} member={!!membership}
+            unit={programmeId === 'points' || business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'} />
         ) : null}
         {membership ? (
           <View style={{ gap: 12, marginTop: 16 }}>

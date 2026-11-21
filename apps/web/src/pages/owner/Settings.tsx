@@ -2,7 +2,7 @@ import { WhirlSwitch } from '@/components/whirl-kit'
 import * as React from 'react'
 import { rewardWords } from '@/lib/shop-types'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
+import { Store, Gift, Send, Shield, Users, CircleHelp, TriangleAlert, Plus, Trash2, Cake, Image as ImageIcon, FileCheck, Clock, BadgeCheck, XCircle, UserPlus, ScanLine, MessageSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { OwnerLayout } from '@/components/owner-layout'
@@ -845,7 +845,78 @@ function LoyaltyTab() {
     : business?.reward_model === 'tiers' ? <TiersLoyaltyTab />
     : business?.reward_model === 'points' ? <PointsLoyaltyTab />
     : <StampLoyaltyTab />
-  return <>{tab}<CustomProgrammeCard switching /></>
+  const birthday = business?.reward_model === 'points' || business?.reward_model === 'stamp_legacy'
+  return <>{tab}{birthday ? <BirthdayRewardCard /> : null}<CustomProgrammeCard switching /></>
+}
+
+// Birthday reward (businesses.birthday_bonus): extra stamps or points on a member's
+// first visit in their birthday month, once a year. The database gives it; owners
+// never see birthdays. Hidden until the database has the column.
+function BirthdayRewardCard() {
+  const { business, updateLocalBusiness } = useOwner()
+  const points = business?.reward_model === 'points' || business?.loyalty_type === 'points'
+  const unit = points ? 'points' : rewardWords(business?.loyalty_type ?? 'stamp_card').units
+  const max = business?.reward_model === 'points' ? 1000 : 10
+  const saved = business?.birthday_bonus ?? null
+  const [on, setOn] = React.useState(saved !== null)
+  const [amount, setAmount] = React.useState(String(saved ?? (points ? 50 : 2)))
+  const [busy, setBusy] = React.useState(false)
+  const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null)
+  React.useEffect(() => {
+    setOn(saved !== null)
+    setAmount(String(saved ?? (points ? 50 : 2)))
+  }, [business?.id, saved, points])
+  if (!business || !('birthday_bonus' in business)) return null
+
+  async function save(nextOn: boolean) {
+    const value = Number(amount)
+    if (nextOn && (!Number.isInteger(value) || value < 1 || value > max)) {
+      return setMessage({ ok: false, text: `Enter a whole number of ${unit} from 1 to ${max}.` })
+    }
+    setBusy(true)
+    setMessage(null)
+    try {
+      const birthday_bonus = nextOn ? value : null
+      await updateBusiness(business!.id, { birthday_bonus })
+      updateLocalBusiness({ birthday_bonus })
+      setMessage({ ok: true, text: nextOn ? `Saved. Customers who have added their birthday get ${value} bonus ${value === 1 ? unit.replace(/s$/, '') : unit} on their first visit in their birthday month.` : 'Birthday reward switched off.' })
+    } catch {
+      setOn(saved !== null)
+      setMessage({ ok: false, text: 'Could not save. Check the connection and try again.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mb-5 rounded-3xl bg-amber p-6 text-amber-ink sm:p-7">
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight"><Cake className="h-5 w-5" /> Birthday reward</h3>
+        <button data-press-feedback
+          role="switch"
+          aria-checked={on}
+          aria-label="Birthday reward"
+          disabled={busy}
+          onClick={() => { const next = !on; setOn(next); if (!next && saved !== null) void save(false) }}
+          className={'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ease-out ' + (on ? 'bg-primary' : 'bg-foreground/15')}
+        >
+          <span className={'absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ' + (on ? 'translate-x-6' : 'translate-x-1')} />
+        </button>
+      </div>
+      <p className="mt-2 text-sm opacity-80">A treat on a customer’s first visit in their birthday month, once a year. You never see their birthday; it’s added automatically when they visit, and your staff see it on the scan.</p>
+      {on && (
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <label className="text-sm font-semibold">Bonus {unit}
+            <input className={`${inputClass} mt-1.5 max-w-[8rem]`} inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))} />
+          </label>
+          <button data-press-feedback onClick={() => void save(true)} disabled={busy} className="flex h-12 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50">
+            {busy ? 'Saving…' : 'Save birthday reward'}
+          </button>
+        </div>
+      )}
+      {message && <p role={message.ok ? 'status' : 'alert'} className="mt-3 text-sm font-medium">{message.text}</p>}
+    </div>
+  )
 }
 
 // AI-designed programmes. For a custom shop: the rules and a chat to change them.

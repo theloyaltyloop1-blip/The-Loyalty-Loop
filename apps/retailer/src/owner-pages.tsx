@@ -31,6 +31,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Bot,
+  Cake,
   Camera,
   ChevronRight,
   Gift,
@@ -108,6 +109,8 @@ export interface NativeBusiness {
   programme_rules?: unknown;
   category?: string | null;
   reward_threshold_pence?: number | null;
+  /** Birthday bonus stamps/points; null = off; missing until the birthday migration is applied. */
+  birthday_bonus?: number | null;
   manual_spend_max_pence?: number;
   postcode?: string | null;
   slug?: string | null;
@@ -1294,6 +1297,9 @@ function RewardsPage({
           busy={savingSignup}
         />
       </Section>
+      {!preview && (pointsShop || !business.reward_model || business.reward_model === "stamp_legacy") ? (
+        <BirthdayRewardSection business={business} unit={pointsShop ? "points" : unit} onBusinessChanged={onBusinessChanged} />
+      ) : null}
       {business.reward_model === "spend_threshold" && !preview ? (
         <ManualSpendSettings business={business} onBusinessChanged={onBusinessChanged} />
       ) : null}
@@ -1558,6 +1564,89 @@ function PointsRateSection({
       <Field value={rate} onChangeText={(value) => setRate(value.replace(/[^0-9]/g, ""))} placeholder="Points earned per £1, e.g. 1" keyboardType="number-pad" />
       <PrimaryButton label="Save points rate" onPress={() => void save()} busy={busy} />
     </Section>
+  );
+}
+
+// Birthday reward (businesses.birthday_bonus): extra stamps or points on the
+// member's first visit in their birthday month, once a year. The database gives
+// it; shops never see the date. Hidden until the database has the column.
+function BirthdayRewardSection({
+  business,
+  unit,
+  onBusinessChanged,
+}: {
+  business: NativeBusiness;
+  unit: string;
+  onBusinessChanged: () => Promise<void>;
+}) {
+  const saved = business.birthday_bonus ?? null;
+  const [on, setOn] = useState(saved !== null);
+  const [amount, setAmount] = useState(String(saved ?? 2));
+  const [busy, setBusy] = useState(false);
+  const max = unit === "points" ? 1000 : 10;
+  useEffect(() => {
+    setOn(saved !== null);
+    setAmount(String(saved ?? (unit === "points" ? 50 : 2)));
+  }, [saved, unit]);
+  if (!("birthday_bonus" in business)) return null;
+
+  async function save(nextOn: boolean) {
+    const value = Number(amount);
+    if (nextOn && (!Number.isInteger(value) || value < 1 || value > max)) {
+      return showAlert("Check the amount", `Enter a whole number of ${unit} from 1 to ${max}.`);
+    }
+    setBusy(true);
+    const { error } = await supabase
+      .from("businesses")
+      .update({ birthday_bonus: nextOn ? value : null })
+      .eq("id", business.id);
+    setBusy(false);
+    if (error) {
+      setOn(saved !== null);
+      return showAlert("Could not save", SAVE_HELP);
+    }
+    await onBusinessChanged();
+    showAlert(
+      nextOn ? "Birthday reward on" : "Birthday reward off",
+      nextOn
+        ? `Customers who have added their birthday get ${value} bonus ${value === 1 ? unit.replace(/s$/, "") : unit} on their first visit in their birthday month, once a year. Your staff see it on the scan.`
+        : "Customers will no longer get a birthday bonus here.",
+    );
+  }
+
+  return (
+    <View style={[styles.section, { backgroundColor: schemeColor("#FBE7BF", "bg") }]}>
+      <View style={[styles.iconHeading, { justifyContent: "space-between" }]}>
+        <View style={styles.iconHeading}>
+          <Cake size={20} color={schemeColor("#5C3B00", "fg")} />
+          <Text style={styles.cardTitle}>Birthday reward</Text>
+        </View>
+        <Switch
+          value={on}
+          disabled={busy}
+          accessibilityLabel="Birthday reward"
+          onValueChange={(next) => {
+            setOn(next);
+            if (!next && saved !== null) void save(false);
+          }}
+        />
+      </View>
+      <Text style={styles.muted}>
+        A treat on a customer’s first visit in their birthday month, once a year. You never see their birthday; it’s added automatically when they visit.
+      </Text>
+      {on ? (
+        <>
+          <Field
+            label={`Bonus ${unit}`}
+            value={amount}
+            onChangeText={(value) => setAmount(value.replace(/[^0-9]/g, ""))}
+            placeholder={unit === "points" ? "e.g. 50" : "e.g. 2"}
+            keyboardType="number-pad"
+          />
+          <PrimaryButton label="Save birthday reward" onPress={() => void save(true)} busy={busy} />
+        </>
+      ) : null}
+    </View>
   );
 }
 

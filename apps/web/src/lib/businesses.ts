@@ -46,6 +46,8 @@ export interface Business {
   /** Custom programmes only (reward_model = 'custom'). */
   programme_rules?: ProgrammeRules | null
   reward_threshold_pence: number | null
+  /** Birthday bonus stamps/points (stamp and points shops); null = off; missing until the birthday migration is applied. */
+  birthday_bonus?: number | null
   manual_spend_max_pence: number
   features: string[] | null
   halal_certifier: string | null
@@ -503,10 +505,21 @@ export async function lookupUserByStampCode(code: string): Promise<StampCodeMatc
  * transactions_insert_owner_or_admin: only the business owner/admin, and
  * only if the target customer already has a membership row. */
 export async function awardProgress(businessId: string, userId: string, value = 1) {
+  const clientRef = crypto.randomUUID()
   const { error } = await supabase
     .from('transactions')
-    .insert({ user_id: userId, business_id: businessId, type: 'stamp', value })
+    .insert({ user_id: userId, business_id: businessId, type: 'stamp', value, client_ref: clientRef })
   if (error) throw error
+  return clientRef
+}
+
+/** Birthday bonus the database added to a just-saved visit (0 when none). Before the
+ * birthday migration the column does not exist, the read fails and this returns 0. */
+export async function fetchBirthdayBonus(find: { clientRef: string } | { transactionId: string }): Promise<number> {
+  const query = supabase.from('transactions').select('birthday_bonus')
+  const { data, error } = await ('clientRef' in find ? query.eq('client_ref', find.clientRef) : query.eq('id', find.transactionId)).maybeSingle()
+  if (error || !data) return 0
+  return Number((data as { birthday_bonus?: number }).birthday_bonus ?? 0)
 }
 
 // ---------------------------------------------------------------------

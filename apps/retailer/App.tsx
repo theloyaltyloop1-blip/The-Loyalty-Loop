@@ -435,6 +435,28 @@ function newClientRef(): string {
   });
 }
 
+// After a stamp or purchase is saved: did the database add a birthday bonus?
+// Reads transactions.birthday_bonus for that row. Before the birthday migration the
+// column does not exist, the read fails, and nothing is shown. Never blocks the scan.
+async function announceBirthdayBonus(
+  find: { clientRef: string } | { transactionId: string },
+  name: string,
+  unit: string,
+) {
+  const query = supabase.from("transactions").select("birthday_bonus");
+  const { data, error } = await ("clientRef" in find
+    ? query.eq("client_ref", find.clientRef)
+    : query.eq("id", find.transactionId)
+  ).maybeSingle();
+  const bonus = !error && data ? Number((data as { birthday_bonus?: number }).birthday_bonus ?? 0) : 0;
+  if (bonus <= 0) return;
+  haptic.success();
+  showAlert(
+    `🎂 Happy birthday, ${name}!`,
+    `It's their birthday month, so ${bonus} bonus ${bonus === 1 ? unit.replace(/s$/, "") : unit} ${bonus === 1 ? "was" : "were"} added. Wish them a happy birthday!`,
+  );
+}
+
 // Refusals from record_manual_spend / undo_manual_spend (ARCH_PLAN.md §4.10).
 function spendRefusal(error: { message?: string; details?: string } | null): string | null {
   const message = error?.message ?? "";
@@ -967,7 +989,10 @@ function StampsScreen({
       }
       if (error) throw error;
       spendRef.current = null;
-      const result = data as { progressPence: number; thresholdPence: number; rewardsEarned: number | null } & ProgrammeSnapshot;
+      const result = data as { transactionId?: string; progressPence: number; thresholdPence: number; rewardsEarned: number | null } & ProgrammeSnapshot;
+      if (result.transactionId && business.reward_model === "points") {
+        void announceBirthdayBonus({ transactionId: result.transactionId }, name, "points");
+      }
       const left = Math.max(0, result.thresholdPence - result.progressPence);
       const resultStanding = standingFromSnapshot(result, pounds);
       setLastSpendMessage(
@@ -1253,6 +1278,7 @@ function StampsScreen({
         return;
       }
       if (error) throw error;
+      void announceBirthdayBonus({ clientRef: stampRef.current.ref }, matched.first_name || "the customer", unit);
       stampRef.current = null;
       notifyStampAccepted(business.id, matched.id, value);
       // The signal is clearly back: send anything still waiting on the phone.

@@ -3,7 +3,7 @@ import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
-import { User, Bell, LogOut, Copy, Check, Trash2, Share2 } from 'lucide-react'
+import { User, Bell, LogOut, Copy, Check, Trash2, Share2, Cake } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -44,6 +44,68 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="block text-sm font-semibold text-foreground mb-1.5">{label}</span>
       {children}
     </label>
+  )
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const DAYS_IN = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+/** Day and month only. Stored as year 2000 (a leap year, so 29 February is valid).
+ * Only the shopper can read it; shops never see the date. */
+function BirthdayCard({ userId }: { userId: string }) {
+  const [month, setMonth] = React.useState('')
+  const [day, setDay] = React.useState('')
+  const [saved, setSaved] = React.useState<string | null | undefined>(undefined)
+  const [saving, setSaving] = React.useState(false)
+  React.useEffect(() => {
+    supabase.from('profiles').select('birthday').eq('id', userId).maybeSingle().then(({ data, error }) => {
+      if (error) return
+      const value = (data?.birthday as string | null) ?? null
+      setSaved(value)
+      const m = /^\d{4}-(\d{2})-(\d{2})/.exec(value ?? '')
+      setMonth(m ? String(Number(m[1])) : '')
+      setDay(m ? String(Number(m[2])) : '')
+    })
+  }, [userId])
+
+  async function save(remove = false) {
+    if (!remove && (!month || !day)) return toast.error('Choose a day and a month.')
+    const value = remove ? null : `2000-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    setSaving(true)
+    const { error } = await supabase.from('profiles').update({ birthday: value }).eq('id', userId)
+    setSaving(false)
+    if (error) return toast.error('We could not save your birthday. Please try again.')
+    setSaved(value)
+    if (remove) { setMonth(''); setDay('') }
+    toast.success(remove ? 'Birthday removed' : 'Birthday saved')
+  }
+
+  const days = month ? DAYS_IN[Number(month) - 1] : 31
+  return (
+    <section className="rounded-3xl bg-amber p-6 text-amber-ink sm:p-7">
+      <h2 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight"><Cake className="h-5 w-5" /> Your birthday</h2>
+      <p className="mt-2 text-sm opacity-80">Shops that give birthday treats add a little extra on your first visit in your birthday month. Shops never see your birthday, and we don’t need the year.</p>
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
+        <label className="block"><span className="mb-1.5 block text-sm font-semibold">Month</span>
+          <select className={inputClass} value={month} disabled={saved === undefined} onChange={(e) => { setMonth(e.target.value); if (Number(day) > DAYS_IN[Number(e.target.value) - 1]) setDay('') }}>
+            <option value="">Month</option>
+            {MONTHS.map((name, i) => <option key={name} value={String(i + 1)}>{name}</option>)}
+          </select>
+        </label>
+        <label className="block"><span className="mb-1.5 block text-sm font-semibold">Day</span>
+          <select className={inputClass} value={day} disabled={saved === undefined} onChange={(e) => setDay(e.target.value)}>
+            <option value="">Day</option>
+            {Array.from({ length: days }, (_, i) => i + 1).map((d) => <option key={d} value={String(d)}>{d}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button data-press-feedback onClick={() => void save()} disabled={saving || saved === undefined} className="flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50">
+          {saving ? 'Saving…' : 'Save birthday'}
+        </button>
+        {saved ? <button data-press-feedback onClick={() => void save(true)} disabled={saving} className="min-h-11 rounded-full px-4 text-sm font-semibold underline-offset-4 hover:underline disabled:opacity-50">Remove</button> : null}
+      </div>
+    </section>
   )
 }
 
@@ -164,6 +226,8 @@ export function ProfilePage() {
               </button>
             </div>
           </section>
+
+          <BirthdayCard userId={session.user.id} />
 
           <section className="rounded-3xl bg-peach p-6 text-peach-ink sm:p-7">
             <h2 className="font-display text-xl font-semibold tracking-tight">Invite a friend</h2>
