@@ -52,6 +52,7 @@ import { supabase } from "./supabase";
 import { MapPinPicker } from "./MapPinPicker";
 import { validPin, type LatLng } from "./tile-map";
 import { setSimulatedOutage, simulatedOutage } from "./service-status";
+import { waitingStamps } from "./offline-stamps";
 import { biometricLockEnabled, setBiometricLock } from "./biometric";
 import { getUsageAnalyticsConsent, setUsageAnalyticsConsent } from "./usage-analytics";
 import type { NativeOwnerPage } from "./owner-pages";
@@ -1159,16 +1160,23 @@ function AccountPage({
           icon={LogOut}
           tile="orange"
           title="Sign out"
-          onPress={() =>
-            showAlert("Sign out?", "You can sign back in at any time.", [
+          onPress={() => {
+            // Stamps saved without signal stay on this phone for this account.
+            const waiting = waitingStamps(session.user.id);
+            showAlert(
+              "Sign out?",
+              waiting
+                ? `${waiting} saved ${waiting === 1 ? "entry hasn't" : "entries haven't"} been sent yet. ${waiting === 1 ? "It stays" : "They stay"} on this phone and will send next time you sign in here with this account.`
+                : "You can sign back in at any time.",
+              [
               { text: "Cancel", style: "cancel" },
               {
                 text: "Sign out",
                 style: "destructive",
                 onPress: () => void supabase.auth.signOut(),
               },
-            ])
-          }
+            ]);
+          }}
         />
         <SettingsRow
           icon={Trash2}

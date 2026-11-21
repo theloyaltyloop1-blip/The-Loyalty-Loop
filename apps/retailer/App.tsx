@@ -24,6 +24,8 @@ import {
   Text,
   TextInput,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import { KeyboardAwareScrollView } from './src/components/KeyboardAware'
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -39,6 +41,7 @@ import {
   Bell,
   BookOpen,
   ChartNoAxesCombined,
+  CloudOff,
   ChevronRight,
   Eye,
   EyeOff,
@@ -76,6 +79,7 @@ import { clearLaunchCache, launchCacheTicket, readLaunchCache, writeLaunchCache 
 import { isSessionRejection } from "./src/launch-cache-core";
 import { SkeletonScreen } from "./src/components/Skeleton";
 import { OutageBanner, simulatedOutage, useServiceStatus } from "./src/service-status";
+import { MAX_AGE_MS as OFFLINE_STAMP_MAX_AGE_MS, MAX_QUEUED as OFFLINE_STAMP_MAX, insertStamp, isNetworkFailure, notifyStampAccepted, saveStampOffline, sendWaitingStamps, useWaitingStamps, type DrainReport } from "./src/offline-stamps";
 import Storage from "expo-sqlite/kv-store";
 import { HoldButton } from "./src/components/HoldButton";
 import { DynamicButton } from "./src/components/DynamicButton";
@@ -458,7 +462,7 @@ function winbackCouponError(message: string): string {
 
 // The database refuses some manual entries for customers with a linked card
 // (CARD_LINKING_PLAN.md §3.6). Turn its error codes into staff-friendly copy.
-function manualEntryRefusal(error: { message?: string; details?: string } | null): string | null {
+function manualEntryRefusal(error: { message?: string | null; details?: string | null } | null): string | null {
   const message = error?.message ?? "";
   if (message.includes("business is inactive")) {
     return "This shop is inactive. Ask the owner to reactivate it before adding a purchase.";
@@ -479,6 +483,33 @@ function manualEntryRefusal(error: { message?: string; details?: string } | null
     return "Choose how the customer paid.";
   }
   return null;
+}
+
+// After stamps saved without signal were sent: tell the owner about any the
+// server refused or that were too old to send. Nothing to say if all went in.
+function describeWaitingProblems(
+  report: DrainReport,
+  words: { unit: string; units: string },
+): { title: string; message: string } | null {
+  const refused = report.rejected.reduce((sum, r) => sum + r.item.value, 0);
+  const expired = report.expired.reduce((sum, item) => sum + item.value, 0);
+  if (!refused && !expired) return null;
+  const noun = (n: number) => (n === 1 ? words.unit : words.units);
+  const lines: string[] = [];
+  for (const { item, error } of report.rejected.slice(0, 3)) {
+    const reason = manualEntryRefusal(error) ?? "The customer may need to join your shop in the app first.";
+    lines.push(`${item.name || "A customer"} (${item.value} ${noun(item.value)}): ${reason}`);
+  }
+  if (report.rejected.length > 3) lines.push(`And ${report.rejected.length - 3} more.`);
+  if (expired) {
+    const hours = Math.round(OFFLINE_STAMP_MAX_AGE_MS / 3_600_000);
+    lines.push(`${expired} ${noun(expired)} saved more than ${hours} hours ago ${expired === 1 ? "was" : "were"} too old to send, so ${expired === 1 ? "it was" : "they were"} not added.`);
+  }
+  const total = refused + expired;
+  return {
+    title: `${total} saved ${noun(total)} ${total === 1 ? "wasn't" : "weren't"} added`,
+    message: lines.join("\n\n"),
+  };
 }
 
 function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void; onNewShop: () => void }) {
@@ -693,20 +724,37 @@ function ScanMatchCard({ children }: { children: ReactNode }) {
   return <Animated.View style={style}>{children}</Animated.View>;
 }
 
+// Shown when a reward is tried without signal. Rewards are never saved on the
+// phone: two offline phones could otherwise spend the same reward twice.
+const REWARD_NEEDS_SIGNAL =
+  "Using a reward only works online, so it can't be spent twice. The reward is still unused. Try again when you're back online.";
+
 function StampsScreen({
   business,
   mode,
   onModeChange,
   onDone,
   onConfigureRewards,
+  staffId,
+  offline,
+  onSendWaiting,
 }: {
   business: Business;
+  /** The signed-in account; stamps saved without signal are kept per account. */
+  staffId: string;
+  /** The outage check says this phone has no connection. */
+  offline: boolean;
   mode: "stamps" | "reward";
   onModeChange: (mode: "stamps" | "reward") => void;
   onDone: () => void;
   onConfigureRewards: () => void;
+  onSendWaiting: () => void;
 }) {
   setActiveCountry(business.country_code);
+  const waiting = useWaitingStamps(staffId, business.id);
+  // A stamp saved on the phone (no signal): the button shows "Saved" and the
+  // screen resets for the next customer, without the reward haptic.
+  const [savedOffline, setSavedOffline] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [hasReward, setHasReward] = useState<boolean | null>(null);
   const [camera, setCamera] = useState(false);
@@ -780,12 +828,23 @@ function StampsScreen({
       return;
     }
     setHasReward(null);
+    // The reward list is kept on the phone too, so Scan still opens without signal.
+    const ladderScope = `ladder.${business.id}`;
+    const ticket = launchCacheTicket();
     void supabase
       .from("reward_catalog")
       .select("business_id,title,stamp_threshold,spend_threshold_pence")
       .eq("business_id", business.id)
-      .then(({ data, error }) => {
+      .then(({ data, error, status }) => {
         if (!active) return;
+        if (error && isNetworkFailure(status)) {
+          // No signal: use the saved list, or let scanning go ahead without it.
+          // Stamps are then saved on the phone and sent later.
+          const saved = readLaunchCache<LadderRung[]>(ladderScope, staffId)?.data ?? [];
+          setLadder(saved);
+          setHasReward(true);
+          return;
+        }
         if (error) {
           showAlert("Could not check your rewards", "We couldn't reach our servers. Check your connection, then open Scan again.");
           setHasReward(false);
@@ -793,6 +852,7 @@ function StampsScreen({
         }
         setLadder((data || []) as LadderRung[]);
         setHasReward((data || []).length > 0);
+        writeLaunchCache(ladderScope, staffId, data || [], ticket);
       });
     return () => {
       active = false;
@@ -981,6 +1041,20 @@ function StampsScreen({
     onDone();
   }
 
+  // Saved on the phone: a plain success tap (not the reward one, nothing has
+  // reached the customer yet), and a little longer so the note can be read.
+  useEffect(() => {
+    if (!savedOffline) return;
+    haptic.success();
+    const timer = setTimeout(() => {
+      setSavedOffline(false);
+      reset();
+      setCamera(lookupVia.current === "camera");
+    }, 1400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOffline]);
+
   async function loadMemberDetails(userId: string) {
     void (spendShop ? loadSpendSummary(userId) : loadLinkStatus(userId));
     const [{ data: memberRows }, { data: rewardRows }] = await Promise.all([
@@ -1021,12 +1095,13 @@ function StampsScreen({
       setCamera(false);
       setBusy(true);
       try {
-        const { data: reward, error } = await supabase
+        const { data: reward, error, status } = await supabase
           .from("rewards")
           .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence,discount_percent)")
           .eq("business_id", business.id)
           .eq("qr_token", rewardToken)
           .maybeSingle();
+        if (error && isNetworkFailure(status)) throw new Error(REWARD_NEEDS_SIGNAL);
         if (error) throw new Error("We couldn't check this reward. Check the connection and scan it again.");
         if (!reward) throw new Error("That reward does not belong to this shop.");
         if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
@@ -1079,12 +1154,13 @@ function StampsScreen({
         return;
       }
       if (mode === "reward") {
-        const { data: reward, error: rewardError } = await supabase
+        const { data: reward, error: rewardError, status: rewardStatus } = await supabase
           .from("rewards")
           .select("id,title,user_id,redeemed_at,expires_at,catalog:reward_catalog(discount_pence,discount_percent)")
           .eq("business_id", business.id)
           .eq("short_code", normalized)
           .maybeSingle();
+        if (rewardError && isNetworkFailure(rewardStatus)) throw new Error(REWARD_NEEDS_SIGNAL);
         if (rewardError) throw new Error("We couldn't check that code. Check the connection and try again.");
         if (reward) {
           if (reward.redeemed_at) throw new Error("This reward has already been redeemed.");
@@ -1096,9 +1172,18 @@ function StampsScreen({
           return;
         }
       }
-      const { data, error } = await supabase.rpc("lookup_user_by_stamp_code", {
+      const { data, error, status } = await supabase.rpc("lookup_user_by_stamp_code", {
         _code: normalized,
       });
+      if (error && isNetworkFailure(status)) {
+        throw new Error(
+          mode === "reward"
+            ? REWARD_NEEDS_SIGNAL
+            : spendShop
+              ? "Looking up a code needs a connection. Try again when you're back online."
+              : `Looking up a typed code needs a connection. Scan the customer's QR code instead: without signal, ${unit} are saved on this phone and sent when you're back online.`,
+        );
+      }
       if (error) throw new Error("We couldn't check that code. Check the connection and try again.");
       const person = (data || [])[0];
       if (!person) throw new Error(mode === "reward" ? "No reward or customer found with that code." : "No customer found with that code.");
@@ -1123,16 +1208,35 @@ function StampsScreen({
     setAskPayment(false);
     const value = Math.max(1, amount);
     if (!stampRef.current || stampRef.current.value !== value) stampRef.current = { ref: newClientRef(), value };
+    const stamp = { ref: stampRef.current.ref, userId: matched.id, businessId: business.id, value, paymentMethod: paymentMethod ?? null };
+    // No signal: keep the stamp on this phone with its reference. If an earlier
+    // try did get through, the database refuses the copy when it is sent.
+    const keepOnPhone = () => {
+      const saved = saveStampOffline(staffId, { ...stamp, name: matched.first_name ?? null });
+      if (!saved.ok) {
+        haptic.error()
+        showAlert(
+          saved.reason === "full" ? `${OFFLINE_STAMP_MAX} ${unit} are waiting to send` : `Could not save the ${words.unit}`,
+          saved.reason === "full"
+            ? `This phone can hold ${OFFLINE_STAMP_MAX} ${unit} without signal. Get back online so they can send, then add more.`
+            : "Nothing was added. Try again.",
+        );
+        return;
+      }
+      stampRef.current = null;
+      setSavedOffline(true);
+    };
     setBusy(true);
     try {
-      const inserted = await supabase.from("transactions").insert({
-        user_id: matched.id,
-        business_id: business.id,
-        type: "stamp",
-        value,
-        client_ref: stampRef.current.ref,
-        ...(paymentMethod ? { manual_payment_method: paymentMethod } : {}),
-      });
+      if (offline) {
+        keepOnPhone();
+        return;
+      }
+      const inserted = await insertStamp(stamp);
+      if (inserted.error && isNetworkFailure(inserted.status)) {
+        keepOnPhone();
+        return;
+      }
       // Same reference already saved: the first tap got through, so this is a success.
       const alreadySaved = inserted.error?.code === "23505" && `${inserted.error.message}${inserted.error.details ?? ""}`.includes("client_ref");
       const error = alreadySaved ? null : inserted.error;
@@ -1150,15 +1254,9 @@ function StampsScreen({
       }
       if (error) throw error;
       stampRef.current = null;
-      void supabase.functions.invoke("send-visit-thank-you", {
-        body: { business_id: business.id, user_id: matched.id, amount: value },
-      });
-      void supabase.functions.invoke("send-user-push", {
-        body: { business_id: business.id, user_id: matched.id },
-      });
-      void supabase.functions.invoke("update-wallet-pass", {
-        body: { business_id: business.id, user_id: matched.id },
-      });
+      notifyStampAccepted(business.id, matched.id, value);
+      // The signal is clearly back: send anything still waiting on the phone.
+      if (waiting > 0) onSendWaiting();
       // Show the success checkmark; reset() (and returning to the camera for
       // the next person in the queue, if this came from a camera scan) fires
       // once that confirmation has finished.
@@ -1175,13 +1273,23 @@ function StampsScreen({
   }
   async function redeem() {
     if (!matched || !activeReward) return;
+    // Rewards are never saved on the phone (no double spending): say so plainly.
+    if (offline) {
+      showAlert("Rewards need a connection", REWARD_NEEDS_SIGNAL);
+      return;
+    }
     setBusy(true);
     try {
-      const { error } = await supabase
+      const { error, status } = await supabase
         .from("rewards")
         .update({ redeemed_at: new Date().toISOString() })
         .eq("id", activeReward.id)
         .is("redeemed_at", null);
+      if (error && isNetworkFailure(status)) {
+        haptic.error()
+        showAlert("Rewards need a connection", REWARD_NEEDS_SIGNAL);
+        return;
+      }
       if (error) throw error;
       void supabase.functions.invoke("send-user-push", {
         body: { business_id: business.id, user_id: matched.id },
@@ -1226,6 +1334,9 @@ function StampsScreen({
           </Pressable>
         ))}
       </View>
+      {waiting > 0 ? (
+        <WaitingStampsPill count={waiting} words={words} offline={offline} onPress={onSendWaiting} style={{ marginTop: 14 }} />
+      ) : null}
       {hasReward === null ? (
         <View style={styles.card}>
           <WhirlSpinner size={28} />
@@ -1388,14 +1499,25 @@ function StampsScreen({
                     {memberInfo ? ` · ${progressFor(business, memberInfo, ladder).label}` : ""}
                   </Text>
                   <DynamicButton
-                    status={busy ? "busy" : showSuccess ? "done" : "idle"}
+                    status={busy ? "busy" : showSuccess || savedOffline ? "done" : "idle"}
                     label={`Award ${unit}`}
                     busyLabel="Awarding…"
-                    doneLabel="Awarded"
+                    doneLabel={savedOffline ? "Saved" : "Awarded"}
+                    doneColor={savedOffline ? colors.amberInk : undefined}
                     onPress={() => void award()}
+                    disabled={savedOffline}
                     color={colors.primary}
                     style={styles.dynamicAction}
                   />
+                  {savedOffline ? (
+                    <Text style={styles.offlineNote} accessibilityLiveRegion="polite">
+                      Saved – will send when you're back online
+                    </Text>
+                  ) : offline ? (
+                    <Text style={styles.offlineNote}>
+                      No signal. This {words.unit} will be saved on the phone and sent when you're back online.
+                    </Text>
+                  ) : null}
                 </View>
               ) : activeReward ? (
                 <View>
@@ -1425,7 +1547,9 @@ function StampsScreen({
                 </View>
               ) : (
                 <Text style={styles.copy}>
-                  {matched.first_name || "This customer"} has no reward ready to use yet.
+                  {offline
+                    ? "No signal, so rewards can't be checked or used right now. Try again when you're back online."
+                    : `${matched.first_name || "This customer"} has no reward ready to use yet.`}
                 </Text>
               )}
               <FoldSection title="Customer details">
@@ -1508,6 +1632,38 @@ function StampsScreen({
   );
 }
 
+/** Stamps saved on this phone without signal. Amber, like the other dashboard
+ *  call-outs; tapping it tries to send them now. */
+function WaitingStampsPill({
+  count,
+  words,
+  offline,
+  onPress,
+  style,
+}: {
+  count: number;
+  words: { unit: string; units: string };
+  offline: boolean;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const noun = count === 1 ? words.unit : words.units;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${count} ${noun} waiting to send. ${offline ? "They'll send when you're back online." : "Tap to send now."}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.waitingPill, style, pressed && styles.pressed]}
+    >
+      <CloudOff size={20} strokeWidth={2} color={colors.amberInk} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.waitingPillTitle}>{count} {noun} waiting to send</Text>
+        <Text style={styles.waitingPillSub}>{offline ? "They'll send by themselves when you're back online." : "They'll send by themselves. Tap to send now."}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 function StatTile({
   icon,
   value,
@@ -1536,6 +1692,9 @@ const WEEKDAY = ["S", "M", "T", "W", "T", "F", "S"];
 function DashboardHome({
   business,
   stats,
+  waiting = 0,
+  offline = false,
+  onSendWaiting,
   onIssueStamp,
   onRedeemReward,
   onReport,
@@ -1544,6 +1703,9 @@ function DashboardHome({
 }: {
   business: Business;
   stats: DashboardStats;
+  waiting?: number;
+  offline?: boolean;
+  onSendWaiting?: () => void;
   onIssueStamp: () => void;
   onRedeemReward: () => void;
   onReport: () => void;
@@ -1620,6 +1782,9 @@ function DashboardHome({
       </Pressable>
 
       {/* Below the Scan button, which overlaps the panel's lower edge. */}
+      {waiting > 0 && onSendWaiting ? (
+        <WaitingStampsPill count={waiting} words={rewardWords(business.loyalty_type)} offline={offline} onPress={onSendWaiting} />
+      ) : null}
       {stats.dormantMembers > 0 && onWinBack ? (
         <Pressable
           accessibilityRole="button"
@@ -2433,13 +2598,46 @@ function Dashboard({
   useEffect(() => {
     if (!preview) load(Boolean(snap));
   }, [preview]);
-  // When our servers come back, reload quietly.
+  // Stamps saved on this phone without signal: send them when the app opens,
+  // comes back to the front, the connection returns, or (with backoff) on a timer.
+  const staffId = preview ? "" : session.user.id;
+  const offline = !preview && serviceStatus.level === "offline";
+  const waitingHere = useWaitingStamps(staffId, selected?.id);
+  const sendWaiting = useCallback(async (force: boolean, manual = false) => {
+    if (!staffId) return;
+    const report = await sendWaitingStamps(staffId, force);
+    if (report.sent.length) setWidgetRefreshKey((key) => key + 1);
+    const words = rewardWords(selected?.loyalty_type);
+    const problem = describeWaitingProblems(report, words);
+    if (problem) {
+      haptic.warning();
+      showAlert(problem.title, problem.message);
+    } else if (manual && report.stillOffline) {
+      showAlert("Still no connection", `Your ${words.units} are safe on this phone. They'll send by themselves when you're back online.`);
+    }
+  }, [staffId, selected?.loyalty_type]);
+  useEffect(() => {
+    if (!staffId) return;
+    void sendWaiting(true);
+    const timer = setInterval(() => void sendWaiting(false), 20_000);
+    const foreground = AppState.addEventListener("change", (state) => {
+      if (state === "active") void sendWaiting(true);
+    });
+    return () => {
+      clearInterval(timer);
+      foreground.remove();
+    };
+  }, [staffId, sendWaiting]);
+  // When our servers come back, reload quietly and send anything waiting.
   const wasDown = useRef(false);
   useEffect(() => {
     if (serviceStatus.level !== "ok") wasDown.current = true;
     else if (wasDown.current && serviceStatus.checkedAt) {
       wasDown.current = false;
-      if (!preview) void load(true);
+      if (!preview) {
+        void load(true);
+        void sendWaiting(true);
+      }
     }
   }, [serviceStatus.level, serviceStatus.checkedAt]);
   // Force the first-run loyalty programme wizard for an owner (never staff)
@@ -2727,6 +2925,9 @@ function Dashboard({
                 <DashboardHome
                   business={selected}
                   stats={stats}
+                  waiting={waitingHere}
+                  offline={offline}
+                  onSendWaiting={() => void sendWaiting(true, true)}
                   onIssueStamp={() => {
                     void trackUsageEvent(session.user.id, 'scan_started', 'award');
                     setStampsMode("stamps");
@@ -2746,6 +2947,9 @@ function Dashboard({
               {tab === "scan" && (
                 <StampsScreen
                   business={selected}
+                  staffId={staffId}
+                  offline={offline}
+                  onSendWaiting={() => void sendWaiting(true, true)}
                   mode={stampsMode}
                   onModeChange={setStampsMode}
                   onDone={() => { void load(true); setWidgetRefreshKey((key) => key + 1); }}
@@ -3428,6 +3632,10 @@ const styles = themed(() => StyleSheet.create({
   },
   bigActionButtonText: { color: schemeColor("#fff", 'fg'), fontWeight: "900", fontSize: 18 },
   dynamicAction: { minHeight: 64, borderRadius: 32 },
+  offlineNote: { color: colors.foreground, fontSize: 14, fontWeight: "600", lineHeight: 20, textAlign: "center", marginTop: 10 },
+  waitingPill: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, borderWidth: 2, borderColor: schemeColor("#2A2A2A", 'border'), backgroundColor: colors.amber },
+  waitingPillTitle: { fontSize: 16, fontWeight: "800", color: colors.amberInk },
+  waitingPillSub: { fontSize: 13, fontWeight: "500", color: colors.amberInk, marginTop: 2 },
   pageTitle: {
     marginTop: 18,
     fontSize: 34,
