@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { toast } from 'sonner'
-import { CalendarCheck, BadgeCheck, MessageCircle, Hand, Send, FlaskConical, ArrowUpRight, Copy, Check } from 'lucide-react'
+import { CalendarCheck, BadgeCheck, MessageCircle, Hand, Plane, MailX, Flag, Send, FlaskConical, ArrowUpRight, Copy, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -70,7 +70,7 @@ export function Outreach() {
     {sub === 'overview' ? <OverviewTab {...ctx}/> : sub === 'leads' ? <LeadsTab {...ctx}/> : sub === 'linkedin' ? <LinkedinTab {...ctx}/>
       : sub === 'instagram' ? <InstagramTab {...ctx}/> : sub === 'emails' ? <EmailsTab {...ctx}/> : <SettingsTab {...ctx}/>}
     <PreviewSheet data={data} preview={preview} onStep={(step) => preview && setPreview({ ...preview, step })} onClose={() => setPreview(null)}/>
-    <StopSheet row={stopFor} onClose={() => setStopFor(null)} onDone={load}/>
+    <StopSheet data={data} row={stopFor} onClose={() => setStopFor(null)} onDone={load}/>
   </div>
 }
 
@@ -116,6 +116,10 @@ function OverviewTab({ data, reload, openPreview, go }: Ctx) {
   if (!(data.leadsByList[s.leads_list]?.length)) warnings.push(<>The leads list “{s.leads_list}” is empty. Import the leads first.</>)
   for (const t of issues) warnings.push(t)
   if (s.last_error) warnings.push(<>Last send failed: {s.last_error}</>)
+  // Reply checker problems never stop the sender; they are only shown here.
+  if (s.checker_last_error) warnings.push(<>Reply check failed: {s.checker_last_error}. Sending carries on; mark replies by hand until this clears.</>)
+  else if (s.checker_last_run && Date.now() - Date.parse(s.checker_last_run) > 20 * 60_000) warnings.push(<>Replies haven’t been checked since {when(s.checker_last_run)}.</>)
+  const needsYou = Object.values(data.replies).filter((r) => r.label === 'Needs you').length
   if (data.mail?.smtpReady && !st.board.queue.length && !st.byStatus.waiting) warnings.push(<>Everyone on this list has been emailed or excluded. Add more leads.</>)
   const max = Math.max(1, ...st.bySteps.map((x) => x.count))
 
@@ -129,6 +133,10 @@ function OverviewTab({ data, reload, openPreview, go }: Ctx) {
         <label className="ag-or-switch"><span>Auto-send</span><Switch checked={s.auto_send} disabled={!!busy} onCheckedChange={(on) => (on ? setAskOn(true) : void setAuto(false))} aria-label="Auto-send"/></label>
       </div>
     </section>
+    {needsYou > 0 && <button type="button" className="ag-or-needs" onClick={() => go('leads')}>
+      <Flag size={18} aria-hidden="true"/><span><b>{needsYou === 1 ? '1 reply needs you' : `${needsYou} replies need you`}</b><small>Their emails are stopped. Read and answer them yourself, then set the right label.</small></span>
+      <ArrowUpRight size={18} aria-hidden="true"/></button>}
+    <p className="ag-or-muted">{s.checker_last_ok ? `Replies are checked every 5 minutes. Last checked ${when(s.checker_last_ok)}.` : 'Reply checking hasn’t run yet.'}</p>
     <div className="ag-or-tiles">
       <Tile tone="var(--ag-sky)" value={`${st.sentToday}/${s.daily_limit}`} label="emails sent today"/>
       <Tile tone="var(--ag-peach)" value={st.board.queue.length} label="shops due an email"/>
@@ -181,15 +189,30 @@ function Bar({ label, n, max, tone }: { label: string; n: number; max: number; t
 }
 
 // ---------- leads ----------
-const FILTERS: ('all' | Status)[] = ['all', 'due', 'waiting', 'stopped', 'finished', 'emailed-before', 'do-not-contact', 'no-consent']
+type LeadFilter = 'all' | 'replies' | 'needs-you' | Status
+const FILTERS: LeadFilter[] = ['all', 'replies', 'needs-you', 'due', 'waiting', 'stopped', 'finished', 'emailed-before', 'do-not-contact', 'no-consent']
+const FILTER_LABEL: Record<string, string> = { all: 'All', replies: 'Replies', 'needs-you': 'Needs you' }
+
+const LABEL_TONE: Record<string, string> = {
+  'Booked a call': 'is-ok', 'Signed up': 'is-ok', Interested: 'is-info', 'Said no': 'is-bad',
+  'Out of office': 'is-warn', Bounced: 'is-bad', 'Needs you': 'is-accent',
+}
 
 function LeadsTab({ data, reload, openPreview, openStop }: Ctx) {
-  const [filter, setFilter] = React.useState<'all' | Status>('all')
+  const [filter, setFilter] = React.useState<LeadFilter>('all')
   const [q, setQ] = React.useState('')
   const { rows } = board(data)
   const counts: Record<string, number> = { all: rows.length }
-  for (const r of rows) counts[r.status] = (counts[r.status] || 0) + 1
-  const shown = rows.filter((r) => (filter === 'all' || r.status === filter) && (!q || (r.shop + r.email).toLowerCase().includes(q.toLowerCase())))
+  for (const r of rows) {
+    counts[r.status] = (counts[r.status] || 0) + 1
+    const rep = data.replies[r.email]
+    if (rep) counts.replies = (counts.replies || 0) + 1
+    if (rep?.label === 'Needs you') counts['needs-you'] = (counts['needs-you'] || 0) + 1
+  }
+  const match = (r: BoardRow) => filter === 'all' || r.status === filter
+    || (filter === 'replies' && !!data.replies[r.email]) || (filter === 'needs-you' && data.replies[r.email]?.label === 'Needs you')
+  const shown = rows.filter((r) => match(r) && (!q || (r.shop + r.email).toLowerCase().includes(q.toLowerCase())))
+    .sort((a, b) => filter === 'replies' || filter === 'needs-you' ? String(data.replies[b.email]?.at ?? '').localeCompare(String(data.replies[a.email]?.at ?? '')) : 0)
 
   async function resume(email: string) {
     const { error } = await supabase.rpc('outreach_resume_lead', { _email: email })
@@ -201,21 +224,30 @@ function LeadsTab({ data, reload, openPreview, openStop }: Ctx) {
   return <section className="ag-card ag-sec">
     <div className="ag-sec-head"><div><h2>Leads</h2><p>List: {data.settings.leads_list}</p></div>
       <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search shop or email" className="ag-or-input" aria-label="Search leads"/></div>
-    <div className="ag-or-chips">{FILTERS.filter((k) => counts[k]).map((k) => <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)}>{k === 'all' ? 'All' : STATUS[k]} <b>{counts[k]}</b></button>)}</div>
+    <div className="ag-or-chips">{FILTERS.filter((k) => counts[k]).map((k) => <button key={k} type="button" aria-pressed={filter === k} className={k === 'needs-you' ? 'is-needs' : ''} onClick={() => setFilter(k)}>{FILTER_LABEL[k] ?? STATUS[k as Status]} <b>{counts[k]}</b></button>)}</div>
     <div className="ag-or-table"><table>
       <thead><tr><th>Shop</th><th>Progress</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
       <tbody>{shown.length ? shown.map((r) => {
         const last = r.stepsSent.at(-1)
-        const extra = r.stopped ? r.stopped.reason : r.nextDueAt ? `next ${when(r.nextDueAt)}` : last ? `last ${when(last.sentAt)}` : ''
+        const rep = data.replies[r.email]
+        const extra = r.stopped && !rep ? r.stopped.reason : r.nextDueAt ? `next ${when(r.nextDueAt)}` : last ? `last ${when(last.sentAt)}` : ''
         return <tr key={r.email}>
           <td><b>{r.shop}</b><small>{r.email} · {r.shopType}, {r.area}</small></td>
           <td><span className="ag-or-steps" aria-label={`${r.stepsSent.length} of 3 sent`}>{[0, 1, 2].map((i) => <i key={i} className={i < r.stepsSent.length ? 'is-done' : ''}/>)}</span></td>
-          <td><span className={`ag-tag ${STATUS_TONE[r.status]}`}>{STATUS[r.status]}</span><small>{extra}</small></td>
+          <td>
+            <span className="ag-or-tags"><span className={`ag-tag ${STATUS_TONE[r.status]}`}>{STATUS[r.status]}</span>
+              {rep && <span className={`ag-tag ${LABEL_TONE[rep.label] ?? ''}`}>{rep.label}{rep.by === 'ai' ? ' · AI' : ''}</span>}</span>
+            {extra && <small>{extra}</small>}
+            {rep && <div className="ag-or-reply">
+              {rep.reason && <small>{rep.reason}</small>}
+              {rep.snippet && <q>{rep.snippet}</q>}
+              {rep.at && <small>{when(rep.at)}</small>}
+            </div>}
+          </td>
           <td className="ag-or-actions">
-            {r.status === 'stopped' ? <button type="button" className="ag-btn is-sm" onClick={() => void resume(r.email)}>Undo</button>
-              : ['due', 'waiting', 'finished'].includes(r.status) ? <>
-                <button type="button" className="ag-btn is-sm" onClick={() => openPreview(r.email)}>Preview</button>
-                <button type="button" className="ag-btn is-sm is-primary" onClick={() => openStop(r)}>Replied</button></> : null}
+            {['due', 'waiting', 'finished'].includes(r.status) && <button type="button" className="ag-btn is-sm" onClick={() => openPreview(r.email)}>Preview</button>}
+            {r.status === 'stopped' && !rep && <button type="button" className="ag-btn is-sm" onClick={() => void resume(r.email)}>Undo</button>}
+            {(rep || ['due', 'waiting', 'finished', 'stopped'].includes(r.status)) && <button type="button" className={'ag-btn is-sm' + (rep ? '' : ' is-primary')} onClick={() => openStop(r)}>{rep ? 'Change' : 'Replied'}</button>}
           </td>
         </tr>
       }) : <tr><td colSpan={4} className="ag-or-muted">No leads here.</td></tr>}</tbody>
@@ -226,28 +258,52 @@ function LeadsTab({ data, reload, openPreview, openStop }: Ctx) {
 const REASONS = [
   { reason: 'Booked a call', hint: 'Brilliant', icon: CalendarCheck, tone: 'var(--ag-good)' },
   { reason: 'Signed up', hint: 'Already on board', icon: BadgeCheck, tone: 'var(--ag-sky)' },
-  { reason: 'Replied, interested', hint: 'Carry on by hand', icon: MessageCircle, tone: 'var(--ag-peach)' },
+  { reason: 'Interested', hint: 'Carry on by hand', icon: MessageCircle, tone: 'var(--ag-peach)' },
   { reason: 'Said no', hint: 'Adds to do-not-contact', icon: Hand, tone: 'var(--ag-rose)' },
+  { reason: 'Out of office', hint: 'Keeps emailing', icon: Plane, tone: 'var(--ag-warn)' },
+  { reason: 'Bounced', hint: 'Address doesn’t work', icon: MailX, tone: 'var(--ag-bad)' },
+  { reason: 'Needs you', hint: 'Stops, you reply by hand', icon: Flag, tone: 'var(--ag-accent)' },
 ]
 
-function StopSheet({ row, onClose, onDone }: { row: BoardRow | null; onClose: () => void; onDone: () => Promise<void> }) {
+function StopSheet({ data, row, onClose, onDone }: { data: OutreachData; row: BoardRow | null; onClose: () => void; onDone: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
-  async function stop(reason: string) {
+  const [askDnc, setAskDnc] = React.useState<string | null>(null)
+  React.useEffect(() => { setAskDnc(null) }, [row])
+  const current = row ? data.replies[row.email]?.label : undefined
+  const onDnc = !!row && data.blocked.has(row.email)
+
+  async function apply(label: string, removeDnc: boolean) {
     if (!row) return
     setBusy(true)
-    const { error } = await supabase.rpc('outreach_stop_lead', { _email: row.email, _reason: reason })
+    const { error } = await supabase.rpc('outreach_set_reply_label', { _email: row.email, _label: label, _remove_dnc: removeDnc })
     setBusy(false)
     if (error) return void toast.error(error.message)
-    toast.success(`${row.shop}: ${reason}`)
+    toast.success(`${row.shop}: ${label}${removeDnc ? ', removed from do-not-contact' : ''}`)
     onClose()
     await onDone()
   }
+  function pick(label: string) {
+    // Leaving "Said no" never quietly un-blocks someone: ask first.
+    if (label !== 'Said no' && onDnc) return setAskDnc(label)
+    void apply(label, false)
+  }
+
   return <Dialog open={!!row} onOpenChange={(o) => !o && onClose()}>
     <DialogContent className="admin-panel ag ag-or-dialog">
-      <DialogHeader><DialogTitle>{row?.shop} replied?</DialogTitle><DialogDescription>They won’t get any more emails.</DialogDescription></DialogHeader>
-      <div className="ag-or-reasons">{REASONS.map((r) => <button key={r.reason} type="button" disabled={busy} onClick={() => void stop(r.reason)} style={{ '--tone': r.tone } as React.CSSProperties}>
-        <span className="ag-disc" aria-hidden="true"><r.icon size={18} strokeWidth={1.75}/></span><span><b>{r.reason}</b><small>{r.hint}</small></span>
-      </button>)}</div>
+      {askDnc ? <>
+        <DialogHeader><DialogTitle>Take {row?.shop} off do-not-contact?</DialogTitle>
+          <DialogDescription>They’re on the do-not-contact list. Changing the label to “{askDnc}” can keep them there, or remove them so they can be emailed again.</DialogDescription></DialogHeader>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="ag-btn is-primary" disabled={busy} onClick={() => void apply(askDnc, false)}>Keep on do-not-contact</button>
+          <button type="button" className="ag-btn" disabled={busy} onClick={() => void apply(askDnc, true)}>Remove from do-not-contact</button>
+        </div>
+      </> : <>
+        <DialogHeader><DialogTitle>{current ? `Change ${row?.shop}’s label` : `${row?.shop} replied?`}</DialogTitle>
+          <DialogDescription>{current ? `Now: ${current}.` : ''} Every label except Out of office stops their emails. Nothing is ever sent to them automatically.</DialogDescription></DialogHeader>
+        <div className="ag-or-reasons">{REASONS.map((r) => <button key={r.reason} type="button" disabled={busy || r.reason === current} aria-pressed={r.reason === current} onClick={() => pick(r.reason)} style={{ '--tone': r.tone } as React.CSSProperties}>
+          <span className="ag-disc" aria-hidden="true"><r.icon size={18} strokeWidth={1.75}/></span><span><b>{r.reason}</b><small>{r.hint}</small></span>
+        </button>)}</div>
+      </>}
     </DialogContent>
   </Dialog>
 }

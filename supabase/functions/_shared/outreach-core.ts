@@ -29,7 +29,8 @@ export type Lead = {
 };
 
 export type SentStep = { step: number; stepKey: string; sentAt: string; messageId: string | null };
-export type LeadEntry = { shop: string; steps: SentStep[]; stopped: { reason: string; at: string } | null };
+// holdUntil: an out-of-office reply can hold the next email until a date.
+export type LeadEntry = { shop: string; steps: SentStep[]; stopped: { reason: string; at: string } | null; holdUntil?: string | null };
 export type StateMap = Record<string, LeadEntry>;
 
 export type Links = { bookingLink: string; signupLink: string; website: string; senderName: string };
@@ -75,14 +76,17 @@ export function sentToday(state: StateMap, now: Date = new Date()) {
 export function dueStep(entry: LeadEntry | undefined, gaps: number[], now: number = Date.now()): number | null {
   const n = entry?.steps.length ?? 0;
   if (n >= STEPS.length) return null;
+  if (entry?.holdUntil && now < Date.parse(entry.holdUntil)) return null;
   if (n === 0 || !entry) return 0;
   return now - new Date(entry.steps[n - 1].sentAt).getTime() >= gaps[n - 1] * DAY ? n : null;
 }
 
 export function nextDueAt(entry: LeadEntry | undefined, gaps: number[]): string | null {
   const n = entry?.steps.length ?? 0;
-  if (!n || n >= STEPS.length || !entry) return null;
-  return new Date(new Date(entry.steps[n - 1].sentAt).getTime() + gaps[n - 1] * DAY).toISOString();
+  if (!entry || n >= STEPS.length) return null;
+  const hold = entry.holdUntil ? Date.parse(entry.holdUntil) : 0;
+  if (!n) return hold > Date.now() ? new Date(hold).toISOString() : null;
+  return new Date(Math.max(new Date(entry.steps[n - 1].sentAt).getTime() + gaps[n - 1] * DAY, hold)).toISOString();
 }
 
 // Every lead with its status, plus the ordered send queue. `leads` must be in

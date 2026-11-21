@@ -66,6 +66,10 @@ verify_jwt = false
 [functions.send-winback-emails]
 verify_jwt = false
 
+# Outreach reply checker: pg_cron every 5 minutes with the Vault secret, or an admin.
+[functions.outreach-replies]
+verify_jwt = false
+
 # Public printable QR poster PDF for the Business app (only shows public shop info).
 [functions.shop-poster]
 verify_jwt = false

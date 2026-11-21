@@ -374,6 +374,15 @@ textarea.ag-or-input { height: auto; padding: 10px 14px; line-height: 20px; widt
 .ag-or-reasons .ag-disc { width: 36px; height: 36px; }
 .ag-or-reasons b { display: block; font-weight: 600; }
 .ag-or-reasons small { display: block; font-size: 12px; color: var(--ag-text-2); }
+.ag-or-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.ag-or-reply { display: grid; gap: 2px; margin-top: 6px; max-width: 420px; }
+.ag-or-reply q { display: block; padding: 6px 10px; border-radius: 10px; font-size: 12px; line-height: 18px; color: var(--ag-text); background: var(--ag-inset); border-left: 3px solid var(--ag-sky); quotes: none; overflow-wrap: anywhere; }
+.ag-or-chips button.is-needs { color: var(--ag-accent); border-color: rgb(200 242 92 / .4); }
+.ag-or-chips button.is-needs[aria-pressed=true] { color: var(--ag-accent-ink); }
+.ag-or-needs { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 16px 20px; border-radius: 20px; text-align: left; color: var(--ag-accent-ink); background: var(--ag-accent); }
+.ag-or-needs b { display: block; font-size: 15px; }
+.ag-or-needs small { display: block; font-size: 13px; opacity: .8; }
+.ag-or-reasons button[aria-pressed=true] { border-color: var(--tone); opacity: .7; }
 /* Dialogs render outside the panel; this class gives them its palette without its page layout. */
 .ag.ag-or-dialog { min-height: 0; grid-template-columns: minmax(0, 1fr); color: var(--ag-text); background: var(--ag-card); border: 1px solid var(--ag-hair-2); }
 @media (max-width: 1240px) { .ag-or-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

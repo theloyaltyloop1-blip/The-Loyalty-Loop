@@ -14,11 +14,13 @@ export type Settings = {
   linkedin_angle: 'pain' | 'features' | 'story'; linkedin_daily_limit: number; instagram_list: string; instagram_daily_limit: number
   sender_name: string; from_email: string; booking_link: string; signup_link: string; website: string
   next_send_at: string | null; consecutive_failures: number; last_error: string | null
+  checker_last_run: string | null; checker_last_ok: string | null; checker_last_error: string | null
 }
 export type MailStatus = { smtpReady: boolean; problem: string | null; host: string; port: number; user: string; hasPass: boolean; dryRunForced: boolean }
 export type LogRow = { id: number; at: string; type: string; text: string }
 export type LinkedinState = { requested: string | null; accepted: string | null; messaged: string | null }
 export type InstagramState = { sent: string | null; followed_up: string | null; replied: string | null; no: string | null }
+export type ReplyInfo = { label: string; reason: string; snippet: string; at: string | null; by: string | null; holdUntil: string | null }
 export type Reviewer = { handle: string; name: string; area: string; liked: string; added: string }
 
 export type OutreachData = {
@@ -32,6 +34,7 @@ export type OutreachData = {
   reviewers: Reviewer[]
   templates: Record<string, string>
   log: LogRow[]
+  replies: Record<string, ReplyInfo>
   mail: MailStatus | null
   mailError: string
 }
@@ -73,7 +76,7 @@ export async function loadOutreach(): Promise<OutreachData> {
   const [settingsRes, leadRows, stops, sends, dnc, excl, li, ig, reviewers, templates, log] = await Promise.all([
     supabase.from('outreach_settings').select('*').eq('id', true).single(),
     all<LeadRow>((a, b) => supabase.from('outreach_leads').select('list, email, all_emails, shop, first_name, shop_type, area, linkedin_url, instagram_handle, legal_entity, company_number, email_ok').order('list').order('position').range(a, b)),
-    all<{ email: string; shop: string; stopped_reason: string | null; stopped_at: string | null }>((a, b) => supabase.from('outreach_lead_state').select('email, shop, stopped_reason, stopped_at').order('email').range(a, b)),
+    all<{ email: string; shop: string; stopped_reason: string | null; stopped_at: string | null; reply_label: string | null; reply_reason: string | null; reply_snippet: string | null; reply_at: string | null; reply_by: string | null; hold_until: string | null }>((a, b) => supabase.from('outreach_lead_state').select('email, shop, stopped_reason, stopped_at, reply_label, reply_reason, reply_snippet, reply_at, reply_by, hold_until').order('email').range(a, b)),
     all<{ email: string; step: number; step_key: string; sent_at: string; message_id: string | null }>((a, b) => supabase.from('outreach_sends').select('email, step, step_key, sent_at, message_id').order('sent_at').order('step').range(a, b)),
     all<{ email: string }>((a, b) => supabase.from('outreach_do_not_contact').select('email').order('email').range(a, b)),
     all<{ email: string }>((a, b) => supabase.from('outreach_excluded').select('email').order('email').range(a, b)),
@@ -92,7 +95,11 @@ export async function loadOutreach(): Promise<OutreachData> {
   })
   const state: StateMap = {}
   const entry = (email: string): LeadEntry => (state[email] ??= { shop: '', steps: [], stopped: null })
-  for (const s of stops) { const e = entry(s.email); e.shop = s.shop; e.stopped = s.stopped_reason ? { reason: s.stopped_reason, at: s.stopped_at ?? '' } : null }
+  const replies: Record<string, ReplyInfo> = {}
+  for (const s of stops) {
+    const e = entry(s.email); e.shop = s.shop; e.stopped = s.stopped_reason ? { reason: s.stopped_reason, at: s.stopped_at ?? '' } : null; e.holdUntil = s.hold_until
+    if (s.reply_label) replies[s.email] = { label: s.reply_label, reason: s.reply_reason ?? '', snippet: s.reply_snippet ?? '', at: s.reply_at, by: s.reply_by, holdUntil: s.hold_until }
+  }
   for (const s of sends) entry(s.email).steps.push({ step: s.step, stepKey: s.step_key, sentAt: s.sent_at, messageId: s.message_id })
 
   let mail: MailStatus | null = null, mailError = ''
@@ -108,6 +115,7 @@ export async function loadOutreach(): Promise<OutreachData> {
     reviewers,
     templates: Object.fromEntries((templates.data ?? []).map((t) => [t.key, t.content])),
     log: (log.data ?? []) as LogRow[],
+    replies,
     mail, mailError,
   }
 }

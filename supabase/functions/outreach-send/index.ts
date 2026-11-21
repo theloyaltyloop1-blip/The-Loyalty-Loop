@@ -117,8 +117,8 @@ async function loadSettings(db: SupabaseClient): Promise<Settings> {
 async function loadState(db: SupabaseClient, onlyEmail?: string): Promise<StateMap> {
   const state: StateMap = {};
   const entry = (email: string): LeadEntry => (state[email] ??= { shop: "", steps: [], stopped: null });
-  const stops = await all<{ email: string; shop: string; stopped_reason: string | null; stopped_at: string | null }>((a, b) => {
-    let q = db.from("outreach_lead_state").select("email, shop, stopped_reason, stopped_at");
+  const stops = await all<{ email: string; shop: string; stopped_reason: string | null; stopped_at: string | null; hold_until: string | null }>((a, b) => {
+    let q = db.from("outreach_lead_state").select("email, shop, stopped_reason, stopped_at, hold_until");
     if (onlyEmail) q = q.eq("email", onlyEmail);
     return q.order("email").range(a, b);
   });
@@ -126,6 +126,7 @@ async function loadState(db: SupabaseClient, onlyEmail?: string): Promise<StateM
     const e = entry(s.email);
     e.shop = s.shop;
     e.stopped = s.stopped_reason ? { reason: s.stopped_reason, at: s.stopped_at ?? "" } : null;
+    e.holdUntil = s.hold_until;
   }
   const sends = await all<{ email: string; step: number; step_key: string; sent_at: string; message_id: string | null }>((a, b) => {
     let q = db.from("outreach_sends").select("email, step, step_key, sent_at, message_id");
