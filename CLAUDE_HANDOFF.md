@@ -13,7 +13,7 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 - Supabase project ref: `tgukdabfvvoywawmzbdo`.
 - Shopper versions on phones: 1.0.1 and 1.0.2. In review at Apple and Google since 2026-11-15: 1.0.3 (iOS build 17, Android versionCode 135).
 - Business versions on phones: 1.0.1. In review at Apple and Google since 2026-11-15: 1.0.2 (iOS build 15, Android versionCode 134).
-- Publish every OTA for shopper 1.0.1, 1.0.2 and 1.0.3, and Business 1.0.1 and 1.0.2 (the review versions get OTAs too, so they are current when approved). Latest OTAs (2026-11-21): shopper 1.0.1 and 1.0.2 serve the card-to-page groups (1.0.2 `46ac33ab` / `49909009`, 1.0.1 `4aa248ef` / `3d9ca859`, android / ios), which already include the email codes; shopper 1.0.3 serves the email-codes groups from 54167be; Business 1.0.2 and 1.0.1 serve the offline-stamping groups from d5ab8eb (1.0.2 `da1b4463` / `17ccd7ce`, 1.0.1 `26f8f43f` / `ed052961`, android / ios), which include the email codes.
+- Publish every OTA for shopper 1.0.1, 1.0.2 and 1.0.3, and Business 1.0.1 and 1.0.2 (the review versions get OTAs too, so they are current when approved). Latest OTAs (2026-11-21): shopper 1.0.1 and 1.0.2 serve the card-to-page groups (1.0.2 `46ac33ab` / `49909009`, 1.0.1 `4aa248ef` / `3d9ca859`, android / ios), which already include the email codes; shopper 1.0.3 serves the email-codes groups from 54167be; Business 1.0.2 and 1.0.1 serve the opening-hours groups (1.0.2 `5af408d3` / `2dc9c66e`, 1.0.1 `57b47f3c` / `9f6c7d3e`, android / ios), built on top of offline stamping and the email codes.
 - Waiting for the next native build: predictive back and blurry image placeholders (2026-11-07 polish entry). Icons, splash, dark-mode native half and walk-past are already in the builds in review.
 - Shops use stamps by default. Programme types live: `stamp_legacy`, `spend_threshold`, `tiers`, `points`, `custom` (AI-designed).
 - Parked: Fidel card linking (hidden in the shopper app; spec in `ARCH_PLAN.md`), SumUp till link (live, only Test Shop connected), WhatsApp.
@@ -29,7 +29,7 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 
 **Shopper app:** whole-page map tab, quick cards and live balances on home, custom card designs, win-back coupons.
 
-**Business app:** stamps saved on the phone without signal and sent later (2026-11-21), app-first onboarding, map pin picker (OpenStreetMap tiles, no native map), QR poster, Help and FAQ, delete or hand over shop, business verification screens (shadow mode).
+**Business app:** opening-hours editor (2026-11-21), stamps saved on the phone without signal and sent later (2026-11-21), app-first onboarding, map pin picker (OpenStreetMap tiles, no native map), QR poster, Help and FAQ, delete or hand over shop, business verification screens (shadow mode).
 
 **Supabase:** edge functions `design-programme`, `ask-whirl`, `business-coach-chat`, `map-pin`, `verify-business` (shadow mode), wallet pass functions, four SumUp functions, `send-release-announcement`, `product-updates-unsubscribe`, `send-winback-emails`. Migration `walk_past_alerts` is applied.
 
@@ -69,6 +69,7 @@ Almost every release since 2026-11-07 was type-checked and bundled but not seen 
 - dark mode on home, a shop, scan and Settings
 - Whirl placements and the Ask Whirl sheet
 - sign-in, sign-out, offline launch and switching accounts
+- Business opening-hours editor (Edit profile) and its time sheet
 - Business offline stamping: Scan with "Simulate outage" on and in aeroplane mode, the amber waiting pill, sending when back online, rewards refused offline
 - shopper Home layout, map tab, quick cards, live balances
 - Business map pin picker, QR poster PDF, delete and hand-over screens, verification photo upload
@@ -123,6 +124,20 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
+
+### 2026-11-21 - Business app: opening-hours editor - LIVE (OTA)
+
+- **Branch:** `claude/business-opening-hours` (worktree `.claude/worktrees/business-opening-hours-2b5e7c`). Commit `f4a8c2e` on `main`, pushed on the owner's yes (2026-11-21). The OTAs were published from `11b7b21` (same code on d5ab8eb; re-applied on top of main's later handoff commit 95b1ce1, app files byte-identical). This supersedes the offline-stamping entry's "serving" groups below: phones now get the hours groups, which include offline stamping.
+- **OTA race, resolved:** the offline-stamping session published Business OTAs at the same time from d5ab8eb, interleaved with mine from the earlier commit, so each channel briefly served one feature or the other. My first four groups (1.0.2 `359bc770` / `42471776`, 1.0.1 `fc9eeb25` / `94c7ebda`, android / ios) are superseded. Republished all four from 11b7b21, which has both features (message "Opening hours editor (with offline stamping)"): 1.0.2 android group `5af408d3-c722-47e0-baf4-e6b089cd600a` (update `01a1ff66-31ce-738b-920b-4578f077c3ca`), ios `2dc9c66e-5da6-4676-bdbb-ac9c04a9ae49` (update `01a1ff67-9712-7d74-aea4-8b464fefba12`); 1.0.1 android `57b47f3c-d01d-4ecc-bf71-e54e5eb0b134` (update `01a1ff68-cf58-707d-98e2-5dd77a2cabea`), ios `9f6c7d3e-beb1-491b-9c79-012fc9a75e25` (update `01a1ff6a-0acb-7d0d-b844-4739e13171ff`). Runtime 1.0.1 published by setting `app.json` version to 1.0.1 temporarily, then restored (not committed). Lesson: two sessions must not publish OTAs for the same app at once; push to main first, then publish from main.
+- **Bundle check:** for each of the four, the uploaded file contains `tgukdabfvvoywawmzbdo`, "Check your opening hours", "waiting to send" (offline stamping) and "Send a new code" (email codes), and `u.expo.dev` serves that update ID with a launchAsset hash equal to the file's SHA-256.
+- **Rollback:** republish the offline-stamping groups (1.0.2 android `da1b4463-2c4f-4e2b-9679-f7765de2d5dd`, ios `17ccd7ce-f9a6-4df4-8e09-7ad1aac6852f`; 1.0.1 android `26f8f43f-49e7-4d0c-9bbf-6fc676068841`, ios `ed052961-c6d3-4f1c-955e-32bb16dc2f6c`) with `npx --yes eas-cli@24.11.0 update:republish --group <id>` from `apps/retailer`; that removes only the hours editor. Shows on the second app launch.
+- **What:** owners can set opening hours from the phone. Edit profile (Shop page → Edit profile) has a new "Opening hours" card under the map pin: seven days, each an Open/Closed toggle (sage when open) and two time buttons; tapping a time opens a bottom sheet (`Sheet.tsx`) with an hour grid and :00/:15/:30/:45. "Copy Monday to Tuesday–Friday" shortcut. Saved with the rest of the form by the existing `businesses` update (with the `.select("id")` zero-row check). Staff see a read-only list in Shop details. "Opening hours" added to the "Finish your profile" checklist, so shops without hours now show it as missing.
+- **Data:** writes `businesses.opening_hours` in the website's shape (`{ mon: { closed, open: "HH:MM", close: "HH:MM" }, … }`, missing day = closed, a newly switched-on day defaults to 09:00–17:00 like the web). An untouched empty editor keeps the old value (null stays null). Save is refused with a `showAlert` when an open day closes at or before it opens: the shopper app, the website and the walk-past SQL all treat that as never open, so overnight hours are not supported (the website editor does not check this; left alone).
+- **Permissions:** live RLS `businesses_update_owner_or_admin` (owner or admin only) and no `businesses` trigger touches `opening_hours` (checked on the live project, read-only). Staff cannot write, as for every other shop field. All 7 live shops have `opening_hours` null today.
+- **Files:** `apps/retailer/src/OpeningHoursEditor.tsx` (new), `apps/retailer/src/shop-pages.tsx`. JS only: no change to `package.json`, `app.json` or the lockfile.
+- **Checks run:** `npx tsc --noEmit` in `apps/retailer` (clean); `npx expo export --platform android` (bundle builds; local only, nothing uploaded).
+- **Not checked:** not checked on a phone; the screen and sheet have not been seen. No real save made against the live database, so the round trip to the website Settings page and the shopper shop page is by matching shape, not observed.
+- **Next:** (owner) open the Business app twice, set hours on Test Shop, and check the website owner Settings and the shopper shop page show the same.
 
 ### 2026-11-21 - Business app: stamps work without signal (saved on the phone, sent later) - LIVE (OTA)
 
