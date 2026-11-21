@@ -1617,7 +1617,7 @@ function BirthdayRewardSection({
   return (
     <View style={[styles.section, { backgroundColor: schemeColor("#FBE7BF", "bg") }]}>
       <View style={[styles.iconHeading, { justifyContent: "space-between" }]}>
-        <View style={styles.iconHeading}>
+        <View style={[styles.iconHeading, { flex: 1, marginBottom: 0 }]}>
           <Cake size={20} color={schemeColor("#5C3B00", "fg")} />
           <Text style={styles.cardTitle}>Birthday reward</Text>
         </View>
@@ -1635,7 +1635,7 @@ function BirthdayRewardSection({
         A treat on a customer’s first visit in their birthday month, once a year. You never see their birthday; it’s added automatically when they visit.
       </Text>
       {on ? (
-        <>
+        <View style={{ marginTop: 12 }}>
           <Field
             label={`Bonus ${unit}`}
             value={amount}
@@ -1644,7 +1644,7 @@ function BirthdayRewardSection({
             keyboardType="number-pad"
           />
           <PrimaryButton label="Save birthday reward" onPress={() => void save(true)} busy={busy} />
-        </>
+        </View>
       ) : null}
     </View>
   );
