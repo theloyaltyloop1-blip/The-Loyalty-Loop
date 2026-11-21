@@ -4,6 +4,8 @@ import { AskWhirlSheet } from './src/components/AskWhirlSheet';
 import { AppWhirlProvider, Whirl, WhirlEmpty, WhirlOrMark } from './src/Whirl'
 import { CARD_FONTS } from "../../packages/card-design/fonts";
 import { AppAlertHost, showAlert } from "./src/components/AppAlert";
+import { EmailCodeStep } from "./src/components/EmailCodeStep";
+import { codeErrorMessage, isUnconfirmedEmail } from "./src/email-code";
 import { ThemeProvider, useTheme, statusBarStyle } from "./src/theme";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { currencySymbol, money, scaledLimit, setActiveCountry } from "./src/money";
@@ -483,13 +485,27 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
-    [helpOpen, setHelpOpen] = useState(false);
+    [helpOpen, setHelpOpen] = useState(false),
+    // Waiting for the code from an email: to confirm the account, or to reset the password.
+    [codeStep, setCodeStep] = useState<{ email: string; purpose: "signup" | "recovery" } | null>(null);
+  useBackStep(!!codeStep, () => setCodeStep(null));
   async function forgotPassword() {
     const address = email.trim();
     if (!address) return showAlert("Enter your email first", "Type the email you sign in with, then tap “Forgot password?” again.");
+    if (busy) return;
+    setBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(address, { redirectTo: `${WEB_ORIGIN}/reset-password` });
-    if (error) return showAlert("Couldn’t send the email", "Please check the address and try again.");
-    showAlert("Check your email", `If ${address} has an account, we’ve sent a link to choose a new password.`);
+    setBusy(false);
+    if (error) return showAlert("Couldn’t send the email", codeErrorMessage(error.message));
+    // Supabase doesn't say whether the address has an account, so neither do we.
+    setCodeStep({ email: address, purpose: "recovery" });
+  }
+  async function confirmEmailFirst(address: string) {
+    const { error } = await supabase.auth.resend({ type: "signup", email: address, options: { emailRedirectTo: `${WEB_ORIGIN}/auth/callback` } });
+    // Even if a code went out a moment ago (rate limit), the step lets them type it.
+    if (error && !/security purposes|rate limit/i.test(error.message))
+      return showAlert("Could not sign in", codeErrorMessage(error.message));
+    setCodeStep({ email: address, purpose: "signup" });
   }
   async function submit() {
     if (!email.trim() || !password)
@@ -505,11 +521,10 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
       onSession(data.session);
     } catch (e) {
       const raw = e instanceof Error ? e.message : "";
+      if (isUnconfirmedEmail(raw)) return void (await confirmEmailFirst(email.trim()));
       showAlert(
         "Could not sign in",
-        /confirm/i.test(raw)
-          ? "Tap the link in the email we sent you first, then sign in."
-          : /invalid/i.test(raw)
+        /invalid/i.test(raw)
             ? "That email and password don't match. Check them and try again, or tap “Forgot password?”."
             : /fetch|network/i.test(raw)
               ? "We couldn't reach our servers. Check your connection and try again."
@@ -525,6 +540,20 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
         contentContainerStyle={styles.auth}
         keyboardShouldPersistTaps="handled"
       >
+        {codeStep ? (
+          <EmailCodeStep
+            key={codeStep.purpose}
+            email={codeStep.email}
+            purpose={codeStep.purpose}
+            redirectTo={`${WEB_ORIGIN}${codeStep.purpose === "signup" ? "/auth/callback" : "/reset-password"}`}
+            pose={codeStep.purpose === "signup" ? "thumbs" : "think"}
+            title={codeStep.purpose === "signup" ? "Confirm your email" : "Reset your password"}
+            intro={codeStep.purpose === "signup" ? "Type it here to finish signing in." : "If that address has an account, type the code here with a new password."}
+            onVerified={onSession}
+            onChangeEmail={() => setCodeStep(null)}
+          />
+        ) : (
+        <>
         <WhirlOrMark pose="wave" mark={<View style={styles.mark}><Text style={styles.markText}>↻</Text></View>} />
         <Text style={styles.eyebrow}>The Loyalty Loop for Business</Text>
         <Text style={styles.hero}>Sign in to your shop</Text>
@@ -571,6 +600,8 @@ function Auth({ onSession, onNewShop }: { onSession: (session: Session) => void;
         <Pressable accessibilityRole="button" onPress={() => setHelpOpen(true)} style={styles.authHelpLink}>
           <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
         </Pressable>
+        </>
+        )}
         <Modal visible={helpOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setHelpOpen(false)}>
           <SafeAreaView style={{ flex: 1, backgroundColor: schemeColor("#F6F1E8", 'bg') }} edges={["top", "bottom"]}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 12 }}>

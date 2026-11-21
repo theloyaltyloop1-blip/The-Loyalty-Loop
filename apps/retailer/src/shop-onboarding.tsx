@@ -25,6 +25,8 @@ import { supabase } from "./supabase";
 import type { ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
 import { ProgrammeBuilder, RulesCard } from "./ProgrammeBuilder";
 import { useBackStep } from "./back-steps";
+import { EmailCodeStep } from "./components/EmailCodeStep";
+import { isExistingAccount } from "./email-code";
 
 
 const BRAND_COLOR = "#8B7355";
@@ -664,6 +666,14 @@ function SaveShopAccount({
         options: { emailRedirectTo: `${WEB_ORIGIN}/auth/callback`, data: { intent: "business_owner" } },
       });
       if (error) throw error;
+      if (isExistingAccount(data.user)) {
+        // Supabase sends nothing to an address that already has an account.
+        return showAlert(
+          "You already have an account",
+          `Sign in with ${address} and ${shop} will be created.`,
+          onSignIn ? [{ text: "Not now", style: "cancel" }, { text: "Sign in", onPress: onSignIn }] : undefined,
+        );
+      }
       void supabase.functions.invoke("send-owner-legal-documents", { body: { email: address, site_url: WEB_ORIGIN } }).catch(() => undefined);
       // With a session the app signs in by itself and creates the shop.
       if (!data.session) setSentTo(address);
@@ -684,17 +694,17 @@ function SaveShopAccount({
 
   if (sentTo)
     return (
-      <>
-        <Whirl pose="sleepy" size={120} style={{ alignSelf: "center", marginBottom: 6 }} />
-        <Text style={[styles.hero, { textAlign: "center" }]}>Check your email.</Text>
-        <Text style={[styles.copy, { textAlign: "center" }]}>
-          We've sent a link to {sentTo}. Tap it, then sign in. {shop} is saved on this phone and goes live as soon as you're in.
-        </Text>
-        {onSignIn && <PrimaryButton title="Sign in" onPress={onSignIn} />}
-        <Pressable onPress={() => setSentTo(null)} style={styles.back}>
-          <Text style={styles.backText}>Use a different email</Text>
-        </Pressable>
-      </>
+      // Once the code is confirmed the app signs in by itself and creates the shop.
+      <EmailCodeStep
+        email={sentTo}
+        purpose="signup"
+        redirectTo={`${WEB_ORIGIN}/auth/callback`}
+        pose="sleepy"
+        title="Check your email."
+        intro={`Type it here and ${shop} goes live.`}
+        onVerified={() => undefined}
+        onChangeEmail={() => setSentTo(null)}
+      />
     );
 
   return (

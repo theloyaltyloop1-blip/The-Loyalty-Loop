@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { supabase, setRememberMe, signInWithGoogle, signInWithApple } from '@/lib/supabase'
+import { AUTH_REDIRECT_URL, supabase, setRememberMe, signInWithGoogle, signInWithApple } from '@/lib/supabase'
 import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, AuthMinorLink, GoogleButton, AppleButton, AuthDivider } from '@/components/auth-layout'
+import { EmailCodeStep } from '@/components/email-code-step'
+import { codeErrorMessage, isUnconfirmedEmail } from '@/lib/email-code'
 
 export function Login() {
   const navigate = useNavigate()
@@ -15,6 +17,7 @@ export function Login() {
   const [remember, setRemember] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
+  const [confirming, setConfirming] = React.useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -29,6 +32,13 @@ export function Login() {
     setLoading(false)
 
     if (error) {
+      if (isUnconfirmedEmail(error.message)) {
+        // Never confirmed the email: send a fresh code and let them type it here.
+        const { error: sendError } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${AUTH_REDIRECT_URL}/auth/callback` } })
+        if (sendError && !/security purposes|rate limit/i.test(sendError.message)) setError(codeErrorMessage(sendError.message))
+        else setConfirming(true)
+        return
+      }
       setError(error.message)
       return
     }
@@ -44,6 +54,20 @@ export function Login() {
           : roles?.some((role) => role.role === 'business_owner')
             ? '/owner'
             : next ?? '/dashboard'
+    )
+  }
+
+  if (confirming) {
+    return (
+      <AuthLayout mascot="think" title="Confirm your email">
+        <EmailCodeStep
+          email={email}
+          purpose="signup"
+          redirectTo={`${AUTH_REDIRECT_URL}/auth/callback`}
+          onVerified={() => navigate('/auth/callback', { replace: true })}
+          onChangeEmail={() => setConfirming(false)}
+        />
+      </AuthLayout>
     )
   }
 

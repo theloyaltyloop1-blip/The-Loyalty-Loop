@@ -117,6 +117,18 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-21 - Email codes instead of email links (sign-up, password reset) - NOT shipped
+
+- **Branch:** `claude/email-otp-39de5a` (worktree `.claude/worktrees/email-otp-39de5a`, from origin/main 090e7a8). Not committed.
+- **What:** after email sign-up, people type a 6-digit code (`supabase.auth.verifyOtp`, type `signup`) instead of tapping a link, then carry on signed in. Password reset sends a code; the person types it with a new password (`verifyOtp` type `recovery`, then `updateUser`). Every code screen has "Send a new code" (60 s timer), "Use a different email" and plain errors for wrong or old codes. Signing in before confirming now sends a fresh code and shows the code screen instead of "tap the link". Signing up again with an address that already has an account now says so (Supabase sends nothing in that case).
+- **Where:** shopper sign-up (`apps/shopper/App.tsx` AuthScreen, `src/components/EmailCodeStep.tsx`, `src/email-code.ts`); Business shop sign-up (`src/shop-onboarding.tsx`) and sign-in screen reset + unconfirmed (`App.tsx` Auth, `src/components/EmailCodeStep.tsx`, `src/email-code.ts`); website `Signup.tsx`, `ForgotPassword.tsx` (now asks for the code and new password on one page), `Login.tsx` (unconfirmed), `WhatsAppOnboarding.tsx` (runs `complete_whatsapp_signup` after the code, as `/auth/callback` does), `components/email-code-step.tsx`, `lib/email-code.ts`. The three `email-code.ts` files are copies; keep them in step.
+- **Kept:** `/auth/callback` and `/reset-password` are unchanged, and every request still passes the same redirect URL, so links in emails keep working for older app versions. The shopper app still sets no redirect (Supabase Site URL), as before.
+- **Templates:** `supabase/templates/confirm-signup.html` and `reset-password.html` (+ README) show `{{ .Token }}` large and keep `{{ .ConfirmationURL }}` as a fallback link. Not applied: the live templates are hosted in Supabase and `config.toml` has no auth section.
+- **Checks run:** `npx tsc --noEmit` in `apps/shopper` and `apps/retailer` (both clean); `npm --prefix apps/web run build` passes. Website sign-up, forgot password, log-in-unconfirmed and resend exercised on a local dev server against a local fake of the auth endpoints (no live project calls): wrong code shows the error, right code signs in and lands on `/dashboard`, reset sends `PUT /auth/v1/user`, resend resets the timer.
+- **Not checked:** not checked on a phone (neither app run); WhatsApp code path not run; nothing run against the live Supabase project (no test inbox in the repo); live OTP length and expiry not read.
+- **Order to release (each on the owner's yes):** 1) owner pastes both templates in the Supabase dashboard and checks OTP length is 6; 2) website push; 3) JS-only OTA for both apps, Android and iOS separately, for every version on phones (shopper 1.0.1, 1.0.2 and 1.0.3 if approved; Business 1.0.1 and 1.0.2 if approved). Templates must go first: until then emails have no code and the new screens would wait for one.
+- **Next:** (owner) yes for templates, website and OTAs. (Claude) once every app version on phones has the code screens, offer to drop the link from the templates.
+
 ### 2026-11-17 - Home page: bold sapphire hero, no serif italics - LIVE
 
 - **Commit:** 8a7906b on main, confirmed live (served CSS has the new hero rules).

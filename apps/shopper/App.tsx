@@ -82,6 +82,8 @@ import { getUsageAnalyticsConsent, setUsageAnalyticsConsent, trackUsageEvent } f
 import { syncShopperWidget } from './src/widgets/state'
 import { Sheet } from './src/components/Sheet'
 import { AppAlertHost, showAlert } from './src/components/AppAlert'
+import { EmailCodeStep } from './src/components/EmailCodeStep'
+import { codeErrorMessage, isExistingAccount, isUnconfirmedEmail } from './src/email-code'
 import { SuccessCheck } from './src/components/SuccessCheck'
 import { ReceiptPrinter, type ReceiptData } from './src/components/ReceiptPrinter'
 import { StampThump } from './src/components/StampThump'
@@ -495,6 +497,15 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
+  // Waiting for the code from the confirmation email.
+  const [codeFor, setCodeFor] = useState<string | null>(null)
+
+  async function confirmEmailFirst(address: string) {
+    const { error } = await supabase.auth.resend({ type: 'signup', email: address })
+    // Even if a code went out a moment ago (rate limit), the step lets them type it.
+    if (error && !/security purposes|rate limit/i.test(error.message)) return showAlert('Could not sign in', codeErrorMessage(error.message))
+    setCodeFor(address)
+  }
 
   async function submit() {
     if (!email.trim() || password.length < 6 || (mode === 'signUp' && !name.trim())) {
@@ -510,10 +521,17 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
         })
         if (error) throw error
         if (data.session) { haptic.success(); onSession(data.session) }
-        else showAlert(name.trim() ? `Nearly there, ${name.trim()}.` : 'Check your email', 'Pop over to your inbox, tap the link, then come back and sign in. Your first stamp is waiting.', undefined, { whirl: 'thumbs' })
+        else if (isExistingAccount(data.user)) {
+          // Supabase sends nothing to an address that already has an account.
+          setMode('signIn')
+          showAlert('You already have an account', `Sign in with ${email.trim()} and your password.`)
+        } else setCodeFor(email.trim())
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-        if (error) throw error
+        if (error) {
+          if (isUnconfirmedEmail(error.message)) return void (await confirmEmailFirst(email.trim()))
+          throw error
+        }
         haptic.success()
         onSession(data.session)
       }
@@ -570,6 +588,16 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
             <ChevronLeftIcon size={26} />
           </Pressable>
         ) : null}
+        {codeFor ? (
+          <EmailCodeStep
+            email={codeFor}
+            title={name.trim() ? `Nearly there, ${name.trim()}.` : 'Check your email'}
+            intro="Type it here and your first stamp is waiting."
+            onVerified={onSession}
+            onChangeEmail={() => setCodeFor(null)}
+          />
+        ) : (
+        <>
         <View style={styles.mark}>
           <Image source={logo} style={styles.markImage} />
         </View>
@@ -615,6 +643,8 @@ function AuthScreen({ onSession, onBack, reason, initialMode = 'signIn' }: { onS
         <Pressable onPress={() => void Linking.openURL('https://www.the-loyalty-loop.com/help')} style={styles.authHelpLink}>
           <Text style={styles.authHelpLinkText}>Help &amp; FAQ</Text>
         </Pressable>
+        </>
+        )}
       </KeyboardAwareScrollView>
     </SafeAreaView>
   )

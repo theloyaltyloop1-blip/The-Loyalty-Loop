@@ -69,7 +69,7 @@ function RouteMeta() {
     '/login': { title: 'Log in | The Loyalty Loop', description: 'Log in to your Loyalty Loop account.' },
     '/signup': { title: 'Join The Loyalty Loop', description: 'Create a free Loyalty Loop account and start collecting local rewards.' },
     '/signup/owner': { title: 'Bring your shop to The Loyalty Loop', description: 'Create a digital loyalty card for your independent business.' },
-    '/forgot-password': { title: 'Reset your password | The Loyalty Loop', description: 'Request a secure password-reset link for your Loyalty Loop account.' },
+    '/forgot-password': { title: 'Reset your password | The Loyalty Loop', description: 'Get a code by email to choose a new password for your Loyalty Loop account.' },
     '/dashboard': { title: 'Your loyalty cards | The Loyalty Loop', description: 'Your local rewards and loyalty cards.', },
     '/dashboard/discover': { title: 'Discover local shops | The Loyalty Loop', description: 'Explore local shops and their latest updates.' },
     '/dashboard/rewards': { title: 'Your rewards | The Loyalty Loop', description: 'View rewards that are ready to use.' },

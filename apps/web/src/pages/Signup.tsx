@@ -1,10 +1,13 @@
 import * as React from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AUTH_REDIRECT_URL, supabase, signInWithGoogle, signInWithApple } from '@/lib/supabase'
 import { AuthLayout, AuthInput, AuthLinks, AuthLinkLine, GoogleButton, AppleButton, AuthDivider } from '@/components/auth-layout'
+import { EmailCodeStep } from '@/components/email-code-step'
+import { isExistingAccount } from '@/lib/email-code'
 
 export function Signup({ asOwner = false }: { asOwner?: boolean }) {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [firstName, setFirstName] = React.useState('')
   const [lastName, setLastName] = React.useState('')
   const [email, setEmail] = React.useState('')
@@ -29,7 +32,7 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       return
     }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -48,6 +51,11 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
       setError(error.message)
       return
     }
+    // Supabase sends nothing to an address that already has an account.
+    if (isExistingAccount(data.user)) {
+      setError('There is already an account with this email. Log in instead, or reset your password.')
+      return
+    }
 
     if (asOwner) {
       // Fire-and-forget: sends the welcome email with the legal documents
@@ -61,15 +69,21 @@ export function Signup({ asOwner = false }: { asOwner?: boolean }) {
         .catch(() => undefined)
     }
 
-    setCheckEmailSent(true)
+    // AuthCallback sends a signed-in visitor to the right home for their role.
+    if (data.session) navigate('/auth/callback', { replace: true })
+    else setCheckEmailSent(true)
   }
 
   if (checkEmailSent) {
     return (
       <AuthLayout mascot="think" title={firstName.trim() ? `Nearly there, ${firstName.trim()}.` : 'Check your email'}>
-        <p className="text-foreground font-semibold">
-          We've sent a confirmation link to {email}. Follow it to finish setting up your account.
-        </p>
+        <EmailCodeStep
+          email={email}
+          purpose="signup"
+          redirectTo={`${AUTH_REDIRECT_URL}/auth/callback`}
+          onVerified={() => navigate('/auth/callback', { replace: true })}
+          onChangeEmail={() => setCheckEmailSent(false)}
+        />
       </AuthLayout>
     )
   }

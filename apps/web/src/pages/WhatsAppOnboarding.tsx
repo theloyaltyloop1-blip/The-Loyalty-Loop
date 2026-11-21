@@ -4,6 +4,7 @@ import { CheckCircle2, LockKeyhole, MessageCircle } from 'lucide-react'
 import { AUTH_REDIRECT_URL, supabase } from '@/lib/supabase'
 import { AuthInput, AuthLayout } from '@/components/auth-layout'
 import { WhatsAppLinked } from '@/components/whatsapp-linked'
+import { EmailCodeStep } from '@/components/email-code-step'
 
 type Handoff = {
   kind: 'signup'
@@ -24,6 +25,7 @@ export function WhatsAppOnboarding() {
   const [busy, setBusy] = React.useState(false)
   const [confirmationSent, setConfirmationSent] = React.useState(false)
   const [linkedPath, setLinkedPath] = React.useState<string | null>(null)
+  const [linkError, setLinkError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (token.length < 32) {
@@ -89,10 +91,24 @@ export function WhatsAppOnboarding() {
   }
 
   if (linkedPath) return <WhatsAppLinked dashboardPath={linkedPath} />
+  // Email confirmed by code but the WhatsApp step failed: same message as /auth/callback.
+  if (linkError) return <main className="grid min-h-dvh place-items-center bg-background p-6 text-center text-foreground"><div><p className="font-display text-2xl font-bold">We could not link WhatsApp</p><p className="mt-2 text-sm text-destructive">{linkError}</p><a className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover" href="/dashboard">Open your dashboard</a></div></main>
   if (loading) return <AuthLayout title="Opening your loyalty card"><p className="text-muted-foreground">Just a moment while we secure your details.</p></AuthLayout>
   if (error && !handoff) return <AuthLayout title="That link has expired"><p className="font-semibold text-destructive">{error}</p><Link className="mt-5 inline-block font-bold text-primary" to="/">Back to The Loyalty Loop</Link></AuthLayout>
   if (!handoff) return null
-  if (confirmationSent) return <AuthLayout title="Check your email"><p className="font-semibold text-foreground">We’ve sent a confirmation link to {handoff.email}. Open it to finish linking WhatsApp to your Loyalty Loop account.</p></AuthLayout>
+  if (confirmationSent) return (
+    <AuthLayout title="Check your email">
+      {/* Same finish as /auth/callback?whatsapp_token=…, which the link in the email still uses. */}
+      <EmailCodeStep
+        email={handoff.email}
+        purpose="signup"
+        redirectTo={`${AUTH_REDIRECT_URL}/auth/callback?whatsapp_token=${encodeURIComponent(token)}`}
+        onVerified={() => finishLinking().catch((linkFailure: unknown) => setLinkError(linkFailure instanceof Error ? linkFailure.message : 'Please try again.'))}
+        onChangeEmail={() => { setConfirmationSent(false); setPassword(''); setConfirmPassword('') }}
+        changeEmailLabel="Back"
+      />
+    </AuthLayout>
+  )
 
   return (
     <AuthLayout title={mode === 'create' ? 'Secure your rewards' : 'Link your account'}>
