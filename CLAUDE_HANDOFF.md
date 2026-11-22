@@ -116,11 +116,11 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
-### 2026-11-22 - send-winback-emails: owner test send (`test_to`) - NOT shipped
-- Branch `claude/winback-test-to` from origin/main 6030c90 (deployed v41 code). Not committed, not pushed, not deployed, function not invoked, nothing sent.
+### 2026-11-22 - send-winback-emails: owner test send (`test_to`) - LIVE (function v42; no test send made yet)
+- Branch `claude/winback-test-to` from origin/main 6030c90 (deployed v41 code). Committed and pushed to origin/main as caa0ffc; deployed to production as v42 (verify_jwt false, entrypoint index.ts). Function not invoked, nothing sent.
 - File: `supabase/functions/send-winback-emails/index.ts` only. New body param `test_to`: works only after the existing signed-in owner-or-admin-of-`business_id` check (same `owner_id`/`has_role admin` test as Send now); the cron path (`x-winback-secret`) rejects any body with `test_to` (403). One plain address only (regex, length cap, no whitespace/CRLF); otherwise 400. Skips candidates and batch logic, calls `sendOne` with one fake candidate, a generated COMEBACK<8> sample code, subject prefixed `[TEST]`, and writes no `winback_email_log` row and no coupon row (so the code cannot be redeemed). Returns `{ test, email_sent, qr_sent, qr_error, error }`. Same rate limit as Send now.
 - Checks run: careful self-review of the diff only. Not run: deno check / tsc (deno not installed here), any invocation, any real send.
-- Next: owner's yes to commit, push and redeploy the function, then an owner-approved test send to an address the owner chooses.
+- Still pending: owner-approved test send to an address the owner chooses (Claude, after the owner's yes); OTAs for shopper 1.0.1/1.0.2/1.0.3 and Business 1.0.1/1.0.2 (owner's yes needed). Rollback: redeploy the v41 code (commit 6030c90) of this file.
 
 ### 2026-11-22 - Combined release branch: card page layout + win-back email and QR - PARTLY LIVE (on main, migration applied; function, OTAs pending)
 
