@@ -48,6 +48,8 @@ export interface Business {
   reward_threshold_pence: number | null
   /** Birthday bonus stamps/points (stamp and points shops); null = off; missing until the birthday migration is applied. */
   birthday_bonus?: number | null
+  /** Free birthday item ("Free coffee"); null = off; exclusive with birthday_bonus; missing until the free-item migration is applied. */
+  birthday_reward_item?: string | null
   /** Automatic win-back emails each morning; missing until the automatic win-back migration is applied. */
   winback_auto_enabled?: boolean
   /** Days without a visit before a member counts as gone quiet (7 to 365). */
@@ -554,13 +556,19 @@ export async function awardProgress(businessId: string, userId: string, value = 
   return clientRef
 }
 
-/** Birthday bonus the database added to a just-saved visit (0 when none). Before the
- * birthday migration the column does not exist, the read fails and this returns 0. */
-export async function fetchBirthdayBonus(find: { clientRef: string } | { transactionId: string }): Promise<number> {
-  const query = supabase.from('transactions').select('birthday_bonus')
-  const { data, error } = await ('clientRef' in find ? query.eq('client_ref', find.clientRef) : query.eq('id', find.transactionId)).maybeSingle()
-  if (error || !data) return 0
-  return Number((data as { birthday_bonus?: number }).birthday_bonus ?? 0)
+/** What the database gave a just-saved visit for the member's birthday: bonus stamps/points
+ * and/or a free item. Before the migrations the columns do not exist: the read falls back,
+ * and nothing is returned for what is missing. */
+export async function fetchBirthdayResult(find: { clientRef: string } | { transactionId: string }): Promise<{ bonus: number; item: string | null }> {
+  const read = (columns: string) => {
+    const query = supabase.from('transactions').select(columns)
+    return ('clientRef' in find ? query.eq('client_ref', find.clientRef) : query.eq('id', find.transactionId)).maybeSingle()
+  }
+  let { data, error } = await read('birthday_bonus, birthday_item')
+  if (error) ({ data, error } = await read('birthday_bonus'))
+  if (error || !data) return { bonus: 0, item: null }
+  const row = data as unknown as { birthday_bonus?: number; birthday_item?: string | null }
+  return { bonus: Number(row.birthday_bonus ?? 0), item: row.birthday_item ?? null }
 }
 
 // ---------------------------------------------------------------------

@@ -386,6 +386,8 @@ type Business = {
   reward_threshold_pence?: number | null
   /** Extra stamps/points in the member's birthday month; null = off, undefined = database not updated yet. */
   birthday_bonus?: number | null
+  /** Free birthday item (e.g. "Free coffee"); null = off; undefined = database not updated yet. */
+  birthday_reward_item?: string | null
   features?: string[] | null
   halal_certifier?: string | null
   trending?: boolean | null
@@ -1686,8 +1688,8 @@ function ShopDetail({
         {membership && spendShop && membership.redemption_blocked_reason ? (
           <Text style={[ss.spendHint, { marginTop: 16 }]}>Rewards here are paused for now: a refund or a corrected purchase reduced your spend. They unlock again as you spend.</Text>
         ) : null}
-        {business.reward_model === 'stamp_legacy' || business.reward_model === 'points' || !business.reward_model ? (
-          <ShopBirthdayCard userId={userId} businessId={business.id} bonus={business.birthday_bonus} member={!!membership}
+        {business.birthday_reward_item || business.reward_model === 'stamp_legacy' || business.reward_model === 'points' || !business.reward_model ? (
+          <ShopBirthdayCard userId={userId} businessId={business.id} bonus={business.birthday_bonus} item={business.birthday_reward_item} member={!!membership}
             unit={programmeId === 'points' || business.loyalty_type === 'points' ? 'points' : business.loyalty_type === 'tiered' ? 'visits' : 'stamps'} />
         ) : null}
         {membership ? (

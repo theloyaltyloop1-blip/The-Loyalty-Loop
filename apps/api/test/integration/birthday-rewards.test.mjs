@@ -50,7 +50,7 @@ const fixture = String.raw`
     stamp_threshold integer not null default 10, sort_order integer not null default 0,
     spend_threshold_pence integer, created_at timestamptz default now()
   );
-  create table public.rewards (id uuid primary key default gen_random_uuid(), user_id uuid, business_id uuid, title text, catalog_id uuid);
+  create table public.rewards (id uuid primary key default gen_random_uuid(), user_id uuid, business_id uuid, title text, catalog_id uuid, expires_at timestamptz, redeemed_at timestamptz);
   create table public.notifications (id bigserial primary key, user_id uuid, business_id uuid, kind text, title text, body text);
   create table public.programme_bonus_log (
     id uuid primary key default gen_random_uuid(), user_id uuid not null, business_id uuid not null,
@@ -81,6 +81,7 @@ before(async () => {
   await db.query(extractFunction(custom, 'handle_spend_transaction'));
   await db.query(extractFunction(await read('20260925164755_fidel_spend_tiers.sql'), 'spend_next_tier'));
   await db.query(await read('20261121120000_birthday_rewards.sql'));
+  await db.query(await read('20261122120000_birthday_free_item.sql'));
   await db.query(`
     create trigger on_stamp_transaction after insert on public.transactions for each row
       when (new.type = 'stamp') execute function public.handle_stamp_transaction();
@@ -173,4 +174,88 @@ test('spend-threshold and custom-style shops are left alone', async () => {
   await db.query('update public.businesses set reward_threshold_pence = 1000 where id = $1', [b]);
   assert.equal(await bonusOf(await spend(alice, b, 200)), 0);
   assert.equal((await db.query(`select count(*)::int n from public.programme_bonus_log where business_id = $1`, [b])).rows[0].n, 0);
+});
+
+// ---------------------------------------------------------------------
+// Free birthday item (20261122120000_birthday_free_item.sql)
+
+async function itemShop(model, item, extra = {}) {
+  const r = await db.query(
+    `insert into public.businesses (name, reward_model, loyalty_type, birthday_reward_item, loyalty_config, reward_threshold_pence) values ('Bean There', $1, $2, $3, $4, $5) returning id`,
+    [model, extra.loyaltyType ?? 'stamp_card', item, JSON.stringify(extra.config ?? {}), extra.threshold ?? null]);
+  const id = r.rows[0].id;
+  for (const u of [alice, bob]) await db.query('insert into public.memberships (user_id, business_id) values ($1, $2)', [u, id]);
+  return id;
+}
+const rewardsOf = async (u, b) => (await db.query('select * from public.rewards where user_id = $1 and business_id = $2', [u, b])).rows;
+const itemOf = async (id) => (await db.query('select birthday_item, birthday_reward_id from public.transactions where id = $1', [id])).rows[0];
+
+test('free item: first visit in the birthday month adds a reward expiring at month end, once', async () => {
+  const b = await itemShop('stamp_legacy', 'Free coffee');
+  const first = await stamp(alice, b);
+  const t = await itemOf(first);
+  assert.equal(t.birthday_item, 'Free coffee');
+  assert.equal(await bonusOf(first), 0);
+  assert.equal((await member(alice, b)).stamp_count, 1); // no bonus stamps
+  const rewards = await rewardsOf(alice, b);
+  assert.equal(rewards.length, 1);
+  assert.equal(rewards[0].title, 'Free coffee');
+  assert.equal(rewards[0].id, t.birthday_reward_id);
+  assert.equal(rewards[0].redeemed_at, null);
+  const expires = new Date(rewards[0].expires_at);
+  assert.ok(expires > new Date(), 'expires in the future');
+  assert.ok(expires - new Date() < 32 * 24 * 3600 * 1000, 'expires within a month');
+  const note = (await db.query(`select body from public.notifications where user_id = $1 and business_id = $2 and title = 'Happy birthday!'`, [alice, b])).rows;
+  assert.equal(note.length, 1);
+  assert.match(note[0].body, /^Happy birthday from Bean There! Free coffee is waiting for you\. Redeem it before \d+ \w+\.$/);
+
+  assert.equal((await itemOf(await stamp(alice, b))).birthday_item, null);
+  assert.equal((await rewardsOf(alice, b)).length, 1);
+});
+
+test('free item: wrong month, no birthday, off, and forged values give nothing', async () => {
+  const b = await itemShop('stamp_legacy', 'Free coffee');
+  assert.equal((await itemOf(await stamp(bob, b))).birthday_item, null);
+  assert.equal((await rewardsOf(bob, b)).length, 0);
+  const off = await itemShop('stamp_legacy', null);
+  assert.equal((await itemOf(await stamp(alice, off))).birthday_item, null);
+  const forged = (await db.query(`insert into public.transactions (user_id, business_id, type, value, birthday_item) values ($1, $2, 'stamp', 1, 'Free car') returning id`, [bob, off])).rows[0].id;
+  assert.equal((await itemOf(forged)).birthday_item, null);
+});
+
+test('free item works for spend-threshold shops and points shops', async () => {
+  const s = await itemShop('spend_threshold', 'Free cake', { threshold: 1000 });
+  assert.equal((await itemOf(await spend(alice, s, 200))).birthday_item, 'Free cake');
+  const p = await itemShop('points', 'Free tea', { loyaltyType: 'points', config: { points_per_pound: 1 } });
+  assert.equal((await itemOf(await spend(alice, p, 300))).birthday_item, 'Free tea');
+  assert.equal((await member(alice, p)).points_balance, 3);
+});
+
+test('free item and bonus cannot both be set, and the item needs 2 to 40 characters', async () => {
+  const b = await itemShop('stamp_legacy', null);
+  await assert.rejects(db.query(`update public.businesses set birthday_bonus = 2, birthday_reward_item = 'Free coffee' where id = $1`, [b]), /businesses_birthday_one_kind_check/);
+  await assert.rejects(db.query(`update public.businesses set birthday_reward_item = 'x' where id = $1`, [b]), /businesses_birthday_reward_item_check/);
+  await assert.rejects(db.query(`update public.businesses set birthday_reward_item = $2 where id = $1`, [b, 'x'.repeat(41)]), /businesses_birthday_reward_item_check/);
+});
+
+test('switching from item to bonus in the same year does not give a second birthday', async () => {
+  const b = await itemShop('stamp_legacy', 'Free coffee');
+  await stamp(alice, b);
+  await db.query(`update public.businesses set birthday_reward_item = null, birthday_bonus = 3 where id = $1`, [b]);
+  assert.equal(await bonusOf(await stamp(alice, b)), 0);
+});
+
+test('free item: undoing the purchase removes an unredeemed reward and frees the birthday; a redeemed one stays used', async () => {
+  const b = await itemShop('spend_threshold', 'Free coffee', { threshold: 100000 });
+  const first = await spend(alice, b, 500);
+  assert.equal((await rewardsOf(alice, b)).filter((r) => r.title === 'Free coffee').length, 1);
+  await db.query(`update public.transactions set voided_at = now() where id = $1`, [first]);
+  assert.equal((await rewardsOf(alice, b)).filter((r) => r.title === 'Free coffee').length, 0);
+  const second = await spend(alice, b, 500);
+  assert.equal((await itemOf(second)).birthday_item, 'Free coffee');
+
+  await db.query(`update public.rewards set redeemed_at = now() where id = $1`, [(await itemOf(second)).birthday_reward_id]);
+  await db.query(`update public.transactions set voided_at = now() where id = $1`, [second]);
+  assert.equal((await rewardsOf(alice, b)).filter((r) => r.title === 'Free coffee').length, 1);
+  assert.equal((await itemOf(await spend(alice, b, 500))).birthday_item, null);
 });

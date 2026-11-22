@@ -850,43 +850,61 @@ function LoyaltyTab() {
     : business?.reward_model === 'tiers' ? <TiersLoyaltyTab />
     : business?.reward_model === 'points' ? <PointsLoyaltyTab />
     : <StampLoyaltyTab />
-  const birthday = business?.reward_model === 'points' || business?.reward_model === 'stamp_legacy'
-  return <>{tab}{birthday ? <BirthdayRewardCard /> : null}<CustomProgrammeCard switching /></>
+  return <>{tab}<BirthdayRewardCard /><CustomProgrammeCard switching /></>
 }
 
-// Birthday reward (businesses.birthday_bonus): extra stamps or points on a member's
-// first visit in their birthday month, once a year. The database gives it; owners
-// never see birthdays. Hidden until the database has the column.
+// Birthday reward: on a member's first visit in their birthday month, once a year, the
+// shop gives either bonus stamps/points (businesses.birthday_bonus) or a free item the
+// owner names (businesses.birthday_reward_item, added to the member's rewards until the
+// end of that month). Owners never see birthdays. Hidden until the database has the column.
 function BirthdayRewardCard() {
   const { business, updateLocalBusiness } = useOwner()
   const points = business?.reward_model === 'points' || business?.loyalty_type === 'points'
   const unit = points ? 'points' : rewardWords(business?.loyalty_type ?? 'stamp_card').units
   const max = business?.reward_model === 'points' ? 1000 : 10
-  const saved = business?.birthday_bonus ?? null
-  const [on, setOn] = React.useState(saved !== null)
-  const [amount, setAmount] = React.useState(String(saved ?? (points ? 50 : 2)))
+  const canBonus = business?.reward_model === 'points' || business?.reward_model === 'stamp_legacy'
+  const hasItemColumn = !!business && 'birthday_reward_item' in business
+  const savedBonus = business?.birthday_bonus ?? null
+  const savedItem = business?.birthday_reward_item ?? null
+  const savedOn = savedBonus !== null || savedItem !== null
+  const [on, setOn] = React.useState(savedOn)
+  const [mode, setMode] = React.useState<'bonus' | 'item'>(savedItem !== null || !canBonus ? 'item' : 'bonus')
+  const [amount, setAmount] = React.useState(String(savedBonus ?? (points ? 50 : 2)))
+  const [item, setItem] = React.useState(savedItem ?? '')
   const [busy, setBusy] = React.useState(false)
   const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null)
   React.useEffect(() => {
-    setOn(saved !== null)
-    setAmount(String(saved ?? (points ? 50 : 2)))
-  }, [business?.id, saved, points])
+    setOn(savedOn)
+    setMode(savedItem !== null || !canBonus ? 'item' : 'bonus')
+    setAmount(String(savedBonus ?? (points ? 50 : 2)))
+    setItem(savedItem ?? '')
+  }, [business?.id, savedBonus, savedItem, savedOn, canBonus, points])
   if (!business || !('birthday_bonus' in business)) return null
+  // A shop that can only give a free item needs the free-item column to do anything.
+  if (!canBonus && !hasItemColumn) return null
+  const itemMode = mode === 'item' && hasItemColumn
 
   async function save(nextOn: boolean) {
     const value = Number(amount)
-    if (nextOn && (!Number.isInteger(value) || value < 1 || value > max)) {
+    const name = item.trim()
+    if (nextOn && itemMode && (name.length < 2 || name.length > 40)) {
+      return setMessage({ ok: false, text: 'Name the free item in 2 to 40 characters, for example Free coffee.' })
+    }
+    if (nextOn && !itemMode && (!Number.isInteger(value) || value < 1 || value > max)) {
       return setMessage({ ok: false, text: `Enter a whole number of ${unit} from 1 to ${max}.` })
     }
     setBusy(true)
     setMessage(null)
     try {
-      const birthday_bonus = nextOn ? value : null
-      await updateBusiness(business!.id, { birthday_bonus })
-      updateLocalBusiness({ birthday_bonus })
-      setMessage({ ok: true, text: nextOn ? `Saved. Customers who have added their birthday get ${value} bonus ${value === 1 ? unit.replace(/s$/, '') : unit} on their first visit in their birthday month.` : 'Birthday reward switched off.' })
+      const patch: { birthday_bonus: number | null; birthday_reward_item?: string | null } = { birthday_bonus: nextOn && !itemMode ? value : null }
+      if (hasItemColumn) patch.birthday_reward_item = nextOn && itemMode ? name : null
+      await updateBusiness(business!.id, patch)
+      updateLocalBusiness(patch)
+      setMessage({ ok: true, text: !nextOn ? 'Birthday reward switched off.' : itemMode
+        ? `Saved. Customers who have added their birthday get “${name}” on their first visit in their birthday month. It appears in their rewards until the end of the month.`
+        : `Saved. Customers who have added their birthday get ${value} bonus ${value === 1 ? unit.replace(/s$/, '') : unit} on their first visit in their birthday month.` })
     } catch {
-      setOn(saved !== null)
+      setOn(savedOn)
       setMessage({ ok: false, text: 'Could not save. Check the connection and try again.' })
     } finally {
       setBusy(false)
@@ -901,18 +919,36 @@ function BirthdayRewardCard() {
           checked={on}
           aria-label="Birthday reward"
           disabled={busy}
-          onCheckedChange={(next) => { setOn(next); void save(next) }}
+          onCheckedChange={(next) => { setOn(next); if (!next || !itemMode || item.trim().length >= 2) void save(next) }}
         />
       </div>
       <p className="mt-2 text-sm opacity-80">A treat on a customer’s first visit in their birthday month, once a year. You never see their birthday; it’s added automatically when they visit, and your staff see it on the scan.</p>
       {on && (
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="text-sm font-semibold">Bonus {unit}
-            <input className={`${inputClass} mt-1.5 max-w-[8rem]`} inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))} />
-          </label>
-          <button data-press-feedback onClick={() => void save(true)} disabled={busy} className="flex h-12 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50">
-            {busy ? 'Saving…' : 'Save birthday reward'}
-          </button>
+        <div className="mt-4">
+          {canBonus && hasItemColumn && (
+            <div role="radiogroup" aria-label="Birthday reward type" className="mb-4 inline-flex rounded-full bg-card/60 p-1">
+              {(['bonus', 'item'] as const).map((value) => (
+                <button key={value} data-press-feedback role="radio" aria-checked={mode === value} onClick={() => setMode(value)}
+                  className={'h-9 rounded-full px-4 text-sm font-semibold transition-colors ' + (mode === value ? 'bg-primary text-primary-foreground' : 'text-amber-ink')}>
+                  {value === 'bonus' ? `Bonus ${unit}` : 'Free item'}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap items-end gap-3">
+            {itemMode ? (
+              <label className="text-sm font-semibold">Free item
+                <input className={`${inputClass} mt-1.5 w-64 max-w-full`} maxLength={40} placeholder="e.g. Free coffee" value={item} onChange={(e) => setItem(e.target.value)} />
+              </label>
+            ) : (
+              <label className="text-sm font-semibold">Bonus {unit}
+                <input className={`${inputClass} mt-1.5 max-w-[8rem]`} inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))} />
+              </label>
+            )}
+            <button data-press-feedback onClick={() => void save(true)} disabled={busy} className="flex h-12 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50">
+              {busy ? 'Saving…' : 'Save birthday reward'}
+            </button>
+          </div>
         </div>
       )}
       {message && <p role={message.ok ? 'status' : 'alert'} className="mt-3 text-sm font-medium">{message.text}</p>}

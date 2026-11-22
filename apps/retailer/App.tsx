@@ -446,17 +446,23 @@ async function announceBirthdayBonus(
   name: string,
   unit: string,
 ) {
-  const query = supabase.from("transactions").select("birthday_bonus");
-  const { data, error } = await ("clientRef" in find
-    ? query.eq("client_ref", find.clientRef)
-    : query.eq("id", find.transactionId)
-  ).maybeSingle();
-  const bonus = !error && data ? Number((data as { birthday_bonus?: number }).birthday_bonus ?? 0) : 0;
-  if (bonus <= 0) return;
+  const read = (columns: string) => {
+    const query = supabase.from("transactions").select(columns);
+    return ("clientRef" in find ? query.eq("client_ref", find.clientRef) : query.eq("id", find.transactionId)).maybeSingle();
+  };
+  // birthday_item exists only after the free-item migration; fall back without it.
+  let { data, error } = await read("birthday_bonus, birthday_item");
+  if (error) ({ data, error } = await read("birthday_bonus"));
+  const row = (!error && data ? data : {}) as unknown as { birthday_bonus?: number; birthday_item?: string | null };
+  const bonus = Number(row.birthday_bonus ?? 0);
+  const item = row.birthday_item ?? null;
+  if (bonus <= 0 && !item) return;
   haptic.success();
   showAlert(
     `🎂 Happy birthday, ${name}!`,
-    `It's their birthday month, so ${bonus} bonus ${bonus === 1 ? unit.replace(/s$/, "") : unit} ${bonus === 1 ? "was" : "were"} added. Wish them a happy birthday!`,
+    item
+      ? `It's their birthday month: ${item} is waiting for them. Wish them a happy birthday!`
+      : `It's their birthday month, so ${bonus} bonus ${bonus === 1 ? unit.replace(/s$/, "") : unit} ${bonus === 1 ? "was" : "were"} added. Wish them a happy birthday!`,
   );
 }
 

@@ -11,7 +11,7 @@ import { BarePageSkeleton } from '@/components/page-skeleton'
 import { useOwner } from '@/lib/owner-context'
 import {
   awardProgress,
-  fetchBirthdayBonus,
+  fetchBirthdayResult,
   sendVisitThankYou,
   sendUserPush,
   updateWalletPass,
@@ -198,8 +198,9 @@ function StampPanel({ businessId, unit }: { businessId: string; unit: string }) 
       const awarded = `Awarded ${amount} ${unit}${amount === 1 ? '' : 's'}.`
       setSuccess(awarded)
       const name = match?.first_name || 'the customer'
-      void fetchBirthdayBonus({ clientRef }).then((bonus) => {
-        if (bonus > 0) setSuccess((current) => current === awarded ? `🎂 Happy birthday, ${name}! Their birthday month added ${bonus} bonus ${unit}${bonus === 1 ? '' : 's'}. ${awarded}` : current)
+      void fetchBirthdayResult({ clientRef }).then(({ bonus, item }) => {
+        if (item) setSuccess((current) => current === awarded ? `🎂 Happy birthday, ${name}! ${item} waiting. ${awarded}` : current)
+        else if (bonus > 0) setSuccess((current) => current === awarded ? `🎂 Happy birthday, ${name}! Their birthday month added ${bonus} bonus ${unit}${bonus === 1 ? '' : 's'}. ${awarded}` : current)
       })
       reset()
       setScanCycle((cycle) => cycle + 1)
@@ -574,8 +575,9 @@ function SpendPanel({ businessId, staffUserId, isOwner }: { businessId: string; 
       const result = await recordManualSpend(businessId, matchedUserId, amountPence, paymentMethod ?? null, clientRef.current)
       clientRef.current = null
       if (result.status === 'recorded') {
-        void fetchBirthdayBonus({ transactionId: result.transactionId }).then((bonus) => {
-          if (bonus > 0) setSuccess((current) => current ? `🎂 Happy birthday, ${name}! Their birthday month added ${bonus} bonus point${bonus === 1 ? '' : 's'}. ${current}` : current)
+        void fetchBirthdayResult({ transactionId: result.transactionId }).then(({ bonus, item }) => {
+          if (item) setSuccess((current) => current ? `🎂 Happy birthday, ${name}! ${item} waiting. ${current}` : current)
+          else if (bonus > 0) setSuccess((current) => current ? `🎂 Happy birthday, ${name}! Their birthday month added ${bonus} bonus point${bonus === 1 ? '' : 's'}. ${current}` : current)
         })
       }
       const left = Math.max(0, (result.thresholdPence ?? 0) - result.progressPence)

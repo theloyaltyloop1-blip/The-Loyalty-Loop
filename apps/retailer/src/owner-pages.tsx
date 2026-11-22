@@ -111,6 +111,8 @@ export interface NativeBusiness {
   reward_threshold_pence?: number | null;
   /** Birthday bonus stamps/points; null = off; missing until the birthday migration is applied. */
   birthday_bonus?: number | null;
+  /** Free birthday item ("Free coffee"); null = off; missing until the free-item migration is applied. */
+  birthday_reward_item?: string | null;
   manual_spend_max_pence?: number;
   postcode?: string | null;
   slug?: string | null;
@@ -1297,8 +1299,13 @@ function RewardsPage({
           busy={savingSignup}
         />
       </Section>
-      {!preview && (pointsShop || !business.reward_model || business.reward_model === "stamp_legacy") ? (
-        <BirthdayRewardSection business={business} unit={pointsShop ? "points" : unit} onBusinessChanged={onBusinessChanged} />
+      {!preview ? (
+        <BirthdayRewardSection
+          business={business}
+          unit={pointsShop ? "points" : unit}
+          canBonus={pointsShop || !business.reward_model || business.reward_model === "stamp_legacy"}
+          onBusinessChanged={onBusinessChanged}
+        />
       ) : null}
       {business.reward_model === "spend_threshold" && !preview ? (
         <ManualSpendSettings business={business} onBusinessChanged={onBusinessChanged} />
@@ -1567,50 +1574,70 @@ function PointsRateSection({
   );
 }
 
-// Birthday reward (businesses.birthday_bonus): extra stamps or points on the
-// member's first visit in their birthday month, once a year. The database gives
-// it; shops never see the date. Hidden until the database has the column.
+// Birthday reward: on the member's first visit in their birthday month, once a year,
+// the shop gives either bonus stamps/points (businesses.birthday_bonus) or a free item
+// the owner names (businesses.birthday_reward_item, added to the member's rewards until
+// the end of that month). Shops never see the date. Hidden until the database has the column.
 function BirthdayRewardSection({
   business,
   unit,
+  canBonus,
   onBusinessChanged,
 }: {
   business: NativeBusiness;
   unit: string;
+  canBonus: boolean;
   onBusinessChanged: () => Promise<void>;
 }) {
-  const saved = business.birthday_bonus ?? null;
-  const [on, setOn] = useState(saved !== null);
-  const [amount, setAmount] = useState(String(saved ?? 2));
+  const savedBonus = business.birthday_bonus ?? null;
+  const savedItem = business.birthday_reward_item ?? null;
+  const hasItemColumn = "birthday_reward_item" in business;
+  const savedOn = savedBonus !== null || savedItem !== null;
+  const [on, setOn] = useState(savedOn);
+  const [mode, setMode] = useState<"bonus" | "item">(savedItem !== null || !canBonus ? "item" : "bonus");
+  const [amount, setAmount] = useState(String(savedBonus ?? 2));
+  const [item, setItem] = useState(savedItem ?? "");
   const [busy, setBusy] = useState(false);
   const max = unit === "points" ? 1000 : 10;
   useEffect(() => {
-    setOn(saved !== null);
-    setAmount(String(saved ?? (unit === "points" ? 50 : 2)));
-  }, [saved, unit]);
+    setOn(savedOn);
+    setMode(savedItem !== null || !canBonus ? "item" : "bonus");
+    setAmount(String(savedBonus ?? (unit === "points" ? 50 : 2)));
+    setItem(savedItem ?? "");
+  }, [savedBonus, savedItem, savedOn, canBonus, unit]);
   if (!("birthday_bonus" in business)) return null;
+  // A shop that can only give a free item needs the free-item column to do anything.
+  if (!canBonus && !hasItemColumn) return null;
+  const itemMode = mode === "item" && hasItemColumn;
 
   async function save(nextOn: boolean) {
     const value = Number(amount);
-    if (nextOn && (!Number.isInteger(value) || value < 1 || value > max)) {
+    const name = item.trim();
+    if (nextOn && itemMode && (name.length < 2 || name.length > 40)) {
+      return showAlert("Check the reward", "Name the free item in 2 to 40 characters, for example Free coffee.");
+    }
+    if (nextOn && !itemMode && (!Number.isInteger(value) || value < 1 || value > max)) {
       return showAlert("Check the amount", `Enter a whole number of ${unit} from 1 to ${max}.`);
     }
     setBusy(true);
-    const { error } = await supabase
-      .from("businesses")
-      .update({ birthday_bonus: nextOn ? value : null })
-      .eq("id", business.id);
+    const patch: Record<string, number | string | null> = {
+      birthday_bonus: nextOn && !itemMode ? value : null,
+    };
+    if (hasItemColumn) patch.birthday_reward_item = nextOn && itemMode ? name : null;
+    const { error } = await supabase.from("businesses").update(patch).eq("id", business.id);
     setBusy(false);
     if (error) {
-      setOn(saved !== null);
+      setOn(savedOn);
       return showAlert("Could not save", SAVE_HELP);
     }
     await onBusinessChanged();
     showAlert(
       nextOn ? "Birthday reward on" : "Birthday reward off",
-      nextOn
-        ? `Customers who have added their birthday get ${value} bonus ${value === 1 ? unit.replace(/s$/, "") : unit} on their first visit in their birthday month, once a year. Your staff see it on the scan.`
-        : "Customers will no longer get a birthday bonus here.",
+      !nextOn
+        ? "Customers will no longer get a birthday reward here."
+        : itemMode
+          ? `Customers who have added their birthday get "${name}" on their first visit in their birthday month, once a year. It appears in their rewards until the end of the month, and your staff see it on the scan.`
+          : `Customers who have added their birthday get ${value} bonus ${value === 1 ? unit.replace(/s$/, "") : unit} on their first visit in their birthday month, once a year. Your staff see it on the scan.`,
     );
   }
 
@@ -1627,7 +1654,8 @@ function BirthdayRewardSection({
           accessibilityLabel="Birthday reward"
           onValueChange={(next) => {
             setOn(next);
-            void save(next);
+            // A free item still needs its name: show the box instead of failing the save.
+            if (!next || !itemMode || item.trim().length >= 2) void save(next);
           }}
         />
       </View>
@@ -1636,13 +1664,37 @@ function BirthdayRewardSection({
       </Text>
       {on ? (
         <View style={{ marginTop: 12 }}>
-          <Field
-            label={`Bonus ${unit}`}
-            value={amount}
-            onChangeText={(value) => setAmount(value.replace(/[^0-9]/g, ""))}
-            placeholder={unit === "points" ? "e.g. 50" : "e.g. 2"}
-            keyboardType="number-pad"
-          />
+          {canBonus && hasItemColumn ? (
+            <View style={[styles.segment, { marginBottom: 12 }]}>
+              {(["bonus", "item"] as const).map((value) => (
+                <Pressable
+                  key={value}
+                  onPress={() => setMode(value)}
+                  style={[styles.segmentItem, mode === value && styles.segmentActive]}
+                >
+                  <Text style={[styles.segmentText, mode === value && styles.segmentTextActive]}>
+                    {value === "bonus" ? `Bonus ${unit}` : "Free item"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          {itemMode ? (
+            <Field
+              label="Free item"
+              value={item}
+              onChangeText={setItem}
+              placeholder="e.g. Free coffee"
+            />
+          ) : (
+            <Field
+              label={`Bonus ${unit}`}
+              value={amount}
+              onChangeText={(value) => setAmount(value.replace(/[^0-9]/g, ""))}
+              placeholder={unit === "points" ? "e.g. 50" : "e.g. 2"}
+              keyboardType="number-pad"
+            />
+          )}
           <PrimaryButton label="Save birthday reward" onPress={() => void save(true)} busy={busy} />
         </View>
       ) : null}

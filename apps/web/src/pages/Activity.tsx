@@ -49,6 +49,7 @@ export function ActivityFeed({ userId }: { userId: string }) {
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: x.business?.brand_color ?? '#0042AC', color: onBrandColor(x.business?.brand_color ?? '#0042AC') }}><History className="h-4 w-4" /></div>
                 <div className="flex-1">
                   <p className="font-semibold">{labels[x.type]}{x.type === 'spend' ? ` £${(x.value / 100).toFixed(2)}${x.voided_at ? ' (undone)' : ''}` : x.value > 1 ? ` ×${x.value}` : ''}</p>
+                  {x.birthday_item ? <p className="mt-0.5 text-sm font-semibold text-amber-ink">Happy birthday: {x.birthday_item} added to your rewards</p> : null}
                   {x.birthday_bonus ? <p className="mt-0.5 text-sm font-semibold text-amber-ink">Happy birthday: +{x.birthday_bonus} bonus</p> : null}
                   <p className="text-sm text-muted-foreground">{x.business?.name ?? 'Local shop'} · {new Date(x.created_at).toLocaleString()}</p>
                 </div>

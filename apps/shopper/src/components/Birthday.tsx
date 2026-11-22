@@ -129,8 +129,8 @@ const DISMISS_KEY = 'birthday_prompt_dismissed'
  *  - in their birthday month and not yet given this year: "Birthday treat waiting".
  * Shows nothing until the database has the birthday reward (birthday_bonus undefined).
  */
-export function ShopBirthdayCard({ userId, businessId, bonus, unit, member }: {
-  userId: string; businessId: string; bonus: number | null | undefined; unit: string; member: boolean
+export function ShopBirthdayCard({ userId, businessId, bonus, item, unit, member }: {
+  userId: string; businessId: string; bonus: number | null | undefined; item?: string | null; unit: string; member: boolean
 }) {
   const { birthday } = useMyBirthday(userId)
   const [dismissed, setDismissed] = useState<boolean | null>(null)
@@ -144,24 +144,24 @@ export function ShopBirthdayCard({ userId, businessId, bonus, unit, member }: {
     SecureStore.getItemAsync(DISMISS_KEY).then((v) => setDismissed(v === 'yes')).catch(() => setDismissed(false))
   }, [])
   useEffect(() => {
-    if (!birthdayMonth || !bonus) { setClaimed(null); return }
+    if (!birthdayMonth || (!bonus && !item)) { setClaimed(null); return }
     let active = true
     void supabase.from('programme_bonus_log').select('id').eq('user_id', userId).eq('business_id', businessId)
       .eq('kind', 'birthday').eq('period', String(now.getFullYear())).limit(1)
       .then(({ data, error }) => { if (active) setClaimed(error ? null : (data?.length ?? 0) > 0) })
     return () => { active = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, businessId, birthdayMonth, bonus])
+  }, [userId, businessId, birthdayMonth, bonus, item])
 
-  if (!member || !bonus || birthday === undefined) return null
-  const amount = `${bonus} bonus ${bonus === 1 ? unit.replace(/s$/, '') : unit}`
+  if (!member || (!bonus && !item) || birthday === undefined) return null
+  const amount = item ?? `${bonus} bonus ${bonus === 1 ? unit.replace(/s$/, '') : unit}`
 
   if (birthdayMonth) {
     if (claimed !== false) return null
     return (
       <View style={[s.card, s.cardWaiting]} accessibilityRole="text">
         <Text style={s.cardTitle}>🎂 Birthday treat waiting</Text>
-        <Text style={s.cardBody}>Happy birthday month! Visit before the month ends and you get {amount}.</Text>
+        <Text style={s.cardBody}>Happy birthday month! Visit before the month ends and {item ? `your ${amount} is waiting for you` : `you get ${amount}`}.</Text>
       </View>
     )
   }
