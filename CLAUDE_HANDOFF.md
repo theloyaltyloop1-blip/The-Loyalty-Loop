@@ -130,6 +130,14 @@ Tiles are now 156px squares, 2px #0F2A3A border, shop brand colour fill, logo ce
 - Note: `expo-image` is not installed in the shopper app; adding it changes package.json and needs a native build, so RN `Image` with `cache: 'force-cache'` is used. Switch to expo-image at the next native build.
 - Next: main chat publishes OTA (Claude, with owner yes).
 
+
+### 2026-11-22 - Shopper "Your cards" tiles show the shop's own card design - NOT shipped (needs OTA)
+
+- **Root cause:** data was already fetched (`businesses` `select('*')` includes `card_design`; the card detail page already used it via `shopSkin`). The Home "Your cards" rail (`CardRail`/`CardTile` in `apps/shopper/src/components/HomeCollection.tsx`) ignored `card_design` and used the brand colour or fixed tile colours with the default font. The `LoyaltyCard` import there was unused.
+- **Fix:** if `shop.card_design` is set, the tile uses `shopSkin(shop)`: the design's colour, ink and typeface. Shops with no design keep the coloured tiles.
+- **Files:** `apps/shopper/src/components/HomeCollection.tsx`. Checks run: `npx tsc --noEmit` in `apps/shopper` (passes). Not run: on a phone; the full material/layout art of `LoyaltyCard` is not drawn on tiles (colour and typeface only).
+- **Next (Claude, on owner's yes):** include in the combined OTA.
+
 ### 2026-11-22 - Toggle switches fixed on website and both apps - LIVE (website pushed, OTAs published); update prompt and OTA script NOT shipped
 
 - **Root cause (web):** the hand-copied switch knob was `absolute` with no `left-0`. Inside a `<button>` the browser centres it, so the knob started at 24px: off showed the knob at the right (28px), on pushed it outside the track (48px). Measured in a browser. The off track (`bg-foreground/15`) was also muddy on amber/sage/peach. Separately, `components/ui/switch.tsx` (used by admin Outreach auto-send) styled `data-checked:`/`data-unchecked:`, but Radix emits `data-state`, so it never changed look.

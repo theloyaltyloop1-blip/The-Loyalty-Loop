@@ -1,4 +1,4 @@
-import { LoyaltyCard } from "../../../../packages/card-design/LoyaltyCard";
+import { shopSkin } from "../../../../packages/card-design/skin";
 import { useRef, useState, type ReactNode } from 'react'
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
@@ -119,13 +119,17 @@ const TILE_TONES = themed(() => [
 ])
 function CardTile<T extends RailShop>({ shop, label, hint, tone, onSelect }: { shop: T; label: string; hint: string | null; tone: { bg: string; ink: string }; onSelect: (shop: T) => void }) {
   const [failed, setFailed] = useState(false)
-  const bg = shop.brand_color || tone.bg
+  // A shop that designed its own card shows that design: its colour and typeface.
+  const skin = shop.card_design ? shopSkin(shop) : null
+  const face = skin ? { fontFamily: skin.font } : null
+  const bg = skin ? skin.bg : shop.brand_color || tone.bg
+  const ink = skin ? skin.ink : shop.brand_color ? '#FFFFFF' : tone.ink
   const showLogo = !!shop.logo_url && !failed
   return <Pressable accessibilityRole="button" accessibilityLabel={`${shop.name}. ${label}. View your card`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: bg, radius: 22 }); onSelect(shop) }} style={({ pressed }) => [s.cardTile, { backgroundColor: bg }, pressed && s.pressed]}>
     {showLogo
       ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url!, cache: 'force-cache' }} style={s.cardTileLogo} resizeMode="contain" onError={() => setFailed(true)} />
-      : <Text style={[s.cardTileName, { color: shop.brand_color ? '#FFFFFF' : tone.ink }]} numberOfLines={3} adjustsFontSizeToFit>{shop.name}</Text>}
-    {hint && <View style={s.cardTilePill}><Text style={s.cardTilePillText}>{hint}</Text></View>}
+      : <Text style={[s.cardTileName, { color: ink }, face]} numberOfLines={3} adjustsFontSizeToFit>{shop.name}</Text>}
+    {hint && <View style={s.cardTilePill}><Text style={[s.cardTilePillText, face]}>{hint}</Text></View>}
   </Pressable>
 }
 
