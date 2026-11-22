@@ -69,3 +69,7 @@ verify_jwt = false
 # Public printable QR poster PDF for the Business app (only shows public shop info).
 [functions.shop-poster]
 verify_jwt = false
+
+# AI card colour from the shop logo. Owner-only; the handler also validates the JWT user.
+[functions.suggest-card-colour]
+verify_jwt = true

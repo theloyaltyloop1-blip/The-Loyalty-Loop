@@ -49,6 +49,7 @@ import {
 import { mergeReplyInputs } from "./review-reply-inputs";
 import { parsePounds } from "./reward-discount";
 import { supabase } from "./supabase";
+import { autoCardColour } from "./autoCardColour";
 import { validateRules, type ProgrammeRules } from "@loyalty-loop/loyalty/programme-rules";
 import { ProgrammeBuilder, RulesCard } from "./ProgrammeBuilder";
 import { fonts, schemeColor, themed } from "@loyalty-loop/design-tokens";
@@ -826,6 +827,8 @@ function BrandingPage({
         .update({ [field]: data.publicUrl })
         .eq("id", business.id);
       if (updateError) throw updateError;
+      // New logo on a shop with no designed card: let AI pick the card colour. Never blocks or fails the upload.
+      if (field === "logo_url") await autoCardColour(business);
       await onBusinessChanged();
       showAlert(
         "Image updated",

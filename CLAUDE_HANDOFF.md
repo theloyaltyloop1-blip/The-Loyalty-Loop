@@ -138,6 +138,15 @@ Tiles are now 156px squares, 2px #0F2A3A border, shop brand colour fill, logo ce
 - **Files:** `apps/shopper/src/components/HomeCollection.tsx`. Checks run: `npx tsc --noEmit` in `apps/shopper` (passes). Not run: on a phone; the full material/layout art of `LoyaltyCard` is not drawn on tiles (colour and typeface only).
 - **Next (Claude, on owner's yes):** include in the combined OTA.
 
+### 2026-11-22 - AI card colour from shop logo - function DEPLOYED, app side needs OTA
+
+- **What:** edge function `suggest-card-colour` (Claude vision, default `claude-haiku-4-5`, env `CARD_COLOUR_CLAUDE_MODEL`, existing `ANTHROPIC_API_KEY`) reads the shop's own logo (public `logos` bucket only) and returns validated hex background + secondary + readable text colour (contrast >= 4.5). Fallback if AI fails or no key: dominant-colour extraction (PNG/JPEG), then default green. Suggest-only; owner/admin JWT; rate limited.
+- **App:** `apps/retailer/src/autoCardColour.ts`, called after a logo upload in `owner-pages.tsx`. Saves `brand_color` + `card_design` only when `card_design` is null, so custom designs are never overwritten. Onboarding has no logo step, so logo upload is the join point.
+- **Deployed:** function on project tgukdabfvvoywawmzbdo (no migration); `supabase/config.toml` entry added.
+- **Checks run:** `node --test supabase/functions/_shared/card-colour.test.mjs` (5 pass); `npx tsc --noEmit` in apps/retailer. **Not run:** live call of the deployed function, Deno type check, phone test.
+- **Backfill:** `scripts/backfill-card-colours.mjs` (dry run by default, NOT run).
+- **Next:** Claude includes it in the combined OTA; owner uploads a logo on a test shop to confirm.
+
 ### 2026-11-22 - Toggle switches fixed on website and both apps - LIVE (website pushed, OTAs published); update prompt and OTA script NOT shipped
 
 - **Root cause (web):** the hand-copied switch knob was `absolute` with no `left-0`. Inside a `<button>` the browser centres it, so the knob started at 24px: off showed the knob at the right (28px), on pushed it outside the track (48px). Measured in a browser. The off track (`bg-foreground/15`) was also muddy on amber/sage/peach. Separately, `components/ui/switch.tsx` (used by admin Outreach auto-send) styled `data-checked:`/`data-unchecked:`, but Radix emits `data-state`, so it never changed look.
