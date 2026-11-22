@@ -116,10 +116,10 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
-### 2026-11-22 - Business app card designer: colour wheel instead of hex codes - NOT shipped
+### 2026-11-22 - Business app card designer: colour wheel instead of hex codes - PUSHED to main, NOT live (no OTA)
 - Changed: "Card colour" and "Gradient colour" in `CardDesigner.tsx` were hex text boxes (the only two colour inputs in the designer). Each is now a swatch button that opens a pop-up sheet with a colour wheel (angle = hue, distance from centre = saturation), a brightness slider, a live swatch and the hex value. The card preview above updates as you drag. Saved value is still a `#RRGGBB` string in `card_design`, so existing cards and the shopper app are untouched; saved colours load into the wheel (also reloaded when a template is picked or changes are discarded).
 - How: pure JS. New `apps/retailer/src/components/ColourWheel.tsx` draws the wheel with `react-native-svg` and handles touch with `PanResponder` (wheel sized to screen width, 200 to 320 px; 48 px slider). Uses the existing `Sheet`. No `package.json`, `app.json`, lockfile or native change, so it is OTA-safe.
-- Branch: `card-colour-wheel` (from origin/main 021739b), not committed. Files: `apps/retailer/src/CardDesigner.tsx`, `apps/retailer/src/components/ColourWheel.tsx`, this file.
+- Branch: `card-colour-wheel` (from origin/main 021739b), committed and pushed to main as bb7b1fc (no OTA, no build, not checked on a phone). Files: `apps/retailer/src/CardDesigner.tsx`, `apps/retailer/src/components/ColourWheel.tsx`, this file.
 - Checks run: `npx tsc --noEmit` in `apps/retailer` (clean, after a real `npm ci`); hex to HSV to hex round trip on 20,000 random colours (0 mismatches). Not run: any check on a phone or simulator (touch dragging, Android and iOS look, dark mode), shopper `tsc` (packages/card-design not touched), OTA.
 - Next: owner to try it on a phone via a dev build or after OTA, then say yes to commit and OTA (Business 1.0.1 and 1.0.2). Owner decision.
 
