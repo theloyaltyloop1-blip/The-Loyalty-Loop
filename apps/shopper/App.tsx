@@ -2731,6 +2731,16 @@ function AppHome({ session }: { session: Session }) {
     return () => subscription.remove()
   }, [businesses])
 
+  // Warm the image cache for every shop's logo and cover up front, so tiles, the card
+  // growing back into its tile and the shop page never wait on the network to paint them.
+  useEffect(() => {
+    for (const b of businesses) {
+      for (const url of [b.logo_url, b.cover_url]) {
+        if (url) void Image.prefetch(url).catch(() => undefined)
+      }
+    }
+  }, [businesses])
+
   const load = async () => {
     setLoading(true)
     try {
@@ -2864,10 +2874,21 @@ function AppHome({ session }: { session: Session }) {
       if (!shops.error && shops.data) {
         const fresh = new Map((shops.data as Business[]).map(row => [row.id, row]));
         // Keep fields the list adds itself (star ratings); take everything else fresh.
-        setBusinesses(rows => rows.map(row => fresh.has(row.id) ? { ...row, ...fresh.get(row.id) } : row));
-        setSelected(row => row && fresh.has(row.id) ? { ...row, ...fresh.get(row.id) } : row);
+        // Keep each row's identity when nothing in it changed, so a background refresh does
+        // not re-render every tile (and re-decode every logo) on the home screen.
+        const merge = <T extends Business>(row: T): T => {
+          const next = fresh.get(row.id)
+          if (!next) return row
+          const same = Object.keys(next).every(k => {
+            const a = (row as Record<string, unknown>)[k], b = (next as Record<string, unknown>)[k]
+            return a === b || (typeof a === 'object' && a !== null && JSON.stringify(a) === JSON.stringify(b))
+          })
+          return same ? row : { ...row, ...next }
+        }
+        setBusinesses(rows => { const out = rows.map(merge); return out.every((r, i) => r === rows[i]) ? rows : out })
+        setSelected(row => row ? merge(row) : row)
       }
-      if (catalog) setHomeCatalog(catalog);
+      if (catalog) setHomeCatalog(prev => JSON.stringify(prev) === JSON.stringify(catalog) ? prev : catalog)
       setProgrammeVersion(v => v + 1);
     };
     const schedule = () => {
