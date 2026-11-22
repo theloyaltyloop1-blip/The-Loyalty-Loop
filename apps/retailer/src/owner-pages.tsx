@@ -1,4 +1,5 @@
 import { WhirlEmpty } from "./Whirl";
+import { AppSwitch } from "./components/AppSwitch";
 import { WhirlProgress, WhirlSpinner } from '../../../packages/whirl/native'
 import { CardDesigner } from "./CardDesigner";
 import { showAlert } from "./components/AppAlert";
@@ -19,7 +20,6 @@ import {
   Pressable,
   Share,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -1621,13 +1621,13 @@ function BirthdayRewardSection({
           <Cake size={20} color={schemeColor("#5C3B00", "fg")} />
           <Text style={styles.cardTitle}>Birthday reward</Text>
         </View>
-        <Switch
+        <AppSwitch
           value={on}
           disabled={busy}
           accessibilityLabel="Birthday reward"
           onValueChange={(next) => {
             setOn(next);
-            if (!next && saved !== null) void save(false);
+            void save(next);
           }}
         />
       </View>
@@ -2479,7 +2479,7 @@ function PosterPage({ business, onBack, onBusinessChanged, preview = false }: Pa
                 Optional. Customers scan your poster, message us on WhatsApp and join your shop in a minute. They can then ask how close they are to a reward and get their card link right in WhatsApp.
               </Text>
             </View>
-            <Switch value={whatsapp} disabled={busy} onValueChange={(v) => void toggleWhatsapp(v)} trackColor={{ true: "#2E7D5B" }} />
+            <AppSwitch value={whatsapp} disabled={busy} onValueChange={(v) => void toggleWhatsapp(v)} trackColor={{ true: "#2E7D5B" }} />
           </View>
           <Text style={[styles.muted, { marginTop: 10, fontWeight: "700" }]}>
             {whatsapp ? "Your poster now opens WhatsApp to join this shop. Reprint it if you’ve already put one up." : "Your poster uses the standard Loyalty Loop join page."}

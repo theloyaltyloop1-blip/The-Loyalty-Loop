@@ -1,4 +1,5 @@
 import { WhirlSpinner, useWhirlSlot } from '../../packages/whirl/native'
+import { AppSwitch } from "./src/components/AppSwitch";
 import { AskWhirlCard } from './src/components/AskWhirlCard';
 import { AskWhirlSheet } from './src/components/AskWhirlSheet';
 import { AppWhirlProvider, Whirl, WhirlEmpty, WhirlOrMark } from './src/Whirl'
@@ -20,7 +21,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -2097,7 +2097,7 @@ function AutoWinbackSection({
     <View style={[styles.card, { backgroundColor: schemeColor("#DCEBD9", "bg") }]}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <Text style={[styles.fieldLabel, { flex: 1, fontSize: 15, marginTop: 0, marginBottom: 0 }]}>Automatic win-back emails</Text>
-        <Switch
+        <AppSwitch
           value={shown}
           disabled={busy}
           accessibilityLabel="Automatic win-back emails"

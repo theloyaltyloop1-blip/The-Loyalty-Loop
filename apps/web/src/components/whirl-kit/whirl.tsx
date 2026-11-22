@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 
+import { Switch } from '@/components/ui/switch'
 import { WHIRL_ART, type WhirlPose } from '../../../../../packages/whirl/art.generated'
 import {
   WHIRL_SETTINGS_KEY,
@@ -326,7 +327,7 @@ export function WhirlSwitch({ className }: { className?: string }) {
         <span className="block font-semibold">Show Whirl</span>
         <span className="block text-sm text-muted-foreground">Our mascot on welcome screens, empty pages and tips. Loading spinners stay.</span>
       </span>
-      <input type="checkbox" role="switch" checked={showWhirl} onChange={(e) => setShowWhirl(e.target.checked)} className="h-6 w-11 shrink-0 cursor-pointer accent-primary" />
+      <Switch checked={showWhirl} onCheckedChange={setShowWhirl} aria-label="Show Whirl" />
     </label>
   )
 }

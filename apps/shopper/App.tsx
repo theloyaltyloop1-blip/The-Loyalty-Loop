@@ -1,4 +1,5 @@
 import { CARD_FONTS } from "../../packages/card-design/fonts";
+import { AppSwitch } from "./src/components/AppSwitch";
 import { ShopBackdrop, ShopSkinProvider, shopSkin, skinStyles } from "../../packages/card-design/skin";
 import { PassRow, ShopPass } from "../../packages/card-design/ShopPass";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -18,7 +19,6 @@ import {
   Share,
   StatusBar,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -923,7 +923,7 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
                   icon={(c) => <SmileIcon color={c} size={18} />}
                   title="Show Whirl"
                   detail="Our mascot on welcome screens, empty pages and rewards. Loading spinners stay."
-                  right={<Switch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.primary }} />}
+                  right={<AppSwitch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.primary }} />}
                   last
                 />
               </SettingsGroup>
@@ -945,14 +945,14 @@ function SettingsSheet({ visible, session, userId, stampCode, onClose, initialVi
               </SettingsGroup>}
 
               <SettingsGroup title="Security & privacy">
-                <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<Switch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: colors.primary }} />} />
-                <SettingsRow tile="orange" icon={(c) => <BellIcon color={c} size={18} />} title="Haptics" detail="Vibrate when you earn stamps, rewards and more" right={<Switch value={hapticsOn} onValueChange={(v) => void toggleHaptics(v)} trackColor={{ true: colors.primary }} />} />
-                <SettingsRow tile="purple" icon={(c) => <ChartIcon color={c} size={18} />} title="Anonymous analytics" detail="Helps us improve the app. Never your email, code or messages" right={<Switch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: colors.primary }} />} />
+                <SettingsRow tile="blue" icon={(c) => <LockIcon color={c} size={18} />} title="App lock" detail="Face ID, Touch ID or fingerprint to open the app" right={<AppSwitch value={biometricEnabled} onValueChange={(v) => void toggleBiometricLock(v)} trackColor={{ true: colors.primary }} />} />
+                <SettingsRow tile="orange" icon={(c) => <BellIcon color={c} size={18} />} title="Haptics" detail="Vibrate when you earn stamps, rewards and more" right={<AppSwitch value={hapticsOn} onValueChange={(v) => void toggleHaptics(v)} trackColor={{ true: colors.primary }} />} />
+                <SettingsRow tile="purple" icon={(c) => <ChartIcon color={c} size={18} />} title="Anonymous analytics" detail="Helps us improve the app. Never your email, code or messages" right={<AppSwitch value={analyticsEnabled} onValueChange={(v) => void toggleUsageAnalytics(v)} trackColor={{ true: colors.primary }} />} />
                 <SettingsRow tile="rose" icon={(c) => <BanIcon color={c} size={18} />} title="Blocked people" detail={blocks.length ? `${blocks.length} blocked` : 'Nobody blocked'} onPress={() => setView('blocked')} last />
               </SettingsGroup>
 
               <SettingsGroup title="Notifications">
-                {walkPastSupported() && <SettingsRow tile="teal" icon={(c) => <MapPinIcon color={c} size={18} />} title="Walk-past offers" detail="Get an offer when you pass a shop you haven't joined. At most one a day" right={<Switch value={walkPast} disabled={walkPastBusy} onValueChange={(v) => void toggleWalkPast(v)} trackColor={{ true: colors.primary }} />} />}
+                {walkPastSupported() && <SettingsRow tile="teal" icon={(c) => <MapPinIcon color={c} size={18} />} title="Walk-past offers" detail="Get an offer when you pass a shop you haven't joined. At most one a day" right={<AppSwitch value={walkPast} disabled={walkPastBusy} onValueChange={(v) => void toggleWalkPast(v)} trackColor={{ true: colors.primary }} />} />}
                 <SettingsRow tile="amber" icon={(c) => <BellIcon color={c} size={18} />} title="Notification settings" detail="Shop news and reward alerts, managed in your phone settings" onPress={() => void Linking.openSettings()} last />
               </SettingsGroup>
 
@@ -1693,7 +1693,7 @@ function ShopDetail({
         {membership ? (
           <View style={{ gap: 12, marginTop: 16 }}>
             <PassRow skin={skin} icon={<WalletIcon size={20} color={skin.ink} />} label={addingToWallet ? 'Preparing…' : Platform.OS === 'ios' ? 'Add to Apple Wallet' : 'Add to Google Wallet'} onPress={addingToWallet ? undefined : addToWallet} />
-            <PassRow skin={skin} icon={<BellIcon color={skin.ink} size={20} />} label="News and offers" right={<Switch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: skin.accent }} />} />
+            <PassRow skin={skin} icon={<BellIcon color={skin.ink} size={20} />} label="News and offers" right={<AppSwitch value={!membership.promos_opted_out} onValueChange={(v) => void setShopNotifications(v)} trackColor={{ true: skin.accent }} />} />
           </View>
         ) : null}
         {business.description ? <Text style={[ss.description, { marginTop: 20 }]}>{business.description}</Text> : null}

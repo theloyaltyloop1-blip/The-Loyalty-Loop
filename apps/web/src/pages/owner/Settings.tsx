@@ -59,6 +59,7 @@ import {
 } from '@/lib/businesses'
 import { canDeleteCurrentAccount, requestAccountDeletion } from '@/lib/engagement'
 import { BarePageSkeleton, SkeletonBlock } from '@/components/page-skeleton'
+import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 
@@ -896,16 +897,12 @@ function BirthdayRewardCard() {
     <div className="mb-5 rounded-3xl bg-amber p-6 text-amber-ink sm:p-7">
       <div className="flex items-center justify-between gap-4">
         <h3 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight"><Cake className="h-5 w-5" /> Birthday reward</h3>
-        <button data-press-feedback
-          role="switch"
-          aria-checked={on}
+        <Switch
+          checked={on}
           aria-label="Birthday reward"
           disabled={busy}
-          onClick={() => { const next = !on; setOn(next); if (!next && saved !== null) void save(false) }}
-          className={'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ease-out ' + (on ? 'bg-primary' : 'bg-foreground/15')}
-        >
-          <span className={'absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ' + (on ? 'translate-x-6' : 'translate-x-1')} />
-        </button>
+          onCheckedChange={(next) => { setOn(next); void save(next) }}
+        />
       </div>
       <p className="mt-2 text-sm opacity-80">A treat on a customer’s first visit in their birthday month, once a year. You never see their birthday; it’s added automatically when they visit, and your staff see it on the scan.</p>
       {on && (
@@ -1699,19 +1696,15 @@ function AutoWinbackCard({
     <div className="mb-5 rounded-3xl bg-sage p-6 text-sage-ink sm:p-7">
       <div className="flex items-center justify-between gap-4">
         <h3 className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight"><Clock className="h-5 w-5" /> Automatic win-back</h3>
-        <button data-press-feedback
-          role="switch"
-          aria-checked={on}
+        <Switch
+          checked={on}
           aria-label="Automatic win-back emails"
           disabled={busy}
-          onClick={() => void save(
+          onCheckedChange={() => void save(
             { winback_auto_enabled: !on },
             on ? 'Switched off. Nobody gets a win-back email unless you press Send now.' : 'Switched on. The next emails go out at about 10am.',
           )}
-          className={'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ease-out disabled:opacity-60 ' + (on ? 'bg-primary' : 'bg-foreground/15')}
-        >
-          <span className={'absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ' + (on ? 'translate-x-6' : 'translate-x-1')} />
-        </button>
+        />
       </div>
       {on ? (
         <>

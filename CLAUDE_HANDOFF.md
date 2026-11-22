@@ -115,6 +115,16 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
+### 2026-11-22 - Toggle switches fixed on website and both apps - NOT shipped
+
+- **Root cause (web):** the hand-copied switch knob was `absolute` with no `left-0`. Inside a `<button>` the browser centres it, so the knob started at 24px: off showed the knob at the right (28px), on pushed it outside the track (48px). Measured in a browser. The off track (`bg-foreground/15`) was also muddy on amber/sage/peach. Separately, `components/ui/switch.tsx` (used by admin Outreach auto-send) styled `data-checked:`/`data-unchecked:`, but Radix emits `data-state`, so it never changed look.
+- **Fix (web):** one shared `Switch` in `apps/web/src/components/ui/switch.tsx` (Radix, `data-state` styles, primary track on, `bg-input` grey off, white knob). Replaced the copies in owner Settings (Birthday reward, Automatic win-back), Profile notifications, owner Reviews (AI replies) and the Show Whirl checkbox (`whirl-kit/whirl.tsx`). Birthday reward on now saves straight away (before, on only changed local state until Save was pressed).
+- **Fix (apps):** new `src/components/AppSwitch.tsx` in both apps (fixed on/off track colours, white knob) replacing every React Native `Switch` in shopper `App.tsx`, retailer `App.tsx`, `owner-pages.tsx`, `shop-pages.tsx`. Retailer Birthday reward on also saves immediately. Left alone: the Pressable-based `PermissionToggle` and AI-reply toggle in retailer (they render correctly).
+- Branch `fix-toggle-switches` (from origin/main), nothing committed.
+- **Checks run:** real `npm ci` (root and apps/web); `npm --prefix apps/web run build` passed (with dummy VITE_SUPABASE_* values); `npx tsc --noEmit` passed in apps/retailer and apps/shopper; browser test of the old markup (bug reproduced) and the new Switch on amber, sage, peach and white tiles: click flips aria-checked, knob 4px left / 4px right, track colour matches.
+- **Not checked:** the real owner Settings, Profile and Reviews pages (need a logged-in account; dev server has no Supabase keys), reload persistence of saved switches, dark mode, any phone or emulator (apps not run on a device), lint.
+- **Next:** owner yes to commit/push the website (Claude); then OTA for both apps is JS-only (owner yes needed).
+
 
 ### 2026-11-21 - Automatic win-back emails (daily, about 10am UK) - LIVE (migrations, function, cron, website, Business OTAs)
 

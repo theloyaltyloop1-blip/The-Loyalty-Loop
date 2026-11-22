@@ -1,4 +1,5 @@
 import { showAlert } from "./components/AppAlert";
+import { AppSwitch } from "./components/AppSwitch";
 import { haptic, getHapticsEnabled, setHapticsEnabled } from "./haptics";
 import { useTheme } from "./theme";
 import { useWhirlSettings } from "../../../packages/whirl/native";
@@ -11,7 +12,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -1052,7 +1052,7 @@ function AccountPage({
           tile="blue"
           title="Show Whirl"
           detail="Our mascot on welcome screens, empty pages and tips. Loading spinners stay."
-          right={<Switch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.primary }} />}
+          right={<AppSwitch value={whirlSettings.showWhirl} onValueChange={whirlSettings.setShowWhirl} trackColor={{ true: colors.primary }} />}
           last
         />
       </View>
@@ -1064,7 +1064,7 @@ function AccountPage({
           title="App lock"
           detail="Face ID, Touch ID or fingerprint to open this app"
           right={
-            <Switch
+            <AppSwitch
               value={biometricEnabled}
               onValueChange={() => void toggleBiometricLock()}
               trackColor={{ true: colors.primary }}
@@ -1077,7 +1077,7 @@ function AccountPage({
           title="Anonymous analytics"
           detail="Share feature-use insights to help improve the app"
           right={
-            <Switch
+            <AppSwitch
               value={analyticsEnabled}
               onValueChange={() => void toggleUsageAnalytics()}
               trackColor={{ true: colors.primary }}
@@ -1090,7 +1090,7 @@ function AccountPage({
           title="Haptics"
           detail="Vibrate when you award stamps, redeem rewards and more"
           right={
-            <Switch
+            <AppSwitch
               value={hapticsOn}
               onValueChange={() => void toggleHaptics()}
               trackColor={{ true: colors.primary }}

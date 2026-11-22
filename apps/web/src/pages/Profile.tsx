@@ -1,4 +1,5 @@
 import { WhirlSwitch } from '@/components/whirl-kit'
+import { Switch } from '@/components/ui/switch'
 import * as React from 'react'
 import { Navigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -280,15 +281,11 @@ export function ProfilePage() {
                     <p className="font-semibold text-foreground">{label}</p>
                     <p className="text-sm text-muted-foreground">{desc}</p>
                   </div>
-                  <button data-press-feedback
-                    role="switch"
-                    aria-checked={settings[key]}
+                  <Switch
+                    checked={settings[key]}
                     aria-label={label}
-                    onClick={() => handleToggleSetting(key)}
-                    className={'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ease-out ' + (settings[key] ? 'bg-primary' : 'bg-foreground/15')}
-                  >
-                    <span className={'absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform duration-200 ease-out ' + (settings[key] ? 'translate-x-6' : 'translate-x-1')} />
-                  </button>
+                    onCheckedChange={() => handleToggleSetting(key)}
+                  />
                 </div>
               ))}
             </SectionCard>
