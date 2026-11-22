@@ -50,7 +50,6 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 - Web CI lint fails on three un-awaited promises: `whirl-kit/whirl.tsx:68`, `owner-command-palette.tsx:45`, `owner-walkthrough.tsx:52`. A clean-up session started on 2026-11-15; its result is not recorded here.
 - Apply migration `20261115120000_typo_tolerant_admin_search.sql` (in the repo, not applied).
 - Deploy the sender fix for `send-visit-thank-you`, `send-owner-legal-documents` and `shop-request-notify` (committed, not deployed, as of 2026-11-14).
-- Redeploy the wallet pass functions (custom-programme lines and the new logo).
 - The shopper app has no "Forgot password?" on its sign-in screen (website and Business app do).
 - Once every app version on phones has the code screens, drop the fallback link from both Supabase email templates.
 - Website staff Redeem panel does not show pounds or percent off for custom programmes.
@@ -115,10 +114,11 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
-### 2026-11-22 - Google Wallet passes use the shop's own branding - NOT shipped (committed on branch wallet-shop-branding, needs function deploy)
+### 2026-11-22 - Google Wallet passes use the shop's own branding - LIVE (functions deployed; not yet checked on a phone)
 - Cause: each shop already had its own class, but the pass looked generic because (1) card_design.color and cover were ignored, so shops with no brand_color got the same orange, (2) any non-square logo was swapped for the Loyalty Loop logo, (3) no hero image, (4) programName was 'Stamp Card', (5) square logos were not padded, so Wallet's circle crop clipped them.
 - Change: new `_shared/wallet-branding.ts` (pure, tested) and `_shared/wallet-images.ts` (Deno: builds a padded 660px logo and a 1032x336 hero from card image or cover, stores them in the `covers` bucket as `{shop}/wallet-*-<hash>.png`, upserts the class). `create-wallet-pass` uses them. `update-wallet-pass` now also PATCHes the shop's class on every stamp/redeem (existing passes pick up branding) and accepts a call with no user_id as a class-only refresh. Class: issuerName and programName = shop name, hexBackgroundColor = card colour, programLogo, wideProgramLogo for wide logos, heroImage.
 - Checks run: node tests for wallet-branding and wallet-progress (19 pass). Not run: Deno type check (no deno here), any live Google call, a real phone.
+- Release: merged to origin/main as 2c6715f (cherry-pick of 8ff74e9, no conflicts). Deployed create-wallet-pass (v34) and update-wallet-pass (v28) together to the production project, verify_jwt true as before. Deploy bundled all _shared imports without error and both show ACTIVE. Not checked: a boot log for these two functions (none seen), any live Google call, a real phone. No OTA/build (no app code). Apple Wallet untouched. Rollback: redeploy the previous commit faa3363 versions of both functions.
 - Not changed: Apple Wallet (create-apple-wallet-pass) still embeds Loyalty Loop logo images (LOGO_1X/2X/3X); same problem, separate fix. WebP/GIF logos cannot be padded (used as-is).
 - Next (Claude, after owner yes): deploy create-wallet-pass and update-wallet-pass, add a pass for a test shop, then check it in Wallet. Owner: confirm the issuer account allows class PATCH and Storage `covers` is public (it is).
 ### 2026-11-22 - "Design it for me": AI card designer (Business app) - LIVE (edge function + OTA)
