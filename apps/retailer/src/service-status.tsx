@@ -15,6 +15,7 @@ import { useWhirlSlot } from '../../../packages/whirl/native'
 import { useEffect, useRef, useState } from 'react'
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native'
 import Storage from 'expo-sqlite/kv-store'
+import Constants from 'expo-constants'
 import { schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 export const STATUS_URL = 'https://www.the-loyalty-loop.com/status.json'
@@ -28,9 +29,30 @@ export type ServiceStatus = {
   title: string
   message: string
   checkedAt: number | null
+  /** True when this phone runs an app version older than status.json's min_version. Soft prompt only; never blocks. */
+  update?: boolean
 }
 
-type StatusFile = { level?: string; title?: string; message?: string; apps?: string[] }
+type StatusFile = { level?: string; title?: string; message?: string; apps?: string[]; min_version?: { shopper?: string; business?: string } }
+
+// Installed store version (not the OTA's), e.g. "1.0.2".
+function installedVersion(): string {
+  return String(Constants.nativeAppVersion ?? Constants.expoConfig?.version ?? '')
+}
+
+// True when `have` is older than `min`. Empty or unreadable versions never prompt.
+export function isOlderVersion(have: string, min: string | undefined): boolean {
+  if (!min || !have) return false
+  const a = have.split('.').map((n) => parseInt(n, 10))
+  const b = min.split('.').map((n) => parseInt(n, 10))
+  if (a.some(Number.isNaN) || b.some(Number.isNaN)) return false
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] ?? 0
+    const y = b[i] ?? 0
+    if (x !== y) return x < y
+  }
+  return false
+}
 
 const OK: ServiceStatus = { level: 'ok', title: '', message: '', checkedAt: null }
 
@@ -113,7 +135,7 @@ export async function checkServiceStatus(app: 'shopper' | 'business'): Promise<S
       checkedAt,
     }
   }
-  return { ...OK, checkedAt }
+  return { ...OK, checkedAt, update: isOlderVersion(installedVersion(), file?.min_version?.[app]) }
 }
 
 export function useServiceStatus(app: 'shopper' | 'business'): ServiceStatus & { recheck: () => void } {
@@ -147,6 +169,18 @@ export function useServiceStatus(app: 'shopper' | 'business'): ServiceStatus & {
 export function OutageBanner({ status, savedAt }: { status: ServiceStatus & { recheck: () => void }; savedAt?: number | null }) {
   const [open, setOpen] = useState(false)
   const mascot = useWhirlSlot('status-banner', 'oops')
+  const [dismissed, setDismissed] = useState(false)
+  if (status.level === 'ok' && status.update && !dismissed) {
+    return (
+      <Pressable onPress={() => setDismissed(true)} style={[s.banner, s.updateBanner]} accessibilityRole="button" accessibilityLabel="A new version is available. Update from your app store. Tap to dismiss.">
+        <View style={s.row}>
+          <View style={[s.dot, s.dotUpdate]} />
+          <Text style={s.title} numberOfLines={2}>A new version is available. Update from your app store.</Text>
+          <Text style={s.more}>Hide</Text>
+        </View>
+      </Pressable>
+    )
+  }
   if (status.level === 'ok') return null
   const offline = status.level === 'offline'
   return (
@@ -181,6 +215,8 @@ const s = themed(() => StyleSheet.create({
   banner: { marginHorizontal: 12, marginTop: 6, marginBottom: 4, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
   degraded: { backgroundColor: schemeColor('#FFF1E0', 'bg'), borderWidth: 1, borderColor: schemeColor('#F5C58F', 'border') },
   offline: { backgroundColor: schemeColor('#EEF0F4', 'bg'), borderWidth: 1, borderColor: schemeColor('#CBD1DB', 'border') },
+  updateBanner: { backgroundColor: schemeColor('#E8F0FF', 'bg'), borderWidth: 1, borderColor: schemeColor('#B7CCF5', 'border') },
+  dotUpdate: { backgroundColor: schemeColor('#2B3A67', 'bg') },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   dotDegraded: { backgroundColor: schemeColor('#E8820C', 'bg') },
