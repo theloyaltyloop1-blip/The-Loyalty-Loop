@@ -117,6 +117,18 @@ const TILE_TONES = themed(() => [
   { bg: SAGE, ink: INK, sub: '#33384A' },
   { bg: colors.card, ink: colors.ink, sub: colors.muted },
 ])
+function CardTile<T extends RailShop>({ shop, label, hint, tone, onSelect }: { shop: T; label: string; hint: string | null; tone: { bg: string; ink: string }; onSelect: (shop: T) => void }) {
+  const [failed, setFailed] = useState(false)
+  const bg = shop.brand_color || tone.bg
+  const showLogo = !!shop.logo_url && !failed
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${shop.name}. ${label}. View your card`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: bg, radius: 22 }); onSelect(shop) }} style={({ pressed }) => [s.cardTile, { backgroundColor: bg }, pressed && s.pressed]}>
+    {showLogo
+      ? <Image accessibilityIgnoresInvertColors source={{ uri: shop.logo_url!, cache: 'force-cache' }} style={s.cardTileLogo} resizeMode="contain" onError={() => setFailed(true)} />
+      : <Text style={[s.cardTileName, { color: shop.brand_color ? '#FFFFFF' : tone.ink }]} numberOfLines={3} adjustsFontSizeToFit>{shop.name}</Text>}
+    {hint && <View style={s.cardTilePill}><Text style={s.cardTilePillText}>{hint}</Text></View>}
+  </Pressable>
+}
+
 export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
   const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
     .sort((a, b) => b.progress.fraction - a.progress.fraction)
@@ -126,12 +138,7 @@ export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSe
       const money = (v: number) => shopMoney(shop.country_code)(v).replace(/\.00$/, '')
       const value = progress.threshold === null ? null : progress.spend ? money(progress.value) : String(progress.value)
       const of = progress.threshold === null ? null : progress.spend ? `/${money(progress.threshold)}` : `/${progress.threshold}`
-      return <Pressable key={shop.id} accessibilityRole="button" accessibilityLabel={`${shop.name}. ${progress.label}. View your card`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: tone.bg, radius: 22 }); onSelect(shop) }} style={({ pressed }) => [s.cardTile, { backgroundColor: tone.bg }, tone.bg === '#FFFFFF' && s.cardTileLine, pressed && s.pressed]}>
-        <Text style={[s.cardTileName, { color: tone.ink }]} numberOfLines={2}>{shop.name}</Text>
-        {value !== null
-          ? <Text style={[s.cardTileCount, { color: tone.ink }]} numberOfLines={1} adjustsFontSizeToFit>{value}<Text style={[s.cardTileOf, { color: tone.sub }]}>{of}</Text></Text>
-          : <Text style={[s.cardTileOf, { color: tone.sub }]} numberOfLines={2}>{progress.label}</Text>}
-      </Pressable>
+      return <CardTile key={shop.id} shop={shop} label={progress.label} hint={value !== null ? `${value}${of}` : null} tone={tone} onSelect={onSelect} />
     })}
   </ScrollView>
 }
@@ -349,11 +356,11 @@ const s = themed(() => StyleSheet.create({
   quickEmptyText: { color: colors.primaryText, fontFamily: SANS_MEDIUM, fontSize: 15 },
   nextBig: { color: colors.ink, fontFamily: SANS_HEAVY, fontSize: 88, lineHeight: 88, letterSpacing: -5, includeFontPadding: false },
   nextLine: { color: schemeColor('rgba(26,33,56,0.7)', 'fg'), fontSize: 15, lineHeight: 20, fontFamily: SANS_MEDIUM, marginTop: 8 },
-  cardTile: { width: 156, minHeight: 116, borderRadius: 22, padding: 14, gap: 8, justifyContent: 'space-between' },
-  cardTileLine: { borderWidth: StyleSheet.hairlineWidth, borderColor: schemeColor('rgba(17,17,17,0.18)', 'border') },
-  cardTileName: { fontFamily: SANS_MEDIUM, fontSize: 14, lineHeight: 17, letterSpacing: -0.2 },
-  cardTileCount: { fontFamily: SANS_HEAVY, fontSize: 36, letterSpacing: -2, fontVariant: ['tabular-nums'] },
-  cardTileOf: { fontFamily: SANS_MEDIUM, fontSize: 16, letterSpacing: -0.4 },
+  cardTile: { width: 156, height: 156, borderRadius: 22, borderWidth: 2, borderColor: '#0F2A3A', padding: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  cardTileLogo: { width: '100%', height: '100%' },
+  cardTileName: { fontFamily: SANS_HEAVY, fontSize: 22, lineHeight: 26, letterSpacing: -0.5, textAlign: 'center' },
+  cardTilePill: { position: 'absolute', right: 8, bottom: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: '#0F2A3A' },
+  cardTilePillText: { color: '#FFFFFF', fontFamily: SANS_MEDIUM, fontSize: 11, fontVariant: ['tabular-nums'] },
   nextDots: { flexDirection: 'row', gap: 6 },
   nextDot: { flex: 1, aspectRatio: 1, maxWidth: 26, borderRadius: 999, borderWidth: 1.5, borderColor: schemeColor('rgba(26,33,56,0.2)', 'border') },
   nextDotOn: { backgroundColor: schemeColor('#1A2138', 'bg'), borderColor: schemeColor('#1A2138', 'bg') },

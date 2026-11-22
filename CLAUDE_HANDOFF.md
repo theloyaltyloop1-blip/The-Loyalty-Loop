@@ -115,6 +115,8 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
+### 2026-11-22 - Shopper Home "Your cards" tiles redesigned (logo tiles) - NOT shipped (OTA pending, in the combined OTA)
+Tiles are now 156px squares, 2px #0F2A3A border, shop brand colour fill, logo centred large; styled name only when no logo; small count pill bottom-right. Tap still opens the card. Branch feat/home-card-tiles, file apps/shopper/src/components/HomeCollection.tsx (CardTile). expo-image is NOT installed in the shopper, and adding it changes package.json (needs native build), so the RN Image with cache force-cache is used instead. Checks run: npx tsc --noEmit (apps/shopper). Not checked on a phone. Next: Claude (main chat) in the combined OTA.
 ### 2026-11-22 - Toggle switches fixed on website and both apps - LIVE (website pushed, OTAs published); update prompt and OTA script NOT shipped
 
 - **Root cause (web):** the hand-copied switch knob was `absolute` with no `left-0`. Inside a `<button>` the browser centres it, so the knob started at 24px: off showed the knob at the right (28px), on pushed it outside the track (48px). Measured in a browser. The off track (`bg-foreground/15`) was also muddy on amber/sage/peach. Separately, `components/ui/switch.tsx` (used by admin Outreach auto-send) styled `data-checked:`/`data-unchecked:`, but Radix emits `data-state`, so it never changed look.
