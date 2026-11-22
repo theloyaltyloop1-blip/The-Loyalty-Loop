@@ -122,6 +122,14 @@ Tiles are now 156px squares, 2px #0F2A3A border, shop brand colour fill, logo ce
 - Change (apps/shopper/App.tsx only): `Image.prefetch` for every shop logo/cover when the list changes; `refreshShops` keeps row identity when nothing changed (also `selected`, `homeCatalog`). No new package (expo-image would need a native build).
 - Checks run: `npx tsc --noEmit` in apps/shopper passes. Not checked on a phone; the lag fix is unconfirmed.
 - Next (Claude): include in the combined OTA, then owner confirms on device. If lag remains, profile tile re-render on close.
+
+### 2026-11-22 - Photo-led shop cards on the pre-signup shop list - NOT shipped (OTA pending, main chat does combined OTA)
+- Changed: `GuestHome.tsx` ShopCard shows the shop `cover_url` as a full-bleed photo, 2px navy border, big white name top-left with scrim and text shadow, white reward pill bottom-left. No cover (or image load error) falls back to the old coloured card. `cover_url` added to the businesses select and GuestShop type. Filter chips and Sign up bar untouched.
+- Branch `shopper-photo-cards`, merged to origin/main. File: `apps/shopper/src/components/GuestHome.tsx`.
+- Checks run: `npx tsc --noEmit` in apps/shopper (passed). Not checked on a phone.
+- Note: `expo-image` is not installed in the shopper app; adding it changes package.json and needs a native build, so RN `Image` with `cache: 'force-cache'` is used. Switch to expo-image at the next native build.
+- Next: main chat publishes OTA (Claude, with owner yes).
+
 ### 2026-11-22 - Toggle switches fixed on website and both apps - LIVE (website pushed, OTAs published); update prompt and OTA script NOT shipped
 
 - **Root cause (web):** the hand-copied switch knob was `absolute` with no `left-0`. Inside a `<button>` the browser centres it, so the knob started at 24px: off showed the knob at the right (28px), on pushed it outside the track (48px). Measured in a browser. The off track (`bg-foreground/15`) was also muddy on amber/sage/peach. Separately, `components/ui/switch.tsx` (used by admin Outreach auto-send) styled `data-checked:`/`data-unchecked:`, but Radix emits `data-state`, so it never changed look.

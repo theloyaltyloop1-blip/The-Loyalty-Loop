@@ -20,6 +20,7 @@ export type GuestShop = {
   address?: string | null
   postcode?: string | null
   logo_url?: string | null
+  cover_url?: string | null
   brand_color?: string | null
   country_code?: string | null
   reward_model?: string | null
@@ -65,7 +66,19 @@ function inkOn(hex: string) {
 function ShopCard({ shop, onPress, big = false }: { shop: GuestShop; onPress?: () => void; big?: boolean }) {
   const bg = cardColour(shop)
   const fg = inkOn(bg)
-  const body = (
+  const [photoFailed, setPhotoFailed] = useState(false)
+  const photo = shop.cover_url?.trim()
+  const body = photo && !photoFailed ? (
+    <View style={[c.card, c.photoCard, big && c.cardBig, { backgroundColor: bg }]}>
+      <Image accessibilityIgnoresInvertColors source={{ uri: photo, cache: 'force-cache' }} style={StyleSheet.absoluteFill} resizeMode="cover" onError={() => setPhotoFailed(true)} />
+      <View pointerEvents="none" style={c.scrim} />
+      <Text style={[c.photoName, big && c.nameBig]} numberOfLines={2}>{shop.name}</Text>
+      <View style={{ flex: 1 }} />
+      <View style={[c.rewardPill, { marginTop: 0 }]}>
+        <Text style={c.rewardText} numberOfLines={big ? 3 : 1}>{rewardLine(shop)}</Text>
+      </View>
+    </View>
+  ) : (
     <View style={[c.card, big && c.cardBig, { backgroundColor: bg }]}>
       <View style={[c.ring, { borderColor: fg }]} />
       <View style={c.top}>
@@ -103,7 +116,7 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
   async function load() {
     setLoading(true)
     const { data } = await supabase.from('businesses')
-      .select('id,name,category,address,postcode,logo_url,brand_color,country_code,reward_model,loyalty_type,loyalty_config,reward_threshold_pence,programme_rules')
+      .select('id,name,category,address,postcode,logo_url,cover_url,brand_color,country_code,reward_model,loyalty_type,loyalty_config,reward_threshold_pence,programme_rules')
       .eq('is_active', true)
       .order('name')
     setShops((data ?? []) as GuestShop[])
@@ -201,6 +214,9 @@ export function GuestHome({ onJoin, onSignUp, onSignIn }: {
 
 const c = themed(() => StyleSheet.create({
   card: { minHeight: 188, borderRadius: 26, padding: 18, overflow: 'hidden', shadowColor: INK, shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 5 },
+  photoCard: { minHeight: 220, borderWidth: 2, borderColor: '#1A2138' },
+  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,14,28,0.22)' },
+  photoName: { color: '#FFFFFF', fontSize: 32, lineHeight: 36, fontFamily: 'Inter_700Bold', letterSpacing: -0.8, textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 },
   cardBig: { minHeight: 230 },
   ring: { position: 'absolute', right: -60, top: -70, width: 210, height: 210, borderRadius: 105, borderWidth: 26, opacity: 0.08 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
