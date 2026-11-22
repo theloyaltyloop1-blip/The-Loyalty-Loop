@@ -116,12 +116,13 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
-### 2026-11-22 - Combined release branch: card page layout + win-back email and QR - NOT shipped
+### 2026-11-22 - Combined release branch: card page layout + win-back email and QR - PARTLY LIVE (on main, migration applied; function, OTAs pending)
 
-- **Branch:** `release/card-layout-and-winback-qr` from origin/main 359d984, worktree `.claude/worktrees/release-card-winback`. Merges `fix/shopper-card-detail-layout` (commit 89fcc89) and `claude/winback-email-polish` (commit e889505). Only conflict was this file (both log entries kept, newest first); `apps/shopper/App.tsx` merged cleanly with both changes. Not pushed.
+- **Branch:** `release/card-layout-and-winback-qr` from origin/main 359d984, worktree `.claude/worktrees/release-card-winback`. Merges `fix/shopper-card-detail-layout` (commit 89fcc89) and `claude/winback-email-polish` (commit e889505). Only conflict was this file (both log entries kept, newest first); `apps/shopper/App.tsx` merged cleanly with both changes. **Pushed to origin/main as 08ab84b (fast-forward from 359d984), 2026-11-22.**
 - **Checks run:** real `npm ci` then `npx tsc --noEmit` in apps/shopper and apps/retailer on the combined branch (both exit 0). **Not run:** any phone or emulator check, `deno check` (deno not installed), the migration, a test email, scanning the QR.
-- **State:** migration `20261122130000_my_winback_coupons.sql` NOT applied. Edge function `send-winback-emails` NOT deployed. No OTA published.
-- **Next (each needs the owner's yes):** (1) push the branch / merge to main; (2) apply the migration; (3) deploy `send-winback-emails` and send one test to yourself; (4) OTA for shopper 1.0.1, 1.0.2, 1.0.3 and Business 1.0.1, 1.0.2 (list in section 1), android and ios separately, `--environment production`.
+- **Migration applied** 2026-11-22 to tgukdabfvvoywawmzbdo as `my_winback_coupons` (version 20261122215005). Verified: function exists, security definer, anon and public cannot execute, authenticated can. Security advisor lists it once as an authenticated-callable security definer function; intended, it is limited to auth.uid().
+- **State:** Edge function `send-winback-emails` NOT deployed. No OTA published.
+- **Next (each needs the owner's yes):** (3) deploy `send-winback-emails` and send one test to yourself; (4) OTA for shopper 1.0.1, 1.0.2, 1.0.3 and Business 1.0.1, 1.0.2 (list in section 1), android and ios separately, `--environment production`.
 
 ### 2026-11-22 - Shopper card page layout (even stamp rows, bigger name and logo, richer background, tidy code area) - NOT shipped (OTA pending)
 
