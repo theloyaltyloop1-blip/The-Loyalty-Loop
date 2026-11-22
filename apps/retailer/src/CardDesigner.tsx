@@ -103,7 +103,9 @@ export function CardDesigner({
   );
   const [busy, setBusy] = useState(false),
     [uploading, setUploading] = useState(false),
-    [replay, setReplay] = useState(0);
+    [replay, setReplay] = useState(0),
+    [suggestion, setSuggestion] = useState<CardDesign | null>(null),
+    [designing, setDesigning] = useState(false);
   const pendingUpload = useRef<string | null>(null);
   const mounted = useRef(true);
   const set = <K extends keyof CardDesign>(key: K, value: CardDesign[K]) =>
@@ -170,30 +172,31 @@ export function CardDesigner({
       setUploading(false);
     }
   }
-  async function save() {
+  async function save(override?: CardDesign) {
+    const target = override ?? draft;
     if (preview)
       return showAlert(
         "Preview mode",
         "Your preview is ready. Sign in as the owner to save.",
       );
-    if (![draft.color, draft.secondary].every((c) => /^#[0-9a-f]{6}$/i.test(c)))
+    if (![target.color, target.secondary].every((c) => /^#[0-9a-f]{6}$/i.test(c)))
       return showAlert(
         "Check your colours",
         "Use a six-digit hex colour, for example #234C40.",
       );
-    if (draft.background === "photo" && !draft.photo)
+    if (target.background === "photo" && !target.photo)
       return showAlert(
         "Choose a photo",
         "Upload a photo or choose another background.",
       );
-    if (draft.icon === "logo" && !business.logo_url)
+    if (target.icon === "logo" && !business.logo_url)
       return showAlert(
         "Add your shop logo first",
         "Use the Shop logo section below, or choose another stamp icon.",
       );
     setBusy(true);
     try {
-      const design = normalizeDesign(draft);
+      const design = normalizeDesign(target);
       const { data, error } = await supabase
         .from("businesses")
         .update({ card_design: design })
@@ -207,6 +210,8 @@ export function CardDesigner({
       if (unusedUpload)
         void supabase.storage.from("covers").remove([unusedUpload]);
       setSaved(JSON.stringify(design));
+      setDraft(design);
+      setSuggestion(null);
       showAlert(
         "Card design saved",
         "Customers see this design when their app next refreshes.",
@@ -226,6 +231,24 @@ export function CardDesigner({
       );
     } finally {
       setBusy(false);
+    }
+  }
+  // "Design it for me": ask the server for a full design. It only suggests; nothing is
+  // saved (and the saved design is never touched) unless the shop presses Save this design.
+  async function designForMe() {
+    if (preview)
+      return showAlert("Preview mode", "Sign in as the owner to use Design it for me.");
+    setDesigning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("suggest-card-design", {
+        body: { business_id: business.id },
+      });
+      if (error || !data?.design) throw new Error("Could not make a design right now. Try again in a moment.");
+      setSuggestion(designForProgress(normalizeDesign(data.design), stamps));
+    } catch (e) {
+      showAlert("Could not design your card", e instanceof Error ? e.message : "Try again in a moment.");
+    } finally {
+      setDesigning(false);
     }
   }
   function reset() {
@@ -271,6 +294,44 @@ export function CardDesigner({
       >
         <Text style={s.linkText}>Replay opening</Text>
       </Pressable>
+      <View style={s.group}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={locked || designing}
+          onPress={() => void designForMe()}
+          style={[s.chip, s.selected]}
+        >
+          <Text style={[s.chipText, s.selectedText]}>
+            {designing ? "Designing your card..." : suggestion ? "Try another design" : "Design it for me"}
+          </Text>
+        </Pressable>
+        {designing ? <WhirlProgress label="Designing your card" height={8} style={{ marginTop: 8 }} /> : null}
+        {suggestion && (
+          <View style={{ gap: 8, marginTop: 8 }}>
+            <Text style={s.label}>Here is a design for you</Text>
+            <LoyaltyCard
+              shop={{ ...business, card_design: suggestion }}
+              value={4}
+              target={10}
+              label={stamps ? "4 of 10 stamps" : "Preview of your progress"}
+              reward="Sample progress · your reward rules stay the same"
+              stamps={stamps}
+              animate
+            />
+            <View style={s.choices}>
+              <Pressable accessibilityRole="button" disabled={locked} onPress={() => void save(suggestion)} style={[s.chip, s.selected]}>
+                <Text style={[s.chipText, s.selectedText]}>Save this design</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" disabled={locked} onPress={() => { setDraft(suggestion); setSuggestion(null); }} style={s.chip}>
+                <Text style={s.chipText}>Tweak it</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" disabled={locked} onPress={() => setSuggestion(null)} style={s.chip}>
+                <Text style={s.chipText}>No thanks</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+      </View>
       <Text style={s.label}>Start with a template</Text>
       <View style={s.choices}>
         {TEMPLATES.map((t) => (

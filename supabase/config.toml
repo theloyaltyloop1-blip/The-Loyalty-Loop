@@ -73,3 +73,7 @@ verify_jwt = false
 # AI card colour from the shop logo. Owner-only; the handler also validates the JWT user.
 [functions.suggest-card-colour]
 verify_jwt = true
+
+# "Design it for me": AI proposes a full card_design. Suggest-only; owner/admin JWT only.
+[functions.suggest-card-design]
+verify_jwt = true
