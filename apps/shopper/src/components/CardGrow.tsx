@@ -22,7 +22,7 @@ import { scheduleOnRN } from 'react-native-worklets'
 // hard cut. So does any tap whose card can't be measured.
 
 /** What the card looked like, so the growing window starts as the same object. */
-export type CardLook = { color: string; radius: number }
+export type CardLook = { color: string; radius: number; /** The tile is the designed card: the overlay draws `face` scaled to the window. */ face?: boolean }
 
 type Measurable = { measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => void }
 type Rect = { x: number; y: number; width: number; height: number }
@@ -69,12 +69,15 @@ function measure(target: Measurable): Promise<Rect | null> {
 
 export type CardGrowHandle = { close: () => void }
 
-export function CardGrowOverlay({ ref, shopId, pageColor, logoUrl, onClosed, children }: {
+export function CardGrowOverlay({ ref, shopId, pageColor, logoUrl, face, faceWidth = 300, onClosed, children }: {
   ref?: Ref<CardGrowHandle>
   shopId: string
   /** The shop page's own background, which the card's colour turns into. */
   pageColor: string
   logoUrl?: string | null
+  /** The designed card, drawn at `faceWidth` wide; scaled to fill the window while it moves. */
+  face?: ReactNode
+  faceWidth?: number
   /** The page has finished leaving (or left at once): unmount it. */
   onClosed: () => void
   children: ReactNode
@@ -187,13 +190,19 @@ export function CardGrowOverlay({ ref, shopId, pageColor, logoUrl, onClosed, chi
       ],
     }
   })
+  const faceStyle = useAnimatedStyle(() => {
+    const w = interpolate(progress.get(), [0, 1], [cardW.get(), fullW.get()])
+    return { transform: [{ scale: w / faceWidth }] }
+  })
+  const showFace = !!(face && origin?.look.face)
   const cardColor = origin?.look.color ?? pageColor
   const skinStyle = useAnimatedStyle(() => {
     const p = progress.get()
     return {
       // The card's own contents dissolve into its colour, the colour becomes the
       // shop's, then the page shows through once the window is mostly open.
-      opacity: interpolate(p, [0, 0.12, 0.55, 0.9], [0, 1, 1, 0], Extrapolation.CLAMP),
+      // Fully opaque from the first frame so no clipped page chrome shows at the small end.
+      opacity: interpolate(p, [0, 0.55, 0.9], [1, 1, 0], Extrapolation.CLAMP),
       backgroundColor: interpolateColor(p, [0.15, 0.6], [cardColor, pageColor]),
     }
   })
@@ -214,7 +223,8 @@ export function CardGrowOverlay({ ref, shopId, pageColor, logoUrl, onClosed, chi
         <Animated.View style={[s.page, { width: size.width, height: size.height }, pageStyle]}>{children}</Animated.View>
         {origin && !reduced ? (
           <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, s.skin, skinStyle]}>
-            {logoUrl ? <View style={s.logo}><Image accessibilityIgnoresInvertColors source={{ uri: logoUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" /></View> : null}
+            {showFace ? <Animated.View style={[s.face, { width: faceWidth }, faceStyle]}>{face}</Animated.View> : null}
+            {!showFace && logoUrl ? <View style={s.logo}><Image accessibilityIgnoresInvertColors source={{ uri: logoUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" /></View> : null}
           </Animated.View>
         ) : null}
       </Animated.View>
@@ -226,5 +236,6 @@ const s = StyleSheet.create({
   frame: { position: 'absolute', overflow: 'hidden' },
   page: { position: 'absolute', left: 0, top: 0 },
   skin: { alignItems: 'center', justifyContent: 'center' },
+  face: { position: 'absolute', left: 0, top: 0, transformOrigin: 'top left' },
   logo: { width: 56, height: 56, borderRadius: 28, overflow: 'hidden', backgroundColor: '#FFFFFF' },
 })

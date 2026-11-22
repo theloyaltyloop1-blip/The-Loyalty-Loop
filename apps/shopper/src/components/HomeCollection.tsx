@@ -12,6 +12,7 @@ import { categoryRails, heroSlides, newestShops } from '../home-rails'
 import type { LocationStatus } from '../use-user-location'
 import { Tip } from './Tip'
 import { markCardOrigin } from './CardGrow'
+import { DesignedCardMini, hasDesign } from './DesignedCard'
 import { colors, schemeColor, themed } from '@loyalty-loop/design-tokens'
 
 // Home screen in delivery-app style: a hero carousel, then rows you swipe sideways.
@@ -117,8 +118,16 @@ const TILE_TONES = themed(() => [
   { bg: SAGE, ink: INK, sub: '#33384A' },
   { bg: colors.card, ink: colors.ink, sub: colors.muted },
 ])
-function CardTile<T extends RailShop>({ shop, label, hint, tone, onSelect }: { shop: T; label: string; hint: string | null; tone: { bg: string; ink: string }; onSelect: (shop: T) => void }) {
+const DESIGN_TILE_W = 180
+function CardTile<T extends RailShop>({ shop, label, hint, tone, onSelect, member, catalog }: { shop: T; label: string; hint: string | null; tone: { bg: string; ink: string }; onSelect: (shop: T) => void; member?: HomeMember; catalog: HomeTier[] }) {
   const [failed, setFailed] = useState(false)
+  // A shop that designed its own card: the tile is that card in miniature, with real progress.
+  if (hasDesign(shop)) {
+    const skin = shopSkin(shop)
+    return <Pressable accessibilityRole="button" accessibilityLabel={`${shop.name}. ${label}. View your card`} onPress={e => { markCardOrigin(shop.id, e.currentTarget, { color: skin.bg, radius: 24 * DESIGN_TILE_W / 300, face: true }); onSelect(shop) }} style={({ pressed }) => [{ width: DESIGN_TILE_W }, pressed && s.pressed]}>
+      <DesignedCardMini shop={shop} member={member} catalog={catalog} width={DESIGN_TILE_W} />
+    </Pressable>
+  }
   // A shop that designed its own card shows that design: its colour and typeface.
   const skin = shop.card_design ? shopSkin(shop) : null
   const face = skin ? { fontFamily: skin.font } : null
@@ -136,13 +145,13 @@ function CardTile<T extends RailShop>({ shop, label, hint, tone, onSelect }: { s
 export function CardRail<T extends RailShop>({ shops, memberships, catalog, onSelect }: { shops: T[]; memberships: HomeMember[]; catalog: HomeTier[]; onSelect: (shop: T) => void }) {
   const cards = shops.map(shop => ({ shop, progress: homeProgress(shop, memberships.find(m => m.business_id === shop.id), catalog, shopMoney(shop.country_code)) }))
     .sort((a, b) => b.progress.fraction - a.progress.fraction)
-  return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={156 + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast" snapToInterval={cards.some(x => hasDesign(x.shop)) ? undefined : 156 + RAIL_GAP} snapToAlignment="start" style={s.rail} contentContainerStyle={s.railContent}>
     {cards.map(({ shop, progress }, i) => {
       const tone = TILE_TONES[i % TILE_TONES.length]
       const money = (v: number) => shopMoney(shop.country_code)(v).replace(/\.00$/, '')
       const value = progress.threshold === null ? null : progress.spend ? money(progress.value) : String(progress.value)
       const of = progress.threshold === null ? null : progress.spend ? `/${money(progress.threshold)}` : `/${progress.threshold}`
-      return <CardTile key={shop.id} shop={shop} label={progress.label} hint={value !== null ? `${value}${of}` : null} tone={tone} onSelect={onSelect} />
+      return <CardTile key={shop.id} shop={shop} label={progress.label} hint={value !== null ? `${value}${of}` : null} tone={tone} onSelect={onSelect} member={memberships.find(m => m.business_id === shop.id)} catalog={catalog} />
     })}
   </ScrollView>
 }

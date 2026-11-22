@@ -218,15 +218,21 @@ export function LoyaltyCard({
     accent = cardAccent(d),
     progress = cardProgress(value, target);
   const scale = Math.min(1.7, Math.max(1, cardWidth / 640));
+  // A row never runs off the card: shrink to fit, and wrap onto a second line when even
+  // the smallest stamps would not fit (15 or 20 stamps on a narrow card).
+  const rowFit = (contentWidth - (progress.slots - 1) * 6) / progress.slots;
+  const rowWraps = d.layout === "row" && rowFit < 20;
   const stampSize =
     d.layout === "row"
-      ? Math.max(
-          22,
-          Math.min(
-            38 * scale,
-            (contentWidth - (progress.slots - 1) * 6) / progress.slots,
-          ),
-        )
+      ? rowWraps
+        ? Math.max(
+            20,
+            Math.min(
+              30 * scale,
+              (contentWidth - (Math.ceil(progress.slots / 2) - 1) * 6) / Math.ceil(progress.slots / 2),
+            ),
+          )
+        : Math.min(38 * scale, rowFit)
       : 34 * scale;
   const jarId = useId().replace(/:/g, "");
   const motion = useRef(new Animated.Value(1)).current;
@@ -451,12 +457,12 @@ export function LoyaltyCard({
           </View>
         ) : stamps && (d.layout === "grid" || d.layout === "row") ? (
           <ScrollView
-            horizontal={d.layout === "row"}
+            horizontal={d.layout === "row" && !rowWraps}
             scrollEnabled={d.layout === "row"}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[
               s.stamps,
-              d.layout === "row" && { flexWrap: "nowrap", gap: 6 },
+              d.layout === "row" && { flexWrap: rowWraps ? "wrap" : "nowrap", gap: 6 },
             ]}
             accessible
             accessibilityLabel={label}

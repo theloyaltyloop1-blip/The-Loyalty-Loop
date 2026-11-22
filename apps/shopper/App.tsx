@@ -72,6 +72,8 @@ import { pushPermission, registerPushToken } from './src/push'
 import * as SecureStore from 'expo-secure-store'
 import { GuestHome, type GuestShop } from './src/components/GuestHome'
 import { Tip } from './src/components/Tip'
+import { DesignedCard, hasDesign } from './src/components/DesignedCard'
+import { LoyaltyCard } from '../../packages/card-design/LoyaltyCard'
 import { CardGrowOverlay, markCardOrigin, type CardGrowHandle } from './src/components/CardGrow'
 import { disableWalkPast, enableWalkPast, refreshWalkPast, walkPastEnabled, walkPastSupported } from './src/walk-past'
 import { addPassFromBase64 } from './modules/expo-wallet-pass'
@@ -1588,7 +1590,7 @@ function ShopDetail({
   }
 
   const skin = useMemo(() => shopSkin(business), [business.card_design, business.category, business.brand_color])
-  const passStamps = !spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '') && threshold > 0 && threshold <= 12
+  const passStamps = !spendShop && programmeId !== 'tiers' && programmeId !== 'points' && !['points', 'tiered'].includes(business.loyalty_type || '') && threshold > 0 && threshold <= (hasDesign(business) ? 20 : 12)
   const passProgress = programmeId === 'tiers' ? (rollingSpend != null && tiers.length ? tierStanding(tiers, rollingSpend).fraction : 0) : pointsLike ? (pointsView.next ? pointsView.fraction : 1) : threshold > 0 ? value / threshold : 0
   const reward = nextTier?.title ?? 'your next reward'
   const passLabel = !membership
@@ -1648,6 +1650,7 @@ function ShopDetail({
           <ShopPass
             skin={skin}
             shop={business}
+            card={hasDesign(business) ? <LoyaltyCard shop={business} value={membership && passStamps ? Math.min(value, threshold) : membership ? Math.round(Math.min(1, passProgress) * 100) : 0} target={membership && !passStamps ? 100 : threshold || 10} stamps={passStamps && !holding} label={holding ? (membership ? 'Loading your card…' : 'Join to start collecting') : passStamps && membership ? `${Math.min(value, threshold)} of ${threshold} stamps` : passLabel} reward={passStamps || !membership ? reward : passLabel} /> : null}
             eyebrow={[business.category || 'Local business', openStatus(business.opening_hours)?.label].filter(Boolean).join(' · ')}
             stamps={membership && passStamps && !holding ? { filled: Math.min(value, threshold), total: threshold } : null}
             wrapStamp={(i, stamp) => {
@@ -3123,6 +3126,7 @@ function AppHome({ session }: { session: Session }) {
       shopId={selected.id}
       pageColor={shopSkin(selected).bg}
       logoUrl={selected.logo_url}
+      face={hasDesign(selected) ? <DesignedCard shop={selected} member={memberships.find((m) => m.business_id === selected.id)} catalog={homeCatalog.filter((row) => row.business_id === selected.id && !row.kind)} /> : null}
       onClosed={() => { if (shopKeyRef.current === shopKey) setSelected(null) }}
     >
       <ShopDetail
@@ -3218,13 +3222,13 @@ function AppHome({ session }: { session: Session }) {
 export default function App() {
   // Brand display font. Rendering does not wait for it: titles fall back to the
   // system font for a frame on first launch, then switch once loaded.
-  useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, InstrumentSerif_400Regular_Italic })
+  const [fontsReady, fontsError] = useFonts({ ...CARD_FONTS, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, InstrumentSerif_400Regular_Italic })
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
           <AppWhirlProvider>
-            <AppRoot />
+            {fontsReady || fontsError ? <AppRoot /> : <View style={{ flex: 1, backgroundColor: '#F8E4C6' }} />}
             <AppAlertHost />
             <AppIntro />
           </AppWhirlProvider>

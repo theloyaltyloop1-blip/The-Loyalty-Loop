@@ -22,6 +22,7 @@ export function ShopPass({
   action,
   topBar,
   wrapStamp,
+  card,
 }: {
   skin: ShopSkin;
   shop: { name: string; logo_url?: string | null; cover_url?: string | null };
@@ -38,13 +39,17 @@ export function ShopPass({
   /** Lets the app animate a stamp (e.g. a freshly earned one). This package
    * stays animation-free so the website and both apps can share it. */
   wrapStamp?: (index: number, stamp: ReactNode) => ReactNode;
+  /** The shop's designed card. When given it replaces the poster name, logo, count and stamps. */
+  card?: ReactNode;
 }) {
   const d = skin.design;
   const ink = skin.ink;
   return (
     <View style={{ backgroundColor: skin.bg }}>
       <View style={s.topBar}>{topBar}</View>
+      {card ? <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>{card}</View> : null}
       <View style={s.centre}>
+        {card ? null : <>
         <Text style={[s.eyebrow, { color: ink }]} numberOfLines={1}>{eyebrow}</Text>
         {/* Back plane: the name, poster-sized. */}
         <Text accessibilityRole="header" style={[s.title, { color: ink, fontFamily: skin.font }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.45}>{shop.name}</Text>
@@ -81,6 +86,8 @@ export function ShopPass({
           </View>
         ) : null}
         {progressLabel ? <Text style={[s.progressLabel, count && s.progressLabelBig, { color: ink }]}>{progressLabel}</Text> : null}
+        </>}
+        {card && progressLabel ? <Text style={[s.progressLabel, { color: ink }]}>{progressLabel}</Text> : null}
 
         {code ? <View style={s.codeTile}>{code}</View> : null}
         {action}
