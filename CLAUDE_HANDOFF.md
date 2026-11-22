@@ -13,7 +13,7 @@ Read this whole file before any work. Rules are in `CLAUDE.md`.
 - Supabase project ref: `tgukdabfvvoywawmzbdo`.
 - Shopper versions on phones: 1.0.1 and 1.0.2. In review at Apple and Google since 2026-11-15: 1.0.3 (iOS build 17, Android versionCode 135).
 - Business versions on phones: 1.0.1. In review at Apple and Google since 2026-11-15: 1.0.2 (iOS build 15, Android versionCode 134).
-- Publish every OTA for shopper 1.0.1, 1.0.2 and 1.0.3, and Business 1.0.1 and 1.0.2 (the review versions get OTAs too, so they are current when approved). Latest OTAs (2026-11-22, card tiles, lag fix, photo cards, card designs, auto card colour from f198f99, groups in the log): see log. Earlier OTAs (2026-11-22, free birthday item from c58d7ef): shopper 1.0.3 `22b2ce31` / `a79bf80d`, 1.0.2 `e155ad0e` / `1a924080`, 1.0.1 `2ef5107f` / `e172315a`; Business 1.0.2 `5da220e6` / `a35944f4`, 1.0.1 `efd6a0b5` / `1fc49276` (android / ios). Earlier OTAs (2026-11-21, birthday rewards from 04dc5f9): shopper 1.0.3 `0d58e419` / `727c71b5`, 1.0.2 `d6e09b7d` / `4480f74c`, 1.0.1 `f5d3b503` / `15317d61`; Business 1.0.2 `313fa5b9` / `466cdc38`, 1.0.1 `fa4316cb` / `d5a731c3` (android / ios; automatic win-back from 2824456). Every app version on phones now runs the same main code (shopper 1.0.3 also picked up card-to-page with this release).
+- Publish every OTA for shopper 1.0.1, 1.0.2 and 1.0.3, and Business 1.0.1 and 1.0.2 (the review versions get OTAs too, so they are current when approved). Latest OTAs (2026-11-22, card page layout and win-back QR coupon from f2130a8, all update IDs in the log; every app version on phones is on the same main code): see log. Earlier OTAs (2026-11-22, card tiles, lag fix, photo cards, card designs, auto card colour from f198f99): see log. Earlier OTAs (2026-11-22, free birthday item from c58d7ef): shopper 1.0.3 `22b2ce31` / `a79bf80d`, 1.0.2 `e155ad0e` / `1a924080`, 1.0.1 `2ef5107f` / `e172315a`; Business 1.0.2 `5da220e6` / `a35944f4`, 1.0.1 `efd6a0b5` / `1fc49276` (android / ios). Earlier OTAs (2026-11-21, birthday rewards from 04dc5f9): shopper 1.0.3 `0d58e419` / `727c71b5`, 1.0.2 `d6e09b7d` / `4480f74c`, 1.0.1 `f5d3b503` / `15317d61`; Business 1.0.2 `313fa5b9` / `466cdc38`, 1.0.1 `fa4316cb` / `d5a731c3` (android / ios; automatic win-back from 2824456). Every app version on phones now runs the same main code (shopper 1.0.3 also picked up card-to-page with this release).
 - Waiting for the next native build: predictive back and blurry image placeholders (2026-11-07 polish entry). Icons, splash, dark-mode native half and walk-past are already in the builds in review.
 - Shops use stamps by default. Programme types live: `stamp_legacy`, `spend_threshold`, `tiers`, `points`, `custom` (AI-designed).
 - Parked: Fidel card linking (hidden in the shopper app; spec in `ARCH_PLAN.md`), SumUp till link (live, only Test Shop connected), WhatsApp.
@@ -115,6 +115,25 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
+
+### 2026-11-22 - OTA: card page layout and win-back QR - LIVE
+- Commit f2130a83e1dfe781df8a86855def869bbcaf4b01 on origin/main. Owner approved. Published with `--channel production --environment production`, one platform at a time. Update shows on the second app launch.
+- Shopper ("Card page layout and win-back QR coupon"), group ID / update ID:
+  - 1.0.3 android `547c739f-8f83-4ee3-ac43-bb63726ce1d3` / `01a20555-276d-7852-ac4b-4f26683d9030`
+  - 1.0.3 ios `122090e6-cc62-4203-9459-0c11f0c7959b` / `01a20557-598d-7528-ae1f-6a13d8252bb9`
+  - 1.0.2 android `620a97dd-9530-435c-b367-ad8412f362b0` / `01a20558-adc4-73e2-a518-ce4cbe7246d9`
+  - 1.0.2 ios `0930ce52-73ac-446a-b3fa-99c778b245c8` / `01a2055a-09e7-72b5-9239-ba8ebbb27903`
+  - 1.0.1 android `b07e2454-0deb-4df4-9fc4-bdb366cd6a49` / `01a2055b-4bab-7d27-8519-1e7d643a3ff2`
+  - 1.0.1 ios `be982f2a-89d7-4ab6-81b8-3e05eefe82fd` / `01a2055c-986e-7595-b2dc-5ce395e0a2ea`
+- Business ("Win-back QR coupon"):
+  - 1.0.2 android `f29e4dc7-e48d-4ca0-9758-fa29f0663680` / `01a2055e-0cc8-7c16-b29e-94fcf614c289`
+  - 1.0.2 ios `869a3c00-5e15-46c9-9ca4-aa1f8818a3a0` / `01a2055f-31ba-7c26-b5c7-35baa7c11c2f`
+  - 1.0.1 android `95f440e1-818f-40da-bede-f2a384d6e7da` / `01a20560-45a2-7020-8c6e-789e1eec8115`
+  - 1.0.1 ios `cc0e8bae-8366-4ea7-8753-2d12b720087c` / `01a20561-5657-75c3-83a0-9acb727d439d`
+- Verified by hash: the asset CDN returns 403 to direct downloads, so for each update the `u.expo.dev` manifest launchAsset hash was compared with the SHA-256 of the uploaded file. All MATCH. Each file contains Supabase ref `tgukdabfvvoywawmzbdo` and `loyaltyloop:winback:`; Shopper files also contain `Next reward`. NOT downloaded from the live CDN. NOT checked on a phone.
+- Backend state: migration `my_winback_coupons` applied; `send-winback-emails` v42 live; cron `winback-auto` first uses it about 10:00 UTC on 2026-11-23. No test email was sent. The QR path under Deno is untested (it falls back to an email without QR). `deno check` was never run.
+- Rollback: `npx eas-cli@24.11.0 update:roll-back-to-embedded --branch production --runtime-version <v> --platform <android|ios>` from the app folder, or republish the previous group.
+- Next: (owner) after the second launch, check the card page, the Rewards tab and a scan on a phone; (Claude) check the first cron send in the function logs and `winback_email_log`.
 
 ### 2026-11-22 - send-winback-emails: owner test send (`test_to`) - LIVE (function v42; no test send made yet)
 - Branch `claude/winback-test-to` from origin/main 6030c90 (deployed v41 code). Committed and pushed to origin/main as caa0ffc; deployed to production as v42 (verify_jwt false, entrypoint index.ts). Function not invoked, nothing sent.
