@@ -92,6 +92,7 @@ import { SuccessCheck } from './src/components/SuccessCheck'
 import { ReceiptPrinter, type ReceiptData } from './src/components/ReceiptPrinter'
 import { StampThump } from './src/components/StampThump'
 import { Ticket } from './src/components/Ticket'
+import { encodeWinbackQr } from './src/winback-qr'
 import { HowItWorks, OpeningHoursList, openStatus, type OpeningHours, type TierRow } from './src/shop-profile'
 import { pointsStanding, programmeIdFor, tierStanding, unitNames } from '@loyalty-loop/loyalty'
 import { AskShopSheet, RequestedShopsSheet } from './src/components/ShopRequests'
@@ -2496,13 +2497,38 @@ function DiscoverTab({
 // Rewards tab
 // ---------------------------------------------------------------------
 
+type WinbackCoupon = { id: string; business_name: string; brand_color: string | null; coupon_code: string; expires_at: string | null }
+
 function RewardsTab({ rewards, load }: { rewards: Reward[]; load: ListLoad }) {
   const active = rewards.filter((r) => !r.redeemed_at)
+  // Unused win-back (come back) coupons from the shop emails. A failed read just shows none.
+  const [coupons, setCoupons] = useState<WinbackCoupon[]>([])
+  useEffect(() => {
+    let alive = true
+    void (async () => {
+      const { data, error } = await supabase.rpc('my_winback_coupons')
+      if (alive) setCoupons(error ? [] : ((data || []) as WinbackCoupon[]))
+    })()
+    return () => { alive = false }
+  }, [])
   return (
     <>
       <Text style={styles.pageTitle}>Ready to enjoy</Text>
-      {active.length ? (
-        active.map((reward, index) => (
+      {coupons.map((c, index) => (
+        <Ticket
+          key={c.id}
+          index={index}
+          color={c.brand_color || colors.primary}
+          shopName={c.business_name}
+          title="Welcome-back extra: show this at the till"
+          code={c.coupon_code.replace(/^COMEBACK/, 'COMEBACK ')}
+          expiresAt={c.expires_at}
+          pageColor={colors.background}
+        >
+          <QRCode value={encodeWinbackQr(c.coupon_code)} size={150} />
+        </Ticket>
+      ))}
+      {active.map((reward, index) => (
           <Ticket
             key={reward.id}
             index={index}
@@ -2515,8 +2541,8 @@ function RewardsTab({ rewards, load }: { rewards: Reward[]; load: ListLoad }) {
           >
             <QRCode value={encodeRewardQr(reward.qr_token)} size={150} />
           </Ticket>
-        ))
-      ) : (
+      ))}
+      {!active.length && !coupons.length && (
         <EmptyList {...load}><View style={{ alignItems: 'center', marginTop: 8 }}><Whirl pose="sleepy" size={120} /><Text style={[styles.empty, { textAlign: 'center' }]}>Nothing to claim yet. Get a few stamps and your first reward lands right here.</Text></View></EmptyList>
       )}
     </>

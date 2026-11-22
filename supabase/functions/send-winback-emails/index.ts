@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import QRCode from "npm:qrcode@1.5.4";
 
 // Win-back emails: a one-use COMEBACK coupon for members who have gone quiet.
 //
@@ -98,14 +99,63 @@ async function sendOne(admin: SupabaseClient, shop: Shop, c: Candidate): Promise
   const greeting = c.first_name ? `Hi ${esc(c.first_name)},` : "Hi there,";
   const name = esc(shop.name);
   const color = SAFE_COLOR.test(shop.brand_color ?? "") ? shop.brand_color : "#222";
-  const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <div style="text-align:center;margin:0 0 20px"><img src="https://www.the-loyalty-loop.com/logo-for-emails" alt="The Loyalty Loop" width="160" style="display:inline-block;width:160px;max-width:100%;height:auto"></div>
-        <h2 style="color:${color}">${greeting}</h2>
-        <p>It's been a while since your last visit to <strong>${name}</strong>. Come back and show this code at the till for a little something extra on us:</p>
-        <p style="text-align:center;font-size:22px;letter-spacing:2px;margin:20px 0"><strong>${coupon}</strong></p>
-        <p style="color:#555;font-size:13px">One use only, valid for 30 days.</p>
-        <p style="color:#888;font-size:13px">You're receiving this because you're a member of ${name}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
-      </div>`;
+  // Shown as "COMEBACK KP28AWKZ" (display only). The stored/redeemed code has no space;
+  // the Business app strips whitespace before redeeming, so typing it either way works.
+  const font = "'Helvetica Neue',Helvetica,Arial,sans-serif";
+  // QR of the coupon, sent as an inline (CID) attachment so no third party ever sees the code.
+  // Payload matches apps/retailer/src/winback-qr.ts and apps/shopper/src/winback-qr.ts.
+  let qrBase64: string | null = null;
+  try {
+    const png: Uint8Array = await QRCode.toBuffer(`loyaltyloop:winback:${coupon}`, { type: "png", margin: 2, width: 280, errorCorrectionLevel: "M" });
+    qrBase64 = btoa(String.fromCharCode(...png));
+  } catch (e) {
+    console.error("winback qr failed", e instanceof Error ? e.message : e);
+  }
+  const qrBlock = qrBase64
+    ? `<tr><td align="center" style="padding:0 28px 8px 28px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #E2D1B8;border-radius:12px;padding:10px;line-height:0;font-size:0;"><img src="cid:coupon-qr" alt="QR code for ${coupon}" width="160" height="160" style="display:block;width:160px;height:160px;border:0;"></td></tr></table><p class="em-muted" style="margin:10px 0 0 0;font-family:${font};font-size:13px;color:#555555;">Or let the shop scan this.</p></td></tr>`
+    : "";
+  const codeShown = coupon.replace(/^COMEBACK/, "COMEBACK ");
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
+<title>We miss you at ${name}!</title>
+<style>
+:root{color-scheme:light dark;supported-color-schemes:light dark}
+@media (prefers-color-scheme: dark){
+  .em-bg{background-color:#1E2118 !important}
+  .em-card{background-color:#2A2E22 !important;border-color:#454B38 !important}
+  .em-text{color:#EDE6D8 !important}
+  .em-muted{color:#B5AD9C !important}
+  .em-coupon{background-color:#3A3F2C !important;border-color:#A9BF86 !important}
+  .em-code{color:#F6EBD3 !important}
+}
+@media only screen and (max-width:420px){.em-code{font-size:19px !important;letter-spacing:1px !important}}
+</style></head>
+<body class="em-bg" bgcolor="#F4EEE2" style="margin:0;padding:0;background-color:#F4EEE2;">
+<table role="presentation" class="em-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F4EEE2" style="background-color:#F4EEE2;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" class="em-card" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="max-width:480px;background-color:#FFFFFF;border:1px solid #E2D1B8;border-radius:16px;overflow:hidden;">
+  <tr><td align="center" bgcolor="#4F6438" style="background-color:#4F6438;padding:24px 20px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#F8E4C6" style="background-color:#F8E4C6;border-radius:12px;overflow:hidden;line-height:0;font-size:0;"><img src="https://www.the-loyalty-loop.com/logo-for-emails" alt="The Loyalty Loop" width="180" style="display:block;width:180px;max-width:100%;height:auto;border:0;border-radius:12px;"></td></tr></table>
+  </td></tr>
+  <tr><td style="padding:28px 28px 8px 28px;font-family:${font};">
+    <h2 class="em-text" style="margin:0 0 14px 0;font-size:22px;line-height:1.3;color:${color};">${greeting}</h2>
+    <p class="em-text" style="margin:0;font-size:16px;line-height:1.6;color:#333333;">It's been a while since your last visit to <strong>${name}</strong>. Come back and show this code at the till for a little something extra on us:</p>
+  </td></tr>
+  <tr><td align="center" style="padding:20px 28px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="max-width:100%;"><tr><td class="em-coupon" align="center" bgcolor="#F8EAD0" style="background-color:#F8EAD0;border:2px dashed #4F6438;border-radius:12px;padding:16px 22px;">
+      <span class="em-code" style="font-family:'SFMono-Regular',Menlo,Consolas,'Courier New',monospace;font-size:22px;font-weight:bold;letter-spacing:2px;color:#2F3D22;white-space:nowrap;">${codeShown}</span>
+    </td></tr></table>
+  </td></tr>
+  ${qrBlock}
+  <tr><td style="padding:12px 28px 24px 28px;font-family:${font};">
+    <p class="em-muted" style="margin:0;font-size:13px;text-align:center;color:#555555;">One use only, valid for 30 days.</p>
+  </td></tr>
+  <tr><td style="padding:0 28px 28px 28px;font-family:${font};border-top:1px solid #F0E4D2;">
+    <p class="em-muted" style="margin:18px 0 0 0;font-size:13px;line-height:1.5;color:#777777;">You're receiving this because you're a member of ${name}'s loyalty card on The Loyalty Loop. You can opt out of promotional emails any time from the shop page.</p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 
   let ok = false;
   let errText: string | null = null;
@@ -113,7 +163,10 @@ async function sendOne(admin: SupabaseClient, shop: Shop, c: Candidate): Promise
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: RESEND_FROM_EMAIL, to: [c.email], subject, html }),
+      body: JSON.stringify({
+        from: RESEND_FROM_EMAIL, to: [c.email], subject, html,
+        ...(qrBase64 ? { attachments: [{ filename: "coupon-qr.png", content: qrBase64, content_type: "image/png", content_id: "coupon-qr" }] } : {}),
+      }),
     });
     ok = res.ok;
     errText = ok ? null : (await res.text()).slice(0, 500);
@@ -128,7 +181,7 @@ async function sendOne(admin: SupabaseClient, shop: Shop, c: Candidate): Promise
     days_inactive: c.days_inactive,
     coupon_code: coupon,
     subject,
-    body_preview: html.slice(0, 300),
+    body_preview: `${greeting} It's been a while since your last visit to ${shop.name}. Code: ${coupon}`.slice(0, 300),
     status: ok ? "sent" : "failed",
     error: errText,
   });

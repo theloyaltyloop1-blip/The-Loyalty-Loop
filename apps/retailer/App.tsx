@@ -72,6 +72,7 @@ import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument
 import { AppIntro, MUTED, NIGHT, PAPER, SANS_HEAVY, SANS_MEDIUM } from "./src/components/Poster";
 import { colors, fonts, getActiveScheme, schemeColor, themed } from "@loyalty-loop/design-tokens";
 import { parseRewardQr } from "./src/reward-qr";
+import { parseWinbackQr } from "./src/winback-qr";
 import { chargeAfterDiscount, parsePounds, percentOff, rewardDiscountPence, rewardDiscountPercent } from "./src/reward-discount";
 import { HALAL_CERTIFIERS, SHOP_FEATURES } from "./src/shop-features";
 import { hasSupabaseConfig, readStoredSession, supabase } from "./src/supabase";
@@ -1122,6 +1123,20 @@ function StampsScreen({
   }
 
   async function parse(value: string) {
+    const winbackCode = parseWinbackQr(value);
+    if (winbackCode) {
+      lookupVia.current = "code";
+      setCamera(false);
+      setBusy(true);
+      try {
+        await redeemWinback(winbackCode);
+      } catch (e) {
+        showAlert("Could not use code", e instanceof Error ? e.message : "Please try again.");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const rewardToken = parseRewardQr(value);
     if (rewardToken) {
       // A reward QR always means "use this reward": switch to Reward and carry on.
@@ -1167,6 +1182,20 @@ function StampsScreen({
     setCode("");
     void loadMemberDetails(id);
   }
+  /** Redeems a win-back coupon (typed or scanned). Throws a readable Error on failure. */
+  async function redeemWinback(normalized: string) {
+    const { data, error } = await supabase.rpc("redeem_winback_coupon", {
+      _business_id: business.id,
+      _code: normalized,
+    });
+    if (error) throw new Error(winbackCouponError(error.message));
+    const userId = (data as { user_id: string }).user_id;
+    haptic.success()
+    showAlert("Win-back code accepted", "Give the customer their welcome-back extra. The code is now used up.");
+    setMatched({ id: userId });
+    setCode("");
+    void loadMemberDetails(userId);
+  }
   async function lookup() {
     if (!code.trim()) return;
     lookupVia.current = "code";
@@ -1174,17 +1203,7 @@ function StampsScreen({
     const normalized = code.replace(/\s+/g, "").toUpperCase();
     try {
       if (normalized.startsWith("COMEBACK")) {
-        const { data, error } = await supabase.rpc("redeem_winback_coupon", {
-          _business_id: business.id,
-          _code: normalized,
-        });
-        if (error) throw new Error(winbackCouponError(error.message));
-        const userId = (data as { user_id: string }).user_id;
-        haptic.success()
-        showAlert("Win-back code accepted", "Give the customer their welcome-back extra. The code is now used up.");
-        setMatched({ id: userId });
-        setCode("");
-        void loadMemberDetails(userId);
+        await redeemWinback(normalized);
         return;
       }
       if (mode === "reward") {
