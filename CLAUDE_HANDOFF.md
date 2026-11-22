@@ -116,6 +116,12 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-22 - send-winback-emails: owner test send (`test_to`) - NOT shipped
+- Branch `claude/winback-test-to` from origin/main 6030c90 (deployed v41 code). Not committed, not pushed, not deployed, function not invoked, nothing sent.
+- File: `supabase/functions/send-winback-emails/index.ts` only. New body param `test_to`: works only after the existing signed-in owner-or-admin-of-`business_id` check (same `owner_id`/`has_role admin` test as Send now); the cron path (`x-winback-secret`) rejects any body with `test_to` (403). One plain address only (regex, length cap, no whitespace/CRLF); otherwise 400. Skips candidates and batch logic, calls `sendOne` with one fake candidate, a generated COMEBACK<8> sample code, subject prefixed `[TEST]`, and writes no `winback_email_log` row and no coupon row (so the code cannot be redeemed). Returns `{ test, email_sent, qr_sent, qr_error, error }`. Same rate limit as Send now.
+- Checks run: careful self-review of the diff only. Not run: deno check / tsc (deno not installed here), any invocation, any real send.
+- Next: owner's yes to commit, push and redeploy the function, then an owner-approved test send to an address the owner chooses.
+
 ### 2026-11-22 - Combined release branch: card page layout + win-back email and QR - PARTLY LIVE (on main, migration applied; function, OTAs pending)
 
 - **Branch:** `release/card-layout-and-winback-qr` from origin/main 359d984, worktree `.claude/worktrees/release-card-winback`. Merges `fix/shopper-card-detail-layout` (commit 89fcc89) and `claude/winback-email-polish` (commit e889505). Only conflict was this file (both log entries kept, newest first); `apps/shopper/App.tsx` merged cleanly with both changes. **Pushed to origin/main as 08ab84b (fast-forward from 359d984), 2026-11-22.**

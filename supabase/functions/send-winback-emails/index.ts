@@ -92,10 +92,22 @@ async function candidates(admin: SupabaseClient, businessId: string, threshold: 
   return { eligible: all.length, skipped: all.length - due.length, due };
 }
 
-/** Sends one email and logs it. Returns true only when Resend accepted it. */
-async function sendOne(admin: SupabaseClient, shop: Shop, c: Candidate): Promise<boolean> {
+type SendDetail = { qrSent: boolean; qrError: string | null; error: string | null };
+
+/** One plain address only: no lists, no whitespace or control characters (so no header injection). */
+const PLAIN_EMAIL = /^[A-Za-z0-9._%+'-]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
+function validTestAddress(v: unknown): v is string {
+  return typeof v === "string" && v.length <= 254 && PLAIN_EMAIL.test(v);
+}
+
+/**
+ * Sends one email and logs it. Returns true only when Resend accepted it.
+ * test = true (owner "test_to" send): subject gets "[TEST]", nothing is written to
+ * winback_email_log, so the sample code is not redeemable. `detail` reports QR/send status.
+ */
+async function sendOne(admin: SupabaseClient, shop: Shop, c: Candidate, test = false, detail?: SendDetail): Promise<boolean> {
   const coupon = genCoupon();
-  const subject = `We miss you at ${shop.name}!`;
+  const subject = `${test ? "[TEST] " : ""}We miss you at ${shop.name}!`;
   const greeting = c.first_name ? `Hi ${esc(c.first_name)},` : "Hi there,";
   const name = esc(shop.name);
   const color = SAFE_COLOR.test(shop.brand_color ?? "") ? shop.brand_color : "#222";
@@ -110,6 +122,7 @@ async function sendOne(admin: SupabaseClient, shop: Shop, c: Candidate): Promise
     qrBase64 = btoa(String.fromCharCode(...png));
   } catch (e) {
     console.error("winback qr failed", e instanceof Error ? e.message : e);
+    if (detail) detail.qrError = e instanceof Error ? e.message.slice(0, 200) : "qr failed";
   }
   const qrBlock = qrBase64
     ? `<tr><td align="center" style="padding:0 28px 8px 28px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #E2D1B8;border-radius:12px;padding:10px;line-height:0;font-size:0;"><img src="cid:coupon-qr" alt="QR code for ${coupon}" width="160" height="160" style="display:block;width:160px;height:160px;border:0;"></td></tr></table><p class="em-muted" style="margin:10px 0 0 0;font-family:${font};font-size:13px;color:#555555;">Or let the shop scan this.</p></td></tr>`
@@ -173,6 +186,12 @@ async function sendOne(admin: SupabaseClient, shop: Shop, c: Candidate): Promise
   } catch {
     errText = "send failed";
   }
+
+  if (detail) {
+    detail.qrSent = ok && qrBase64 !== null;
+    detail.error = errText;
+  }
+  if (test) return ok; // test sends are never logged and never create a coupon row
 
   const { error: logErr } = await admin.from("winback_email_log").insert({
     business_id: shop.id,
@@ -283,6 +302,7 @@ Deno.serve(async (req: Request) => {
       business_id?: string;
       preview_for?: string;
       days_inactive_threshold?: number;
+      test_to?: string;
     };
     // Apps ask for counts with { preview_for } rather than { business_id, dry_run }:
     // the previous version of this function ignored dry_run and would have sent,
@@ -295,7 +315,7 @@ Deno.serve(async (req: Request) => {
     const cronSecret = req.headers.get("x-winback-secret") ?? "";
     if (cronSecret) {
       const { data: okSecret } = await admin.rpc("winback_cron_secret_ok", { _secret: cronSecret });
-      if (okSecret !== true || body.mode !== "scheduled") return reply({ error: "forbidden" }, 403);
+      if (okSecret !== true || body.mode !== "scheduled" || body.test_to !== undefined) return reply({ error: "forbidden" }, 403);
       return reply(await scheduled(admin, dryRun));
     }
 
@@ -323,12 +343,27 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
     });
+    // test_to is checked for shape before anything else happens; one plain address only.
+    if (body.test_to !== undefined && !validTestAddress(body.test_to)) {
+      return reply({ error: "test_to must be one plain email address" }, 400);
+    }
+
     const { data: withinBurst } = await authed.rpc("check_rate_limit", {
       _action: dryRun ? "winback_preview" : "winback_emails",
       _limit: dryRun ? 10 : 2,
       _window_seconds: 60,
     });
     if (!withinBurst) return reply({ error: "Too many requests — please slow down." }, 429);
+
+    // Test send: owner/admin of this business only (checked above). Skips the candidate list,
+    // writes no winback_email_log row and no coupon row, returns before any batch logic.
+    if (body.test_to !== undefined) {
+      if (!RESEND_API_KEY) return reply({ error: "win-back email sending is not configured yet" }, 500);
+      const detail: SendDetail = { qrSent: false, qrError: null, error: null };
+      const fake: Candidate = { user_id: callerId, email: body.test_to, first_name: "Test", days_inactive: 30, recently_emailed: false };
+      const emailSent = await sendOne(admin, business, fake, true, detail);
+      return reply({ test: true, email_sent: emailSent, qr_sent: detail.qrSent, qr_error: detail.qrError, error: detail.error });
+    }
 
     const threshold = clampThreshold(body.days_inactive_threshold, clampThreshold(business.winback_threshold_days, 30));
 
