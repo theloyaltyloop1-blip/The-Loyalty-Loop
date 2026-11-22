@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { SignJWT, importPKCS8 } from "npm:jose@5";
+import { ensureLoyaltyClass, shopLoyaltyClass } from "../_shared/wallet-images.ts";
 import { loadWalletExtras, loadWalletTiers, walletProgress } from "../_shared/wallet-progress.ts";
 
 // Pushes a customer's current stamp/points balance to their already-saved
@@ -69,8 +70,8 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const businessId = typeof body.business_id === "string" ? body.business_id : "";
     const userId = typeof body.user_id === "string" ? body.user_id : "";
-    if (!businessId || !userId) {
-      return new Response(JSON.stringify({ error: "business_id and user_id are required" }), { status: 400, headers: jsonHeaders });
+    if (!businessId) {
+      return new Response(JSON.stringify({ error: "business_id is required" }), { status: 400, headers: jsonHeaders });
     }
 
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -84,12 +85,27 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     const [{ data: business }, { data: staff }] = await Promise.all([
-      admin.from("businesses").select("owner_id,name,loyalty_type,loyalty_config,reward_model,reward_threshold_pence").eq("id", businessId).maybeSingle(),
+      admin.from("businesses").select("id,owner_id,name,brand_color,logo_url,cover_url,card_design,loyalty_type,loyalty_config,reward_model,reward_threshold_pence").eq("id", businessId).maybeSingle(),
       admin.from("staff_members").select("id").eq("business_id", businessId).eq("user_id", caller.id).eq("status", "active").maybeSingle(),
     ]);
     if (!business || (business.owner_id !== caller.id && !staff)) {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: jsonHeaders });
     }
+
+    // Re-sync the shop's class (name, colour, logo, hero) so passes saved before a
+    // branding change, or before this feature existed, pick it up. Best effort:
+    // a branding failure must never block the progress update below. Without a
+    // user_id this is a class-only refresh (the Business app can call it after the
+    // owner changes the card design).
+    const key = JSON.parse(WALLET_KEY_JSON) as { client_email: string; private_key: string };
+    const accessToken = await getAccessToken(key);
+    const classId = `${ISSUER_ID}.biz_${businessId.replace(/-/g, "")}`;
+    try {
+      await ensureLoyaltyClass(accessToken, classId, await shopLoyaltyClass(admin, business, classId), false);
+    } catch (e) {
+      console.error("wallet class sync failed", e);
+    }
+    if (!userId) return new Response(JSON.stringify({ updated: true, classOnly: true }), { headers: jsonHeaders });
 
     const { data: membership } = await admin
       .from("memberships")
@@ -105,9 +121,6 @@ Deno.serve(async (req: Request) => {
     const progress = walletProgress(business, { ...membership, ...membershipExtras }, await loadWalletTiers(admin, businessId, business.reward_model), business.name);
 
     const objectId = `${ISSUER_ID}.mem_${businessId.replace(/-/g, "")}_${userId.replace(/-/g, "")}`;
-
-    const key = JSON.parse(WALLET_KEY_JSON) as { client_email: string; private_key: string };
-    const accessToken = await getAccessToken(key);
 
     const patchRes = await fetch(`https://walletobjects.googleapis.com/walletobjects/v1/loyaltyObject/${objectId}`, {
       method: "PATCH",
