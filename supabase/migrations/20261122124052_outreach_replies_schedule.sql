@@ -1,7 +1,7 @@
 -- Schedule for the reply checker: every 5 minutes, all day, every day,
 -- whether or not auto-send is on. Reuses the Vault secret 'outreach_cron_secret'
 -- from 20261121182527_outreach_schedule.sql. Apply only AFTER `outreach-replies`
--- is deployed. NOT applied yet.
+-- is deployed. Applied to production 2026-11-22.
 
 do $$
 begin

@@ -44,6 +44,14 @@ const corsHeaders = {
 };
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+const enc = new TextEncoder();
+function sameSecret(a: string, b: string) {
+  const x = enc.encode(a), y = enc.encode(b);
+  if (!a || x.length !== y.length) return false;
+  let d = 0;
+  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i];
+  return d === 0;
+}
 const errText = (e: unknown) => String((e as Error)?.message ?? e).slice(0, 300);
 
 async function all<T>(q: (a: number, b: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> {
@@ -196,6 +204,8 @@ Deno.serve(async (req) => {
   if (cronSecret) {
     const { data } = await db.rpc("outreach_cron_secret_ok", { _secret: cronSecret });
     if (data === true) caller = "cron";
+  } else if (token && sameSecret(SERVICE_ROLE_KEY, token)) {
+    caller = "admin"; // service role: used for the dry run from a terminal
   } else if (token) {
     const { data: u } = await db.auth.getUser(token);
     if (u?.user) {
@@ -208,7 +218,8 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({})) as { action?: string; days?: number };
   const action = body.action ?? "check";
   if (action !== "check" && action !== "dry-run") return reply({ error: "unknown action" }, 400);
-  if (caller === "cron" && action !== "check") return reply({ error: "forbidden" }, 403);
+  // The dry run only reads, so the scheduler secret may run it too (used from SQL for checks).
+  if (caller === "cron" && action !== "check" && action !== "dry-run") return reply({ error: "forbidden" }, 403);
 
   if (action === "dry-run") {
     try {
