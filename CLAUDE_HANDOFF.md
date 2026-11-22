@@ -115,6 +115,15 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 
 ## 8. Log (newest first)
 
+### 2026-11-22 - Shopper card page layout (even stamp rows, bigger name and logo, richer background, tidy code area) - NOT shipped (OTA pending)
+
+- **Branch:** `fix/shopper-card-detail-layout` from origin/main 359d984, worktree `.claude/worktrees/agent-af05d5daa89129149`. Nothing committed.
+- **Cause (from the owner's screenshot and the code):** (1) the grid layout in `LoyaltyCard` let 8 stamps wrap 6 + 2; (2) the shop name and logo were card-sized (28pt, 38px) on a full page; (3) the page was one flat colour, same as the card, so nothing had depth; (4) "Your code" and "Next reward" (`fields` in `ShopPass`) sat after the QR with a large gap, so the screenshot ended with their labels and no values.
+- **Change:** `packages/card-design/LoyaltyCard.tsx`: grid stamps share out evenly (8 gives 4 + 4, 10 gives 5 + 5); new `hero` prop (name 42pt, logo 84px) used only by the shop page (`apps/shopper/App.tsx`), tiles and Business previews unchanged. `skin.tsx`: `ShopBackdrop` is now a soft lighter-to-deeper wash with two faint accent glows, all derived from the shop's colour. `ShopPass.tsx`: root no longer paints a flat background; with a card, the caption sits closer to the QR, the QR tile is tighter, and "Your code / Next reward" get a hairline divider and less dead space.
+- **Checks run:** `npx tsc --noEmit` in apps/shopper (passes; real `npm ci` run). **Not run:** Business app tsc (shared files changed), any phone or emulator, a screenshot of the result, the grow/shrink animation (the page card is now larger than the tile card, so the CardGrow end frame may differ slightly), shops using ring/jar/bar layouts.
+- **Open:** the Your code and Next reward values are still below the QR and may need a scroll on short phones; decide if they should move above the QR.
+- **Next:** (owner) look at a card page on a phone after an OTA; (Claude, on owner's yes) commit, run Business tsc, include in the OTA.
+
 ### 2026-11-22 - Outreach bot: automatic reply checking with AI labels - LIVE
 
 - **Commits on main:** 7964a94 (feature), b0b299d (dry run callable by scheduler secret/service key; schedule file renamed). Website confirmed live (AccessPanel bundle on www.the-loyalty-loop.com contains the new "replies need you" text).

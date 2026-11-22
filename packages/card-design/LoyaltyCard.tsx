@@ -197,6 +197,7 @@ export function LoyaltyCard({
   animate = false,
   compact = false,
   showProgress = true,
+  hero = false,
 }: {
   shop: CardShop;
   value?: number;
@@ -207,6 +208,8 @@ export function LoyaltyCard({
   animate?: boolean;
   compact?: boolean;
   showProgress?: boolean;
+  /** The shop's own page: bigger logo and name. Tiles and previews leave it off. */
+  hero?: boolean;
 }) {
   const d = designForProgress(
     normalizeDesign(shop.card_design ?? defaultDesignFor(shop.category, shop.brand_color), shop.brand_color),
@@ -234,6 +237,13 @@ export function LoyaltyCard({
           )
         : Math.min(38 * scale, rowFit)
       : 34 * scale;
+  // A grid splits into even rows (4 + 4, not 6 + 2): count how many fit on a line, then
+  // spread the stamps over the fewest rows and share them out equally.
+  const gridGap = 9;
+  const gridMax = Math.max(1, Math.floor((contentWidth + gridGap) / (34 * scale + gridGap)));
+  const gridCols = progress.slots <= gridMax ? progress.slots : Math.ceil(progress.slots / Math.ceil(progress.slots / gridMax));
+  const gridSize = Math.min(34 * scale, (contentWidth - (gridCols - 1) * gridGap) / gridCols);
+  const gridWidth = gridCols * gridSize + (gridCols - 1) * gridGap;
   const jarId = useId().replace(/:/g, "");
   const motion = useRef(new Animated.Value(1)).current;
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null),
@@ -336,7 +346,7 @@ export function LoyaltyCard({
         ]}
       >
         {logo && (
-          <View style={s.logo}>
+          <View style={[s.logo, hero && s.logoHero]}>
             <Image
               source={{ uri: logo }}
               resizeMode="contain"
@@ -350,7 +360,7 @@ export function LoyaltyCard({
           style={[
             s.name,
             txt,
-            { fontSize: 28 * scale, lineHeight: 34 * scale },
+            hero ? { fontSize: 42 * scale, lineHeight: 48 * scale } : { fontSize: 28 * scale, lineHeight: 34 * scale },
 
             d.font === "modern" && { fontStyle: "italic" },
             d.font === "retro" && {
@@ -463,6 +473,7 @@ export function LoyaltyCard({
             contentContainerStyle={[
               s.stamps,
               d.layout === "row" && { flexWrap: rowWraps ? "wrap" : "nowrap", gap: 6 },
+              d.layout === "grid" && { width: gridWidth + 1, gap: gridGap },
             ]}
             accessible
             accessibilityLabel={label}
@@ -477,9 +488,9 @@ export function LoyaltyCard({
                     {
                       borderColor: accent,
                       backgroundColor: filled ? accent : "transparent",
-                      width: stampSize,
-                      height: stampSize,
-                        borderRadius: stampSize / 2,
+                      width: d.layout === "grid" ? gridSize : stampSize,
+                      height: d.layout === "grid" ? gridSize : stampSize,
+                      borderRadius: (d.layout === "grid" ? gridSize : stampSize) / 2,
                     },
                   ]}
                 >
@@ -613,6 +624,7 @@ const s = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
   },
+  logoHero: { width: 84, height: 84, borderRadius: 22 },
   name: { fontSize: 28, lineHeight: 34 },
   pole: {
     position: "absolute",

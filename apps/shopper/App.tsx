@@ -1650,7 +1650,7 @@ function ShopDetail({
           <ShopPass
             skin={skin}
             shop={business}
-            card={hasDesign(business) ? <LoyaltyCard shop={business} value={membership && passStamps ? Math.min(value, threshold) : membership ? Math.round(Math.min(1, passProgress) * 100) : 0} target={membership && !passStamps ? 100 : threshold || 10} stamps={passStamps && !holding} label={holding ? (membership ? 'Loading your card…' : 'Join to start collecting') : passStamps && membership ? `${Math.min(value, threshold)} of ${threshold} stamps` : passLabel} reward={passStamps || !membership ? reward : passLabel} /> : null}
+            card={hasDesign(business) ? <LoyaltyCard shop={business} value={membership && passStamps ? Math.min(value, threshold) : membership ? Math.round(Math.min(1, passProgress) * 100) : 0} target={membership && !passStamps ? 100 : threshold || 10} stamps={passStamps && !holding} label={holding ? (membership ? 'Loading your card…' : 'Join to start collecting') : passStamps && membership ? `${Math.min(value, threshold)} of ${threshold} stamps` : passLabel} reward={passStamps || !membership ? reward : passLabel} hero /> : null}
             eyebrow={[business.category || 'Local business', openStatus(business.opening_hours)?.label].filter(Boolean).join(' · ')}
             stamps={membership && passStamps && !holding ? { filled: Math.min(value, threshold), total: threshold } : null}
             wrapStamp={(i, stamp) => {

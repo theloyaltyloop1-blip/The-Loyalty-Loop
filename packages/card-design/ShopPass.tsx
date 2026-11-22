@@ -45,7 +45,7 @@ export function ShopPass({
   const d = skin.design;
   const ink = skin.ink;
   return (
-    <View style={{ backgroundColor: skin.bg }}>
+    <View>
       <View style={s.topBar}>{topBar}</View>
       {card ? <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>{card}</View> : null}
       <View style={s.centre}>
@@ -87,14 +87,14 @@ export function ShopPass({
         ) : null}
         {progressLabel ? <Text style={[s.progressLabel, count && s.progressLabelBig, { color: ink }]}>{progressLabel}</Text> : null}
         </>}
-        {card && progressLabel ? <Text style={[s.progressLabel, { color: ink }]}>{progressLabel}</Text> : null}
+        {card && progressLabel ? <Text style={[s.progressLabel, s.cardCaption, { color: ink }]}>{progressLabel}</Text> : null}
 
-        {code ? <View style={s.codeTile}>{code}</View> : null}
+        {code ? <View style={[s.codeTile, card ? s.codeTileUnderCard : null]}>{code}</View> : null}
         {action}
       </View>
 
       {fields.length ? (
-        <View style={s.fields}>
+        <View style={[s.fields, card ? [s.fieldsUnderCard, { borderTopColor: skin.panelBorder }] : null]}>
           {fields.map((f, i) => (
             <View key={f.label} style={[s.field, i % 2 === 1 && s.fieldRight]}>
               <Text style={[s.fieldLabel, { color: ink }]}>{f.label}</Text>
@@ -139,6 +139,9 @@ const s = StyleSheet.create({
   progressLabelBig: { fontSize: 12, lineHeight: 17, marginTop: 16, maxWidth: 300 },
   // Top plane: the code floats above the pass.
   codeTile: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 22, marginTop: 26, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 22, shadowOffset: { width: 0, height: 14 }, elevation: 10 },
+  cardCaption: { marginTop: 20, marginBottom: -8 },
+  codeTileUnderCard: { padding: 16, marginTop: 20 },
+  fieldsUnderCard: { marginTop: 24, marginHorizontal: 24, paddingHorizontal: 0, paddingTop: 18, paddingBottom: 20, borderTopWidth: StyleSheet.hairlineWidth },
   fields: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 24, paddingTop: 30, paddingBottom: 26, rowGap: 22 },
   field: { width: "50%", paddingRight: 8 },
   fieldRight: { alignItems: "flex-end", paddingRight: 0, paddingLeft: 8 },

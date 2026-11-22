@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { withScheme } from "@loyalty-loop/design-tokens";
 import { typeface } from "./LoyaltyCard";
 import {
@@ -57,10 +58,33 @@ const SkinContext = createContext<ShopSkin | null>(null);
 export const ShopSkinProvider = SkinContext.Provider;
 export const useShopSkin = () => useContext(SkinContext);
 
-// The shop's colour behind the whole page. Flat, like a wallet pass: texture
-// stays on the card itself.
+const mix = (hex: string, to: number, t: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (v: number) => Math.round(v + (to - v) * t).toString(16).padStart(2, "0");
+  return `#${c(n >> 16)}${c((n >> 8) & 255)}${c(n & 255)}`;
+};
+
+// The shop's colour behind the whole page, as a soft top-to-bottom wash of the same
+// colour (lighter at the top, deeper at the bottom) with a faint glow in the accent.
+// Derived only from the shop's own colour, so every shop gets its own version.
 export function ShopBackdrop({ skin }: { skin: ShopSkin }) {
-  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: skin.bg }]} />;
+  const top = mix(skin.bg, 255, skin.dark ? 0.1 : 0.28);
+  const bottom = mix(skin.bg, 0, skin.dark ? 0.3 : 0.14);
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: skin.bg }]}>
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id="pageWash" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={top} />
+            <Stop offset="1" stopColor={bottom} />
+          </LinearGradient>
+        </Defs>
+        <Rect width={100} height={100} fill="url(#pageWash)" />
+        <Circle cx={92} cy={12} r={48} fill={skin.accent} opacity={0.1} />
+        <Circle cx={4} cy={70} r={34} fill={skin.accent} opacity={0.07} />
+      </Svg>
+    </View>
+  );
 }
 
 const greyish = (color: unknown) => {
