@@ -4,7 +4,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -24,6 +23,7 @@ import {
 } from "../../../packages/card-design/model";
 import { supabase } from "./supabase";
 import { showAlert } from "./components/AppAlert";
+import { ColourPickerField } from "./components/ColourWheel";
 import { schemeColor, themed } from "@loyalty-loop/design-tokens"
 
 type Shop = {
@@ -427,23 +427,13 @@ export function CardDesigner({
       )}
       <View style={s.choices}>
         {(["color", "secondary"] as const).map((key) => (
-          <View key={key} style={s.colour}>
-            <Text style={s.label}>
-              {key === "color" ? "Card colour" : "Gradient colour"}
-            </Text>
-            <TextInput
-              accessibilityLabel={
-                key === "color" ? "Card hex colour" : "Gradient hex colour"
-              }
-              value={draft[key]}
-              onChangeText={(v) => set(key, v)}
-              editable={!locked}
-              maxLength={7}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={s.input}
-            />
-          </View>
+          <ColourPickerField
+            key={key}
+            label={key === "color" ? "Card colour" : "Gradient colour"}
+            value={draft[key]}
+            onChange={(v) => set(key, v)}
+            disabled={locked}
+          />
         ))}
       </View>
       <Text style={s.copy}>
