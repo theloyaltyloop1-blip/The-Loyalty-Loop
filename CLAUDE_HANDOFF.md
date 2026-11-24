@@ -115,6 +115,14 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
+### 2026-11-24 - Outreach sender: dead addresses marked Bounced, not counted as failures - LIVE
+- Why: one dead lead (550 invalid DNS MX) at the head of the queue failed 3 times and auto-send switched itself off.
+- Change: `supabase/functions/outreach-send/index.ts` - a 5xx recipient rejection (nodemailer EENVELOPE) marks the lead Bounced via `outreach_apply_reply` (reply_by 'ai', the column allows only ai/owner) and skips it. Login, connection and 4xx errors still count towards the 3-in-a-row pause.
+- Deployed outreach-send; branch claude/outreach-dead-address, commit 0030a37 (rebased onto main). The failed shop was marked Bounced, failures reset, auto-send switched back on by the owner's yes.
+- Leads list: owner chose to email the whole 'leads' list (1,441); email_ok set true for all, old values kept in table `outreach_email_ok_backup_20261122` (restore = update from it). Owner was told about PECR consent for sole traders.
+- Checks: fake SMTP returning the real 550 error -> recognised as dead; dropped connection -> still a fault. Supabase deploy bundled OK. No Deno typecheck (Deno not installed). Not yet seen on a real dead address in production.
+- Next: Claude - check the log after the next rejected address.
+
 
 ### 2026-11-22 - OTA: Business colour wheel in card designer - LIVE
 - Commit bb7b1fc (feature) on origin/main, published from 64b076e. Owner approved. Business app only; shopper not touched. Published with `--channel production --environment production`, one platform at a time, message "Colour wheel in card designer". JS only: no change to package.json, app.json, lockfile or native config since the store builds (last such commit 1609114). Update shows on the second app launch.
