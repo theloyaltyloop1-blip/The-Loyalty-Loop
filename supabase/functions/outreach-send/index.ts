@@ -187,7 +187,22 @@ async function sendStep(db: SupabaseClient, s: Settings, lead: Lead, step: numbe
     return { dryRun: true, ...base };
   }
 
-  const info = await makeTransport().sendMail(mail);
+  let info: { messageId?: string };
+  try {
+    info = await makeTransport().sendMail(mail);
+  } catch (e) {
+    // The mail server refused this one address for good (550 "mailbox
+    // unavailable", "invalid DNS MX"...). That is a dead lead, not a fault in
+    // our mailbox: mark it Bounced, skip it, and don't count it as a failure.
+    if (!isDeadAddress(e)) throw e;
+    const reason = String((e as { response?: string })?.response ?? (e as Error)?.message ?? e).slice(0, 300);
+    const { error } = await db.rpc("outreach_apply_reply", {
+      _email: lead.email, _label: "Bounced", _reason: `Rejected when sending: ${reason}`, _snippet: null, _by: "ai", _hold_until: null, // "ai" = set automatically (the column allows only ai/owner)
+    });
+    if (error) throw new Error(`Address rejected, and marking it Bounced failed: ${error.message}`);
+    await log(db, "bounced", `${STEPS[step].label} → ${lead.shop} (${lead.email}) rejected by their mail server. Marked Bounced, moving on.`);
+    return { skipped: "address rejected, marked Bounced", ...base };
+  }
   const { error } = await db.from("outreach_sends").insert({
     email: lead.email, step, step_key: STEPS[step].key, shop: lead.shop, subject: msg.subject, message_id: info.messageId ?? null,
   });
@@ -200,6 +215,15 @@ async function sendStep(db: SupabaseClient, s: Settings, lead: Lead, step: numbe
   await db.from("outreach_lead_state").upsert({ email: lead.email, shop: lead.shop }, { onConflict: "email", ignoreDuplicates: true });
   await log(db, "sent", `${STEPS[step].label} → ${lead.shop} (${lead.email})`);
   return { sent: true, ...base };
+}
+
+// A permanent refusal of the recipient address itself. Nodemailer reports
+// these as EENVELOPE with a 5xx code; login, connection and 4xx (try later)
+// errors are different and still count towards the 3-in-a-row pause.
+export function isDeadAddress(e: unknown): boolean {
+  const err = e as { code?: string; responseCode?: number; rejected?: unknown[] };
+  return err?.code === "EENVELOPE" && typeof err.responseCode === "number" && err.responseCode >= 500 && err.responseCode < 600
+    && Array.isArray(err.rejected) && err.rejected.length > 0;
 }
 
 // server.mjs sendNext(): daily limit, next in the queue (follow-ups first),
