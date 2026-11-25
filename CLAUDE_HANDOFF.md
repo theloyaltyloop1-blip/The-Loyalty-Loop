@@ -115,6 +115,13 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
+### 2026-11-25 - Marketing pack v2 for shop owners and shoppers - NOT shipped (not committed)
+- What: new `marketing/loyalty-loop-marketing-pack-v2/index.html` (+ `assets/`), one printable HTML page. Sections: shop owners (pitch, how it works, benefits, onboarding checklist, email and message copy, A4 flyer), shoppers (what it is, how to collect, social posts, captions, A4 flyer), brand (logo rules, palette, type, tone, Whirl). Built fresh from `origin/main` design: Twilight Indigo, warm paper, sage/mist/amber/teal tiles, Business 2px dark tile borders, Inter + Instrument Serif italic, web logo and mark files and Whirl SVGs copied unchanged. Old pack and the three .pptx decks left alone.
+- Claims: only features on main (QR join, stamps/spend/points/tiers/AI builder, offline stamping, win-back emails, birthday rewards, card designer, coaching, map). "Free" comes from the Business app Help FAQ; no other pricing stated. No customer data, leads or credentials. Nothing sent.
+- Branch `claude/marketing-pack-v2` (worktree `.claude/worktrees/marketing-pack-v2`), no commit yet.
+- Checks: previewed over localhost in the browser pane at desktop and 375px mobile: all images load, no sideways scroll, flyers do not overflow. Print layout and the PDF export NOT checked (use the Print button). Website build not run (apps/web untouched). Fonts load from Google Fonts, so the page needs internet for Inter/Instrument Serif. Logo is the owner's existing mark; the app UI is now indigo, so the olive/orange logo sits on paper and white only.
+- Next: owner - look and say yes to commit; Claude - commit on request, optional PDF export.
+
 ### 2026-11-24 - Outreach sender: dead addresses marked Bounced, not counted as failures - LIVE
 - Why: one dead lead (550 invalid DNS MX) at the head of the queue failed 3 times and auto-send switched itself off.
 - Change: `supabase/functions/outreach-send/index.ts` - a 5xx recipient rejection (nodemailer EENVELOPE) marks the lead Bounced via `outreach_apply_reply` (reply_by 'ai', the column allows only ai/owner) and skips it. Login, connection and 4xx errors still count towards the 3-in-a-row pause.
