@@ -115,7 +115,9 @@ Also never run for real: a signed-in Ask Whirl question, a win-back send, a rele
 - **Dates:** Apple Sign-In secret expires 2027-03-10 (regenerate by hand). Apple Wallet pass certificate expires 2027-10-08.
 
 ## 8. Log (newest first)
-### 2026-11-25 - Marketing pack v2 for shop owners and shoppers - NOT shipped (not committed)
+### 2026-11-25 - Marketing pack v2 for shop owners and shoppers - LIVE at https://www.the-loyalty-loop.com/pack (commit dde0499)
+- Published on the owner's yes: static copy in `apps/web/public/pack/` (absolute `/pack/assets/` paths, `pack.js` instead of inline scripts because the CSP blocks them, `noindex`, internal notes removed), plus a `/pack` rewrite in `vercel.json`. Pack source stays in `marketing/loyalty-loop-marketing-pack-v2/` (ed6c9f3). Website build passed with dummy Supabase env vars. Live check: /pack, assets and pack.js return 200. The owner wrote `the-loyalty-loop.co`; that domain does not resolve, the site is `.com`. Page is public to anyone with the link, not linked from the site. Copy buttons not tested live.
+- Superseded status line below: committed, not 'not committed'.
 - What: new `marketing/loyalty-loop-marketing-pack-v2/index.html` (+ `assets/`), one printable HTML page. Sections: shop owners (pitch, how it works, benefits, onboarding checklist, email and message copy, A4 flyer), shoppers (what it is, how to collect, social posts, captions, A4 flyer), brand (logo rules, palette, type, tone, Whirl). Built fresh from `origin/main` design: Twilight Indigo, warm paper, sage/mist/amber/teal tiles, Business 2px dark tile borders, Inter + Instrument Serif italic, web logo and mark files and Whirl SVGs copied unchanged. Old pack and the three .pptx decks left alone.
 - Claims: only features on main (QR join, stamps/spend/points/tiers/AI builder, offline stamping, win-back emails, birthday rewards, card designer, coaching, map). "Free" comes from the Business app Help FAQ; no other pricing stated. No customer data, leads or credentials. Nothing sent.
 - Branch `claude/marketing-pack-v2` (worktree `.claude/worktrees/marketing-pack-v2`), no commit yet.
