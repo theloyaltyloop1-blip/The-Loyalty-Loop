@@ -5,6 +5,9 @@ import { LoopMark } from '@/components/loop-mark'
 import { Whirl } from '@/components/whirl'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { usePageMeta } from '@/lib/use-page-meta'
+import { CityScene } from '@/components/city-scene'
+import { useLivingMotion } from '@/lib/living-motion'
+import '@/living.css'
 
 const SUPPORT_EMAIL = 'help@the-loyalty-loop.com'
 
@@ -70,7 +73,7 @@ const ACCOUNT_ITEMS: Item[] = [
     a: (
       <>
         Use the “Forgot your password?” link on the{' '}
-        <Link to="/login" className="text-primary underline">
+        <Link to="/login">
           sign‑in page
         </Link>
         . We’ll email you a secure reset link.
@@ -86,7 +89,7 @@ const ACCOUNT_ITEMS: Item[] = [
     a: (
       <>
         We use account and loyalty activity to run your rewards. If you choose Fidel card linking when available, Fidel handles card entry; we receive a card identifier, limited card details and matched purchase or refund information. We do not receive your full card number or security code, and we do not sell your data. Full detail is in our{' '}
-        <a href="/legal/privacy-notice.pdf" target="_blank" rel="noreferrer" className="text-primary underline">
+        <a href="/legal/privacy-notice.pdf" target="_blank" rel="noreferrer" >
           Privacy Notice
         </a>
         .
@@ -98,7 +101,7 @@ const ACCOUNT_ITEMS: Item[] = [
     a: (
       <>
         First, close and reopen the app to refresh. If a purchase or reward still looks wrong, ask the shop to check their side, then email us at{' '}
-        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline">
+        <a href={`mailto:${SUPPORT_EMAIL}`} >
           {SUPPORT_EMAIL}
         </a>{' '}
         with the shop name and roughly when it happened.
@@ -110,31 +113,26 @@ const ACCOUNT_ITEMS: Item[] = [
 function HelpItem({ q, a }: Item) {
   const [open, setOpen] = React.useState(false)
   return (
-    <div className="py-1">
-      <button
-        data-press-feedback
-        className="flex w-full items-center justify-between gap-4 py-4 text-left text-[17px] font-semibold"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-      >
+    <div className="lp-help-item">
+      <button data-press-feedback className="lp-help-q" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         {q}
-        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors duration-200 ${open ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'}`}>
+        <span className="lp-help-icon">
           {open ? <X className="h-4 w-4" strokeWidth={2.5} /> : <Plus className="h-4 w-4" strokeWidth={2.5} />}
         </span>
       </button>
-      {open && <div className="max-w-[60ch] pb-5 leading-relaxed text-muted-foreground">{a}</div>}
+      {open && <div className="lp-help-a">{a}</div>}
     </div>
   )
 }
 
-function Section({ title, items, tone }: { title: string; items: Item[]; tone: string }) {
+function Section({ title, items }: { title: string; items: Item[] }) {
   return (
-    <section className="mt-14 grid gap-4 md:grid-cols-[220px_1fr] md:gap-10">
-      <div className="md:sticky md:top-8 md:self-start">
-        <span className={`mb-4 block h-1.5 w-10 rounded-full ${tone}`} aria-hidden="true" />
-        <h2 className="font-display text-2xl font-bold tracking-tight">{title}</h2>
+    <section className="lp-help-section">
+      <div>
+        <span className="lp-help-bar" aria-hidden="true" />
+        <h2>{title}</h2>
       </div>
-      <div className="divide-y divide-border border-y border-border">
+      <div className="lp-help-list lp-glass">
         {items.map((item) => (
           <HelpItem key={item.q} {...item} />
         ))}
@@ -151,47 +149,50 @@ export function Help() {
     path: '/help',
   })
 
+  const page = React.useRef<HTMLDivElement>(null)
+  useLivingMotion(page, true)
+
   return (
-    <div className="surface-paper min-h-dvh bg-background">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
-        <div className="flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold">
-            <LoopMark className="h-8 w-8" />
-            The Loyalty Loop
-          </Link>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Home
-          </Link>
+    <div className="lp" ref={page}>
+      <CityScene root={page} seed={7} skyline="low" mini />
+      <a className="lp-skip" href="#main-content">Skip to content</a>
+      <main id="main-content">
+        <div className="lp-wrap" style={{ paddingTop: 28 }}>
+          <div className="lp-help-top">
+            <Link to="/" className="lp-brand">
+              <span className="lp-logo-tile"><LoopMark className="h-8 w-8" /></span>
+              The Loyalty Loop
+            </Link>
+            <Link to="/" className="lp-btn lp-btn-quiet">
+              <ArrowLeft className="h-4 w-4" />
+              Home
+            </Link>
+          </div>
+
+          <header className="lp-page-head lp-back">
+            <div className="lp-page-head-row">
+              <div>
+                <h1>Help &amp; FAQ</h1>
+                <p className="lp-lead">Everything you need to get going with The Loyalty Loop. Can’t find your answer? We’re a real person away.</p>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="lp-help-mail">
+                  <Mail className="h-4 w-4" />
+                  {SUPPORT_EMAIL}
+                </a>
+              </div>
+              <Whirl pose="peek" size={112} className="lp-help-whirl" />
+            </div>
+          </header>
+
+          <Section title="For shoppers" items={SHOPPER_ITEMS} />
+          <Section title="For businesses" items={BUSINESS_ITEMS} />
+          <Section title="Account, privacy &amp; troubleshooting" items={ACCOUNT_ITEMS} />
+
+          <footer className="lp-help-foot">
+            <p>© {new Date().getFullYear()} The Loyalty Loop. Made for the high street.</p>
+            <LegalFooterLinks />
+          </footer>
         </div>
-
-        <header className="relative mt-14 rounded-3xl bg-olive px-6 py-10 text-olive-ink sm:px-10 sm:py-12">
-          <Whirl pose="peek" size={112} className="absolute -top-[52px] right-6 w-24 sm:right-10 sm:w-28" />
-          <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">Help &amp; FAQ</h1>
-          <p className="mt-3 max-w-xl text-olive-ink/80">
-            Everything you need to get going with The Loyalty Loop. Can’t find your answer? We’re a real person away.
-          </p>
-          <a
-            href={`mailto:${SUPPORT_EMAIL}`}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-olive-ink px-4 py-2.5 font-semibold text-olive transition-transform active:scale-[0.98]"
-          >
-            <Mail className="h-4 w-4" />
-            {SUPPORT_EMAIL}
-          </a>
-        </header>
-
-        <Section title="For shoppers" items={SHOPPER_ITEMS} tone="bg-orange" />
-        <Section title="For businesses" items={BUSINESS_ITEMS} tone="bg-amber" />
-        <Section title="Account, privacy &amp; troubleshooting" items={ACCOUNT_ITEMS} tone="bg-olive" />
-
-        <footer className="mt-20 border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p className="mb-3">© {new Date().getFullYear()} The Loyalty Loop. Made for the high street.</p>
-          <LegalFooterLinks className="justify-center" />
-        </footer>
-      </div>
+      </main>
     </div>
   )
 }

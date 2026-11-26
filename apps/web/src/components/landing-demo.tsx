@@ -1,13 +1,16 @@
 import { useState, type CSSProperties } from 'react'
 import { Coffee, Gift, RotateCcw } from 'lucide-react'
 import { LoopMark } from '@/components/loop-mark'
+import { useShowcaseShops } from '@/lib/showcase-shops'
 
 // A small play-along demo for the landing page: the visitor plays the shop,
 // taps "Add a stamp", and watches the customer's card fill up. Nothing is saved
-// or sent anywhere; it is local state only. The shop is illustrative.
+// or sent anywhere; it is local state only. The shop name is a real café from the site when there is one.
 const GOAL = 5
 
 export function LandingDemo() {
+  const shops = useShowcaseShops(3)
+  const cafe = shops.find((b) => b.category === 'Café')
   const [stamps, setStamps] = useState(0)
   const [redeemed, setRedeemed] = useState(false)
   const ready = stamps >= GOAL
@@ -37,7 +40,7 @@ export function LandingDemo() {
 
   return (
     <section id="try-it" className="lp-wrap lp-demo" aria-labelledby="lp-demo-title">
-      <div className="lp-demo-copy" data-reveal>
+      <div className="lp-demo-copy lp-back" data-reveal>
         <p className="lp-kicker">Try it</p>
         <h2 id="lp-demo-title">Five taps to <em>a free coffee.</em></h2>
         <p>Each tap is a visit recorded at the till. Watch the card fill up, then claim the reward.</p>
@@ -63,7 +66,7 @@ export function LandingDemo() {
 
         <div className={`lp-demo-card${ready ? ' is-ready' : ''}`}>
           <div className="lp-card-top">
-            <span className="lp-card-shop">Marlow Street Coffee</span>
+            <span className="lp-card-shop">{cafe?.name ?? 'Your local café'}</span>
             <span className="lp-logo-tile"><LoopMark className="h-5 w-5" /></span>
           </div>
           <p className="lp-demo-title">{ready ? 'On the house.' : 'The usual, please.'}</p>

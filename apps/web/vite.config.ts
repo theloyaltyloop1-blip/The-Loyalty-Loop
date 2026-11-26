@@ -32,6 +32,9 @@ const config: UserConfig = {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
+          // The 3D city and its motion libraries load on demand for the public pages only.
+          if (id.includes('/node_modules/three/')) return 'three-vendor'
+          if (id.includes('/node_modules/gsap/') || id.includes('/node_modules/lenis/')) return 'motion-vendor'
           if (id.includes('react') || id.includes('scheduler')) return 'react-vendor'
           if (id.includes('@supabase')) return 'supabase-vendor'
           if (id.includes('@tanstack')) return 'query-vendor'
