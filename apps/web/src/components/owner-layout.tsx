@@ -9,6 +9,8 @@ import { OwnerSearchPill } from '@/components/owner-command-palette'
 import { OwnerWalkthrough } from '@/components/owner-walkthrough'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LegalFooterLinks } from '@/components/legal-footer'
+import { AppCityBackground } from '@/components/app-city-background'
+import '@/living.css'
 import { BarePageSkeleton } from '@/components/page-skeleton'
 import { OwnerLoadError } from '@/components/owner-load-error'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -126,6 +128,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
   const { signOut, primaryRole, rolesLoading, roles } = useAuth()
   const { businesses, staffBusinesses, business, loading, loadError, needsRewardSetup } = useOwner()
   const { pathname } = useLocation()
+  const host = React.useRef<HTMLDivElement>(null)
   const isOwner = businesses.length > 0
   const navItems = isOwner ? OWNER_NAV_ITEMS : STAFF_NAV_ITEMS
   if (rolesLoading) return <BarePageSkeleton />
@@ -139,9 +142,10 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
   if (!loading && business && needsRewardSetup) return <Navigate to="/owner/onboarding" replace />
 
   return (
-    <div className="min-h-dvh bg-background md:flex">
+    <div className="lp-scene-host min-h-dvh bg-background md:flex" ref={host}>
+      <AppCityBackground host={host} seed={9} enabled={pathname !== '/owner/scan'} />
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      <aside className="bg-olive text-olive-ink p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto md:p-5">
+      <aside className="relative z-[2] bg-olive text-olive-ink p-3 md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto md:p-5">
         <div className="flex items-center gap-2 px-2 md:mb-6">
           <span className="grid h-9 w-9 place-items-center rounded-full bg-olive-ink"><img src={loyaltyLoopLogo} alt="" className="h-7 w-7 object-contain" /></span>
           <span className="font-display text-[17px] font-semibold tracking-tight">The Loyalty Loop</span>
@@ -198,7 +202,7 @@ export function OwnerLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main id="main-content" tabIndex={-1} className="w-full min-w-0 flex-1 px-4 py-6 sm:px-6 md:max-w-6xl md:px-10 md:py-10">
+      <main id="main-content" tabIndex={-1} className="relative z-[2] w-full min-w-0 flex-1 px-4 py-6 sm:px-6 md:max-w-6xl md:px-10 md:py-10">
         {isOwner && business && <OwnerWalkthrough businessId={business.id} />}
         {isOwner && (
           <div className="sticky top-0 z-20 -mx-4 mb-4 flex justify-end px-4 py-2 sm:-mx-6 sm:px-6 md:-mx-10 md:px-10 md:bg-background/70 md:backdrop-blur-md">

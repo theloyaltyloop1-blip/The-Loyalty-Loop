@@ -6,6 +6,8 @@ import loyaltyLoopLogo from '@/assets/loyalty-loop-mark.svg'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LegalFooterLinks } from '@/components/legal-footer'
 import { BarePageSkeleton } from '@/components/page-skeleton'
+import { AppCityBackground } from '@/components/app-city-background'
+import '@/living.css'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/dashboard', icon: Home, end: true },
@@ -22,6 +24,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { signOut, primaryRole, rolesLoading, session } = useAuth()
+  const host = React.useRef<HTMLDivElement>(null)
   // Signed-out visitors can browse the map; they get the map tab and a way in,
   // not personal tabs and a "Sign out" button.
   const navItems = session ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.to === '/dashboard/discover')
@@ -32,7 +35,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (primaryRole === 'staff') return <Navigate to="/owner/scan" replace />
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="lp-scene-host min-h-dvh bg-background" ref={host}>
+      <AppCityBackground host={host} seed={3} />
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
@@ -84,7 +88,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10">
+      <main id="main-content" tabIndex={-1} className="relative z-[2] mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10">
         {children}
         <footer className="mt-16 border-t border-border pt-6 text-xs text-muted-foreground">
           <p className="mb-2">© {new Date().getFullYear()} The Loyalty Loop</p>
